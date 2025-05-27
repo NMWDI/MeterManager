@@ -6,7 +6,6 @@ import {
   Button,
   Card,
   CardContent,
-  CardHeader,
   Chip,
   FormControl,
   Grid,
@@ -32,6 +31,7 @@ import {
 } from "../../service/ApiServiceNew";
 import ControlledTextbox from "../../components/RHControlled/ControlledTextbox";
 import { SecurityScope, UserRole } from "../../interfaces";
+import { CustomCardHeader } from "../../components/CustomCardHeader";
 
 const RoleResolverSchema: Yup.ObjectSchema<any> = Yup.object().shape({
   name: Yup.string().required("Please enter a name."),
@@ -42,10 +42,10 @@ interface RoleDetailsCardProps {
   roleAddMode: boolean;
 }
 
-export default function RoleDetailsCard({
+export const RoleDetailsCard = ({
   selectedRole,
   roleAddMode,
-}: RoleDetailsCardProps) {
+}: RoleDetailsCardProps) => {
   const {
     handleSubmit,
     control,
@@ -111,21 +111,9 @@ export default function RoleDetailsCard({
 
   return (
     <Card>
-      <CardHeader
-        title={
-          roleAddMode ? (
-            <div className="custom-card-header">
-              <span>Create Role</span>
-              <AddIcon style={{ fontSize: "1rem" }} />{" "}
-            </div>
-          ) : (
-            <div className="custom-card-header">
-              <span>Edit Role</span>
-              <EditIcon style={{ fontSize: "1rem" }} />{" "}
-            </div>
-          )
-        }
-        sx={{ mb: 0, pb: 0 }}
+      <CustomCardHeader
+        title={roleAddMode ? "Create Role" : "Edit Role"}
+        icon={roleAddMode ? AddIcon : EditIcon}
       />
       <CardContent>
         <Grid container>
@@ -181,7 +169,7 @@ export default function RoleDetailsCard({
                             .includes(x.id),
                       )
                       .map((scope: SecurityScope) => (
-                        <MenuItem value={scope.id}>
+                        <MenuItem key={scope.id} value={scope.id}>
                           {scope.scope_string}
                         </MenuItem>
                       ))}
@@ -219,4 +207,4 @@ export default function RoleDetailsCard({
       </CardContent>
     </Card>
   );
-}
+};

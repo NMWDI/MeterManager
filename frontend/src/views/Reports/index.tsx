@@ -7,44 +7,49 @@ import {
   Plumbing,
   Science,
 } from "@mui/icons-material";
-import { Box, Card, CardContent, CardHeader } from "@mui/material";
+import { Box, Card, CardContent } from "@mui/material";
 import { NavLink } from "../../components/NavLink";
+import { BackgroundBox } from "../../components/BackgroundBox";
+import { CustomCardHeader } from "../../components/CustomCardHeader";
 
 export const ReportsView = () => {
   return (
-    <Box
-      sx={{ height: "fit-content", width: "calc(100% - 16px)", m: 2, mt: 1 }}
-    >
-      <Card sx={{ height: "fit-content", width: "calc(100% - 16px)" }}>
-        <CardHeader
-          title={
-            <div className="custom-card-header">
-              <span>Reports</span>
-              <Assessment />
-            </div>
-          }
-          sx={{ mb: 0, pb: 0 }}
-        />
+    <BackgroundBox>
+      <Card sx={{ height: "fit-content" }}>
+        <CustomCardHeader title="Reports" icon={Assessment} />
         <CardContent>
           <Box sx={{ minWidth: "15rem", maxWidth: "15%" }} py={1}>
             <NavLink
+              disabled
               route="/reports/workorders"
               label="Work Orders"
               Icon={FormatListBulletedOutlined}
             />
             <NavLink
+              disabled
               route="/reports/wells"
               label="Monitoring Wells"
               Icon={MonitorHeart}
             />
-            <NavLink route="/reports/repairs" label="Repairs" Icon={Plumbing} />
             <NavLink
-              route="/reports/inventory"
-              label="Inventory"
+              disabled
+              route="/reports/repairs"
+              label="Repairs"
+              Icon={Plumbing}
+            />
+            <NavLink
+              route="/reports/partsused"
+              label="Parts Used"
               Icon={Build}
             />
-            <NavLink route="/reports/board" label="Board" Icon={People} />
             <NavLink
+              disabled
+              route="/reports/board"
+              label="Board"
+              Icon={People}
+            />
+            <NavLink
+              disabled
               route="/reports/chlorides"
               label="Chlorides"
               Icon={Science}
@@ -52,6 +57,6 @@ export const ReportsView = () => {
           </Box>
         </CardContent>
       </Card>
-    </Box>
+    </BackgroundBox>
   );
 };

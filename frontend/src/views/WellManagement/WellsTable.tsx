@@ -1,8 +1,6 @@
 import { useState } from "react";
-
 import {
   Card,
-  CardHeader,
   CardContent,
   Grid,
   TextField,
@@ -10,23 +8,22 @@ import {
   Tabs,
   Box,
 } from "@mui/material";
-
 import FormatListBulletedOutlinedIcon from "@mui/icons-material/FormatListBulletedOutlined";
 import SearchIcon from "@mui/icons-material/Search";
-
 import TabPanel from "../../components/TabPanel";
 import WellSelectionTable from "./WellSelectionTable";
 import WellSelectionMap from "./WellSelectionMap";
+import { CustomCardHeader } from "../../components/CustomCardHeader";
 
 interface WellsTableProps {
   setSelectedWell: Function;
   setWellAddMode: Function;
 }
 
-export default function WellsTable({
+export const WellsTable = ({
   setSelectedWell,
   setWellAddMode,
-}: WellsTableProps) {
+}: WellsTableProps) => {
   const [wellSearchQuery, setWellSearchQuery] = useState<string>("");
 
   const [currentTabIndex, setCurrentTabIndex] = useState(0);
@@ -35,14 +32,9 @@ export default function WellsTable({
 
   return (
     <Card sx={{ height: "100%" }}>
-      <CardHeader
-        title={
-          <div className="custom-card-header">
-            <span>All Wells</span>
-            <FormatListBulletedOutlinedIcon />
-          </div>
-        }
-        sx={{ mb: 0, pb: 0 }}
+      <CustomCardHeader
+        title="All Wells"
+        icon={FormatListBulletedOutlinedIcon}
       />
       <CardContent sx={{ height: "100%" }}>
         <Grid container>
@@ -87,4 +79,4 @@ export default function WellsTable({
       </CardContent>
     </Card>
   );
-}
+};

@@ -10,7 +10,6 @@ import {
   Typography,
   ListSubheader,
   useTheme,
-  CardHeader,
 } from "@mui/material";
 import { useQuery } from "react-query";
 import { useAuthUser } from "react-auth-kit";
@@ -37,6 +36,8 @@ import dayjs, { Dayjs } from "dayjs";
 import { useFetchWithAuth, useFetchST2 } from "../../hooks";
 import { getDataStreamId } from "../../utils/DataStreamUtils";
 import { MonitorHeart } from "@mui/icons-material";
+import { BackgroundBox } from "../../components/BackgroundBox";
+import { CustomCardHeader } from "../../components/CustomCardHeader";
 
 const separateAndSortWells = (
   wells: MonitoredWell[] = [],
@@ -58,7 +59,7 @@ const separateAndSortWells = (
   return [outsideRecorderWells, regularWells];
 };
 
-export default function MonitoringWellsView() {
+export const MonitoringWellsView = () => {
   const theme = useTheme();
 
   const fetchWithAuth = useFetchWithAuth();
@@ -181,19 +182,9 @@ export default function MonitoringWellsView() {
   const [outsideRecorderWells, regularWells] = separateAndSortWells(wells);
 
   return (
-    <Box
-      sx={{ height: "fit-content", width: "calc(100% - 16px)", m: 2, mt: 1 }}
-    >
-      <Card sx={{ height: "fit-content", width: "calc(100% - 16px)" }}>
-        <CardHeader
-          title={
-            <div className="custom-card-header">
-              <span>Monitored Well Values</span>
-              <MonitorHeart />
-            </div>
-          }
-          sx={{ mb: 0, pb: 0 }}
-        />
+    <BackgroundBox>
+      <Card sx={{ height: "fit-content" }}>
+        <CustomCardHeader title="Monitored Well Values" icon={MonitorHeart} />
         <CardContent>
           {error && (
             <Typography variant="h4">
@@ -328,6 +319,6 @@ export default function MonitoringWellsView() {
           />
         </CardContent>
       </Card>
-    </Box>
+    </BackgroundBox>
   );
-}
+};

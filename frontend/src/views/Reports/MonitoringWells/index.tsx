@@ -1,6 +1,5 @@
 import { ArrowBack, PictureAsPdf, MonitorHeart } from "@mui/icons-material";
 import {
-  Box,
   Button,
   Card,
   CardContent,
@@ -18,6 +17,7 @@ import { useQuery } from "react-query";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import dayjs from "dayjs";
+import { BackgroundBox } from "../../../components/BackgroundBox";
 
 const schema = yup.object().shape({
   from: yup.mixed().nullable().required("From date is required"),
@@ -43,10 +43,8 @@ export const MonitoringWellsReportView = () => {
   });
 
   return (
-    <Box
-      sx={{ height: "fit-content", width: "calc(100% - 16px)", m: 2, mt: 1 }}
-    >
-      <Card sx={{ height: "fit-content", width: "calc(100% - 16px)" }}>
+    <BackgroundBox>
+      <Card sx={{ height: "fit-content" }}>
         <CardHeader
           title={
             <div className="custom-card-header">
@@ -136,6 +134,6 @@ export const MonitoringWellsReportView = () => {
           </Grid>
         </CardContent>
       </Card>
-    </Box>
+    </BackgroundBox>
   );
 };

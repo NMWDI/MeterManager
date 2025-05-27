@@ -1,13 +1,8 @@
-import {
-  Box,
-  Grid,
-  CardContent,
-  Card,
-  CardHeader,
-  Typography,
-} from "@mui/material";
+import { Grid, CardContent, Card } from "@mui/material";
 import MeterActivityEntry from "./MeterActivityEntry/MeterActivityEntry";
 import { Construction } from "@mui/icons-material";
+import { BackgroundBox } from "../../components/BackgroundBox";
+import { CustomCardHeader } from "../../components/CustomCardHeader";
 
 export const gridBreakpoints = { xs: 12 };
 export const toggleStyle = {
@@ -16,18 +11,9 @@ export const toggleStyle = {
 
 export const ActivitiesView = () => {
   return (
-    <Box
-      sx={{ height: "fit-content", width: "calc(100% - 16px)", m: 2, mt: 1 }}
-    >
-      <Card sx={{ height: "fit-content", width: "calc(100% - 16px)" }}>
-        <CardHeader
-          title={
-            <div className="custom-card-header">
-              <span>Submit an Activity</span> <Construction />
-            </div>
-          }
-          sx={{ mb: 0, pb: 0 }}
-        />
+    <BackgroundBox>
+      <Card sx={{ height: "fit-content" }}>
+        <CustomCardHeader title="Submit an Activity" icon={Construction} />
         <CardContent>
           <Grid container>
             <Grid item xs={11} sm={11} lg={8} xl={7}>
@@ -36,6 +22,6 @@ export const ActivitiesView = () => {
           </Grid>
         </CardContent>
       </Card>
-    </Box>
+    </BackgroundBox>
   );
 };

@@ -1,13 +1,6 @@
 import { useEffect } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
-import {
-  Alert,
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
-  Grid,
-} from "@mui/material";
+import { Alert, Button, Card, CardContent, Grid } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import SaveIcon from "@mui/icons-material/Save";
@@ -23,6 +16,7 @@ import {
 import ControlledTextbox from "../../components/RHControlled/ControlledTextbox";
 import { MeterTypeLU } from "../../interfaces";
 import { ControlledSelectNonObject } from "../../components/RHControlled/ControlledSelect";
+import { CustomCardHeader } from "../../components/CustomCardHeader";
 
 const MeterTypeResolverSchema: Yup.ObjectSchema<any> = Yup.object().shape({
   brand: Yup.string().required("Please enter a brand."),
@@ -35,13 +29,13 @@ const MeterTypeResolverSchema: Yup.ObjectSchema<any> = Yup.object().shape({
     .required("Please indicate if part is in use."),
 });
 
-export default function MeterTypeDetailsCard({
+export const MeterTypeDetailsCard = ({
   selectedMeterType,
   meterTypeAddMode,
 }: {
-  selectedMeterType: MeterTypeLU | undefined;
+  selectedMeterType?: MeterTypeLU;
   meterTypeAddMode: boolean;
-}) {
+}) => {
   const {
     handleSubmit,
     control,
@@ -82,27 +76,13 @@ export default function MeterTypeDetailsCard({
   }, [meterTypeAddMode]);
 
   // Determine if form is valid, {errors} in useEffect or formState's isValid don't work
-  function hasErrors() {
-    return Object.keys(errors).length > 0;
-  }
+  const hasErrors = () => Object.keys(errors).length > 0;
 
   return (
     <Card>
-      <CardHeader
-        title={
-          meterTypeAddMode ? (
-            <div className="custom-card-header">
-              <span>Create Meter Type</span>
-              <AddIcon style={{ fontSize: "1rem" }} />{" "}
-            </div>
-          ) : (
-            <div className="custom-card-header">
-              <span>Edit Meter Type</span>
-              <EditIcon style={{ fontSize: "1rem" }} />{" "}
-            </div>
-          )
-        }
-        sx={{ mb: 0, pb: 0 }}
+      <CustomCardHeader
+        title={meterTypeAddMode ? "Create Meter Type" : "Edit Meter Type"}
+        icon={meterTypeAddMode ? AddIcon : EditIcon}
       />
       <CardContent>
         <Grid container>
@@ -145,7 +125,7 @@ export default function MeterTypeDetailsCard({
               />
             </Grid>
           </Grid>
-          <Grid container xs={12} sx={{ mt: 2 }}>
+          <Grid item xs={12} sx={{ mt: 2 }}>
             <ControlledTextbox
               name="description"
               control={control}
@@ -181,4 +161,4 @@ export default function MeterTypeDetailsCard({
       </CardContent>
     </Card>
   );
-}
+};

@@ -4,7 +4,6 @@ import {
   Button,
   Card,
   CardContent,
-  CardHeader,
   Chip,
   Grid,
   TextField,
@@ -16,14 +15,15 @@ import SearchIcon from "@mui/icons-material/Search";
 import { Part } from "../../interfaces";
 import TristateToggle from "../../components/TristateToggle";
 import GridFooterWithButton from "../../components/GridFooterWithButton";
+import { CustomCardHeader } from "../../components/CustomCardHeader";
 
-export default function PartsTable({
+export const PartsTable = ({
   setSelectedPartID,
   setPartAddMode,
 }: {
   setSelectedPartID: Function;
   setPartAddMode: Function;
-}) {
+}) => {
   const partsList = useGetParts();
   const [partSearchQuery, setPartSearchQuery] = useState<string>("");
   const [filteredRows, setFilteredRows] = useState<Part[]>();
@@ -37,7 +37,7 @@ export default function PartsTable({
       field: "part_type",
       headerName: "Part Type",
       width: 200,
-      valueGetter: (params: any) => params.value?.name,
+      valueGetter: (params: any) => params?.name,
     },
     { field: "count", headerName: "Count" },
     {
@@ -83,14 +83,9 @@ export default function PartsTable({
 
   return (
     <Card sx={{ height: "100%" }}>
-      <CardHeader
-        title={
-          <div className="custom-card-header">
-            <span>All Parts</span>
-            <FormatListBulletedOutlinedIcon />
-          </div>
-        }
-        sx={{ mb: 0, pb: 0 }}
+      <CustomCardHeader
+        title="All Parts"
+        icon={FormatListBulletedOutlinedIcon}
       />
       <CardContent sx={{ height: "100%" }}>
         <Grid container>
@@ -126,7 +121,7 @@ export default function PartsTable({
           </Grid>
         </Grid>
         <DataGrid
-          sx={{ height: "400px", border: "none" }}
+          sx={{ height: "500px", border: "none" }}
           rows={filteredRows ?? []}
           loading={partsList.isLoading}
           columns={cols}
@@ -139,8 +134,8 @@ export default function PartsTable({
             footer: {
               button: (
                 <Button
+                  sx={{ mt: 2 }}
                   variant="contained"
-                  size="small"
                   onClick={() => setPartAddMode(true)}
                 >
                   <AddIcon style={{ fontSize: "1rem" }} />
@@ -154,4 +149,4 @@ export default function PartsTable({
       </CardContent>
     </Card>
   );
-}
+};
