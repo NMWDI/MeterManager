@@ -1,13 +1,6 @@
 import { useEffect, useState } from "react";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
-import {
-  Button,
-  Card,
-  CardHeader,
-  CardContent,
-  Grid,
-  TextField,
-} from "@mui/material";
+import { Button, Card, CardContent, Grid, TextField } from "@mui/material";
 import { useGetSecurityScopes } from "../../service/ApiServiceNew";
 import AddIcon from "@mui/icons-material/Add";
 import SearchIcon from "@mui/icons-material/Search";
