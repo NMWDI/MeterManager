@@ -35,6 +35,7 @@ import ControlledTextbox from "../../components/RHControlled/ControlledTextbox";
 import ControlledPartTypeSelect from "../../components/RHControlled/ControlledPartTypeSelect";
 import { MeterTypeLU, Part } from "../../interfaces";
 import { ControlledSelectNonObject } from "../../components/RHControlled/ControlledSelect";
+import ControlledUnitsSelect from "../../components/RHControlled/ControlledUnitsSelect";
 
 const PartResolverSchema: Yup.ObjectSchema<any> = Yup.object().shape({
   part_number: Yup.string().required("Please enter a part number."),
@@ -210,9 +211,6 @@ export default function PartDetailsCard({
                 <ControlledTextbox
                 name="ratio"
                 control={control}
-                label="Ratio"
-                type="number"
-                inputProps={{ step: "0.01" }}
                 // error={errors?.ratio?.message != undefined}
                 // helperText={errors?.ratio?.message}
                 />
@@ -239,21 +237,21 @@ export default function PartDetailsCard({
                 />
             </Grid>
             <Grid item xs={12} xl={6}>
-                <ControlledTextbox
-                name="dial_units"
-                control={control}
-                label="Dial Units"
-                // error={errors?.dial_units?.message != undefined}
-                // helperText={errors?.dial_units?.message}
+                <ControlledUnitsSelect
+                    name="dial_units"
+                    control={control}
+                    label="Dial Units"
+                    //error={errors?.dial_units?.message}
+                    sx={{ mt: 2 }}
                 />
             </Grid>
             <Grid item xs={12} xl={6}>
-                <ControlledTextbox
-                name="totalizer_units"
-                control={control}
-                label="Totalizer Units"
-                // error={errors?.totalizer_units?.message != undefined}
-                // helperText={errors?.totalizer_units?.message}
+                <ControlledUnitsSelect
+                    name="totalizer_units"
+                    control={control}
+                    label="Totalizer Units"
+                    //error={errors?.register_units?.message}
+                    sx={{ mt: 2 }}
                 />
             </Grid>
           </Grid>
