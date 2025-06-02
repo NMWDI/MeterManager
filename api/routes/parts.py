@@ -1,6 +1,6 @@
 from fastapi import Depends, APIRouter, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import select
+from sqlalchemy import select, func
 from typing import List
 from datetime import datetime
 import calendar
@@ -38,7 +38,7 @@ def get_parts(db: Session = Depends(get_db)):
     tags=["Parts"],
     dependencies=[Depends(ScopedUser.Read)],
 )
-def get_parts_used_within_range(
+def get_parts_used_summary(
     from_month: str = Query(..., pattern=r"^\d{4}-\d{2}$"),
     to_month: str = Query(..., pattern=r"^\d{4}-\d{2}$"),
     parts: List[int] = Query(...),
@@ -57,22 +57,63 @@ def get_parts_used_within_range(
             to_date = today
         else:
             last_day = calendar.monthrange(year, month)[1]
-            to_date = to_dt.replace(day=last_day, hour=23, minute=59, second=59)
+            to_date = to_dt.replace(
+                day=last_day,
+                hour=23,
+                minute=59,
+                second=59
+            )
     except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM.")
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid date format. Use YYYY-MM."
+        )
 
-    stmt = (
-        select(PartsUsed.c.meter_activity_id, PartsUsed.c.part_id)
-        .select_from(PartsUsed.join(MeterActivities))
-        .where(
+    usage_subq = (
+        db.query(
+            PartsUsed.c.part_id.label("used_part_id"),
+            func.count(PartsUsed.c.part_id).label("quantity")
+        )
+        .join(
+              MeterActivities,
+              MeterActivities.id == PartsUsed.c.meter_activity_id
+        )
+        .filter(
             MeterActivities.timestamp_start >= from_date,
             MeterActivities.timestamp_start <= to_date,
-            PartsUsed.c.part_id.in_(parts)
+            PartsUsed.c.part_id.in_(parts),
         )
+        .group_by(PartsUsed.c.part_id)
+        .subquery()
     )
 
-    rows = db.execute(stmt).all()
-    return [dict(row._mapping) for row in rows]
+    query = (
+        db.query(
+            Parts.id.label("id"),
+            Parts.part_number,
+            Parts.description,
+            Parts.price,
+            func.coalesce(usage_subq.c.quantity, 0).label("quantity")
+        )
+        .outerjoin(usage_subq, Parts.id == usage_subq.c.used_part_id)
+        .filter(Parts.id.in_(parts))
+        .order_by(Parts.part_number)
+    )
+
+    results = []
+    for row in query.all():
+        price = row.price or 0
+        total = price * row.quantity
+        results.append({
+            "id": row.id,
+            "part_number": row.part_number,
+            "description": row.description,
+            "price": price,
+            "quantity": row.quantity,
+            "total": total,
+        })
+
+    return results
 
 
 @part_router.get(

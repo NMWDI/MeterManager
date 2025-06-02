@@ -129,26 +129,12 @@ export const PartsUsedReportView = () => {
     enabled: Boolean(from && to && selectedPartIds?.length > 0),
   });
 
-  const selectedParts = (partsQuery?.data ?? []).filter((part) =>
-    watch("parts")?.includes(part.id),
-  );
-
   let runningTotal = 0;
 
-  const rows = selectedParts.map((part) => {
-    const unitPrice = part.price ?? 0;
-    const quantity = part.count ?? 0;
-    const total = quantity * unitPrice;
-
-    runningTotal += total;
-
+  const rows = partsUsedQuery?.data?.map((part) => {
+    runningTotal += part.total;
     return {
-      id: part.id,
-      part_number: part.part_number,
-      description: part.description,
-      price: unitPrice,
-      quantity,
-      total,
+      ...part,
       running_total: runningTotal,
     };
   });
