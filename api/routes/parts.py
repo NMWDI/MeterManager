@@ -1,18 +1,22 @@
-from fastapi import Depends, APIRouter, HTTPException
+from fastapi import Depends, APIRouter, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import select
 from typing import List
+from datetime import datetime
+import calendar
 
 from api.models.main_models import (
     Parts,
+    PartsUsed,
     PartAssociation,
     PartTypeLU,
     Meters,
     MeterTypeLU,
+    MeterActivities,
 )
 from api.schemas import part_schemas
 from api.session import get_db
-from api.route_util import _get, _patch
+from api.route_util import _get
 from api.enums import ScopedUser
 from sqlalchemy.exc import IntegrityError
 
@@ -27,6 +31,48 @@ part_router = APIRouter()
 )
 def get_parts(db: Session = Depends(get_db)):
     return db.scalars(select(Parts).options(joinedload(Parts.part_type))).all()
+
+
+@part_router.get(
+    "/parts/used",
+    tags=["Parts"],
+    dependencies=[Depends(ScopedUser.Read)],
+)
+def get_parts_used_within_range(
+    from_month: str = Query(..., pattern=r"^\d{4}-\d{2}$"),
+    to_month: str = Query(..., pattern=r"^\d{4}-\d{2}$"),
+    parts: List[int] = Query(...),
+    db: Session = Depends(get_db),
+):
+    try:
+        # Parse and normalize start of "from" month
+        from_date = datetime.strptime(from_month, "%Y-%m").replace(day=1)
+
+        # Determine end of "to" month
+        to_dt = datetime.strptime(to_month, "%Y-%m")
+        year, month = to_dt.year, to_dt.month
+        today = datetime.now()
+
+        if year == today.year and month == today.month:
+            to_date = today
+        else:
+            last_day = calendar.monthrange(year, month)[1]
+            to_date = to_dt.replace(day=last_day, hour=23, minute=59, second=59)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM.")
+
+    stmt = (
+        select(PartsUsed.c.meter_activity_id, PartsUsed.c.part_id)
+        .select_from(PartsUsed.join(MeterActivities))
+        .where(
+            MeterActivities.timestamp_start >= from_date,
+            MeterActivities.timestamp_start <= to_date,
+            PartsUsed.c.part_id.in_(parts)
+        )
+    )
+
+    rows = db.execute(stmt).all()
+    return [dict(row._mapping) for row in rows]
 
 
 @part_router.get(

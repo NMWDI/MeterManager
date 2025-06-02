@@ -83,7 +83,7 @@ export const PartsUsedReportView = () => {
 
   const authHeader = useAuthHeader();
   const partsQuery = useQuery<Part[]>({
-    queryKey: ["Inventory", "report", "parts"],
+    queryKey: ["Inventory", "report", "partslist"],
     queryFn: async () => {
       const response = await fetch(`${API_URL}/parts`, {
         headers: { Authorization: authHeader() },
@@ -95,6 +95,38 @@ export const PartsUsedReportView = () => {
     },
     staleTime: 1000 * 60 * 60 * 24, // 24 hours
     cacheTime: 1000 * 60 * 60 * 24, // cache in memory for 24 hours
+  });
+
+  const from = watch("from");
+  const to = watch("to");
+  const selectedPartIds = watch("parts") ?? [];
+
+  const partsUsedQuery = useQuery<any[]>({
+    queryKey: ["Inventory", "report", "partsused", from, to, selectedPartIds],
+    queryFn: async () => {
+      const searchParams = new URLSearchParams({
+        from_month: from?.format("YYYY-MM"),
+        to_month: to?.format("YYYY-MM"),
+      });
+
+      selectedPartIds.forEach((id: number) => {
+        searchParams.append("parts", id.toString());
+      });
+
+      const response = await fetch(
+        `${API_URL}/parts/used?${searchParams.toString()}`,
+        {
+          headers: { Authorization: authHeader() },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch parts used data");
+      }
+
+      return response.json();
+    },
+    enabled: Boolean(from && to && selectedPartIds?.length > 0),
   });
 
   const selectedParts = (partsQuery?.data ?? []).filter((part) =>
