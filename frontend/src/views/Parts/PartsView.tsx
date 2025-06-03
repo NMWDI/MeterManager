@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
-import PartsTable from "./PartsTable";
-import { Box, Grid } from "@mui/material";
-import PartDetailsCard from "./PartDetailsCard";
-import MeterTypesTable from "./MeterTypesTable";
-import MeterTypeDetailsCard from "./MeterTypeDetailsCard";
+import { PartsTable } from "./PartsTable";
+import { Grid } from "@mui/material";
+import { PartDetailsCard } from "./PartDetailsCard";
+import { MeterTypesTable } from "./MeterTypesTable";
+import { MeterTypeDetailsCard } from "./MeterTypeDetailsCard";
 import { MeterTypeLU } from "../../interfaces";
+import { BackgroundBox } from "../../components/BackgroundBox";
 
-export default function PartsView() {
+export const PartsView = () => {
   const [selectedPartID, setSelectedPartID] = useState<number>();
   const [partAddMode, setPartAddMode] = useState<boolean>(true);
   const [selectedMeterType, setSelectedMeterType] = useState<MeterTypeLU>();
@@ -22,7 +23,7 @@ export default function PartsView() {
   }, [selectedMeterType]);
 
   return (
-    <Box sx={{ m: 2, mt: 1, width: "100%" }}>
+    <BackgroundBox>
       <Grid container spacing={4}>
         <Grid
           container
@@ -30,7 +31,7 @@ export default function PartsView() {
           spacing={2}
           sx={{ minHeight: { xs: "100vh", lg: "70vh" } }}
         >
-          <Grid item xs={7}>
+          <Grid item xs={8}>
             <PartsTable
               setSelectedPartID={setSelectedPartID}
               setPartAddMode={setPartAddMode}
@@ -47,9 +48,9 @@ export default function PartsView() {
           container
           item
           spacing={2}
-          sx={{ minHeight: { xs: "100vh", lg: "70vh" } }}
+          sx={{ minHeight: { xs: "100vh", lg: "70vh" }, mt: -4 }}
         >
-          <Grid item xs={7}>
+          <Grid item xs={8}>
             <MeterTypesTable
               setSelectedMeterType={setSelectedMeterType}
               setMeterTypeAddMode={setMeterTypeAddMode}
@@ -63,6 +64,6 @@ export default function PartsView() {
           </Grid>
         </Grid>
       </Grid>
-    </Box>
+    </BackgroundBox>
   );
-}
+};

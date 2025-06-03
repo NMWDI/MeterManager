@@ -40,6 +40,37 @@
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
+    <style>
+      body {
+        margin: 0;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+          "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        background-color: #eef2f6;
+      }
+
+      code {
+        font-family:
+          source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
+      }
+
+      .flex-container {
+        display: flex;
+      }
+
+      .flex-child {
+        flex: 1;
+        border: 2px solid blue;
+      }
+
+      .flex-child:first-child {
+        margin-right: 20px;
+        width: 700px;
+      }
+    </style>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

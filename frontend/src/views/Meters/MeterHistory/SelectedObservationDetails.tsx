@@ -2,14 +2,7 @@ import { useEffect } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { useAuthUser } from "react-auth-kit";
 import { enqueueSnackbar } from "notistack";
-import {
-  Grid,
-  Card,
-  CardContent,
-  CardHeader,
-  Stack,
-  Button,
-} from "@mui/material";
+import { Grid, Card, CardContent, Stack, Button } from "@mui/material";
 import SaveIcon from "@mui/icons-material/Save";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import {
@@ -36,8 +29,9 @@ import {
   useUpdateObservation,
   useDeleteObservation,
 } from "../../../service/ApiServiceNew";
+import { CustomCardHeader } from "../../../components/CustomCardHeader";
 
-export default function SelectedObservationDetails({
+export const SelectedObservationDetails = ({
   selectedObservation,
   onDeletion,
   afterSave,
@@ -45,7 +39,7 @@ export default function SelectedObservationDetails({
   selectedObservation: PatchObservationForm;
   onDeletion: () => void;
   afterSave: () => void;
-}) {
+}) => {
   const { handleSubmit, control, reset, watch } = useForm<PatchObservationForm>(
     { defaultValues: selectedObservation },
   );
@@ -120,14 +114,9 @@ export default function SelectedObservationDetails({
 
   return (
     <Card>
-      <CardHeader
-        title={
-          <div className="custom-card-header">
-            <span>Observation ID: {selectedObservation.observation_id}</span>
-            <InfoOutlinedIcon />
-          </div>
-        }
-        sx={{ mb: 0, pb: 0 }}
+      <CustomCardHeader
+        title={`Observation ID: ${selectedObservation.observation_id}`}
+        icon={InfoOutlinedIcon}
       />
       <CardContent>
         <Grid container item xs={10}>
@@ -244,4 +233,4 @@ export default function SelectedObservationDetails({
       </CardContent>
     </Card>
   );
-}
+};

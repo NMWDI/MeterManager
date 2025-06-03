@@ -5,7 +5,6 @@ import {
   Button,
   Card,
   CardContent,
-  CardHeader,
   Checkbox,
   FormControlLabel,
   Grid,
@@ -42,6 +41,7 @@ import { MergeWellModal } from "../../components/MergeWellModal";
 import { useAuthUser } from "react-auth-kit";
 import { SecurityScope } from "../../interfaces";
 import ControlledCheckbox from "../../components/RHControlled/ControlledCheckbox";
+import { CustomCardHeader } from "../../components/CustomCardHeader";
 
 const WellResolverSchema: Yup.ObjectSchema<any> = Yup.object().shape({
   use_type: Yup.object().required("Please select a use type."),
@@ -51,19 +51,24 @@ const WellResolverSchema: Yup.ObjectSchema<any> = Yup.object().shape({
   }),
 });
 
-export default function WellDetailsCard(
-    {selectedWell, wellAddMode,}: {selectedWell?: Well; wellAddMode: boolean;}) {
-    const {
+export const WellDetailsCard = ({
+  selectedWell,
+  wellAddMode,
+}: {
+  selectedWell?: Well;
+  wellAddMode: boolean;
+}) => {
+  const {
     handleSubmit,
     control,
     setValue,
     reset,
     watch,
     formState: { errors },
-    } = useForm<WellUpdate | SubmitWellCreate>({
-        resolver: yupResolver(WellResolverSchema),
-        defaultValues: {location: { latitude: 0, longitude: 0 }}
-    });
+  } = useForm<WellUpdate | SubmitWellCreate>({
+    resolver: yupResolver(WellResolverSchema),
+    defaultValues: { location: { latitude: 0, longitude: 0 } },
+  });
 
   const authUser = useAuthUser();
   const hasAdminScope = authUser()
@@ -110,9 +115,7 @@ export default function WellDetailsCard(
   }, [wellAddMode]);
 
   // Determine if form is valid, {errors} in useEffect or formState's isValid don't work
-  function hasErrors() {
-    return Object.keys(errors).length > 0;
-  }
+  const hasErrors = () => Object.keys(errors).length > 0;
 
   // Modal related functions
   const [isWellMergeModalOpen, setIsWellMergeModalOpen] = React.useState(false);
@@ -121,21 +124,9 @@ export default function WellDetailsCard(
 
   return (
     <Card>
-      <CardHeader
-        title={
-          wellAddMode ? (
-            <div className="custom-card-header">
-              <span>Create Well</span>
-              <AddIcon style={{ fontSize: "1rem" }} />{" "}
-            </div>
-          ) : (
-            <div className="custom-card-header">
-              <span>Edit Well</span>
-              <EditIcon style={{ fontSize: "1rem" }} />{" "}
-            </div>
-          )
-        }
-        sx={{ mb: 0, pb: 0 }}
+      <CustomCardHeader
+        title={wellAddMode ? "Create Well" : "Edit Well"}
+        icon={wellAddMode ? AddIcon : EditIcon}
       />
       <CardContent>
         <Grid container spacing={2}>
@@ -196,7 +187,12 @@ export default function WellDetailsCard(
                   <Checkbox
                     checked={Boolean(watch("chloride_group_id"))}
                     name="chloride_group_checkbox"
-                    onChange={(e) => {setValue("chloride_group_id", e.target.checked ? 1 : null);}}
+                    onChange={(e) => {
+                      setValue(
+                        "chloride_group_id",
+                        e.target.checked ? 1 : null,
+                      );
+                    }}
                     size="small"
                   />
                 }
@@ -354,4 +350,4 @@ export default function WellDetailsCard(
       </CardContent>
     </Card>
   );
-}
+};

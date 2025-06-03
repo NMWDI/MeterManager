@@ -4,7 +4,6 @@ import {
   Button,
   Card,
   CardContent,
-  CardHeader,
   Chip,
   Grid,
   TextField,
@@ -16,14 +15,15 @@ import SearchIcon from "@mui/icons-material/Search";
 import { MeterTypeLU } from "../../interfaces";
 import TristateToggle from "../../components/TristateToggle";
 import GridFooterWithButton from "../../components/GridFooterWithButton";
+import { CustomCardHeader } from "../../components/CustomCardHeader";
 
-export default function MeterTypesTable({
+export const MeterTypesTable = ({
   setSelectedMeterType,
   setMeterTypeAddMode,
 }: {
   setSelectedMeterType: Function;
   setMeterTypeAddMode: Function;
-}) {
+}) => {
   const meterTypes = useGetMeterTypeList();
   const [meterTypeSearchQuery, setMeterTypeSearchQuery] = useState<string>("");
   const [filteredRows, setFilteredRows] = useState<MeterTypeLU[]>();
@@ -31,7 +31,11 @@ export default function MeterTypesTable({
 
   const cols: GridColDef[] = [
     { field: "brand", headerName: "Brand", width: 200 },
-    { field: "series", headerName: "Series", width: 100 },
+    {
+      field: "series",
+      headerName: "Series",
+      width: 100,
+    },
     { field: "model", headerName: "Model Number", width: 200 },
     { field: "size", headerName: "Size", width: 100 },
     { field: "description", headerName: "Description", width: 200 },
@@ -66,17 +70,12 @@ export default function MeterTypesTable({
 
   return (
     <Card sx={{ height: "100%" }}>
-      <CardHeader
-        title={
-          <div className="custom-card-header">
-            <span>All Meter Types</span>
-            <FormatListBulletedOutlinedIcon />
-          </div>
-        }
-        sx={{ mb: 0, pb: 0 }}
+      <CustomCardHeader
+        title="All Meter Types"
+        icon={FormatListBulletedOutlinedIcon}
       />
       <CardContent sx={{ height: "100%" }}>
-        <Grid container xs={12}>
+        <Grid container>
           <Grid item xs={5}>
             <TextField
               label={
@@ -105,7 +104,7 @@ export default function MeterTypesTable({
           </Grid>
         </Grid>
         <DataGrid
-          sx={{ height: "400px", border: "none" }}
+          sx={{ height: "500px", border: "none" }}
           rows={filteredRows ?? []}
           loading={meterTypes.isLoading}
           columns={cols}
@@ -118,8 +117,8 @@ export default function MeterTypesTable({
             footer: {
               button: (
                 <Button
+                  sx={{ mt: 2 }}
                   variant="contained"
-                  size="small"
                   onClick={() => setMeterTypeAddMode(true)}
                 >
                   <AddIcon style={{ fontSize: "1rem" }} />
@@ -133,4 +132,4 @@ export default function MeterTypesTable({
       </CardContent>
     </Card>
   );
-}
+};

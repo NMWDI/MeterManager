@@ -1,13 +1,14 @@
-import { Box, Grid } from "@mui/material";
+import { Grid } from "@mui/material";
 import { useEffect, useState } from "react";
-import UsersTable from "./UsersTable";
-import UserDetailsCard from "./UserDetailsCard";
+import { UsersTable } from "./UsersTable";
+import { UserDetailsCard } from "./UserDetailsCard";
 import { User, UserRole } from "../../interfaces";
-import RolesTable from "./RolesTable";
-import RoleDetailsCard from "./RoleDetailsCard";
-import PermissionsTable from "./PermissionsTable";
+import { RolesTable } from "./RolesTable";
+import { RoleDetailsCard } from "./RoleDetailsCard";
+import { PermissionsTable } from "./PermissionsTable";
+import { BackgroundBox } from "../../components/BackgroundBox";
 
-export default function UserManagementView() {
+export const UserManagementView = () => {
   const [selectedUser, setSelectedUser] = useState<User>();
   const [userAddMode, setUserAddMode] = useState<boolean>(true);
   const [selectedRole, setSelectedRole] = useState<UserRole>();
@@ -23,7 +24,7 @@ export default function UserManagementView() {
   }, [selectedRole]);
 
   return (
-    <Box sx={{ m: 2, mt: 1, width: "100%" }}>
+    <BackgroundBox>
       <Grid container spacing={2}>
         <Grid
           container
@@ -31,7 +32,7 @@ export default function UserManagementView() {
           spacing={2}
           sx={{ minHeight: { xs: "100vh", lg: "70vh" } }}
         >
-          <Grid item xs={7}>
+          <Grid item xs={8}>
             <UsersTable
               setSelectedUser={setSelectedUser}
               setUserAddMode={setUserAddMode}
@@ -50,7 +51,7 @@ export default function UserManagementView() {
           spacing={2}
           sx={{ minHeight: { xs: "100vh", lg: "70vh" } }}
         >
-          <Grid item xs={7}>
+          <Grid item xs={8}>
             <RolesTable
               setSelectedRole={setSelectedRole}
               setRoleAddMode={setRoleAddMode}
@@ -70,11 +71,11 @@ export default function UserManagementView() {
           spacing={2}
           sx={{ minHeight: { xs: "100vh", lg: "70vh" } }}
         >
-          <Grid item xs={7}>
+          <Grid item xs={8}>
             <PermissionsTable />
           </Grid>
         </Grid>
       </Grid>
-    </Box>
+    </BackgroundBox>
   );
-}
+};

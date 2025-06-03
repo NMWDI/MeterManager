@@ -84,7 +84,6 @@ const styles = {
     justifyContent: "space-between",
     backgroundColor: "white",
     py: 1,
-    boxShadow: "3px 2px 5px -2px rgba(0,0,0,0.2)",
   },
   button: {
     marginTop: "auto",

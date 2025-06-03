@@ -3,7 +3,6 @@ import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import {
   Button,
   Card,
-  CardHeader,
   CardContent,
   Chip,
   Grid,
@@ -16,14 +15,15 @@ import SearchIcon from "@mui/icons-material/Search";
 import { User } from "../../interfaces";
 import TristateToggle from "../../components/TristateToggle";
 import GridFooterWithButton from "../../components/GridFooterWithButton";
+import { CustomCardHeader } from "../../components/CustomCardHeader";
 
-export default function UsersTable({
+export const UsersTable = ({
   setSelectedUser,
   setUserAddMode,
 }: {
   setSelectedUser: Function;
   setUserAddMode: Function;
-}) {
+}) => {
   const usersList = useGetUserAdminList();
   const [userSearchQuery, setUserSearchQuery] = useState<string>("");
   const [filteredRows, setFilteredRows] = useState<User[]>();
@@ -86,17 +86,12 @@ export default function UsersTable({
 
   return (
     <Card sx={{ height: "100%" }}>
-      <CardHeader
-        title={
-          <div className="custom-card-header">
-            <span>All Users</span>
-            <FormatListBulletedOutlinedIcon />
-          </div>
-        }
-        sx={{ mb: 0, pb: 0 }}
+      <CustomCardHeader
+        title="All Users"
+        icon={FormatListBulletedOutlinedIcon}
       />
       <CardContent sx={{ height: "100%" }}>
-        <Grid container xs={12}>
+        <Grid container>
           <Grid item xs={5}>
             <TextField
               label={
@@ -131,7 +126,7 @@ export default function UsersTable({
           </Grid>
         </Grid>
         <DataGrid
-          sx={{ height: "400px", border: "none" }}
+          sx={{ height: "500px", border: "none" }}
           rows={filteredRows ?? []}
           loading={usersList.isLoading}
           columns={cols}
@@ -148,8 +143,8 @@ export default function UsersTable({
             footer: {
               button: (
                 <Button
+                  sx={{ mt: 1 }}
                   variant="contained"
-                  size="small"
                   onClick={() => setUserAddMode(true)}
                 >
                   <AddIcon style={{ fontSize: "1rem" }} />
@@ -163,4 +158,4 @@ export default function UsersTable({
       </CardContent>
     </Card>
   );
-}
+};

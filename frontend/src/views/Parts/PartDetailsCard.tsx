@@ -6,7 +6,6 @@ import {
   Button,
   Card,
   CardContent,
-  CardHeader,
   Chip,
   FormControl,
   Grid,
@@ -35,6 +34,7 @@ import ControlledTextbox from "../../components/RHControlled/ControlledTextbox";
 import ControlledPartTypeSelect from "../../components/RHControlled/ControlledPartTypeSelect";
 import { MeterTypeLU, Part } from "../../interfaces";
 import { ControlledSelectNonObject } from "../../components/RHControlled/ControlledSelect";
+import { CustomCardHeader } from "../../components/CustomCardHeader";
 
 const PartResolverSchema: Yup.ObjectSchema<any> = Yup.object().shape({
   part_number: Yup.string().required("Please enter a part number."),
@@ -55,10 +55,10 @@ interface PartDetailsCard {
   partAddMode: boolean;
 }
 
-export default function PartDetailsCard({
+export const PartDetailsCard = ({
   selectedPartID,
   partAddMode,
-}: PartDetailsCard) {
+}: PartDetailsCard) => {
   const {
     handleSubmit,
     control,
@@ -122,27 +122,13 @@ export default function PartDetailsCard({
   }
 
   // Determine if form is valid, {errors} in useEffect or formState's isValid don't work
-  function hasErrors() {
-    return Object.keys(errors).length > 0;
-  }
+  const hasErrors = () => Object.keys(errors).length > 0;
 
   return (
     <Card>
-      <CardHeader
-        title={
-          partAddMode ? (
-            <div className="custom-card-header">
-              <span>Create Part</span>
-              <AddIcon style={{ fontSize: "1rem" }} />{" "}
-            </div>
-          ) : (
-            <div className="custom-card-header">
-              <span>Edit Part</span>
-              <EditIcon style={{ fontSize: "1rem" }} />{" "}
-            </div>
-          )
-        }
-        sx={{ mb: 0, pb: 0 }}
+      <CustomCardHeader
+        title={partAddMode ? "Create Part" : "Edit Part"}
+        icon={partAddMode ? AddIcon : EditIcon}
       />
       <CardContent>
         <Grid container>
@@ -202,14 +188,14 @@ export default function PartDetailsCard({
               />
             </Grid>
           </Grid>
-          <Grid container xs={12} sx={{ mt: 2 }}>
+          <Grid item xs={12} sx={{ mt: 2 }}>
             <ControlledTextbox
               name="description"
               control={control}
               label="Description"
             />
           </Grid>
-          <Grid container xs={12} sx={{ mt: 2 }}>
+          <Grid item xs={12} sx={{ mt: 2 }}>
             <ControlledTextbox
               name="note"
               control={control}
@@ -261,6 +247,7 @@ export default function PartDetailsCard({
                     )
                     .map((type: MeterTypeLU) => (
                       <MenuItem
+                        key={type.id}
                         value={type.id}
                       >{`${type.brand} - ${type.model}`}</MenuItem>
                     ))}
@@ -297,4 +284,4 @@ export default function PartDetailsCard({
       </CardContent>
     </Card>
   );
-}
+};
