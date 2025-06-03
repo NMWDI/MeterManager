@@ -581,6 +581,7 @@ class meterRegisters(Base):
     __tablename__ = "meter_registers"
     brand: Mapped[str] = mapped_column(String, nullable=False)
     meter_size: Mapped[float] = mapped_column(Float, nullable=False)
+    part_id: Mapped[int] = mapped_column(Integer, ForeignKey("Parts.id"))
     ratio: Mapped[str] = mapped_column(String)
     dial_units_id: Mapped[int] = mapped_column(Integer, ForeignKey("Units.id"), nullable=False)
     totalizer_units_id: Mapped[int] = mapped_column(Integer, ForeignKey("Units.id"), nullable=False)

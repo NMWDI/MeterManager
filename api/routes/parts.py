@@ -1,7 +1,7 @@
 from fastapi import Depends, APIRouter, HTTPException
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import select
-from typing import List
+from typing import List, Union
 
 from api.models.main_models import (
     Parts,
@@ -9,6 +9,7 @@ from api.models.main_models import (
     PartTypeLU,
     Meters,
     MeterTypeLU,
+    meterRegisters
 )
 from api.schemas import part_schemas
 from api.session import get_db
@@ -41,12 +42,12 @@ def get_part_types(db: Session = Depends(get_db)):
 
 @part_router.get(
     "/part",
-    response_model=part_schemas.Part,
+    response_model=Union[part_schemas.Part, part_schemas.Register],
     dependencies=[Depends(ScopedUser.Read)],
     tags=["Parts"],
 )
 def get_part(part_id: int, db: Session = Depends(get_db)):
-    return db.scalars(
+    selected_part = db.scalars(
         select(Parts)
         .where(Parts.id == part_id)
         .options(
@@ -54,6 +55,27 @@ def get_part(part_id: int, db: Session = Depends(get_db)):
             joinedload(Parts.meter_types),
         )
     ).first()
+
+    # Create the part_schemas.Part instance
+    returned_part = part_schemas.Part.model_validate(selected_part)
+
+    # If part_type is a Register, we need to load the register details
+    if selected_part and selected_part.part_type.name == "Register":
+        register_details = db.scalars(
+            select(meterRegisters).where(
+                meterRegisters.part_id == selected_part.id
+            )
+        ).first()
+
+        register_details = part_schemas.Register.register_details.model_validate(register_details)
+
+        # Update the returned_part to include register details
+        returned_part = part_schemas.Register(
+            **returned_part.model_dump(exclude_unset=True),
+            register_settings=register_details
+            )
+
+    return returned_part
 
 
 @part_router.patch(
