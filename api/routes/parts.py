@@ -1,18 +1,25 @@
-from fastapi import Depends, APIRouter, HTTPException
+from fastapi import Depends, APIRouter, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import select
+from typing import List, Union
+from sqlalchemy import select, func
 from typing import List
+from datetime import datetime
+import calendar
 
 from api.models.main_models import (
     Parts,
+    PartsUsed,
     PartAssociation,
     PartTypeLU,
     Meters,
     MeterTypeLU,
+    meterRegisters,
+    MeterActivities,
 )
 from api.schemas import part_schemas
 from api.session import get_db
-from api.route_util import _get, _patch
+from api.route_util import _get
 from api.enums import ScopedUser
 from sqlalchemy.exc import IntegrityError
 
@@ -30,6 +37,89 @@ def get_parts(db: Session = Depends(get_db)):
 
 
 @part_router.get(
+    "/parts/used",
+    tags=["Parts"],
+    dependencies=[Depends(ScopedUser.Read)],
+)
+def get_parts_used_summary(
+    from_month: str = Query(..., pattern=r"^\d{4}-\d{2}$"),
+    to_month: str = Query(..., pattern=r"^\d{4}-\d{2}$"),
+    parts: List[int] = Query(...),
+    db: Session = Depends(get_db),
+):
+    try:
+        # Parse and normalize start of "from" month
+        from_date = datetime.strptime(from_month, "%Y-%m").replace(day=1)
+
+        # Determine end of "to" month
+        to_dt = datetime.strptime(to_month, "%Y-%m")
+        year, month = to_dt.year, to_dt.month
+        today = datetime.now()
+
+        if year == today.year and month == today.month:
+            to_date = today
+        else:
+            last_day = calendar.monthrange(year, month)[1]
+            to_date = to_dt.replace(
+                day=last_day,
+                hour=23,
+                minute=59,
+                second=59
+            )
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid date format. Use YYYY-MM."
+        )
+
+    usage_subq = (
+        db.query(
+            PartsUsed.c.part_id.label("used_part_id"),
+            func.count(PartsUsed.c.part_id).label("quantity")
+        )
+        .join(
+              MeterActivities,
+              MeterActivities.id == PartsUsed.c.meter_activity_id
+        )
+        .filter(
+            MeterActivities.timestamp_start >= from_date,
+            MeterActivities.timestamp_start <= to_date,
+            PartsUsed.c.part_id.in_(parts),
+        )
+        .group_by(PartsUsed.c.part_id)
+        .subquery()
+    )
+
+    query = (
+        db.query(
+            Parts.id.label("id"),
+            Parts.part_number,
+            Parts.description,
+            Parts.price,
+            func.coalesce(usage_subq.c.quantity, 0).label("quantity")
+        )
+        .outerjoin(usage_subq, Parts.id == usage_subq.c.used_part_id)
+        .filter(Parts.id.in_(parts))
+        .order_by(Parts.part_number)
+    )
+
+    results = []
+    for row in query.all():
+        price = row.price or 0
+        total = price * row.quantity
+        results.append({
+            "id": row.id,
+            "part_number": row.part_number,
+            "description": row.description,
+            "price": price,
+            "quantity": row.quantity,
+            "total": total,
+        })
+
+    return results
+
+
+@part_router.get(
     "/part_types",
     response_model=List[part_schemas.PartTypeLU],
     dependencies=[Depends(ScopedUser.Read)],
@@ -41,12 +131,12 @@ def get_part_types(db: Session = Depends(get_db)):
 
 @part_router.get(
     "/part",
-    response_model=part_schemas.Part,
+    response_model=Union[part_schemas.Part, part_schemas.Register],
     dependencies=[Depends(ScopedUser.Read)],
     tags=["Parts"],
 )
 def get_part(part_id: int, db: Session = Depends(get_db)):
-    return db.scalars(
+    selected_part = db.scalars(
         select(Parts)
         .where(Parts.id == part_id)
         .options(
@@ -54,6 +144,27 @@ def get_part(part_id: int, db: Session = Depends(get_db)):
             joinedload(Parts.meter_types),
         )
     ).first()
+
+    # Create the part_schemas.Part instance
+    returned_part = part_schemas.Part.model_validate(selected_part)
+
+    # If part_type is a Register, we need to load the register details
+    if selected_part and selected_part.part_type.name == "Register":
+        register_details = db.scalars(
+            select(meterRegisters).where(
+                meterRegisters.part_id == selected_part.id
+            )
+        ).first()
+
+        register_details = part_schemas.Register.register_details.model_validate(register_details)
+
+        # Update the returned_part to include register details
+        returned_part = part_schemas.Register(
+            **returned_part.model_dump(exclude_unset=True),
+            register_settings=register_details
+            )
+
+    return returned_part
 
 
 @part_router.patch(

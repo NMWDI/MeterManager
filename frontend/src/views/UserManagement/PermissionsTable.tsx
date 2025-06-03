@@ -1,21 +1,15 @@
 import { useEffect, useState } from "react";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
-import {
-  Button,
-  Card,
-  CardHeader,
-  CardContent,
-  Grid,
-  TextField,
-} from "@mui/material";
+import { Button, Card, CardContent, Grid, TextField } from "@mui/material";
 import { useGetSecurityScopes } from "../../service/ApiServiceNew";
 import AddIcon from "@mui/icons-material/Add";
 import SearchIcon from "@mui/icons-material/Search";
 import FormatListBulletedOutlinedIcon from "@mui/icons-material/FormatListBulletedOutlined";
 import { SecurityScope } from "../../interfaces";
 import GridFooterWithButton from "../../components/GridFooterWithButton";
+import { CustomCardHeader } from "../../components/CustomCardHeader";
 
-export default function PermissionsTable() {
+export const PermissionsTable = () => {
   const securityScopesList = useGetSecurityScopes();
   const [permissionSearchQuery, setPermissionSearchQuery] =
     useState<string>("");
@@ -40,21 +34,16 @@ export default function PermissionsTable() {
 
   return (
     <Card sx={{ height: "100%" }}>
-      <CardHeader
-        title={
-          <div className="custom-card-header">
-            <span>All Permissions</span>
-            <FormatListBulletedOutlinedIcon />
-          </div>
-        }
-        sx={{ mb: 0, pb: 0 }}
+      <CustomCardHeader
+        title="All Permissions"
+        icon={FormatListBulletedOutlinedIcon}
       />
       <CardContent sx={{ height: "100%" }}>
-        <Grid container xs={12}>
+        <Grid container>
           <TextField
             label={
               <div style={{ display: "inline-flex", alignItems: "center" }}>
-                <SearchIcon sx={{ fontSize: "1.2rem" }} />{" "}
+                <SearchIcon sx={{ fontSize: "1.2rem" }} />
                 <span style={{ marginTop: 1 }}>&nbsp;Search Permissions</span>
               </div>
             }
@@ -68,7 +57,7 @@ export default function PermissionsTable() {
           />
         </Grid>
         <DataGrid
-          sx={{ height: "400px", border: "none" }}
+          sx={{ height: "500px", border: "none" }}
           rows={filteredRows ?? []}
           loading={securityScopesList.isLoading}
           columns={cols}
@@ -77,7 +66,7 @@ export default function PermissionsTable() {
           slotProps={{
             footer: {
               button: (
-                <Button disabled variant="contained" size="small">
+                <Button disabled variant="contained" sx={{ mt: 1 }}>
                   <AddIcon style={{ fontSize: "1rem" }} />
                   Permissions must be configured by a developer
                 </Button>
@@ -89,4 +78,4 @@ export default function PermissionsTable() {
       </CardContent>
     </Card>
   );
-}
+};

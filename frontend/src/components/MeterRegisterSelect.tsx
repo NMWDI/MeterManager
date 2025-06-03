@@ -42,7 +42,6 @@ export default function MeterRegisterSelect({
   //Filter the register list based on the meter type
   useEffect(() => {
     if (meterType) {
-      console.log(meterType);
       setFilteredRegisterList(
         meterRegisterList.data?.filter(
           (register: MeterRegister) =>
@@ -57,8 +56,6 @@ export default function MeterRegisterSelect({
 
   //Check if the selected register is in the filtered list, if not, set it to null
   useEffect(() => {
-    console.log(selectedRegister);
-    console.log(filteredRegisterList);
     if (
       selectedRegister &&
       !filteredRegisterList?.some(
@@ -100,7 +97,7 @@ export default function MeterRegisterSelect({
           </MenuItem>
         )}
       </Select>
-      {childProps.error && (
+      {childProps.error && childProps.helperText && (
         <FormHelperText>{childProps.helperText}</FormHelperText>
       )}
     </FormControl>

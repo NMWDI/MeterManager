@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
 import { Box, Grid } from "@mui/material";
-
-import MeterHistoryTable from "./MeterHistoryTable";
-import SelectedActivityDetails from "./SelectedActivityDetails";
-import SelectedObservationDetails from "./SelectedObservationDetails";
-import SelectedBlankCard from "./SelectedBlankCard";
+import { MeterHistoryTable } from "./MeterHistoryTable";
+import { SelectedActivityDetails } from "./SelectedActivityDetails";
+import { SelectedObservationDetails } from "./SelectedObservationDetails";
+import { SelectedBlankCard } from "./SelectedBlankCard";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { useGetMeterHistory } from "../../../service/ApiServiceNew";
 import {
@@ -19,11 +18,11 @@ import timezone from "dayjs/plugin/timezone";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-export default function MeterHistory({
+export const MeterHistory = ({
   selectedMeterID,
 }: {
-  selectedMeterID: number | undefined;
-}) {
+  selectedMeterID?: number;
+}) => {
   const location = useLocation();
   const [selectedHistoryItem, setSelectedHistoryItem] = useState<any>();
   const meterHistory = useGetMeterHistory({ meter_id: selectedMeterID });
@@ -40,7 +39,6 @@ export default function MeterHistory({
           item.history_item.id == activity_id &&
           item.history_type == MeterHistoryType.Activity,
       );
-      //console.log('history item: ', load_history_item)
       if (load_history_item) {
         setSelectedHistoryItem(load_history_item);
 
@@ -53,11 +51,10 @@ export default function MeterHistory({
           // Remove the hash from the URL so that the user can switch meters without scrolling
           location.hash = "";
         } else {
-          console.log("element not found");
+          console.error("element not found");
         }
       }
       // Clear the activity_id from the URL so it doesn't interfere later
-      console.log("clearing query string");
       setSearchParams();
     }
   }, [meterHistory.data]); // Run the effect only when meter history changes otherwise there is a race condition
@@ -124,11 +121,10 @@ export default function MeterHistory({
     return observation_details;
   }
 
-  //Function to determine what type of details card to output
-  function getDetailsCard(historyItem: MeterHistoryDTO | undefined) {
-    if (historyItem == undefined) {
-      return <SelectedBlankCard />;
-    } else if (historyItem.history_type == MeterHistoryType.Activity) {
+  const getDetailsCard = (historyItem?: MeterHistoryDTO): JSX.Element => {
+    if (!historyItem) return <SelectedBlankCard />;
+
+    if (historyItem.history_type === MeterHistoryType.Activity) {
       return (
         <SelectedActivityDetails
           onDeletion={handleDeleteItem}
@@ -136,16 +132,16 @@ export default function MeterHistory({
           afterSave={handleSaveItem}
         />
       );
-    } else {
-      return (
-        <SelectedObservationDetails
-          onDeletion={handleDeleteItem}
-          selectedObservation={convertHistoryObservation(historyItem)}
-          afterSave={handleSaveItem}
-        />
-      );
     }
-  }
+
+    return (
+      <SelectedObservationDetails
+        onDeletion={handleDeleteItem}
+        selectedObservation={convertHistoryObservation(historyItem)}
+        afterSave={handleSaveItem}
+      />
+    );
+  };
 
   return (
     <Box id="meter_history" sx={{ width: "100%" }}>
@@ -162,4 +158,4 @@ export default function MeterHistory({
       </Grid>
     </Box>
   );
-}
+};

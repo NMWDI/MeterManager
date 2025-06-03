@@ -1,9 +1,7 @@
 import { useState } from "react";
-
-import MeterSelectionTable from "./MeterSelectionTable";
+import { MeterSelectionTable } from "./MeterSelectionTable";
 import MeterSelectionMap from "./MeterSelectionMap";
 import TabPanel from "../../../components/TabPanel";
-
 import {
   Tabs,
   Tab,
@@ -11,20 +9,20 @@ import {
   Grid,
   Card,
   CardContent,
-  CardHeader,
   ToggleButtonGroup,
   ToggleButton,
 } from "@mui/material";
 import FormatListBulletedOutlinedIcon from "@mui/icons-material/FormatListBulletedOutlined";
 import { MeterStatusNames } from "../../../enums";
+import { CustomCardHeader } from "../../../components/CustomCardHeader";
 
-export default function MeterSelection({
+export const MeterSelection = ({
   onMeterSelection,
   setMeterAddMode,
 }: {
   onMeterSelection: Function;
   setMeterAddMode: Function;
-}) {
+}) => {
   const [currentTabIndex, setCurrentTabIndex] = useState(0);
   const [meterSearchQuery, setMeterSearchQuery] = useState<string>("");
   const [meterFilterButtons, setMeterFilterButtons] = useState<string[]>([
@@ -70,14 +68,9 @@ export default function MeterSelection({
 
   return (
     <Card sx={{ height: "100%" }}>
-      <CardHeader
-        title={
-          <div className="custom-card-header">
-            <span>All Meters</span>
-            <FormatListBulletedOutlinedIcon />
-          </div>
-        }
-        sx={{ mb: 0, pb: 0 }}
+      <CustomCardHeader
+        title="All Meters"
+        icon={FormatListBulletedOutlinedIcon}
       />
       <CardContent sx={{ height: "100%" }}>
         <Grid container justifyContent="space-between">
@@ -145,4 +138,4 @@ export default function MeterSelection({
       </CardContent>
     </Card>
   );
-}
+};

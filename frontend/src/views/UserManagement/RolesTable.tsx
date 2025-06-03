@@ -3,7 +3,6 @@ import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import {
   Button,
   Card,
-  CardHeader,
   CardContent,
   Chip,
   Grid,
@@ -15,14 +14,15 @@ import FormatListBulletedOutlinedIcon from "@mui/icons-material/FormatListBullet
 import SearchIcon from "@mui/icons-material/Search";
 import { UserRole } from "../../interfaces";
 import GridFooterWithButton from "../../components/GridFooterWithButton";
+import { CustomCardHeader } from "../../components/CustomCardHeader";
 
-export default function RolesTable({
+export const RolesTable = ({
   setSelectedRole,
   setRoleAddMode,
 }: {
   setSelectedRole: Function;
   setRoleAddMode: Function;
-}) {
+}) => {
   const rolesList = useGetRoles();
   const [roleSearchQuery, setRoleSearchQuery] = useState<string>("");
   const [filteredRows, setFilteredRows] = useState<UserRole[]>();
@@ -66,17 +66,12 @@ export default function RolesTable({
 
   return (
     <Card sx={{ height: "100%" }}>
-      <CardHeader
-        title={
-          <div className="custom-card-header">
-            <span>All Roles</span>
-            <FormatListBulletedOutlinedIcon />
-          </div>
-        }
-        sx={{ mb: 0, pb: 0 }}
+      <CustomCardHeader
+        title="All Roles"
+        icon={FormatListBulletedOutlinedIcon}
       />
       <CardContent sx={{ height: "100%" }}>
-        <Grid container xs={12}>
+        <Grid container>
           <TextField
             label={
               <div style={{ display: "inline-flex", alignItems: "center" }}>
@@ -92,7 +87,7 @@ export default function RolesTable({
           />
         </Grid>
         <DataGrid
-          sx={{ height: "350px", border: "none" }}
+          sx={{ height: "500px", border: "none" }}
           rows={filteredRows ?? []}
           loading={rolesList.isLoading}
           columns={cols}
@@ -110,7 +105,7 @@ export default function RolesTable({
               button: (
                 <Button
                   variant="contained"
-                  size="small"
+                  sx={{ mt: 1 }}
                   onClick={() => setRoleAddMode(true)}
                 >
                   <AddIcon style={{ fontSize: "1rem" }} />
@@ -124,4 +119,4 @@ export default function RolesTable({
       </CardContent>
     </Card>
   );
-}
+};

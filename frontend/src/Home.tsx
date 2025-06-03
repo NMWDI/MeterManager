@@ -1,8 +1,10 @@
-import { Box, Card, CardContent, CardHeader, Typography } from "@mui/material";
+import { Box, Card, CardContent, Typography } from "@mui/material";
 import pvacd_logo from "./img/pvacd_logo.png";
 import meter_field from "./img/meter_field.jpg";
 import meter_storage from "./img/meter_storage.jpg";
 import HomeIcon from "@mui/icons-material/Home";
+import { BackgroundBox } from "./components/BackgroundBox";
+import { CustomCardHeader } from "./components/CustomCardHeader";
 
 export const Home = () => {
   const versionHistory = [
@@ -21,19 +23,9 @@ export const Home = () => {
   ];
 
   return (
-    <Box
-      sx={{ height: "fit-content", width: "calc(100% - 16px)", m: 2, mt: 1 }}
-    >
-      <Card sx={{ height: "fit-content", width: "calc(100% - 16px)" }}>
-        <CardHeader
-          title={
-            <div className="custom-card-header">
-              <span>Meter Manager Home</span>
-              <HomeIcon />
-            </div>
-          }
-          sx={{ mb: 0, pb: 0 }}
-        />
+    <BackgroundBox>
+      <Card sx={{ height: "fit-content" }}>
+        <CustomCardHeader title="Meter Manager Home" icon={HomeIcon} />
         <CardContent>
           <Box>
             <img src={pvacd_logo} />
@@ -59,6 +51,6 @@ export const Home = () => {
           </Box>
         </CardContent>
       </Card>
-    </Box>
+    </BackgroundBox>
   );
 };

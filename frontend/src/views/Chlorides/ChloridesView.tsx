@@ -8,7 +8,6 @@ import {
   Card,
   CardContent,
   Typography,
-  CardHeader,
 } from "@mui/material";
 import { useMutation, useQuery } from "react-query";
 import { useAuthUser } from "react-auth-kit";
@@ -27,8 +26,10 @@ import {
 import dayjs, { Dayjs } from "dayjs";
 import { useFetchWithAuth } from "../../hooks";
 import { Science } from "@mui/icons-material";
+import { BackgroundBox } from "../../components/BackgroundBox";
+import { CustomCardHeader } from "../../components/CustomCardHeader";
 
-export default function ChloridesView() {
+export const ChloridesView = () => {
   const fetchWithAuth = useFetchWithAuth();
   const selectedRegionId = useId();
   const [regionId, setregionId] = useState<number>();
@@ -178,19 +179,9 @@ export default function ChloridesView() {
   };
 
   return (
-    <Box
-      sx={{ height: "fit-content", width: "calc(100% - 16px)", m: 2, mt: 1 }}
-    >
-      <Card sx={{ height: "fit-content", width: "calc(100% - 16px)" }}>
-        <CardHeader
-          title={
-            <div className="custom-card-header">
-              <span>Chlorides</span>
-              <Science />
-            </div>
-          }
-          sx={{ mb: 0, pb: 0 }}
-        />
+    <BackgroundBox>
+      <Card sx={{ height: "fit-content" }}>
+        <CustomCardHeader title="Chlorides" icon={Science} />
         <CardContent>
           {error && (
             <Typography variant="h4">
@@ -277,6 +268,6 @@ export default function ChloridesView() {
           />
         </CardContent>
       </Card>
-    </Box>
+    </BackgroundBox>
   );
-}
+};

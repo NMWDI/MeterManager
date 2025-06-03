@@ -4,8 +4,6 @@ import { Grid } from "@mui/material";
 import { useGetWorkOrders } from "./service/ApiServiceNew";
 import { WorkOrderStatus } from "./enums";
 import { WorkOrder } from "./interfaces";
-
-import "./sidenav.css";
 import {
   Assessment,
   Build,
