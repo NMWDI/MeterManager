@@ -83,7 +83,7 @@ export const PartsUsedReportView = () => {
 
   const authHeader = useAuthHeader();
   const partsQuery = useQuery<Part[]>({
-    queryKey: ["Inventory", "report", "parts"],
+    queryKey: ["Inventory", "report", "partslist"],
     queryFn: async () => {
       const response = await fetch(`${API_URL}/parts`, {
         headers: { Authorization: authHeader() },
@@ -97,26 +97,44 @@ export const PartsUsedReportView = () => {
     cacheTime: 1000 * 60 * 60 * 24, // cache in memory for 24 hours
   });
 
-  const selectedParts = (partsQuery?.data ?? []).filter((part) =>
-    watch("parts")?.includes(part.id),
-  );
+  const from = watch("from");
+  const to = watch("to");
+  const selectedPartIds = watch("parts") ?? [];
+
+  const partsUsedQuery = useQuery<any[]>({
+    queryKey: ["Inventory", "report", "partsused", from, to, selectedPartIds],
+    queryFn: async () => {
+      const searchParams = new URLSearchParams({
+        from_month: from?.format("YYYY-MM"),
+        to_month: to?.format("YYYY-MM"),
+      });
+
+      selectedPartIds.forEach((id: number) => {
+        searchParams.append("parts", id.toString());
+      });
+
+      const response = await fetch(
+        `${API_URL}/parts/used?${searchParams.toString()}`,
+        {
+          headers: { Authorization: authHeader() },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch parts used data");
+      }
+
+      return response.json();
+    },
+    enabled: Boolean(from && to && selectedPartIds?.length > 0),
+  });
 
   let runningTotal = 0;
 
-  const rows = selectedParts.map((part) => {
-    const unitPrice = part.price ?? 0;
-    const quantity = part.count ?? 0;
-    const total = quantity * unitPrice;
-
-    runningTotal += total;
-
+  const rows = partsUsedQuery?.data?.map((part) => {
+    runningTotal += part.total;
     return {
-      id: part.id,
-      part_number: part.part_number,
-      description: part.description,
-      price: unitPrice,
-      quantity,
-      total,
+      ...part,
       running_total: runningTotal,
     };
   });
