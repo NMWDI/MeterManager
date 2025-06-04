@@ -13,7 +13,7 @@ import {
 import { Link } from "react-router-dom";
 import ControlledDatepicker from "../../../components/RHControlled/ControlledDatepicker";
 import { Controller, useForm } from "react-hook-form";
-import { useQuery } from "react-query";
+import { useMutation, useQuery } from "react-query";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import dayjs, { Dayjs } from "dayjs";
@@ -207,6 +207,54 @@ export const PartsUsedReportView = () => {
     },
   ];
 
+  const downloadPDFMutation = useMutation({
+    mutationFn: async ({
+      from,
+      to,
+      parts,
+    }: {
+      from: Dayjs;
+      to: Dayjs;
+      parts: number[];
+    }) => {
+      const params = new URLSearchParams({
+        from_month: from.format("YYYY-MM"),
+        to_month: to.format("YYYY-MM"),
+      });
+
+      parts.forEach((id) => params.append("parts", id.toString()));
+
+      const response = await fetch(
+        `${API_URL}/parts/used/pdf?${params.toString()}`,
+        {
+          headers: { Authorization: authHeader() },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("PDF generation failed");
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "parts_used_report.pdf";
+      a.click();
+      window.URL.revokeObjectURL(url);
+    },
+  });
+
+  const handleDownloadPDF = () => {
+    if (!from || !to || selectedPartIds.length === 0) return;
+
+    downloadPDFMutation.mutate({
+      from,
+      to,
+      parts: selectedPartIds,
+    });
+  };
+
   return (
     <BackgroundBox>
       <Card sx={{ height: "fit-content" }}>
@@ -229,7 +277,13 @@ export const PartsUsedReportView = () => {
             </Grid>
             <Grid item>
               <Tooltip title="Export report as PDF" placement="left">
-                <IconButton aria-label="export report as pdf">
+                <IconButton
+                  aria-label="export report as pdf"
+                  onClick={handleDownloadPDF}
+                  disabled={
+                    !selectedPartIds.length || downloadPDFMutation.isLoading
+                  }
+                >
                   <PictureAsPdf />
                 </IconButton>
               </Tooltip>
