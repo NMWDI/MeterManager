@@ -7,14 +7,19 @@ import {
 } from "@mui/material";
 import { Controller } from "react-hook-form";
 
-export function ControlledSelect({ control, name, ...childProps }: any) {
+export function ControlledSelect({
+  control,
+  name,
+  size = "small",
+  ...childProps
+}: any) {
   return (
     <Controller
       name={name}
       control={control}
       render={({ field }) => (
         <FormControl
-          size="small"
+          size={size}
           fullWidth
           error={childProps.error != undefined}
           sx={childProps.sx}
