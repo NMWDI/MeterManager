@@ -4,6 +4,7 @@
 [![Format code](https://github.com/NMWDI/WaterManagerDB/actions/workflows/format_code.yml/badge.svg)](https://github.com/NMWDI/WaterManagerDB/actions/workflows/format_code.yml)
 
 ## Versions
+- V0.2.0 - Added weasyprint for PDF generation, this requires a new Docker image to be built.
 - V0.1.52 - Deploy chlorides for admin testing
 - V0.1.51.1 - Increased frontend signout to 300 minutes
 - V0.1.51 - Improved monitoring well page
