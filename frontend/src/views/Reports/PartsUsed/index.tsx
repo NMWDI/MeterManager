@@ -1,3 +1,4 @@
+import { useEffect, useMemo } from "react";
 import { ArrowBack, Build, PictureAsPdf } from "@mui/icons-material";
 import {
   Autocomplete,
@@ -12,7 +13,7 @@ import {
 import { Link } from "react-router-dom";
 import ControlledDatepicker from "../../../components/RHControlled/ControlledDatepicker";
 import { Controller, useForm } from "react-hook-form";
-import { useQuery } from "react-query";
+import { useMutation, useQuery } from "react-query";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import dayjs, { Dayjs } from "dayjs";
@@ -21,6 +22,7 @@ import { useAuthHeader } from "react-auth-kit";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import { BackgroundBox } from "../../../components/BackgroundBox";
 import { CustomCardHeader } from "../../../components/CustomCardHeader";
+import { ControlledSelect } from "../../../components/RHControlled/ControlledSelect";
 
 export interface MeterType {
   id: number;
@@ -63,6 +65,20 @@ const schema = yup.object().shape({
       const { from } = this.parent;
       return !from || !value || dayjs(value).isAfter(dayjs(from));
     }),
+  part_type: yup
+    .object()
+    .shape({
+      id: yup.number().nullable(),
+      type: yup
+        .object()
+        .shape({
+          id: yup.number().nullable(),
+          name: yup.string().nullable(),
+          description: yup.string().nullable(),
+        })
+        .nullable(),
+    })
+    .nullable(),
   parts: yup
     .array()
     .of(yup.number().required())
@@ -72,6 +88,7 @@ const schema = yup.object().shape({
 const defaultSchema = {
   from: dayjs(),
   to: dayjs(),
+  part_type: null,
   parts: [],
 };
 
@@ -100,6 +117,25 @@ export const PartsUsedReportView = () => {
   const from = watch("from");
   const to = watch("to");
   const selectedPartIds = watch("parts") ?? [];
+  const partType = watch("part_type");
+
+  const filteredParts = useMemo(() => {
+    if (!partsQuery.data) return [];
+    return partType
+      ? partsQuery.data.filter((p) => p.part_type_id === partType.id)
+      : partsQuery.data;
+  }, [partsQuery.data, partType]);
+
+  useEffect(() => {
+    const currentParts = watch("parts") ?? [];
+    const validIds = filteredParts.map((p) => p.id);
+    const stillValid = currentParts.filter((id) => validIds.includes(id));
+
+    if (currentParts.length !== stillValid.length) {
+      // Drop invalid part IDs
+      reset({ ...watch(), parts: stillValid });
+    }
+  }, [partType, filteredParts]);
 
   const partsUsedQuery = useQuery<any[]>({
     queryKey: ["Inventory", "report", "partsused", from, to, selectedPartIds],
@@ -171,6 +207,54 @@ export const PartsUsedReportView = () => {
     },
   ];
 
+  const downloadPDFMutation = useMutation({
+    mutationFn: async ({
+      from,
+      to,
+      parts,
+    }: {
+      from: Dayjs;
+      to: Dayjs;
+      parts: number[];
+    }) => {
+      const params = new URLSearchParams({
+        from_month: from.format("YYYY-MM"),
+        to_month: to.format("YYYY-MM"),
+      });
+
+      parts.forEach((id) => params.append("parts", id.toString()));
+
+      const response = await fetch(
+        `${API_URL}/parts/used/pdf?${params.toString()}`,
+        {
+          headers: { Authorization: authHeader() },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("PDF generation failed");
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "parts_used_report.pdf";
+      a.click();
+      window.URL.revokeObjectURL(url);
+    },
+  });
+
+  const handleDownloadPDF = () => {
+    if (!from || !to || selectedPartIds.length === 0) return;
+
+    downloadPDFMutation.mutate({
+      from,
+      to,
+      parts: selectedPartIds,
+    });
+  };
+
   return (
     <BackgroundBox>
       <Card sx={{ height: "fit-content" }}>
@@ -193,7 +277,13 @@ export const PartsUsedReportView = () => {
             </Grid>
             <Grid item>
               <Tooltip title="Export report as PDF" placement="left">
-                <IconButton aria-label="export report as pdf">
+                <IconButton
+                  aria-label="export report as pdf"
+                  onClick={handleDownloadPDF}
+                  disabled={
+                    !selectedPartIds.length || downloadPDFMutation.isLoading
+                  }
+                >
                   <PictureAsPdf />
                 </IconButton>
               </Tooltip>
@@ -231,6 +321,27 @@ export const PartsUsedReportView = () => {
               />
             </Grid>
             <Grid item>
+              <ControlledSelect
+                label="Part Types"
+                control={control}
+                sx={{ minWidth: "15rem" }}
+                size="medium"
+                name="part_type"
+                disabled={partsQuery.isFetching}
+                options={[
+                  ...new Map(
+                    partsQuery?.data
+                      ?.map((option: Part) => ({
+                        id: option.part_type_id,
+                        type: option.part_type,
+                      }))
+                      .map((item) => [item.id, item]), // key by id
+                  ).values(),
+                ]}
+                getOptionLabel={(option: any) => option.type.name}
+              />
+            </Grid>
+            <Grid item>
               <Controller
                 name="parts"
                 control={control}
@@ -244,11 +355,7 @@ export const PartsUsedReportView = () => {
                     <Autocomplete
                       multiple
                       disableClearable
-                      options={
-                        partsQuery?.data?.filter(
-                          (opt: Part) => opt && opt.id != null,
-                        ) ?? []
-                      }
+                      options={filteredParts}
                       getOptionLabel={(option: Part) =>
                         `${option.part_number} ${option.description}`
                       }
@@ -296,7 +403,7 @@ export const PartsUsedReportView = () => {
           </Grid>
           <Grid container padding={2}>
             <Grid item>
-              <Button onClick={() => reset()}>Reset</Button>
+              <Button onClick={() => reset(defaultSchema)}>Reset</Button>
             </Grid>
           </Grid>
         </CardContent>

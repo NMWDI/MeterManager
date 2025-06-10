@@ -8,6 +8,7 @@ import { CustomCardHeader } from "./components/CustomCardHeader";
 
 export const Home = () => {
   const versionHistory = [
+    "V0.2.0 - Parts-used report functional with PDF download",
     "V0.1.52 - Deploy chlorides for admin testing",
     "V0.1.51 - Improved monitoring well page",
     "V0.1.50 - Fixed wells map bug and update register if part used",
