@@ -56,10 +56,7 @@ interface PartDetailsCard {
   partAddMode: boolean;
 }
 
-export const PartDetailsCard = ({
-  selectedPartID,
-  partAddMode,
-}: PartDetailsCard) => {
+export const PartDetailsCard = ({selectedPartID,partAddMode,}: PartDetailsCard) => {
   const {
     handleSubmit,
     control,
@@ -87,7 +84,7 @@ export const PartDetailsCard = ({
   const updatePart = useUpdatePart(onSuccessfulUpdate);
   const createPart = useCreatePart(onSuccessfulCreate);
 
-  const onSaveChanges: SubmitHandler<any> = (data) => updatePart.mutate(data);
+  const onSaveChanges: SubmitHandler<any> = (data) => console.log(data) //updatePart.mutate(data);
   const onAddPart: SubmitHandler<any> = (data) => createPart.mutate(data);
   const onErr = (data: any) => console.log("ERR: ", data);
 
@@ -101,6 +98,7 @@ export const PartDetailsCard = ({
     if (partDetails.data != undefined) {
       reset();
       Object.entries(partDetails.data).forEach(([field, value]) => {
+        //console.log(`Setting field ${field} to value: `, value);
         setValue(field as any, value);
       });
     }
@@ -195,49 +193,55 @@ export const PartDetailsCard = ({
             </Grid>
             <Grid item xs={12} xl={4}>
                 <ControlledTextbox
-                name="ratio"
+                name="register_settings.ratio"
                 control={control}
-                // error={errors?.ratio?.message != undefined}
-                // helperText={errors?.ratio?.message}
+                label="Ratio"
+                value={watch("register_settings.ratio") ?? ''}
+                // error={errors?.register_settings?.ratio?.message != undefined}
+                // helperText={errors?.register_settings?.ratio?.message}
                 />
             </Grid>
             <Grid item xs={12} xl={4}>
                 <ControlledTextbox
-                name="dial_digits"
+                name="register_settings.number_of_digits"
                 control={control}
                 label="Dial Digits"
                 type="number"
+                value={watch("register_settings.number_of_digits") ?? ''}
                 // error={errors?.dial_digits?.message != undefined}
                 // helperText={errors?.dial_digits?.message}
                 />
             </Grid>
             <Grid item xs={12} xl={4}>
                 <ControlledTextbox
-                name="multiplier"
+                name="register_settings.multiplier"
                 control={control}
                 label="Multiplier"
                 type="number"
                 inputProps={{ step: "0.01" }}
+                value={watch("register_settings.multiplier") ?? ''}
                 // error={errors?.multiplier?.message != undefined}
                 // helperText={errors?.multiplier?.message}
                 />
             </Grid>
             <Grid item xs={12} xl={6}>
                 <ControlledUnitsSelect
-                    name="dial_units"
+                    name="register_settings.dial_units_id"
                     control={control}
                     label="Dial Units"
                     //error={errors?.dial_units?.message}
                     sx={{ mt: 2 }}
+                    value={watch("register_settings.dial_units_id") ?? ''}
                 />
             </Grid>
             <Grid item xs={12} xl={6}>
                 <ControlledUnitsSelect
-                    name="totalizer_units"
+                    name="register_settings.totalizer_units_id"
                     control={control}
                     label="Totalizer Units"
                     //error={errors?.register_units?.message}
                     sx={{ mt: 2 }}
+                    value={watch("register_settings.totalizer_units_id") ?? ''}
                 />
             </Grid>
           </Grid>

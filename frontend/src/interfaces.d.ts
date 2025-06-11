@@ -195,6 +195,17 @@ export interface Part {
     part_type?: PartTypeLU
     meter_types?: MeterTypeLU[]
 
+    register_settings?: {
+        id: number
+        brand: string
+        meter_size: number
+        ratio: string | null
+        number_of_digits: number | null
+        dial_units_id: number | null
+        totalizer_units_id: number | null
+        multiplier: number | null
+    }
+
 }
 
 export interface PartAssociation {

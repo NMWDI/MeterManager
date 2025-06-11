@@ -13,6 +13,7 @@ interface ControlledUnitsSelectProps {
   label: string;
   error?: string;
   sx?: any;
+  [key: string]: any; // Allow additional props
 }
 
 const ControlledUnitsSelect: React.FC<ControlledUnitsSelectProps> = ({
@@ -21,6 +22,7 @@ const ControlledUnitsSelect: React.FC<ControlledUnitsSelectProps> = ({
   label,
   error,
   sx,
+  ...childProps
 }) => {
   const [units, setUnits] = useState<Unit[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,6 +33,7 @@ const ControlledUnitsSelect: React.FC<ControlledUnitsSelectProps> = ({
       try {
         const data = await fetchWithAuth({ method: "GET", route: "/units" });
         setUnits(data);
+        console.log("Fetched units:", data);
       } catch (error) {
         console.error("Failed to fetch units:", error);
       } finally {
@@ -50,6 +53,8 @@ const ControlledUnitsSelect: React.FC<ControlledUnitsSelectProps> = ({
       label={label}
       error={error}
       sx={sx}
+      {...childProps}
+      value={loading ? "Loading..." : childProps.value}
       options={loading ? [{ id: "Loading...", name: "Loading..." }] : units}
       getOptionLabel={(option: Unit) => option.name}
     />
