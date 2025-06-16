@@ -93,6 +93,11 @@ export const PartDetailsCard = ({selectedPartID,partAddMode,}: PartDetailsCard) 
   );
   const meterTypeList = useGetMeterTypeList();
 
+  const val = watch("register_settings.dial_units_id")
+  useEffect(() => {
+        console.log(val)
+    }, [val])
+
   // Populate the form with the selected part's details
   useEffect(() => {
     if (partDetails.data != undefined) {
@@ -100,6 +105,7 @@ export const PartDetailsCard = ({selectedPartID,partAddMode,}: PartDetailsCard) 
       Object.entries(partDetails.data).forEach(([field, value]) => {
         //console.log(`Setting field ${field} to value: `, value);
         setValue(field as any, value);
+        console.log(partDetails.data);
       });
     }
   }, [partDetails.data]);
@@ -231,7 +237,12 @@ export const PartDetailsCard = ({selectedPartID,partAddMode,}: PartDetailsCard) 
                     label="Dial Units"
                     //error={errors?.dial_units?.message}
                     sx={{ mt: 2 }}
-                    value={watch("register_settings.dial_units_id") ?? ''}
+                    value={
+                        typeof watch("register_settings.dial_units_id") === 'number'
+                          ? watch("register_settings.dial_units_id")
+                          : watch("register_settings.dial_units_id")?.id ?? ''
+                      }
+                    //value={watch("register_settings.dial_units_id")?.id ?? ''}
                 />
             </Grid>
             <Grid item xs={12} xl={6}>
@@ -241,7 +252,12 @@ export const PartDetailsCard = ({selectedPartID,partAddMode,}: PartDetailsCard) 
                     label="Totalizer Units"
                     //error={errors?.register_units?.message}
                     sx={{ mt: 2 }}
-                    value={watch("register_settings.totalizer_units_id") ?? ''}
+                    value={
+                        typeof watch("register_settings.totalizer_units_id") === 'number'
+                          ? watch("register_settings.totalizer_units_id")
+                          : watch("register_settings.totalizer_units_id")?.id ?? ''
+                      }
+                    //value={watch("register_settings.totalizer_units_id")?.id ?? ''}
                 />
             </Grid>
           </Grid>
