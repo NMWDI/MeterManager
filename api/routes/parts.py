@@ -315,15 +315,15 @@ def get_part(part_id: int, db: Session = Depends(get_db)):
 
 @part_router.patch(
     "/part",
-    response_model=part_schemas.Part,
+    response_model=Union[part_schemas.Part, part_schemas.Register],
     dependencies=[Depends(ScopedUser.Admin)],
     tags=["Parts"],
 )
-def update_part(updated_part: part_schemas.Part, db: Session = Depends(get_db)):
+def update_part(updated_part: part_schemas.Part | part_schemas.Register, db: Session = Depends(get_db)):
     # Update the part (this won't include secondary attributes like associations)
     part_db = _get(db, Parts, updated_part.id)
     for k, v in updated_part.model_dump(exclude_unset=True).items():
-        if k in ["part_type", "meter_types"]:
+        if k in ["part_type", "meter_types", "register_settings"]:
             continue
         try:
             setattr(part_db, k, v)
@@ -355,7 +355,33 @@ def update_part(updated_part: part_schemas.Part, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(part)
 
-    return part
+    # Create the returned_part schema
+    returned_part = part_schemas.Part.model_validate(part)
+
+    # Update register settings if applicable
+    if isinstance(updated_part, part_schemas.Register):
+        register_update = updated_part.register_settings.model_dump(exclude_unset=True)
+
+        # Check if the register already exists
+        existing_register = db.scalars(
+            select(meterRegisters).where(meterRegisters.id == register_update['id'])
+        ).first()
+
+        for k, v in register_update.items():
+            setattr(existing_register, k, v)
+        
+        db.add(existing_register)
+        db.commit()
+
+        # If the part is a Register, we need to return the Register schema
+        # Update the returned_part to include register details
+        returned_part = part_schemas.Register(
+            **returned_part.model_dump(exclude_unset=True),
+            register_settings=updated_part.register_settings
+        )
+
+        
+    return returned_part
 
 
 @part_router.post(

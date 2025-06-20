@@ -1,13 +1,9 @@
 from datetime import datetime
-from api.schemas.base import ORMBase
+from api.schemas.base import ORMBase, Unit
 from api.schemas.well_schemas import Well, Location
 from api.schemas.security_schemas import User
 from pydantic import BaseModel
 
-class Unit(ORMBase):
-    name: str | None = None
-    name_short: str | None = None
-    description: str | None = None
 
 class MeterTypeLU(ORMBase):
     brand: str | None = None

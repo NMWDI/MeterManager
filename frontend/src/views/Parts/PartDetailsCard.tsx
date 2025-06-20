@@ -84,7 +84,7 @@ export const PartDetailsCard = ({selectedPartID,partAddMode,}: PartDetailsCard) 
   const updatePart = useUpdatePart(onSuccessfulUpdate);
   const createPart = useCreatePart(onSuccessfulCreate);
 
-  const onSaveChanges: SubmitHandler<any> = (data) => console.log(data) //updatePart.mutate(data);
+  const onSaveChanges: SubmitHandler<any> = (data) => updatePart.mutate(data);
   const onAddPart: SubmitHandler<any> = (data) => createPart.mutate(data);
   const onErr = (data: any) => console.log("ERR: ", data);
 
@@ -93,11 +93,6 @@ export const PartDetailsCard = ({selectedPartID,partAddMode,}: PartDetailsCard) 
   );
   const meterTypeList = useGetMeterTypeList();
 
-  const val = watch("register_settings.dial_units_id")
-  useEffect(() => {
-        console.log(val)
-    }, [val])
-
   // Populate the form with the selected part's details
   useEffect(() => {
     if (partDetails.data != undefined) {
@@ -105,7 +100,6 @@ export const PartDetailsCard = ({selectedPartID,partAddMode,}: PartDetailsCard) 
       Object.entries(partDetails.data).forEach(([field, value]) => {
         //console.log(`Setting field ${field} to value: `, value);
         setValue(field as any, value);
-        console.log(partDetails.data);
       });
     }
   }, [partDetails.data]);
@@ -232,32 +226,22 @@ export const PartDetailsCard = ({selectedPartID,partAddMode,}: PartDetailsCard) 
             </Grid>
             <Grid item xs={12} xl={6}>
                 <ControlledUnitsSelect
-                    name="register_settings.dial_units_id"
+                    name="register_settings.dial_units"
                     control={control}
                     label="Dial Units"
                     //error={errors?.dial_units?.message}
                     sx={{ mt: 2 }}
-                    value={
-                        typeof watch("register_settings.dial_units_id") === 'number'
-                          ? watch("register_settings.dial_units_id")
-                          : watch("register_settings.dial_units_id")?.id ?? ''
-                      }
-                    //value={watch("register_settings.dial_units_id")?.id ?? ''}
+                    value={watch("register_settings.dial_units")?.id ?? ''}
                 />
             </Grid>
             <Grid item xs={12} xl={6}>
                 <ControlledUnitsSelect
-                    name="register_settings.totalizer_units_id"
+                    name="register_settings.totalizer_units"
                     control={control}
                     label="Totalizer Units"
                     //error={errors?.register_units?.message}
                     sx={{ mt: 2 }}
-                    value={
-                        typeof watch("register_settings.totalizer_units_id") === 'number'
-                          ? watch("register_settings.totalizer_units_id")
-                          : watch("register_settings.totalizer_units_id")?.id ?? ''
-                      }
-                    //value={watch("register_settings.totalizer_units_id")?.id ?? ''}
+                    value={watch("register_settings.totalizer_units")?.id ?? ''}
                 />
             </Grid>
           </Grid>

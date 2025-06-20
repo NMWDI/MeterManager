@@ -1,4 +1,4 @@
-from api.schemas.base import ORMBase
+from api.schemas.base import ORMBase, Unit
 from api.schemas.meter_schemas import MeterTypeLU
 
 
@@ -31,8 +31,8 @@ class Register(Part):
         brand: str
         meter_size: float
         ratio: str
-        dial_units_id: int | None = None
-        totalizer_units_id: int | None = None
+        dial_units: Unit | None = None
+        totalizer_units: Unit | None = None
         number_of_digits: int | None = None
         multiplier: float | None = None
 

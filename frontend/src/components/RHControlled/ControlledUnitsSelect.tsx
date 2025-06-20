@@ -33,7 +33,6 @@ const ControlledUnitsSelect: React.FC<ControlledUnitsSelectProps> = ({
       try {
         const data = await fetchWithAuth({ method: "GET", route: "/units" });
         setUnits(data);
-        console.log("Fetched units:", data);
       } catch (error) {
         console.error("Failed to fetch units:", error);
       } finally {
