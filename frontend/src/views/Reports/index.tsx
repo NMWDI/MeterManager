@@ -32,9 +32,8 @@ export const ReportsView = () => {
               Icon={MonitorHeart}
             />
             <NavLink
-              disabled
-              route="/reports/repairs"
-              label="Repairs"
+              route="/reports/maintenance"
+              label="Maintenance"
               Icon={Plumbing}
             />
             <NavLink
