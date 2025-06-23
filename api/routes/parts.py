@@ -319,7 +319,8 @@ def get_part(part_id: int, db: Session = Depends(get_db)):
     dependencies=[Depends(ScopedUser.Admin)],
     tags=["Parts"],
 )
-def update_part(updated_part: part_schemas.Part | part_schemas.Register, db: Session = Depends(get_db)):
+def update_part(updated_part: part_schemas.Register | part_schemas.Part, db: Session = Depends(get_db)):
+    print('Updating part:', updated_part)
     # Update the part (this won't include secondary attributes like associations)
     part_db = _get(db, Parts, updated_part.id)
     for k, v in updated_part.model_dump(exclude_unset=True).items():
@@ -360,18 +361,29 @@ def update_part(updated_part: part_schemas.Part | part_schemas.Register, db: Ses
 
     # Update register settings if applicable
     if isinstance(updated_part, part_schemas.Register):
+        print('Updating register settings...')
+        print(updated_part.register_settings)
         register_update = updated_part.register_settings.model_dump(exclude_unset=True)
 
-        # Check if the register already exists
+        # Load the existing register from the database
         existing_register = db.scalars(
             select(meterRegisters).where(meterRegisters.id == register_update['id'])
         ).first()
 
+
+        # Update the existing register with the new values, except for dial_units and totalizer_units
+        # which are handled separately since they are joined relationships
         for k, v in register_update.items():
-            setattr(existing_register, k, v)
+            if k in ['dial_units', 'totalizer_units']:
+                setattr(existing_register, f"{k}_id", v['id'])
+            else:
+                setattr(existing_register, k, v)
         
         db.add(existing_register)
         db.commit()
+
+        # Refresh the existing register to get the latest units
+        db.refresh(existing_register)
 
         # If the part is a Register, we need to return the Register schema
         # Update the returned_part to include register details
@@ -379,7 +391,6 @@ def update_part(updated_part: part_schemas.Part | part_schemas.Register, db: Ses
             **returned_part.model_dump(exclude_unset=True),
             register_settings=updated_part.register_settings
         )
-
         
     return returned_part
 
