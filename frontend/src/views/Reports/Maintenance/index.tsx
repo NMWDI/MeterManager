@@ -1,14 +1,17 @@
 import { useMemo } from "react";
 import { ArrowBack, PictureAsPdf, Plumbing } from "@mui/icons-material";
 import {
+  Box,
   Button,
   Card,
   CardContent,
   Chip,
   Grid,
   IconButton,
+  Stack,
   TextField,
   Tooltip,
+  Typography,
 } from "@mui/material";
 import { Link } from "react-router-dom";
 import ControlledDatepicker from "../../../components/RHControlled/ControlledDatepicker";
@@ -23,11 +26,19 @@ import { BackgroundBox } from "../../../components/BackgroundBox";
 import ControlledTextbox from "../../../components/RHControlled/ControlledTextbox";
 import { useAuthHeader } from "react-auth-kit";
 import { API_URL } from "../../../config";
+import { PieChart } from "@mui/x-charts";
 
 interface User {
   full_name: string;
   id: number;
 }
+
+const ALL_TECHNICIANS_ID = -1;
+
+const allTechniciansOption: User = {
+  id: ALL_TECHNICIANS_ID,
+  full_name: "All Technicians",
+};
 
 const schema = yup.object().shape({
   from: yup.mixed<Dayjs>().nullable().required("From date is required"),
@@ -54,8 +65,13 @@ const schema = yup.object().shape({
 const defaultSchema = {
   from: dayjs(),
   to: dayjs(),
-  techicians: [],
+  techicians: [{ ...allTechniciansOption }],
   trss: "",
+};
+
+const size = {
+  width: 400,
+  height: 400,
 };
 
 export const MaintenanceReportView = () => {
@@ -81,12 +97,23 @@ export const MaintenanceReportView = () => {
     defaultValues: defaultSchema,
   });
 
-  const allTechniciansOption = { id: -1, full_name: "All Technicians" };
-
   const technicianOptions = useMemo(() => {
     const base = techiciansQuery.data ?? [];
+    console.log({ base });
     return [...base, allTechniciansOption];
   }, [techiciansQuery.data]);
+
+  const numberOfRepairsPieChartData = [
+    { value: 55, label: "Meter A" },
+    { value: 10, label: "Meter B" },
+    { value: 15, label: "Meter C" },
+  ];
+
+  const numberOfPMsPieChartData = [
+    { value: 5, label: "Meter A" },
+    { value: 15, label: "Meter B" },
+    { value: 20, label: "Meter C" },
+  ];
 
   return (
     <BackgroundBox>
@@ -163,17 +190,23 @@ export const MaintenanceReportView = () => {
                 isOptionEqualToValue={(option: User, value: User) =>
                   option?.id === value?.id
                 }
-                onChange={(_, selected) => {
-                  if (selected.some((tech) => tech.id === -1)) {
-                    // Replace selection with all (excluding the synthetic "All Technicians")
-                    setValue("techicians", techiciansQuery.data ?? []);
+                onChange={(_: React.SyntheticEvent, selected: User[]) => {
+                  const isSelectingAll = selected.some(
+                    (tech) => tech.id === ALL_TECHNICIANS_ID,
+                  );
+                  const allTechs = techiciansQuery.data ?? [];
+
+                  if (isSelectingAll) {
+                    // Set all real users as selected, excluding the synthetic "All Technicians"
+                    setValue("techicians", allTechs);
                   } else {
                     setValue("techicians", selected);
                   }
                 }}
-                renderInput={(params) => {
-                  if (techiciansQuery.isLoading)
+                renderInput={(params: Parameters<typeof TextField>[0]) => {
+                  if (techiciansQuery.isLoading && params.inputProps) {
                     params.inputProps.value = "Loading...";
+                  }
                   return (
                     <TextField
                       {...params}
@@ -184,32 +217,69 @@ export const MaintenanceReportView = () => {
                     />
                   );
                 }}
-                renderTags={(selected, getTagProps) => {
-                  const allSelected =
-                    selected.length === techiciansQuery.data?.length &&
-                    selected.every((sel) =>
-                      techiciansQuery.data?.some((t) => t.id === sel.id),
-                    );
-
-                  if (allSelected) {
-                    return (
-                      <Chip
-                        label="All Technicians"
-                        {...getTagProps({ index: 0 })}
-                      />
-                    );
-                  }
-
-                  return selected.map((option, index) => (
+                renderTags={(selected: User[], getTagProps: any) =>
+                  selected.map((option, index) => (
                     <Chip
                       key={option.id}
                       label={option.full_name}
                       {...getTagProps({ index })}
                     />
-                  ));
-                }}
+                  ))
+                }
               />
             </Grid>
+          </Grid>
+          <Grid container>
+            <Stack direction="row" width="100%" textAlign="center" spacing={2}>
+              <Box flexGrow={1}>
+                <Typography variant="h5">Number of Repairs</Typography>
+                <PieChart
+                  series={[
+                    {
+                      data: numberOfRepairsPieChartData,
+                      innerRadius: 66.6,
+                      paddingAngle: 1,
+                      cornerRadius: 7.5,
+                    },
+                  ]}
+                  slotProps={{
+                    legend: {
+                      direction: "horizontal",
+                      position: {
+                        vertical: "bottom",
+                        horizontal: "center",
+                      },
+                    },
+                  }}
+                  {...size}
+                />
+              </Box>
+              <Box flexGrow={1}>
+                <Typography variant="h5">
+                  Number of Preventative Maintenances
+                </Typography>
+                <PieChart
+                  series={[
+                    {
+                      data: numberOfPMsPieChartData,
+                      innerRadius: 66.6,
+                      paddingAngle: 1,
+                      cornerRadius: 7.5,
+                    },
+                  ]}
+                  slotProps={{
+                    legend: {
+                      direction: "horizontal",
+                      position: {
+                        vertical: "bottom",
+                        horizontal: "center",
+                      },
+                    },
+                  }}
+                  {...size}
+                />
+              </Box>
+            </Stack>
           </Grid>
           <Grid container></Grid>
           <Grid container>
