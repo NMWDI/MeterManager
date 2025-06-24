@@ -27,6 +27,7 @@ import ControlledTextbox from "../../../components/RHControlled/ControlledTextbo
 import { useAuthHeader } from "react-auth-kit";
 import { API_URL } from "../../../config";
 import { PieChart } from "@mui/x-charts";
+import { DataGrid, GridColDef } from "@mui/x-data-grid";
 
 interface User {
   full_name: string;
@@ -113,6 +114,28 @@ export const MaintenanceReportView = () => {
     { value: 5, label: "Meter A" },
     { value: 15, label: "Meter B" },
     { value: 20, label: "Meter C" },
+  ];
+
+  const columns: GridColDef[] = [
+    { field: "date_time", headerName: "Date / Time", flex: 1 },
+    { field: "technician", headerName: "Technician", flex: 1 },
+    {
+      field: "number_of_repais",
+      headerName: "Number of Repairs",
+      type: "number",
+      flex: 1,
+    },
+    {
+      field: "number_of_pms",
+      headerName: "Number of Preventative Maintenances",
+      type: "number",
+      flex: 1,
+    },
+    {
+      field: "meter",
+      headerName: "Meter",
+      flex: 1,
+    },
   ];
 
   return (
@@ -281,7 +304,20 @@ export const MaintenanceReportView = () => {
               </Box>
             </Stack>
           </Grid>
-          <Grid container></Grid>
+          <Grid container padding={2}>
+            <DataGrid
+              rows={[]}
+              columns={columns}
+              disableColumnMenu
+              hideFooterSelectedRowCount
+              pageSizeOptions={[5, 10, 25]}
+              initialState={{
+                pagination: {
+                  paginationModel: { pageSize: 5, page: 0 },
+                },
+              }}
+            />
+          </Grid>
           <Grid container>
             <Grid item>
               <Button onClick={() => reset()}>Reset</Button>
