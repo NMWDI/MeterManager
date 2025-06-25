@@ -9,16 +9,15 @@ from fastapi.responses import StreamingResponse
 from weasyprint import HTML
 from io import BytesIO
 from jinja2 import Template
+from collections import defaultdict
 
 from api.models.main_models import (
     Parts,
     PartsUsed,
-    PartAssociation,
-    PartTypeLU,
+    Users,
     Meters,
-    MeterTypeLU,
-    meterRegisters,
     MeterActivities,
+    ActivityTypeLU,
 )
 from api.session import get_db
 from api.enums import ScopedUser
@@ -61,14 +60,10 @@ def get_maintenance_summary(
     db: Session = Depends(get_db),
 ):
     try:
-        # Parse and normalize start of "from" month
         from_date = datetime.strptime(from_month, "%Y-%m").replace(day=1)
-
-        # Determine end of "to" month
         to_dt = datetime.strptime(to_month, "%Y-%m")
         year, month = to_dt.year, to_dt.month
         today = datetime.now()
-
         if year == today.year and month == today.month:
             to_date = today
         else:
@@ -85,51 +80,64 @@ def get_maintenance_summary(
             detail="Invalid date format. Use YYYY-MM."
         )
 
-    usage_subq = (
+    # Base query
+    base_query = (
         db.query(
-            PartsUsed.c.part_id.label("used_part_id"),
-            func.count(PartsUsed.c.part_id).label("quantity")
+            MeterActivities.timestamp_start.label("date_time"),
+            Users.full_name.label("technician"),
+            Meters.serial_number.label("meter"),
+            ActivityTypeLU.name.label("activity_type")
         )
+        .join(Users, Users.id == MeterActivities.submitting_user_id)
+        .join(Meters, Meters.id == MeterActivities.meter_id)
         .join(
-              MeterActivities,
-              MeterActivities.id == PartsUsed.c.meter_activity_id
-        )
+              ActivityTypeLU,
+              ActivityTypeLU.id == MeterActivities.activity_type_id
+          )
         .filter(
             MeterActivities.timestamp_start >= from_date,
             MeterActivities.timestamp_start <= to_date,
-            PartsUsed.c.part_id.in_(parts),
+            MeterActivities.submitting_user_id.in_(technicians)
         )
-        .group_by(PartsUsed.c.part_id)
-        .subquery()
+        .order_by(MeterActivities.timestamp_start)
+        .all()
     )
 
-    query = (
-        db.query(
-            Parts.id.label("id"),
-            Parts.part_number,
-            Parts.description,
-            Parts.price,
-            func.coalesce(usage_subq.c.quantity, 0).label("quantity")
-        )
-        .outerjoin(usage_subq, Parts.id == usage_subq.c.used_part_id)
-        .filter(Parts.id.in_(parts))
-        .order_by(Parts.part_number)
+    # Aggregations
+    repairs_by_meter = defaultdict(int)
+    pms_by_meter = defaultdict(int)
+    grouped_rows = defaultdict(
+        lambda: {"number_of_repairs": 0, "number_of_pms": 0}
     )
 
-    results = []
-    for row in query.all():
-        price = row.price or 0
-        total = price * row.quantity
-        results.append({
-            "id": row.id,
-            "part_number": row.part_number,
-            "description": row.description,
-            "price": price,
-            "quantity": row.quantity,
-            "total": total,
+    for row in base_query:
+        key = (row.date_time, row.technician, row.meter)
+        if row.activity_type == "Repair":
+            repairs_by_meter[row.meter] += 1
+            grouped_rows[key]["number_of_repairs"] += 1
+        elif row.activity_type == "Preventative Maintenance":
+            pms_by_meter[row.meter] += 1
+            grouped_rows[key]["number_of_pms"] += 1
+
+    # Serialize grouped data
+    repairs_result = [{"meter": meter, "count": count} for meter, count in repairs_by_meter.items()]
+    pms_result = [{"meter": meter, "count": count} for meter, count in pms_by_meter.items()]
+
+    table_rows = []
+    for (date_time, technician, meter), counts in grouped_rows.items():
+        table_rows.append({
+            "date_time": date_time,
+            "technician": technician,
+            "meter": meter,
+            "number_of_repairs": counts["number_of_repairs"],
+            "number_of_pms": counts["number_of_pms"],
         })
 
-    return results
+    return {
+        "repairs_by_meter": repairs_result,
+        "pms_by_meter": pms_result,
+        "table_rows": table_rows,
+    }
 
 
 @part_router.get(
