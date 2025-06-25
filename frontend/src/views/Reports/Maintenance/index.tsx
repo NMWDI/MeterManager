@@ -17,7 +17,7 @@ import { Link } from "react-router-dom";
 import ControlledDatepicker from "../../../components/RHControlled/ControlledDatepicker";
 import ControlledAutocomplete from "../../../components/RHControlled/ControlledAutocomplete";
 import { useForm } from "react-hook-form";
-import { useQuery } from "react-query";
+import { useMutation, useQuery } from "react-query";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import dayjs, { Dayjs } from "dayjs";
@@ -137,6 +137,7 @@ export const MaintenanceReportView = () => {
     },
     staleTime: 1000 * 60 * 60 * 24,
     cacheTime: 1000 * 60 * 60 * 24,
+    enabled: Boolean(from && to && technicians && technicians.length > 0),
   });
 
   const numberOfRepairsPieChartData = useMemo(() => {
@@ -188,6 +189,55 @@ export const MaintenanceReportView = () => {
     },
   ];
 
+  const downloadMaintenancePDFMutation = useMutation({
+    mutationFn: async ({
+      from,
+      to,
+      technicians,
+    }: {
+      from: Dayjs;
+      to: Dayjs;
+      technicians: number[];
+    }) => {
+      const params = new URLSearchParams({
+        from_month: from.format("YYYY-MM"),
+        to_month: to.format("YYYY-MM"),
+        trss: "", // optional — if unused you can remove it on both ends
+      });
+
+      technicians.forEach((id) => params.append("technicians", id.toString()));
+
+      const response = await fetch(
+        `${API_URL}/maintenance/pdf?${params.toString()}`,
+        {
+          headers: { Authorization: authHeader() },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("PDF generation failed");
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "maintenance_summary.pdf";
+      a.click();
+      window.URL.revokeObjectURL(url);
+    },
+  });
+
+  const handleDownloadMaintenancePDF = () => {
+    if (!from || !to || !technicians?.length) return;
+
+    downloadMaintenancePDFMutation.mutate({
+      from,
+      to,
+      technicians: technicians?.map((t) => t.id),
+    });
+  };
+
   return (
     <BackgroundBox>
       <Card sx={{ height: "fit-content" }}>
@@ -205,7 +255,14 @@ export const MaintenanceReportView = () => {
             </Grid>
             <Grid item>
               <Tooltip title="Export report as PDF" placement="left">
-                <IconButton aria-label="export report as pdf">
+                <IconButton
+                  aria-label="export report as pdf"
+                  onClick={handleDownloadMaintenancePDF}
+                  disabled={
+                    !technicians?.length ||
+                    downloadMaintenancePDFMutation.isLoading
+                  }
+                >
                   <PictureAsPdf />
                 </IconButton>
               </Tooltip>
