@@ -77,8 +77,10 @@ def get_maintenance_summary(
             detail="Invalid date format. Use YYYY-MM."
         )
 
-    # Base query
-    base_query = (
+    # If -1 is in the list, remove technician filtering (include all)
+    filter_techs = -1 not in technicians
+
+    query = (
         db.query(
             MeterActivities.timestamp_start.label("date_time"),
             Users.full_name.label("technician"),
@@ -90,15 +92,17 @@ def get_maintenance_summary(
         .join(
               ActivityTypeLU,
               ActivityTypeLU.id == MeterActivities.activity_type_id
-          )
-        .filter(
-            MeterActivities.timestamp_start >= from_date,
-            MeterActivities.timestamp_start <= to_date,
+        )
+        .filter(MeterActivities.timestamp_start >= from_date)
+        .filter(MeterActivities.timestamp_start <= to_date)
+    )
+
+    if filter_techs:
+        query = query.filter(
             MeterActivities.submitting_user_id.in_(technicians)
         )
-        .order_by(MeterActivities.timestamp_start)
-        .all()
-    )
+
+    base_query = query.order_by(MeterActivities.timestamp_start).all()
 
     # Aggregations
     repairs_by_meter = defaultdict(int)
@@ -162,7 +166,10 @@ def download_parts_used_pdf(
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM.")
 
-    base_query = (
+    # If -1 is in the list, remove technician filtering (include all)
+    filter_techs = -1 not in technicians
+
+    query = (
         db.query(
             MeterActivities.timestamp_start.label("date_time"),
             Users.full_name.label("technician"),
@@ -171,15 +178,20 @@ def download_parts_used_pdf(
         )
         .join(Users, Users.id == MeterActivities.submitting_user_id)
         .join(Meters, Meters.id == MeterActivities.meter_id)
-        .join(ActivityTypeLU, ActivityTypeLU.id == MeterActivities.activity_type_id)
-        .filter(
-            MeterActivities.timestamp_start >= from_date,
-            MeterActivities.timestamp_start <= to_date,
+        .join(
+              ActivityTypeLU,
+              ActivityTypeLU.id == MeterActivities.activity_type_id
+        )
+        .filter(MeterActivities.timestamp_start >= from_date)
+        .filter(MeterActivities.timestamp_start <= to_date)
+    )
+
+    if filter_techs:
+        query = query.filter(
             MeterActivities.submitting_user_id.in_(technicians)
         )
-        .order_by(MeterActivities.timestamp_start)
-        .all()
-    )
+
+    base_query = query.order_by(MeterActivities.timestamp_start).all()
 
     repairs_by_meter = defaultdict(int)
     pms_by_meter = defaultdict(int)
