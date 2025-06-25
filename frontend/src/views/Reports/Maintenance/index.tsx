@@ -170,7 +170,7 @@ export const MaintenanceReportView = () => {
     { field: "date_time", headerName: "Date / Time", flex: 1 },
     { field: "technician", headerName: "Technician", flex: 1 },
     {
-      field: "number_of_repais",
+      field: "number_of_repairs",
       headerName: "Number of Repairs",
       type: "number",
       flex: 1,
