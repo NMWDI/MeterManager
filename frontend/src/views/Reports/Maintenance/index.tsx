@@ -93,28 +93,76 @@ export const MaintenanceReportView = () => {
     cacheTime: 1000 * 60 * 60 * 24, // cache in memory for 24 hours
   });
 
-  const { control, reset, setValue } = useForm({
+  const { control, reset, setValue, watch } = useForm({
     resolver: yupResolver(schema),
     defaultValues: defaultSchema,
   });
 
+  const from = watch("from");
+  const to = watch("to");
+  const technicians = watch("techicians");
+  const trss = watch("trss");
+
   const technicianOptions = useMemo(() => {
     const base = techiciansQuery.data ?? [];
-    console.log({ base });
     return [...base, allTechniciansOption];
   }, [techiciansQuery.data]);
 
-  const numberOfRepairsPieChartData = [
-    { value: 55, label: "Meter A" },
-    { value: 10, label: "Meter B" },
-    { value: 15, label: "Meter C" },
-  ];
+  const dataQuery = useQuery({
+    queryKey: ["Inventory", "report", "maintenance", from, to, technicians],
+    queryFn: async () => {
+      const queryParams = new URLSearchParams({
+        from_month: from?.format("YYYY-MM"),
+        to_month: to?.format("YYYY-MM"),
+        trss,
+        ...technicians?.reduce(
+          (acc, id) => {
+            acc["technicians"] = acc["technicians"] || [];
+            acc["technicians"].push(id.toString());
+            return acc;
+          },
+          {} as Record<string, string[]>,
+        ),
+      }).toString();
 
-  const numberOfPMsPieChartData = [
-    { value: 5, label: "Meter A" },
-    { value: 15, label: "Meter B" },
-    { value: 20, label: "Meter C" },
-  ];
+      const response = await fetch(`${API_URL}/maintenance?${queryParams}`, {
+        headers: { Authorization: authHeader() },
+      });
+      if (!response.ok) {
+        throw new Error("Failed to fetch maintenance data");
+      }
+      return response.json();
+    },
+    staleTime: 1000 * 60 * 60 * 24,
+    cacheTime: 1000 * 60 * 60 * 24,
+  });
+
+  const numberOfRepairsPieChartData = useMemo(() => {
+    return (
+      dataQuery.data?.repairs_by_meter?.map((item: any) => ({
+        label: item.meter,
+        value: item.count,
+      })) ?? []
+    );
+  }, [dataQuery.data]);
+
+  const numberOfPMsPieChartData = useMemo(() => {
+    return (
+      dataQuery.data?.pms_by_meter?.map((item: any) => ({
+        label: item.meter,
+        value: item.count,
+      })) ?? []
+    );
+  }, [dataQuery.data]);
+
+  const tableRows = useMemo(() => {
+    return (
+      dataQuery.data?.table_rows?.map((row: any, index: number) => ({
+        id: index,
+        ...row,
+      })) ?? []
+    );
+  }, [dataQuery.data]);
 
   const columns: GridColDef[] = [
     { field: "date_time", headerName: "Date / Time", flex: 1 },
@@ -306,7 +354,7 @@ export const MaintenanceReportView = () => {
           </Grid>
           <Grid container padding={2}>
             <DataGrid
-              rows={[]}
+              rows={tableRows ?? []}
               columns={columns}
               disableColumnMenu
               hideFooterSelectedRowCount
