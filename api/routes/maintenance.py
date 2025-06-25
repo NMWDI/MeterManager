@@ -21,7 +21,7 @@ from api.models.main_models import (
 from api.session import get_db
 from api.enums import ScopedUser
 
-part_router = APIRouter()
+maintenance_router = APIRouter()
 
 
 class MeterSummary(BaseModel):
@@ -43,7 +43,7 @@ class MaintenanceSummaryResponse(BaseModel):
     table_rows: List[MaintenanceRow]
 
 
-@part_router.get(
+@maintenance_router.get(
     "/maintenance",
     tags=["Maintenance"],
     response_model=MaintenanceSummaryResponse,
@@ -137,7 +137,7 @@ def get_maintenance_summary(
     }
 
 
-@part_router.get(
+@maintenance_router.get(
     "/maintenance/pdf",
     tags=["Maintenance"],
     dependencies=[Depends(ScopedUser.Read)],

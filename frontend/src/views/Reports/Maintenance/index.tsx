@@ -111,26 +111,28 @@ export const MaintenanceReportView = () => {
   const dataQuery = useQuery({
     queryKey: ["Inventory", "report", "maintenance", from, to, technicians],
     queryFn: async () => {
-      const queryParams = new URLSearchParams({
-        from_month: from?.format("YYYY-MM"),
-        to_month: to?.format("YYYY-MM"),
-        trss,
-        ...technicians?.reduce(
-          (acc, id) => {
-            acc["technicians"] = acc["technicians"] || [];
-            acc["technicians"].push(id.toString());
-            return acc;
-          },
-          {} as Record<string, string[]>,
-        ),
-      }).toString();
+      const queryParams = new URLSearchParams();
+      queryParams.set("from_month", from?.format("YYYY-MM"));
+      queryParams.set("to_month", to?.format("YYYY-MM"));
+      queryParams.set("trss", trss ?? "");
 
-      const response = await fetch(`${API_URL}/maintenance?${queryParams}`, {
-        headers: { Authorization: authHeader() },
-      });
+      technicians
+        ?.map((t) => t.id)
+        .forEach((id) => {
+          queryParams.append("technicians", id.toString());
+        });
+
+      const response = await fetch(
+        `${API_URL}/maintenance?${queryParams.toString()}`,
+        {
+          headers: { Authorization: authHeader() },
+        },
+      );
+
       if (!response.ok) {
         throw new Error("Failed to fetch maintenance data");
       }
+
       return response.json();
     },
     staleTime: 1000 * 60 * 60 * 24,
