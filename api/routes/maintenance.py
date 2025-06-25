@@ -11,7 +11,6 @@ from jinja2 import Template
 from collections import defaultdict
 from matplotlib.pyplot import figure, close
 from base64 import b64encode
-
 from api.models.main_models import (
     Users,
     Meters,
@@ -20,6 +19,9 @@ from api.models.main_models import (
 )
 from api.session import get_db
 from api.enums import ScopedUser
+
+import matplotlib
+matplotlib.use("Agg")  # Force non-GUI backend
 
 maintenance_router = APIRouter()
 
