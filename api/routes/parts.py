@@ -1,14 +1,12 @@
 from fastapi import Depends, APIRouter, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import select, func
-from typing import List, Union
+from typing import List, Union, Optional
 from datetime import datetime
 import calendar
 from fastapi.responses import StreamingResponse
 from weasyprint import HTML
 from io import BytesIO
-from jinja2 import Template
-
 from api.models.main_models import (
     Parts,
     PartsUsed,
@@ -24,6 +22,15 @@ from api.session import get_db
 from api.route_util import _get
 from api.enums import ScopedUser
 from sqlalchemy.exc import IntegrityError
+from pathlib import Path
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+
+TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "templates"
+
+templates = Environment(
+    loader=FileSystemLoader(TEMPLATES_DIR),
+    autoescape=select_autoescape(["html", "xml"])
+)
 
 part_router = APIRouter()
 
@@ -34,8 +41,19 @@ part_router = APIRouter()
     dependencies=[Depends(ScopedUser.Read)],
     tags=["Parts"],
 )
-def get_parts(db: Session = Depends(get_db)):
-    return db.scalars(select(Parts).options(joinedload(Parts.part_type))).all()
+def get_parts(
+    db: Session = Depends(get_db),
+    in_use: Optional[bool] = Query(
+        None,
+        description="Filter by in_use status"
+    ),
+):
+    stmt = select(Parts).options(joinedload(Parts.part_type))
+
+    if in_use is not None:
+        stmt = stmt.where(Parts.in_use == in_use)
+
+    return db.scalars(stmt).all()
 
 
 @part_router.get(
@@ -201,53 +219,8 @@ def download_parts_used_pdf(
             "running_total": running_total,
         })
 
-    html_template = Template("""
-    <html>
-      <head>
-        <style>
-          body { font-family: sans-serif; }
-          table { width: 100%; border-collapse: collapse; margin-top: 1em; }
-          th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
-          th { background-color: #f5f5f5; }
-        </style>
-      </head>
-      <body>
-        <h2>Parts Usage Report</h2>
-        <p>
-            <strong>From:</strong>
-            {{ from_month }} &nbsp;
-            <strong>To:</strong>
-            {{ to_month }}
-        </p>
-        <table>
-          <thead>
-            <tr>
-              <th>Part #</th>
-              <th>Description</th>
-              <th>Price</th>
-              <th>Quantity</th>
-              <th>Total</th>
-              <th>Running Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for row in rows %}
-              <tr>
-                <td>{{ row.part_number }}</td>
-                <td>{{ row.description }}</td>
-                <td>${{ "%.2f"|format(row.price) }}</td>
-                <td>{{ row.quantity }}</td>
-                <td>${{ "%.2f"|format(row.total) }}</td>
-                <td>${{ "%.2f"|format(row.running_total) }}</td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </body>
-    </html>
-    """)
-
-    html_content = html_template.render(
+    template = templates.get_template("parts_used_report.html")
+    html_content = template.render(
         rows=results,
         from_month=from_month,
         to_month=to_month
