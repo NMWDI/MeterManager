@@ -65,19 +65,21 @@ const schema = yup.object().shape({
       const { from } = this.parent;
       return !from || !value || dayjs(value).isAfter(dayjs(from));
     }),
-  part_type: yup
-    .object()
-    .shape({
-      id: yup.number().nullable(),
-      type: yup
-        .object()
-        .shape({
-          id: yup.number().nullable(),
-          name: yup.string().nullable(),
-          description: yup.string().nullable(),
-        })
-        .nullable(),
-    })
+  part_types: yup
+    .array()
+    .of(
+      yup.object().shape({
+        id: yup.number().nullable(),
+        type: yup
+          .object()
+          .shape({
+            id: yup.number().nullable(),
+            name: yup.string().nullable(),
+            description: yup.string().nullable(),
+          })
+          .nullable(),
+      }),
+    )
     .nullable(),
   parts: yup
     .array()
@@ -88,7 +90,7 @@ const schema = yup.object().shape({
 const defaultSchema = {
   from: dayjs(),
   to: dayjs(),
-  part_type: null,
+  part_types: [],
   parts: [],
 };
 
@@ -117,14 +119,20 @@ export const PartsUsedReportView = () => {
   const from = watch("from");
   const to = watch("to");
   const selectedPartIds = watch("parts") ?? [];
-  const partType = watch("part_type");
+  const partTypes = watch("part_types");
 
   const filteredParts = useMemo(() => {
     if (!partsQuery.data) return [];
-    return partType
-      ? partsQuery.data.filter((p) => p.part_type_id === partType.id)
-      : partsQuery.data;
-  }, [partsQuery.data, partType]);
+
+    if (Array.isArray(partTypes) && partTypes.length > 0) {
+      const selectedIds = partTypes.map((pt) => pt.id);
+      return partsQuery.data.filter((p) =>
+        selectedIds.includes(p.part_type_id),
+      );
+    }
+
+    return partsQuery.data;
+  }, [partsQuery.data, partTypes]);
 
   useEffect(() => {
     const currentParts = watch("parts") ?? [];
@@ -135,7 +143,7 @@ export const PartsUsedReportView = () => {
       // Drop invalid part IDs
       reset({ ...watch(), parts: stillValid });
     }
-  }, [partType, filteredParts]);
+  }, [partTypes, filteredParts]);
 
   const partsUsedQuery = useQuery<any[]>({
     queryKey: ["Inventory", "report", "partsused", from, to, selectedPartIds],
@@ -326,7 +334,8 @@ export const PartsUsedReportView = () => {
                 control={control}
                 sx={{ minWidth: "15rem" }}
                 size="medium"
-                name="part_type"
+                name="part_types"
+                multiple
                 disabled={partsQuery.isFetching}
                 options={[
                   ...new Map(
