@@ -19,9 +19,19 @@ from api.models.main_models import (
 )
 from api.session import get_db
 from api.enums import ScopedUser
+from pathlib import Path
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 import matplotlib
 matplotlib.use("Agg")  # Force non-GUI backend
+
+
+TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "templates"
+
+templates = Environment(
+    loader=FileSystemLoader(TEMPLATES_DIR),
+    autoescape=select_autoescape(["html", "xml"])
+)
 
 maintenance_router = APIRouter()
 
@@ -239,65 +249,8 @@ def download_parts_used_pdf(
     repair_chart_b64 = make_pie_chart(repairs_by_meter, "Repairs by Meter")
     pm_chart_b64 = make_pie_chart(pms_by_meter, "Preventative Maintenances by Meter")
 
-    # Jinja2 template
-    html_template = Template("""
-    <html>
-      <head>
-        <style>
-          body { font-family: sans-serif; padding: 1em; }
-          h2 { margin-top: 2em; }
-          table { width: 100%; border-collapse: collapse; margin-top: 1em; }
-          th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
-          th { background-color: #f5f5f5; }
-          .chart { margin-top: 2em; text-align: center; }
-        </style>
-      </head>
-      <body>
-        <h1>Maintenance Summary</h1>
-        <p><strong>From:</strong> {{ from_month }} &nbsp;&nbsp; <strong>To:</strong> {{ to_month }}</p>
-
-        {% if repair_chart %}
-        <div class="chart">
-          <h2>Repairs by Meter</h2>
-          <img src="data:image/png;base64,{{ repair_chart }}" />
-        </div>
-        {% endif %}
-
-        {% if pm_chart %}
-        <div class="chart">
-          <h2>Preventative Maintenance by Meter</h2>
-          <img src="data:image/png;base64,{{ pm_chart }}" />
-        </div>
-        {% endif %}
-
-        <h2>Detailed Activity Table</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Date / Time</th>
-              <th>Technician</th>
-              <th>Meter</th>
-              <th>Number of Repairs</th>
-              <th>Number of Preventative Maintenances</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for row in table_rows %}
-              <tr>
-                <td>{{ row.date_time }}</td>
-                <td>{{ row.technician }}</td>
-                <td>{{ row.meter }}</td>
-                <td>{{ row.number_of_repairs }}</td>
-                <td>{{ row.number_of_pms }}</td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </body>
-    </html>
-    """)
-
-    html = html_template.render(
+    template = templates.get_template("maintenance_summary.html")
+    html = template.render(
         from_month=from_month,
         to_month=to_month,
         repair_chart=repair_chart_b64,
