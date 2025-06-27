@@ -7,7 +7,6 @@ import calendar
 from fastapi.responses import StreamingResponse
 from weasyprint import HTML
 from io import BytesIO
-from jinja2 import Template
 from collections import defaultdict
 from matplotlib.pyplot import figure, close
 from base64 import b64encode
@@ -16,6 +15,7 @@ from api.models.main_models import (
     Meters,
     MeterActivities,
     ActivityTypeLU,
+    Locations,
 )
 from api.session import get_db
 from api.enums import ScopedUser
@@ -68,30 +68,56 @@ def get_maintenance_summary(
     technicians: List[int] = Query(...),
     db: Session = Depends(get_db),
 ):
+    # Parse from/to month into datetime range
     try:
         from_date = datetime.strptime(from_month, "%Y-%m").replace(day=1)
         to_dt = datetime.strptime(to_month, "%Y-%m")
         year, month = to_dt.year, to_dt.month
         today = datetime.now()
+
         if year == today.year and month == today.month:
             to_date = today
         else:
             last_day = calendar.monthrange(year, month)[1]
-            to_date = to_dt.replace(
-                day=last_day,
-                hour=23,
-                minute=59,
-                second=59
-            )
+            to_date = to_dt.replace(day=last_day, hour=23, minute=59, second=59)
     except ValueError:
         raise HTTPException(
             status_code=400,
             detail="Invalid date format. Use YYYY-MM."
         )
 
-    # If -1 is in the list, remove technician filtering (include all)
+    # Filter by technicians if -1 is not present
     filter_techs = -1 not in technicians
 
+    # Optional TRSS-based meter filtering
+    matching_meter_ids = None
+    if trss:
+        try:
+            parts = list(map(int, trss.strip().split(".")))
+            if len(parts) >= 4:
+                township, range_, section, quarter = parts[:4]
+
+                location_subq = (
+                    db.query(Locations.id)
+                    .filter(
+                        Locations.township == township,
+                        Locations.range == range_,
+                        Locations.section == section,
+                        Locations.quarter == quarter,
+                    )
+                )
+                location_ids = [loc_id for (loc_id,) in location_subq.all()]
+
+                if location_ids:
+                    meter_subq = (
+                        db.query(Meters.id)
+                        .filter(Meters.location_id.in_(location_ids))
+                    )
+                    matching_meter_ids = [m_id for (m_id,) in meter_subq.all()]
+        except Exception:
+            pass  # Ignore invalid TRSS input silently
+
+    # Base query
     query = (
         db.query(
             MeterActivities.timestamp_start.label("date_time"),
@@ -114,14 +140,22 @@ def get_maintenance_summary(
             MeterActivities.submitting_user_id.in_(technicians)
         )
 
+    if matching_meter_ids is not None:
+        if not matching_meter_ids:
+            # TRSS valid but no meters matched → return empty results
+            return {
+                "repairs_by_meter": [],
+                "pms_by_meter": [],
+                "table_rows": [],
+            }
+        query = query.filter(MeterActivities.meter_id.in_(matching_meter_ids))
+
     base_query = query.order_by(MeterActivities.timestamp_start).all()
 
-    # Aggregations
+    # Aggregate repairs and PMs
     repairs_by_meter = defaultdict(int)
     pms_by_meter = defaultdict(int)
-    grouped_rows = defaultdict(
-        lambda: {"number_of_repairs": 0, "number_of_pms": 0}
-    )
+    grouped_rows = defaultdict(lambda: {"number_of_repairs": 0, "number_of_pms": 0})
 
     for row in base_query:
         key = (row.date_time, row.technician, row.meter)
@@ -132,7 +166,6 @@ def get_maintenance_summary(
             pms_by_meter[row.meter] += 1
             grouped_rows[key]["number_of_pms"] += 1
 
-    # Serialize grouped data
     repairs_result = [{"meter": meter, "count": count} for meter, count in repairs_by_meter.items()]
     pms_result = [{"meter": meter, "count": count} for meter, count in pms_by_meter.items()]
 
@@ -178,8 +211,33 @@ def download_parts_used_pdf(
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM.")
 
-    # If -1 is in the list, remove technician filtering (include all)
     filter_techs = -1 not in technicians
+
+    # Optional TRSS filtering via Locations → Meters
+    matching_meter_ids = None
+    if trss:
+        try:
+            parts = list(map(int, trss.strip().split(".")))
+            if len(parts) >= 4:
+                township, range_, section, quarter = parts[:4]
+
+                location_ids = [
+                    loc_id for (loc_id,) in db.query(Locations.id).filter(
+                        Locations.township == township,
+                        Locations.range == range_,
+                        Locations.section == section,
+                        Locations.quarter == quarter,
+                    ).all()
+                ]
+
+                if location_ids:
+                    matching_meter_ids = [
+                        meter_id for (meter_id,) in db.query(Meters.id).filter(
+                            Meters.location_id.in_(location_ids)
+                        ).all()
+                    ]
+        except Exception:
+            pass  # Silently skip TRSS filtering if malformed
 
     query = (
         db.query(
@@ -199,9 +257,12 @@ def download_parts_used_pdf(
     )
 
     if filter_techs:
-        query = query.filter(
-            MeterActivities.submitting_user_id.in_(technicians)
-        )
+        query = query.filter(MeterActivities.submitting_user_id.in_(technicians))
+
+    if matching_meter_ids is not None:
+        if not matching_meter_ids:
+            return StreamingResponse(BytesIO(), media_type="application/pdf")  # Empty PDF
+        query = query.filter(MeterActivities.meter_id.in_(matching_meter_ids))
 
     base_query = query.order_by(MeterActivities.timestamp_start).all()
 
@@ -228,7 +289,7 @@ def download_parts_used_pdf(
             "number_of_pms": counts["number_of_pms"],
         })
 
-    # Helper: create pie chart image as base64
+    # Generate pie charts as base64 PNGs
     def make_pie_chart(data: dict, title: str):
         if not data:
             return ""
