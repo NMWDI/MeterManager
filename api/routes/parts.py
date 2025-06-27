@@ -1,7 +1,7 @@
 from fastapi import Depends, APIRouter, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import select, func
-from typing import List, Union
+from typing import List, Union, Optional
 from datetime import datetime
 import calendar
 from fastapi.responses import StreamingResponse
@@ -34,8 +34,19 @@ part_router = APIRouter()
     dependencies=[Depends(ScopedUser.Read)],
     tags=["Parts"],
 )
-def get_parts(db: Session = Depends(get_db)):
-    return db.scalars(select(Parts).options(joinedload(Parts.part_type))).all()
+def get_parts(
+    db: Session = Depends(get_db),
+    in_use: Optional[bool] = Query(
+        None,
+        description="Filter by in_use status"
+    ),
+):
+    stmt = select(Parts).options(joinedload(Parts.part_type))
+
+    if in_use is not None:
+        stmt = stmt.where(Parts.in_use == in_use)
+
+    return db.scalars(stmt).all()
 
 
 @part_router.get(

@@ -102,7 +102,7 @@ export const PartsUsedReportView = () => {
   const partsQuery = useQuery<Part[]>({
     queryKey: ["Inventory", "report", "partslist"],
     queryFn: async () => {
-      const response = await fetch(`${API_URL}/parts`, {
+      const response = await fetch(`${API_URL}/parts?in_use=true`, {
         headers: { Authorization: authHeader() },
       });
       if (!response.ok) {
