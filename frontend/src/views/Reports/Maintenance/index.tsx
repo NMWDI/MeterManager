@@ -60,7 +60,18 @@ const schema = yup.object().shape({
       }),
     )
     .min(1, "At least one technician is required"),
-  trss: yup.string().required("At least one Location is required"),
+  trss: yup
+    .string()
+    .nullable()
+    .notRequired()
+    .test(
+      "valid-trss-format",
+      "TRSS must be 2 to 4 digit groups separated by periods (e.g., 123.123 or 123.123.123.456)",
+      (value) => {
+        if (!value) return true; // allow empty or null
+        return /^\d+\.\d+(?:\.\d+){0,2}$/.test(value);
+      },
+    ),
 });
 
 const defaultSchema = {
@@ -93,9 +104,10 @@ export const MaintenanceReportView = () => {
     cacheTime: 1000 * 60 * 60 * 24, // cache in memory for 24 hours
   });
 
-  const { control, reset, setValue, watch } = useForm({
+  const { control, reset, setValue, watch, trigger } = useForm({
     resolver: yupResolver(schema),
     defaultValues: defaultSchema,
+    mode: "onBlur",
   });
 
   const from = watch("from");
@@ -306,6 +318,7 @@ export const MaintenanceReportView = () => {
                 label="TRSS"
                 control={control}
                 size="medium"
+                onBlur={() => trigger("trss")}
               />
             </Grid>
             <Grid item>

@@ -18,7 +18,7 @@ export default function ControlledTextbox({
       name={name}
       control={control}
       defaultValue={""}
-      render={({ field }) => (
+      render={({ field, fieldState }) => (
         <TextField
           {...field}
           variant="outlined"
@@ -26,6 +26,12 @@ export default function ControlledTextbox({
           fullWidth
           sx={disabledInputStyle}
           value={field.value ?? ""}
+          error={!!fieldState.error}
+          helperText={fieldState.error?.message ?? ""}
+          onBlur={(e) => {
+            field.onBlur();
+            childProps.onBlur?.(e);
+          }}
           {...childProps}
         />
       )}
