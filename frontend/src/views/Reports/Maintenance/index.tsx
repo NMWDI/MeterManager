@@ -121,7 +121,15 @@ export const MaintenanceReportView = () => {
   }, [techiciansQuery.data]);
 
   const dataQuery = useQuery({
-    queryKey: ["Inventory", "report", "maintenance", from, to, technicians],
+    queryKey: [
+      "Inventory",
+      "report",
+      "maintenance",
+      from,
+      to,
+      technicians,
+      trss,
+    ],
     queryFn: async () => {
       const queryParams = new URLSearchParams();
       queryParams.set("from_month", from?.format("YYYY-MM"));
@@ -206,15 +214,17 @@ export const MaintenanceReportView = () => {
       from,
       to,
       technicians,
+      trss,
     }: {
       from: Dayjs;
       to: Dayjs;
       technicians: number[];
+      trss: string;
     }) => {
       const params = new URLSearchParams({
         from_month: from.format("YYYY-MM"),
         to_month: to.format("YYYY-MM"),
-        trss: "", // optional — if unused you can remove it on both ends
+        trss,
       });
 
       technicians.forEach((id) => params.append("technicians", id.toString()));
@@ -247,6 +257,7 @@ export const MaintenanceReportView = () => {
       from,
       to,
       technicians: technicians?.map((t) => t.id),
+      trss: trss ?? "",
     });
   };
 
