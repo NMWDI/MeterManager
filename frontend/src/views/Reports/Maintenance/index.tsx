@@ -51,7 +51,7 @@ const schema = yup.object().shape({
       const { from } = this.parent;
       return !from || !value || dayjs(value).isAfter(dayjs(from));
     }),
-  techicians: yup
+  technicians: yup
     .array()
     .of(
       yup.object({
@@ -77,7 +77,7 @@ const schema = yup.object().shape({
 const defaultSchema = {
   from: dayjs(),
   to: dayjs(),
-  techicians: [{ ...allTechniciansOption }],
+  technicians: [{ ...allTechniciansOption }],
   trss: "",
 };
 
@@ -104,7 +104,14 @@ export const MaintenanceReportView = () => {
     cacheTime: 1000 * 60 * 60 * 24, // cache in memory for 24 hours
   });
 
-  const { control, reset, setValue, watch, trigger } = useForm({
+  const {
+    control,
+    reset,
+    setValue,
+    watch,
+    trigger,
+    formState: { errors },
+  } = useForm({
     resolver: yupResolver(schema),
     defaultValues: defaultSchema,
     mode: "onBlur",
@@ -112,7 +119,7 @@ export const MaintenanceReportView = () => {
 
   const from = watch("from");
   const to = watch("to");
-  const technicians = watch("techicians");
+  const technicians = watch("technicians");
   const trss = watch("trss");
 
   const technicianOptions = useMemo(() => {
@@ -132,21 +139,19 @@ export const MaintenanceReportView = () => {
     ],
     queryFn: async () => {
       const queryParams = new URLSearchParams();
-      queryParams.set("from_month", from?.format("YYYY-MM"));
-      queryParams.set("to_month", to?.format("YYYY-MM"));
-      queryParams.set("trss", trss ?? "");
+      if (from) queryParams.set("from_month", from.format("YYYY-MM"));
+      if (to) queryParams.set("to_month", to.format("YYYY-MM"));
+      if (trss) queryParams.set("trss", trss);
 
-      technicians
-        ?.map((t) => t.id)
-        .forEach((id) => {
-          queryParams.append("technicians", id.toString());
-        });
+      technicians?.forEach((t) => {
+        if (t?.id) queryParams.append("technicians", t.id.toString());
+      });
 
       const response = await fetch(
         `${API_URL}/maintenance?${queryParams.toString()}`,
         {
           headers: { Authorization: authHeader() },
-        },
+        }
       );
 
       if (!response.ok) {
@@ -157,7 +162,13 @@ export const MaintenanceReportView = () => {
     },
     staleTime: 1000 * 60 * 60 * 24,
     cacheTime: 1000 * 60 * 60 * 24,
-    enabled: Boolean(from && to && technicians && technicians.length > 0),
+    enabled: Boolean(
+      from &&
+      to &&
+      technicians &&
+      technicians.length > 0 &&
+      !errors.trss
+    ),
   });
 
   const numberOfRepairsPieChartData = useMemo(() => {
@@ -334,7 +345,7 @@ export const MaintenanceReportView = () => {
             </Grid>
             <Grid item>
               <ControlledAutocomplete
-                name="techicians"
+                name="technicians"
                 multiple
                 options={technicianOptions}
                 control={control}
