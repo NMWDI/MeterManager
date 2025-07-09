@@ -1,13 +1,15 @@
 import { ArrowBack, PictureAsPdf, MonitorHeart } from "@mui/icons-material";
 import {
+  Box,
   Button,
   Card,
   CardContent,
-  CardHeader,
   Grid,
   IconButton,
+  Stack,
   TextField,
   Tooltip,
+  Typography,
 } from "@mui/material";
 import { Link } from "react-router-dom";
 import ControlledDatepicker from "../../../components/RHControlled/ControlledDatepicker";
@@ -19,6 +21,8 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import dayjs from "dayjs";
 import { BackgroundBox } from "../../../components/BackgroundBox";
 import { CustomCardHeader } from "../../../components/CustomCardHeader";
+import { DataGrid, GridColDef } from "@mui/x-data-grid";
+import { LineChart } from "@mui/x-charts";
 
 const schema = yup.object().shape({
   from: yup.mixed().nullable().required("From date is required"),
@@ -32,6 +36,11 @@ const defaultSchema = {
   wells: "",
 };
 
+const size = {
+  width: 400,
+  height: 400,
+};
+
 export const MonitoringWellsReportView = () => {
   const wellsQuery = useQuery({
     queryKey: ["MonitoringWells", "report", "wells"],
@@ -42,6 +51,22 @@ export const MonitoringWellsReportView = () => {
     resolver: yupResolver(schema),
     defaultValues: defaultSchema,
   });
+
+  const tableRows: any[] = []
+  const columns: GridColDef[] = [
+    { field: "date_time", headerName: "Date / Time", flex: 1 },
+    {
+      field: "depth_to_water",
+      headerName: "Depth To Water (ft)",
+      type: "number",
+      flex: 1,
+    },
+    {
+      field: "well",
+      headerName: "Well",
+      flex: 1,
+    },
+  ];
 
   return (
     <BackgroundBox>
@@ -121,7 +146,44 @@ export const MonitoringWellsReportView = () => {
               />
             </Grid>
           </Grid>
-          <Grid container></Grid>
+          <Grid container>
+            <Stack direction="row" width="100%" textAlign="center" spacing={2}>
+              <Box flexGrow={1}>
+                <Typography variant="h5">Depth of Water over time</Typography>
+                <LineChart
+                  series={[
+                    {
+                      data: [],
+                    },
+                  ]}
+                  slotProps={{
+                    legend: {
+                      direction: "horizontal",
+                      position: {
+                        vertical: "bottom",
+                        horizontal: "center",
+                      },
+                    },
+                  }}
+                  {...size}
+                />
+              </Box>
+            </Stack>
+          </Grid>
+          <Grid container padding={2}>
+            <DataGrid
+              rows={tableRows ?? []}
+              columns={columns}
+              disableColumnMenu
+              hideFooterSelectedRowCount
+              pageSizeOptions={[5, 10, 25]}
+              initialState={{
+                pagination: {
+                  paginationModel: { pageSize: 5, page: 0 },
+                },
+              }}
+            />
+          </Grid>
           <Grid container>
             <Grid item>
               <Button onClick={() => reset()}>Reset</Button>
