@@ -1,10 +1,8 @@
--- Parse trss and populate township, range, section, quarter_quarter
-UPDATE locations
-SET
-    township = split_part(trss, '.', 1)::int,
-    range = split_part(trss, '.', 2)::int,
-    section = split_part(trss, '.', 3)::int,
-    quarter = split_part(trss, '.', 4)::int
-WHERE
-    trss ~ '^\d+\.\d+\.\d+\.\d+$';
-
+-- Remove TRSS-related columns from the locations table
+ALTER TABLE locations
+DROP COLUMN IF EXISTS township,
+DROP COLUMN IF EXISTS range,
+DROP COLUMN IF EXISTS section,
+DROP COLUMN IF EXISTS quarter,
+DROP COLUMN IF EXISTS half_quarter,
+DROP COLUMN IF EXISTS quarter_quarter;
