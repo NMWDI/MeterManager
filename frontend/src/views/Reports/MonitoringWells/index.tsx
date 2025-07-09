@@ -18,6 +18,7 @@ import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import dayjs from "dayjs";
 import { BackgroundBox } from "../../../components/BackgroundBox";
+import { CustomCardHeader } from "../../../components/CustomCardHeader";
 
 const schema = yup.object().shape({
   from: yup.mixed().nullable().required("From date is required"),
@@ -34,7 +35,7 @@ const defaultSchema = {
 export const MonitoringWellsReportView = () => {
   const wellsQuery = useQuery({
     queryKey: ["MonitoringWells", "report", "wells"],
-    queryFn: async () => {},
+    queryFn: async () => { },
   });
 
   const { control, reset } = useForm({
@@ -45,15 +46,7 @@ export const MonitoringWellsReportView = () => {
   return (
     <BackgroundBox>
       <Card sx={{ height: "fit-content" }}>
-        <CardHeader
-          title={
-            <div className="custom-card-header">
-              <span>Monitoring Wells Report</span>
-              <MonitorHeart />
-            </div>
-          }
-          sx={{ mb: 0, pb: 0 }}
-        />
+        <CustomCardHeader title="Monitoring Wells Report" icon={MonitorHeart} />
         <CardContent>
           <Grid container justifyContent="space-between" alignContent="center">
             <Grid item>
@@ -86,6 +79,7 @@ export const MonitoringWellsReportView = () => {
                 label="From"
                 sx={{ minWidth: "15rem" }}
                 control={control}
+                size="medium"
                 name="from"
                 views={["year", "month"]}
                 openTo="year"
@@ -97,6 +91,7 @@ export const MonitoringWellsReportView = () => {
                 label="To"
                 sx={{ minWidth: "15rem" }}
                 control={control}
+                size="medium"
                 name="to"
                 views={["year", "month"]}
                 openTo="year"
@@ -116,9 +111,9 @@ export const MonitoringWellsReportView = () => {
                   return (
                     <TextField
                       {...params}
-                      sx={{ minWidth: "15rem" }}
+                      sx={{ minWidth: "30rem" }}
                       label="Wells"
-                      size="small"
+                      size="medium"
                       placeholder="Begin typing to search"
                     />
                   );

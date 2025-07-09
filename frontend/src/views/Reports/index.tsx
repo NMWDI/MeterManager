@@ -26,7 +26,6 @@ export const ReportsView = () => {
               Icon={FormatListBulletedOutlined}
             />
             <NavLink
-              disabled
               route="/reports/wells"
               label="Monitoring Wells"
               Icon={MonitorHeart}
