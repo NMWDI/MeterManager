@@ -1,7 +1,8 @@
-from typing import List
+from typing import List, Dict, Optional
 from datetime import datetime
+import calendar
 
-from fastapi import Depends, APIRouter, Query
+from fastapi import Depends, APIRouter, Query, HTTPException
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import select, and_
 
@@ -50,18 +51,55 @@ def add_waterlevel(
     response_model=List[well_schemas.WellMeasurementDTO],
     tags=["WaterLevels"],
 )
-def read_waterlevels(well_id: int = None, db: Session = Depends(get_db)):
-    return db.scalars(
+def read_waterlevels(
+    well_ids: List[int] = Query(..., description="One or more well IDs"),
+    from_month: Optional[str] = Query(None, pattern=r"^\d{4}-\d{2}$"),
+    to_month: Optional[str] = Query(None, pattern=r"^\d{4}-\d{2}$"),
+    db: Session = Depends(get_db)
+):
+    if not well_ids:
+        return []
+
+    from_date = None
+    to_date = None
+
+    if from_month and to_month:
+        try:
+            from_date = datetime.strptime(from_month, "%Y-%m").replace(day=1)
+            to_dt = datetime.strptime(to_month, "%Y-%m")
+            year, month = to_dt.year, to_dt.month
+            today = datetime.now()
+
+            if year == today.year and month == today.month:
+                to_date = today
+            else:
+                last_day = calendar.monthrange(year, month)[1]
+                to_date = to_dt.replace(day=last_day, hour=23, minute=59, second=59)
+        except ValueError:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid date format. Use YYYY-MM."
+            )
+
+    stmt = (
         select(WellMeasurements)
         .options(joinedload(WellMeasurements.submitting_user))
         .join(ObservedPropertyTypeLU)
         .where(
             and_(
                 ObservedPropertyTypeLU.name == "Depth to water",
-                WellMeasurements.well_id == well_id,
+                WellMeasurements.well_id.in_(well_ids),
+                *( [WellMeasurements.timestamp >= from_date] if from_date else [] ),
+                *( [WellMeasurements.timestamp <= to_date] if to_date else [] ),
             )
         )
-    ).all()
+        .order_by(WellMeasurements.well_id, WellMeasurements.timestamp)
+    )
+
+    results = db.scalars(stmt).all()
+
+    return results
+
 
 @well_measurement_router.patch(
     "/waterlevels",
