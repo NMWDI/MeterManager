@@ -68,8 +68,8 @@ const defaultSchema = {
 };
 
 const size = {
-  width: 400,
-  height: 400,
+  width: 1000,
+  height: 600,
 };
 
 export const MonitoringWellsReportView = () => {
@@ -183,6 +183,48 @@ export const MonitoringWellsReportView = () => {
     depth_to_water: manualMeasurement.value,
     well: manualMeasurement.well.ra_number,
   })) ?? [];
+
+  const groupedByWell = useMemo(() => {
+    const groups: Record<string, { x: string; y: number }[]> = {};
+
+    manualMeasurementsQuery?.data?.forEach((m) => {
+      const wellName = m.well.ra_number;
+      if (!groups[wellName]) groups[wellName] = [];
+      groups[wellName].push({
+        x: m.timestamp,
+        y: m.value,
+      });
+    });
+
+    return groups;
+  }, [manualMeasurementsQuery?.data]);
+
+  const allTimestamps = useMemo(() => {
+    const timestamps = new Set<number>();
+    Object.values(groupedByWell).forEach((entries) =>
+      entries.forEach((e) => {
+        const ts = new Date(e.x).getTime();
+        if (!isNaN(ts)) timestamps.add(ts);
+      })
+    );
+    return Array.from(timestamps).sort((a, b) => a - b);
+  }, [groupedByWell]);
+
+  const series = useMemo(() => {
+    return Object.entries(groupedByWell).map(([wellName, entries]) => {
+      const dataMap = new Map(
+        entries.map((e) => [new Date(e.x).getTime(), e.y])
+      );
+      const data = allTimestamps.map((ts) => {
+        const value = dataMap.get(ts);
+        return typeof value === "number" && !isNaN(value) ? value : null;
+      });
+      return {
+        label: wellName,
+        data,
+      };
+    });
+  }, [groupedByWell, allTimestamps]);
 
   const [outsideRecorderWells, regularWells] = separateAndSortMonitoredWells(monitoredWellsQuery?.data);
   const groupedWells = [
@@ -336,11 +378,12 @@ export const MonitoringWellsReportView = () => {
               <Box flexGrow={1}>
                 <Typography variant="h5">Depth of Water over time</Typography>
                 <LineChart
-                  series={[
-                    {
-                      data: [],
-                    },
-                  ]}
+                  xAxis={[{
+                    data: allTimestamps,
+                    scaleType: "time",
+                    valueFormatter: (value) => dayjs(value).format("MMM D, YYYY HH:mm"),
+                  }]}
+                  series={series}
                   slotProps={{
                     legend: {
                       direction: "horizontal",
