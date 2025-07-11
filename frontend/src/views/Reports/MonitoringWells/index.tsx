@@ -23,25 +23,48 @@ import { useForm } from "react-hook-form";
 import { useQuery } from "react-query";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
-import dayjs from "dayjs";
+import dayjs, { Dayjs } from "dayjs";
 import { BackgroundBox } from "../../../components/BackgroundBox";
 import { CustomCardHeader } from "../../../components/CustomCardHeader";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import { LineChart } from "@mui/x-charts";
-import { MonitoredWell } from "../../../interfaces";
-import { useFetchWithAuth } from "../../../hooks";
+import { MonitoredWell, ST2Measurement, WellMeasurementDTO } from "../../../interfaces";
+import { useFetchST2, useFetchWithAuth } from "../../../hooks";
 import { separateAndSortMonitoredWells } from "../../../utils";
+import { useMemo } from "react";
+
 
 const schema = yup.object().shape({
-  from: yup.mixed().nullable().required("From date is required"),
-  to: yup.mixed().nullable().required("To date is required"),
-  wells: yup.string().required("At least one Well is required"),
+  from: yup.mixed<Dayjs>().nullable().required("From date is required"),
+  to: yup
+    .mixed<Dayjs>()
+    .nullable()
+    .required("To date is required")
+    .test("is-after", "'To' date must be after 'From'", function(value) {
+      const { from } = this.parent;
+      return !from || !value || dayjs(value).isAfter(dayjs(from));
+    }),
+  wells: yup
+    .array()
+    .of(
+      yup.object({
+        id: yup.number().required(),
+        name: yup.string().required(),
+        ra_number: yup.string().required(),
+        datastream_id: yup.number().required(),
+        well_status: yup.mixed().required(),
+        outside_recorder: yup.boolean().nullable(),
+        chloride_group_id: yup.number().nullable(),
+        group: yup.string().nullable(),
+      })
+    )
+    .min(1, "At least one Well is required"),
 });
 
 const defaultSchema = {
   from: dayjs(),
   to: dayjs(),
-  wells: "",
+  wells: [],
 };
 
 const size = {
@@ -96,12 +119,50 @@ export const MonitoringWellsReportView = () => {
     select: (res) => res.items,
   });
 
-  const { control, reset } = useForm({
+  const { control, reset, watch } = useForm({
     resolver: yupResolver(schema),
     defaultValues: defaultSchema,
   });
 
-  const tableRows: any[] = []
+  const wells = watch("wells");
+  const wellIds = useMemo(() => wells?.map(w => w.id) ?? [], [wells]);
+
+  const from = watch("from");
+  const to = watch("to");
+
+  const manualMeasurementsQuery = useQuery<WellMeasurementDTO[], Error>({
+    queryKey: ["manualMeasurements", wellIds, from, to],
+    queryFn: () => {
+      const searchParams = new URLSearchParams({
+        from_month: from?.format("YYYY-MM"),
+        to_month: to?.format("YYYY-MM"),
+      });
+
+      wellIds.forEach((id: number) => {
+        searchParams.append("well_ids", id.toString());
+      });
+
+      return fetchWithAuth({
+        method: "GET",
+        route: `/waterlevels?${searchParams.toString()}`,
+      })
+    },
+    enabled: wellIds.length > 0 && !!from && !!to,
+  });
+
+  // const dataStreamId = useMemo(
+  //   () => (wellId ? getDataStreamId(wellId) : undefined),
+  //   [wellId],
+  // );
+
+  // const fetchSt2 = useFetchST2();
+  // const st2MeasurementsQuery = useQuery<ST2Measurement[], Error>({
+  //   queryKey: ["st2Measurements", dataStreamId],
+  //   queryFn: () =>
+  //     fetchSt2("GET", `/Datastreams(${dataStreamId})/Observations`),
+  //   enabled: !!dataStreamId,
+  // });
+
   const columns: GridColDef[] = [
     { field: "date_time", headerName: "Date / Time", flex: 1 },
     {
@@ -116,6 +177,12 @@ export const MonitoringWellsReportView = () => {
       flex: 1,
     },
   ];
+  const tableRows = manualMeasurementsQuery?.data?.map((manualMeasurement: WellMeasurementDTO) => ({
+    id: manualMeasurement.id,
+    date_time: manualMeasurement.timestamp,
+    depth_to_water: manualMeasurement.value,
+    well: manualMeasurement.well.ra_number,
+  })) ?? [];
 
   const [outsideRecorderWells, regularWells] = separateAndSortMonitoredWells(monitoredWellsQuery?.data);
   const groupedWells = [
