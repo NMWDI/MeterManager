@@ -89,7 +89,7 @@ export const MonitoringWellsView = () => {
       fetchWithAuth({
         method: "GET",
         route: "/waterlevels",
-        params: { well_id: wellId },
+        params: { well_ids: wellId },
       }),
     enabled: !!wellId,
   });
@@ -270,10 +270,10 @@ export const MonitoringWellsView = () => {
             <Box sx={{ flex: { xs: 1, md: 2 / 3 }, minWidth: 0 }}>
               <MonitoringWellsPlot
                 isLoading={isLoadingManual || isLoadingSt2}
-                manual_dates={manualMeasurements?.map((m) => m.timestamp) ?? []}
-                manual_vals={manualMeasurements?.map((m) => m.value) ?? []}
-                logger_dates={st2Measurements?.map((m) => m.resultTime) ?? []}
-                logger_vals={st2Measurements?.map((m) => m.result) ?? []}
+                manual_dates={(Array.isArray(manualMeasurements) ? manualMeasurements : []).map((m) => m.timestamp)}
+                manual_vals={(Array.isArray(manualMeasurements) ? manualMeasurements : []).map((m) => m.value)}
+                logger_dates={(Array.isArray(st2Measurements) ? st2Measurements : []).map((m) => m.resultTime)}
+                logger_vals={(Array.isArray(st2Measurements) ? st2Measurements : []).map((m) => m.result)}
               />
             </Box>
           </Box>
