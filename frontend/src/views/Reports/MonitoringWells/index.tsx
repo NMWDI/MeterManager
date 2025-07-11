@@ -23,6 +23,9 @@ import { BackgroundBox } from "../../../components/BackgroundBox";
 import { CustomCardHeader } from "../../../components/CustomCardHeader";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import { LineChart } from "@mui/x-charts";
+import { useAuthHeader } from "react-auth-kit";
+import { API_URL } from "../../../config";
+import { MeterListDTO, Page } from "../../../interfaces";
 
 const schema = yup.object().shape({
   from: yup.mixed().nullable().required("From date is required"),
@@ -42,9 +45,30 @@ const size = {
 };
 
 export const MonitoringWellsReportView = () => {
-  const wellsQuery = useQuery({
+  const authHeader = useAuthHeader();
+  const wellsQuery = useQuery<Page<MeterListDTO>>({
     queryKey: ["MonitoringWells", "report", "wells"],
-    queryFn: async () => { },
+    queryFn: async () => {
+      const headers = { Authorization: authHeader() };
+      const params = new URLSearchParams([
+        ["filter_by_status", "Installed"],
+        ["filter_by_status", "Warehouse"],
+        ["sort_by", "serial_number"],
+        ["sort_direction", "asc"],
+        ["limit", "100"],
+        ["offset", "0"],
+      ]);
+
+      const response = await fetch(`${API_URL}/meters?${params.toString()}`, {
+        headers,
+      });
+
+      if (!response.ok) {
+        throw new Error(response.status.toString());
+      }
+
+      return response.json();
+    },
   });
 
   const { control, reset } = useForm({
@@ -126,10 +150,12 @@ export const MonitoringWellsReportView = () => {
             <Grid item>
               <ControlledAutocomplete
                 name="wells"
-                options={wellsQuery?.data ?? []}
+                options={wellsQuery?.data?.items ?? []}
                 control={control}
                 disableClearable={false}
                 defaultValue={null}
+                getOptionLabel={(option: MeterListDTO) => option?.well?.name ?? ""}
+                isOptionEqualToValue={(option: MeterListDTO, value: MeterListDTO) => option.id === value.id}
                 renderInput={(params: any) => {
                   if (wellsQuery.isLoading)
                     params.inputProps.value = "Loading...";
