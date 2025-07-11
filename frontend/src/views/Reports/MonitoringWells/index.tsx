@@ -1,16 +1,21 @@
+/** @jsxImportSource @emotion/react */
 import { ArrowBack, PictureAsPdf, MonitorHeart } from "@mui/icons-material";
 import {
   Box,
   Button,
   Card,
   CardContent,
+  Chip,
   Grid,
   IconButton,
+  ListSubheader,
   Stack,
   TextField,
   Tooltip,
   Typography,
+  useTheme,
 } from "@mui/material";
+import { css } from "@emotion/react";
 import { Link } from "react-router-dom";
 import ControlledDatepicker from "../../../components/RHControlled/ControlledDatepicker";
 import ControlledAutocomplete from "../../../components/RHControlled/ControlledAutocomplete";
@@ -45,6 +50,36 @@ const size = {
 };
 
 export const MonitoringWellsReportView = () => {
+  const theme = useTheme();
+  const baseStyle = css`
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: 4px;
+  margin: 2px 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+`;
+  const selectedStyle = (isOutside: boolean, theme: any) => css`
+  background-color: ${isOutside
+      ? theme.palette.secondary.dark
+      : theme.palette.primary.dark} !important;
+  color: ${isOutside
+      ? theme.palette.secondary.contrastText
+      : theme.palette.primary.contrastText} !important;
+  font-weight: 500;
+`;
+
+  const hoverStyle = (isOutside: boolean, theme: any) => css`
+  &:hover {
+    background-color: ${isOutside
+      ? theme.palette.secondary.main
+      : theme.palette.primary.main} !important;
+    color: ${isOutside
+      ? theme.palette.secondary.contrastText
+      : theme.palette.primary.contrastText} !important;
+  }
+`;
+
   const fetchWithAuth = useFetchWithAuth();
   const monitoredWellsQuery = useQuery<{ items: MonitoredWell[] }, Error, MonitoredWell[]>({
     queryKey: ["wells"],
@@ -144,45 +179,89 @@ export const MonitoringWellsReportView = () => {
               />
             </Grid>
             <Grid item>
-              {monitoredWellsQuery?.isSuccess ?
-                <ControlledAutocomplete
-                  name="wells"
-                  control={control}
-                  options={groupedWells}
-                  groupBy={(option: MonitoredWell & { group: string }) => option.group}
-                  getOptionLabel={(option: MonitoredWell) => option?.name ?? "Unnamed Well"}
-                  isOptionEqualToValue={(a: MonitoredWell, b: MonitoredWell) => a.id === b.id}
-                  disableClearable={false}
-                  multiple
-                  renderOption={(props: any, option: MonitoredWell & { group: string }) => {
+              <ControlledAutocomplete
+                name="wells"
+                control={control}
+                options={groupedWells}
+                groupBy={(option: MonitoredWell & { group: string }) => option.group}
+                getOptionLabel={(option: MonitoredWell) => option?.name ?? "Unnamed Well"}
+                isOptionEqualToValue={(a: MonitoredWell, b: MonitoredWell) => a.id === b.id}
+                disableClearable={false}
+                multiple
+                renderGroup={(params: any) => (
+                  <li key={params.key} style={{ padding: 0, margin: 0 }}>
+                    <ListSubheader
+                      sx={{
+                        position: "sticky",
+                        top: 0,
+                        zIndex: 1,
+                        backgroundColor: theme.palette.background.paper,
+                        color:
+                          params.group === "Outside Recorder Wells"
+                            ? theme.palette.secondary.main
+                            : theme.palette.primary.main,
+                        fontWeight: "bold",
+                        textTransform: "uppercase",
+                        fontSize: "0.85rem",
+                        paddingY: "0.125rem",
+                      }}
+                    >
+                      {params.group}
+                    </ListSubheader>
+                    <ul style={{ padding: 0, margin: 0 }}>{params.children}</ul>
+                  </li>
+                )}
+                renderTags={(value: MonitoredWell[], getTagProps: any) =>
+                  value.map((option: MonitoredWell & { group: string }, index: number) => {
                     const isOutside = option.group === "Outside Recorder Wells";
                     return (
-                      <li
-                        {...props}
-                        style={{
-                          backgroundColor: isOutside ? "#f3e5f5" : "#e3f2fd", // light purple vs light blue
-                          color: isOutside ? "#6a1b9a" : "#0d47a1", // dark purple vs dark blue
+                      <Chip
+                        label={option.name?.trim() || "Unnamed Well"}
+                        {...getTagProps({ index })}
+                        sx={{
+                          backgroundColor: isOutside
+                            ? theme.palette.secondary.main
+                            : theme.palette.primary.main,
+                          color: isOutside
+                            ? theme.palette.secondary.contrastText
+                            : theme.palette.primary.contrastText,
                           fontWeight: 500,
                         }}
-                      >
-                        {option.name?.trim() || "Unnamed Well"}
-                      </li>
-                    );
-                  }}
-                  renderInput={(params: any) => {
-                    if (monitoredWellsQuery.isLoading)
-                      params.inputProps.value = "Loading...";
-                    return (
-                      <TextField
-                        {...params}
-                        sx={{ minWidth: "30rem" }}
-                        label="Wells"
-                        size="medium"
-                        placeholder="Begin typing to search"
                       />
                     );
-                  }}
-                /> : null}
+                  })
+                }
+                renderOption={(props: any, option: MonitoredWell & { group: string }, { selected }: { selected: boolean }) => {
+                  const isOutside = option.group === "Outside Recorder Wells";
+                  return (
+                    <Box
+                      component="li"
+                      key={option.id}
+                      {...props}
+                      css={[
+                        baseStyle,
+                        selected ? selectedStyle(isOutside, theme) : undefined,
+                        hoverStyle(isOutside, theme),
+                      ]}
+                    >
+                      {option.name?.trim() || "Unnamed Well"}
+                    </Box>
+                  );
+                }}
+                renderInput={(params: any) => {
+                  if (monitoredWellsQuery.isLoading)
+                    params.inputProps.value = "Loading...";
+                  return (
+                    <TextField
+                      {...params}
+                      sx={{ minWidth: "30rem" }}
+                      label="Wells"
+                      size="medium"
+                      placeholder="Begin typing to search"
+                    />
+                  );
+                }}
+              />
             </Grid>
           </Grid>
           <Grid container>
