@@ -23,9 +23,9 @@ import { BackgroundBox } from "../../../components/BackgroundBox";
 import { CustomCardHeader } from "../../../components/CustomCardHeader";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import { LineChart } from "@mui/x-charts";
-import { useAuthHeader } from "react-auth-kit";
-import { API_URL } from "../../../config";
-import { MeterListDTO, Page } from "../../../interfaces";
+import { MonitoredWell } from "../../../interfaces";
+import { useFetchWithAuth } from "../../../hooks";
+import { separateAndSortMonitoredWells } from "../../../utils";
 
 const schema = yup.object().shape({
   from: yup.mixed().nullable().required("From date is required"),
@@ -45,30 +45,20 @@ const size = {
 };
 
 export const MonitoringWellsReportView = () => {
-  const authHeader = useAuthHeader();
-  const wellsQuery = useQuery<Page<MeterListDTO>>({
-    queryKey: ["MonitoringWells", "report", "wells"],
-    queryFn: async () => {
-      const headers = { Authorization: authHeader() };
-      const params = new URLSearchParams([
-        ["filter_by_status", "Installed"],
-        ["filter_by_status", "Warehouse"],
-        ["sort_by", "serial_number"],
-        ["sort_direction", "asc"],
-        ["limit", "100"],
-        ["offset", "0"],
-      ]);
-
-      const response = await fetch(`${API_URL}/meters?${params.toString()}`, {
-        headers,
-      });
-
-      if (!response.ok) {
-        throw new Error(response.status.toString());
-      }
-
-      return response.json();
-    },
+  const fetchWithAuth = useFetchWithAuth();
+  const monitoredWellsQuery = useQuery<{ items: MonitoredWell[] }, Error, MonitoredWell[]>({
+    queryKey: ["wells"],
+    queryFn: () =>
+      fetchWithAuth({
+        method: "GET",
+        route: "/wells",
+        params: {
+          search_string: "monitoring",
+          sort_by: "name",
+          sort_direction: "asc",
+        },
+      }),
+    select: (res) => res.items,
   });
 
   const { control, reset } = useForm({
@@ -90,6 +80,12 @@ export const MonitoringWellsReportView = () => {
       headerName: "Well",
       flex: 1,
     },
+  ];
+
+  const [outsideRecorderWells, regularWells] = separateAndSortMonitoredWells(monitoredWellsQuery?.data);
+  const groupedWells = [
+    ...regularWells.map(well => ({ ...well, group: "Wells" })),
+    ...outsideRecorderWells.map(well => ({ ...well, group: "Outside Recorder Wells" })),
   ];
 
   return (
@@ -148,28 +144,45 @@ export const MonitoringWellsReportView = () => {
               />
             </Grid>
             <Grid item>
-              <ControlledAutocomplete
-                name="wells"
-                options={wellsQuery?.data?.items ?? []}
-                control={control}
-                disableClearable={false}
-                defaultValue={null}
-                getOptionLabel={(option: MeterListDTO) => option?.well?.name ?? ""}
-                isOptionEqualToValue={(option: MeterListDTO, value: MeterListDTO) => option.id === value.id}
-                renderInput={(params: any) => {
-                  if (wellsQuery.isLoading)
-                    params.inputProps.value = "Loading...";
-                  return (
-                    <TextField
-                      {...params}
-                      sx={{ minWidth: "30rem" }}
-                      label="Wells"
-                      size="medium"
-                      placeholder="Begin typing to search"
-                    />
-                  );
-                }}
-              />
+              {monitoredWellsQuery?.isSuccess ?
+                <ControlledAutocomplete
+                  name="wells"
+                  control={control}
+                  options={groupedWells}
+                  groupBy={(option: MonitoredWell & { group: string }) => option.group}
+                  getOptionLabel={(option: MonitoredWell) => option?.name ?? "Unnamed Well"}
+                  isOptionEqualToValue={(a: MonitoredWell, b: MonitoredWell) => a.id === b.id}
+                  disableClearable={false}
+                  multiple
+                  renderOption={(props: any, option: MonitoredWell & { group: string }) => {
+                    const isOutside = option.group === "Outside Recorder Wells";
+                    return (
+                      <li
+                        {...props}
+                        style={{
+                          backgroundColor: isOutside ? "#f3e5f5" : "#e3f2fd", // light purple vs light blue
+                          color: isOutside ? "#6a1b9a" : "#0d47a1", // dark purple vs dark blue
+                          fontWeight: 500,
+                        }}
+                      >
+                        {option.name?.trim() || "Unnamed Well"}
+                      </li>
+                    );
+                  }}
+                  renderInput={(params: any) => {
+                    if (monitoredWellsQuery.isLoading)
+                      params.inputProps.value = "Loading...";
+                    return (
+                      <TextField
+                        {...params}
+                        sx={{ minWidth: "30rem" }}
+                        label="Wells"
+                        size="medium"
+                        placeholder="Begin typing to search"
+                      />
+                    );
+                  }}
+                /> : null}
             </Grid>
           </Grid>
           <Grid container>

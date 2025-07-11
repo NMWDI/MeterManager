@@ -38,26 +38,7 @@ import { getDataStreamId } from "../../utils/DataStreamUtils";
 import { MonitorHeart } from "@mui/icons-material";
 import { BackgroundBox } from "../../components/BackgroundBox";
 import { CustomCardHeader } from "../../components/CustomCardHeader";
-
-const separateAndSortWells = (
-  wells: MonitoredWell[] = [],
-): [MonitoredWell[], MonitoredWell[]] => {
-  const sortWells = (w: MonitoredWell[]) =>
-    w.slice().sort((a, b) => {
-      if (!a.name) return 1; // Move undefined/null names to the bottom
-      if (!b.name) return -1;
-      return a.name.localeCompare(b.name);
-    });
-
-  const outsideRecorderWells = sortWells(
-    wells.filter((well) => well.outside_recorder === true),
-  );
-  const regularWells = sortWells(
-    wells.filter((well) => well.outside_recorder !== true),
-  );
-
-  return [outsideRecorderWells, regularWells];
-};
+import { separateAndSortMonitoredWells } from "../../utils";
 
 export const MonitoringWellsView = () => {
   const theme = useTheme();
@@ -82,11 +63,7 @@ export const MonitoringWellsView = () => {
     (s: SecurityScope) => s.scope_string === "admin",
   );
 
-  const {
-    data: wells,
-    isLoading: isLoadingWells,
-    error: errorWells,
-  } = useQuery<{ items: MonitoredWell[] }, Error, MonitoredWell[]>({
+  const monitoredWellsQuery = useQuery<{ items: MonitoredWell[] }, Error, MonitoredWell[]>({
     queryKey: ["wells"],
     queryFn: () =>
       fetchWithAuth({
@@ -137,7 +114,7 @@ export const MonitoringWellsView = () => {
   const updateMeasurement = useUpdateWaterLevel(() => refetchManual());
   const deleteMeasurement = useDeleteWaterLevel();
 
-  const error = errorWells || errorManual || errorSt2;
+  const error = monitoredWellsQuery.isError || errorManual || errorSt2;
 
   const handleSubmitNewMeasurement = (data: NewWellMeasurement) => {
     if (wellId) {
@@ -179,7 +156,7 @@ export const MonitoringWellsView = () => {
     setIsUpdateModalOpen(true);
   };
 
-  const [outsideRecorderWells, regularWells] = separateAndSortWells(wells);
+  const [outsideRecorderWells, regularWells] = separateAndSortMonitoredWells(monitoredWellsQuery?.data);
 
   return (
     <BackgroundBox>
@@ -194,7 +171,7 @@ export const MonitoringWellsView = () => {
 
           <FormControl
             sx={{ minWidth: "100px" }}
-            disabled={isLoadingWells || !!errorWells}
+            disabled={monitoredWellsQuery?.isFetching || !!monitoredWellsQuery?.isError}
           >
             <InputLabel id={`${selectWellId}-label`}>Site</InputLabel>
             <Select
@@ -204,9 +181,9 @@ export const MonitoringWellsView = () => {
               value={wellId ?? ""}
               onChange={(e) => setWellId(Number(e.target.value))}
             >
-              {isLoadingWells && <MenuItem disabled>Loading...</MenuItem>}
-              {errorWells && <MenuItem disabled>Error loading wells</MenuItem>}
-              {regularWells.length > 0 ? (
+              {monitoredWellsQuery?.isFetching && <MenuItem disabled>Loading...</MenuItem>}
+              {monitoredWellsQuery?.isError && <MenuItem disabled>Error loading wells</MenuItem>}
+              {monitoredWellsQuery?.data?.length ?? 0 > 0 ? (
                 <ListSubheader
                   sx={{
                     color: theme.palette.primary.main,
@@ -284,7 +261,7 @@ export const MonitoringWellsView = () => {
             <Box sx={{ flex: { xs: 1, md: 1 / 3 }, minWidth: 0 }}>
               <MonitoringWellsTable
                 rows={manualMeasurements ?? []}
-                selectedWell={wells?.find((well) => well.id == wellId)}
+                selectedWell={monitoredWellsQuery?.data?.find((well) => well.id == wellId)}
                 isWellSelected={!!wellId}
                 onOpenModal={() => setIsNewModalOpen(true)}
                 onMeasurementSelect={handleMeasurementSelect}
