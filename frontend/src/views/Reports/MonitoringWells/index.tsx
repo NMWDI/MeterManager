@@ -20,7 +20,7 @@ import { Link } from "react-router-dom";
 import ControlledDatepicker from "../../../components/RHControlled/ControlledDatepicker";
 import ControlledAutocomplete from "../../../components/RHControlled/ControlledAutocomplete";
 import { useForm } from "react-hook-form";
-import { useQuery } from "react-query";
+import { useMutation, useQuery } from "react-query";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import dayjs, { Dayjs } from "dayjs";
@@ -28,10 +28,12 @@ import { BackgroundBox } from "../../../components/BackgroundBox";
 import { CustomCardHeader } from "../../../components/CustomCardHeader";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import { LineChart } from "@mui/x-charts";
-import { MonitoredWell, ST2Measurement, WellMeasurementDTO } from "../../../interfaces";
-import { useFetchST2, useFetchWithAuth } from "../../../hooks";
+import { MonitoredWell, WellMeasurementDTO } from "../../../interfaces";
+import { useFetchWithAuth } from "../../../hooks";
 import { separateAndSortMonitoredWells } from "../../../utils";
 import { useMemo } from "react";
+import { API_URL } from "../../../config";
+import { useAuthHeader } from "react-auth-kit";
 
 
 const schema = yup.object().shape({
@@ -103,6 +105,7 @@ export const MonitoringWellsReportView = () => {
   }
 `;
 
+  const authHeader = useAuthHeader();
   const fetchWithAuth = useFetchWithAuth();
   const monitoredWellsQuery = useQuery<{ items: MonitoredWell[] }, Error, MonitoredWell[]>({
     queryKey: ["wells"],
@@ -185,7 +188,7 @@ export const MonitoringWellsReportView = () => {
   })) ?? [];
 
   const groupedByWell = useMemo(() => {
-    const groups: Record<string, { x: string; y: number }[]> = {};
+    const groups: Record<string, { x: Date; y: number }[]> = {};
 
     manualMeasurementsQuery?.data?.forEach((m) => {
       const wellName = m.well.ra_number;
@@ -233,6 +236,56 @@ export const MonitoringWellsReportView = () => {
     ...outsideRecorderWells.map(well => ({ ...well, group: "Outside Recorder Wells" })),
   ];
 
+  const downloadPDFMutation = useMutation({
+    mutationFn: async ({
+      from,
+      to,
+      wellIds,
+    }: {
+      from: Dayjs;
+      to: Dayjs;
+      wellIds: number[];
+    }) => {
+      const params = new URLSearchParams({
+        from_month: from.format("YYYY-MM"),
+        to_month: to.format("YYYY-MM"),
+      });
+
+      wellIds.forEach((id: number) => {
+        params.append("well_ids", id.toString());
+      });
+
+      const response = await fetch(
+        `${API_URL}/waterlevels/pdf?${params.toString()}`,
+        {
+          headers: { Authorization: authHeader() },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("PDF generation failed");
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "waterlevels_report.pdf";
+      a.click();
+      window.URL.revokeObjectURL(url);
+    },
+  });
+
+  const handleDownloadPDF = () => {
+    if (!from || !to || !wellIds?.length) return;
+
+    downloadPDFMutation.mutate({
+      from,
+      to,
+      wellIds
+    });
+  };
+
   return (
     <BackgroundBox>
       <Card sx={{ height: "fit-content" }}>
@@ -250,7 +303,14 @@ export const MonitoringWellsReportView = () => {
             </Grid>
             <Grid item>
               <Tooltip title="Export report as PDF" placement="left">
-                <IconButton aria-label="export report as pdf">
+                <IconButton
+                  aria-label="export report as pdf"
+                  onClick={handleDownloadPDF}
+                  disabled={
+                    !wells?.length ||
+                    downloadPDFMutation.isLoading
+                  }
+                >
                   <PictureAsPdf />
                 </IconButton>
               </Tooltip>
