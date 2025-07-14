@@ -222,6 +222,7 @@ export const MonitoringWellsReportView = () => {
       return {
         label: wellName,
         data,
+        connectNulls: true,
       };
     });
   }, [groupedByWell, allTimestamps]);
