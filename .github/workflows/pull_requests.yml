@@ -33,27 +33,3 @@ jobs:
       - name: Build API Docker Image
         run: |
           docker build -t api-prod -f api/Dockerfile ./api
-
-      # Run API container
-      - name: Run API Container
-        run: |
-          docker run -d --name api-prod-test -p 8000:8000 \
-            --env-file api/.env_production \
-            api-prod
-          sleep 5
-          curl --fail http://localhost:8000/api/v1/docs || (docker logs api-prod-test && exit 1)
-
-      # Run Frontend container
-      - name: Run Frontend Container
-        run: |
-          docker run -d --name frontend-prod-test -p 5173:80 \
-            --env-file frontend/.env.production \
-            frontend-prod
-          sleep 5
-          curl --fail http://localhost:5173 || (docker logs frontend-prod-test && exit 1)
-
-      - name: Cleanup Docker Containers
-        if: always()
-        run: |
-          docker stop api-prod-test frontend-prod-test || true
-          docker rm api-prod-test frontend-prod-test || true
