@@ -382,7 +382,7 @@ export const MonitoringWellsReportView = () => {
                   </li>
                 )}
                 renderTags={(value: MonitoredWell[], getTagProps: any) =>
-                  value.map((option: MonitoredWell & { group: string }, index: number) => {
+                  (value as (MonitoredWell & { group: string })[]).map((option, index) => {
                     const isOutside = option.group === "Outside Recorder Wells";
                     return (
                       <Chip
