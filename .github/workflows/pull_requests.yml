@@ -20,6 +20,8 @@ jobs:
 
       - name: Install Dependencies
         run: npm ci
+        working-directory: frontend
 
       - name: Run Production Build
         run: npm run build:ci
+        working-directory: frontend
