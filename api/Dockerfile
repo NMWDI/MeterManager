@@ -7,8 +7,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 COPY ./requirements.txt .
 
-# Upgrade pip and install Cython
-RUN pip install --no-cache-dir --upgrade pip Cython
+# Upgrade pip
+RUN pip install --no-cache-dir --upgrade pip
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
