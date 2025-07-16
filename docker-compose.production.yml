@@ -6,7 +6,7 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: ./Dockerfile_production
+      dockerfile: ./Dockerfile
     ports:
       - "5173:80"
     env_file:
@@ -83,5 +83,4 @@ services:
       - "8080:8080"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
-
-  
+      
