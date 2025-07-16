@@ -8,38 +8,46 @@ const disabledInputStyle = {
   cursor: "default",
 };
 
-// React-Hook-Form controlled version of the autocomplete component
 export default function ControlledAutocomplete({
   control,
   name,
+  options = [],
+  groupBy,
+  getOptionLabel,
+  isOptionEqualToValue,
+  multiple = false,
   ...childProps
 }: any) {
   return (
     <Controller
-      defaultValue={""}
       name={name}
       control={control}
-      render={({ field }) => (
-        <Autocomplete
-          {...field}
-          disableClearable={true}
-          {...childProps}
-          sx={disabledInputStyle}
-          filterOptions={(x) => x} // Disable filtering because backend already does this
-          isOptionEqualToValue={(a: any, b: any) => {
-            // Let any value be an option whether or not its in the list
-            const optionPresent = childProps.options.find(
-              (x: any) => x.id == b?.id,
-            );
-            if (!optionPresent) {
-              childProps.options.push(b);
-              return true;
-            }
-            return a?.id == b?.id;
-          }}
-          onChange={(_, value) => field.onChange(value)}
-        />
-      )}
+      defaultValue={multiple ? [] : null}
+      render={({ field }) => {
+        const { value, onChange, ...restField } = field;
+
+        const safeValue = multiple
+          ? Array.isArray(value)
+            ? value
+            : []
+          : value ?? null;
+
+        return (
+          <Autocomplete
+            {...restField}
+            multiple={multiple}
+            disableCloseOnSelect={multiple}
+            options={options}
+            groupBy={groupBy}
+            getOptionLabel={getOptionLabel}
+            isOptionEqualToValue={isOptionEqualToValue}
+            value={safeValue}
+            onChange={(_, newValue) => onChange(newValue)}
+            sx={disabledInputStyle}
+            {...childProps}
+          />
+        );
+      }}
     />
   );
 }

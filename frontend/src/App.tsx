@@ -27,7 +27,7 @@ import { ChloridesView } from "./views/Chlorides/ChloridesView";
 import { ReportsView } from "./views/Reports";
 import { WorkOrdersReportView } from "./views/Reports/WorkOrders";
 import { MonitoringWellsReportView } from "./views/Reports/MonitoringWells";
-import { RepairsReportView } from "./views/Reports/Repairs";
+import { MaintenanceReportView } from "./views/Reports/Maintenance";
 import { PartsUsedReportView } from "./views/Reports/PartsUsed";
 import { BoardReportView } from "./views/Reports/Board";
 import { ChloridesReportView } from "./views/Reports/Chlorides";
@@ -243,10 +243,10 @@ export const App = () => {
                   }
                 />
                 <Route
-                  path="/reports/repairs"
+                  path="/reports/maintenance"
                   element={
                     <AppLayout
-                      pageComponent={<RepairsReportView />}
+                      pageComponent={<MaintenanceReportView />}
                       requiredScopes={["read"]}
                       setErrorMessage={setErrorMessage}
                     />

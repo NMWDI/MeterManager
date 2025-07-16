@@ -26,15 +26,13 @@ export const ReportsView = () => {
               Icon={FormatListBulletedOutlined}
             />
             <NavLink
-              disabled
               route="/reports/wells"
               label="Monitoring Wells"
               Icon={MonitorHeart}
             />
             <NavLink
-              disabled
-              route="/reports/repairs"
-              label="Repairs"
+              route="/reports/maintenance"
+              label="Maintenance"
               Icon={Plumbing}
             />
             <NavLink

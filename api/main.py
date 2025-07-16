@@ -28,6 +28,7 @@ from api.routes.well_measurements import well_measurement_router
 from api.routes.activities import activity_router
 from api.routes.OSE import ose_router
 from api.routes.parts import part_router
+from api.routes.maintenance import maintenance_router
 from api.routes.admin import admin_router
 from api.routes.wells import well_router
 
@@ -130,6 +131,7 @@ authenticated_router.include_router(meter_router)
 authenticated_router.include_router(activity_router)
 authenticated_router.include_router(well_measurement_router)
 authenticated_router.include_router(part_router)
+authenticated_router.include_router(maintenance_router)
 authenticated_router.include_router(admin_router)
 authenticated_router.include_router(well_router)
 
