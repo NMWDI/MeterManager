@@ -320,7 +320,6 @@ def get_part(part_id: int, db: Session = Depends(get_db)):
     tags=["Parts"],
 )
 def update_part(updated_part: part_schemas.Register | part_schemas.Part, db: Session = Depends(get_db)):
-    print('Updating part:', updated_part)
     # Update the part (this won't include secondary attributes like associations)
     part_db = _get(db, Parts, updated_part.id)
     for k, v in updated_part.model_dump(exclude_unset=True).items():
@@ -361,8 +360,6 @@ def update_part(updated_part: part_schemas.Register | part_schemas.Part, db: Ses
 
     # Update register settings if applicable
     if isinstance(updated_part, part_schemas.Register):
-        print('Updating register settings...')
-        print(updated_part.register_settings)
         register_update = updated_part.register_settings.model_dump(exclude_unset=True)
 
         # Load the existing register from the database
