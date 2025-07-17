@@ -15,37 +15,34 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set Compose File based on Branch
-        id: set-compose
+      - name: Set Environment Variables
+        id: set-vars
         run: |
           if [[ "${GITHUB_REF##*/}" == "production" ]]; then
+            echo "SSH_HOST=${{ secrets.GCP_PROD_SSH_HOST }}" >> $GITHUB_ENV
+            echo "SSH_KEY='${{ secrets.GCP_PROD_SSH_PRIVATE_KEY }}'" >> $GITHUB_ENV
             echo "COMPOSE_FILE=docker-compose.production.yml" >> $GITHUB_ENV
           else
+            echo "SSH_HOST=${{ secrets.GCP_PREPROD_SSH_HOST }}" >> $GITHUB_ENV
+            echo "SSH_KEY='${{ secrets.GCP_PREPROD_SSH_PRIVATE_KEY }}'" >> $GITHUB_ENV
             echo "COMPOSE_FILE=docker-compose.development.yml" >> $GITHUB_ENV
           fi
 
-      - name: SSH Deploy to GCP VM
+      - name: Deploy to VM via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.GCP_SSH_HOST }}
+          host: ${{ env.SSH_HOST }}
           username: ${{ secrets.GCP_SSH_USER }}
-          key: ${{ secrets.GCP_SSH_PRIVATE_KEY }}
+          key: ${{ env.SSH_KEY }}
           script: |
             set -e
             cd ${{ secrets.DEPLOYMENT_PATH }}
 
-            echo "Switching to branch ${GITHUB_REF##*/}..."
             git fetch origin
             git checkout ${GITHUB_REF##*/}
             git pull origin ${GITHUB_REF##*/}
 
-            echo "Bringing down existing containers..."
             docker compose -f ${{ env.COMPOSE_FILE }} down
-
-            echo "Building and starting new containers with ${{ env.COMPOSE_FILE }}..."
             docker compose -f ${{ env.COMPOSE_FILE }} up -d --build
 
-            echo "Removing unused Docker images..."
             docker image prune -f
-
-            echo "Deployment for ${GITHUB_REF##*/} branch complete."
