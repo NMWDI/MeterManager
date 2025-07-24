@@ -1,4 +1,5 @@
 /** @jsxImportSource @emotion/react */
+import { useMemo, useEffect } from "react";
 import { ArrowBack, PictureAsPdf, MonitorHeart } from "@mui/icons-material";
 import {
   Box,
@@ -6,10 +7,13 @@ import {
   Card,
   CardContent,
   Chip,
+  FormControlLabel,
+  FormGroup,
   Grid,
   IconButton,
   ListSubheader,
   Stack,
+  Switch,
   TextField,
   Tooltip,
   Typography,
@@ -19,7 +23,7 @@ import { css } from "@emotion/react";
 import { Link } from "react-router-dom";
 import ControlledDatepicker from "../../../components/RHControlled/ControlledDatepicker";
 import ControlledAutocomplete from "../../../components/RHControlled/ControlledAutocomplete";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { useMutation, useQuery } from "react-query";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -31,7 +35,6 @@ import { LineChart } from "@mui/x-charts";
 import { MonitoredWell, WellMeasurementDTO } from "../../../interfaces";
 import { useFetchWithAuth } from "../../../hooks";
 import { separateAndSortMonitoredWells } from "../../../utils";
-import { useMemo } from "react";
 import { API_URL } from "../../../config";
 import { useAuthHeader } from "react-auth-kit";
 
@@ -61,12 +64,16 @@ const schema = yup.object().shape({
       })
     )
     .min(1, "At least one Well is required"),
+  isAveragingAllWells: yup.boolean().required(),
+  isComparingTo1970Average: yup.boolean().required(),
 });
 
 const defaultSchema = {
   from: dayjs(),
   to: dayjs(),
   wells: [],
+  isAveragingAllWells: false,
+  isComparingTo1970Average: false,
 };
 
 const size = {
@@ -122,7 +129,7 @@ export const MonitoringWellsReportView = () => {
     select: (res) => res.items,
   });
 
-  const { control, reset, watch } = useForm({
+  const { control, reset, watch, setValue } = useForm({
     resolver: yupResolver(schema),
     defaultValues: defaultSchema,
   });
@@ -133,12 +140,30 @@ export const MonitoringWellsReportView = () => {
   const from = watch("from");
   const to = watch("to");
 
+  const isAveragingAllWells = watch('isAveragingAllWells');
+  const isComparingTo1970Average = watch('isComparingTo1970Average');
+
+  useEffect(() => {
+    if (((wells?.length ?? 0) < 2) && isAveragingAllWells) {
+      setValue("isAveragingAllWells", false, { shouldDirty: true, shouldValidate: true });
+    }
+  }, [wells, isAveragingAllWells, setValue]);
+
   const manualMeasurementsQuery = useQuery<WellMeasurementDTO[], Error>({
-    queryKey: ["manualMeasurements", wellIds, from, to],
+    queryKey: [
+      "manualMeasurements",
+      wellIds,
+      from,
+      to,
+      isAveragingAllWells,
+      isComparingTo1970Average
+    ],
     queryFn: () => {
       const searchParams = new URLSearchParams({
         from_month: from?.format("YYYY-MM"),
         to_month: to?.format("YYYY-MM"),
+        isAveragingAllWells: isAveragingAllWells.toString(),
+        isComparingTo1970Average: isComparingTo1970Average.toString(),
       });
 
       wellIds.forEach((id: number) => {
@@ -152,19 +177,6 @@ export const MonitoringWellsReportView = () => {
     },
     enabled: wellIds.length > 0 && !!from && !!to,
   });
-
-  // const dataStreamId = useMemo(
-  //   () => (wellId ? getDataStreamId(wellId) : undefined),
-  //   [wellId],
-  // );
-
-  // const fetchSt2 = useFetchST2();
-  // const st2MeasurementsQuery = useQuery<ST2Measurement[], Error>({
-  //   queryKey: ["st2Measurements", dataStreamId],
-  //   queryFn: () =>
-  //     fetchSt2("GET", `/Datastreams(${dataStreamId})/Observations`),
-  //   enabled: !!dataStreamId,
-  // });
 
   const columns: GridColDef[] = [
     { field: "date_time", headerName: "Date / Time", flex: 1 },
@@ -436,6 +448,31 @@ export const MonitoringWellsReportView = () => {
           </Grid>
           <Grid container>
             <Stack direction="row" width="100%" textAlign="center" spacing={2}>
+              <Box>
+                <FormGroup>
+                  <Controller
+                    name="isAveragingAllWells"
+                    control={control}
+                    render={({ field: { value, onChange } }) => (
+                      <FormControlLabel
+                        disabled={(wells?.length ?? 0) < 2}
+                        control={<Switch checked={!!value} onChange={(e) => onChange(e.target.checked)} />}
+                        label="Average DTWs across all wells"
+                      />
+                    )}
+                  />
+                  <Controller
+                    name="isComparingTo1970Average"
+                    control={control}
+                    render={({ field }) => (
+                      <FormControlLabel
+                        control={<Switch {...field} checked={field.value} />}
+                        label="Compare against the 1970 average"
+                      />
+                    )}
+                  />
+                </FormGroup>
+              </Box>
               <Box flexGrow={1}>
                 <Typography variant="h5">Depth of Water over time</Typography>
                 <LineChart

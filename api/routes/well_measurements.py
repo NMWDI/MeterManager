@@ -75,14 +75,11 @@ def read_waterlevels(
     well_ids: List[int] = Query(..., description="One or more well IDs"),
     from_month: Optional[str] = Query(None, pattern=r"^\d{4}-\d{2}$"),
     to_month: Optional[str] = Query(None, pattern=r"^\d{4}-\d{2}$"),
+    isAveragingAllWells: bool = Query(False),
+    isComparingTo1970Average: bool = Query(False),
     db: Session = Depends(get_db)
 ):
-    if not well_ids:
-        return []
-
-    from_date = None
-    to_date = None
-
+    from_date, to_date = None, None
     if from_month and to_month:
         try:
             from_date = datetime.strptime(from_month, "%Y-%m").replace(day=1)
@@ -96,14 +93,24 @@ def read_waterlevels(
                 last_day = calendar.monthrange(year, month)[1]
                 to_date = to_dt.replace(day=last_day, hour=23, minute=59, second=59)
         except ValueError:
-            raise HTTPException(
-                status_code=400,
-                detail="Invalid date format. Use YYYY-MM."
-            )
+            raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM.")
 
+    # Override well_ids with all monitoring wells if comparing to 1970 average
+    MONITORING_ID = 11
+    if isComparingTo1970Average:
+        monitoring_stmt = select(Wells.id).where(Wells.use_type_id == MONITORING_ID)
+        well_ids = [row[0] for row in db.execute(monitoring_stmt).all()]
+
+    if not well_ids:
+        return []
+
+    # Fetch measurements
     stmt = (
         select(WellMeasurements)
-        .options(joinedload(WellMeasurements.submitting_user))
+        .options(
+            joinedload(WellMeasurements.submitting_user),
+            joinedload(WellMeasurements.well)
+        )
         .join(ObservedPropertyTypeLU)
         .where(
             and_(
@@ -118,7 +125,32 @@ def read_waterlevels(
 
     results = db.scalars(stmt).all()
 
-    return results
+    # If neither averaging flag is set, return raw data
+    if not isAveragingAllWells and not isComparingTo1970Average:
+        return results
+
+    # Grouping: by day or by month
+    group_by = "month" if (to_date - from_date).days >= 365 else "day"
+    groups = defaultdict(list)
+
+    for record in results:
+        timestamp = record.timestamp
+        key = timestamp.strftime("%Y-%m") if group_by == "month" else timestamp.strftime("%Y-%m-%d")
+        groups[key].append(record.value)
+
+    averaged = []
+    for i, (time_str, values) in enumerate(sorted(groups.items())):
+        avg_value = sum(values) / len(values)
+        dt = datetime.strptime(time_str, "%Y-%m" if group_by == "month" else "%Y-%m-%d")
+        averaged.append(well_schemas.WellMeasurementDTO(
+            id=-(i + 1),  # synthetic ID
+            timestamp=dt,
+            value=avg_value,
+            submitting_user={"full_name": "System"},
+            well={"ra_number": "Average of wells"}
+        ))
+
+    return averaged
 
 
 @well_measurement_router.get(
