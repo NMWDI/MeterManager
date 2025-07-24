@@ -12,7 +12,6 @@ import {
   Grid,
   IconButton,
   ListSubheader,
-  Stack,
   Switch,
   TextField,
   Tooltip,
@@ -446,40 +445,48 @@ export const MonitoringWellsReportView = () => {
               />
             </Grid>
           </Grid>
-          <Grid container>
-            <Stack direction="row" width="100%" textAlign="center" spacing={2}>
-              <Box>
-                <FormGroup>
-                  <Controller
-                    name="isAveragingAllWells"
-                    control={control}
-                    render={({ field: { value, onChange } }) => (
-                      <FormControlLabel
-                        disabled={(wells?.length ?? 0) < 2}
-                        control={<Switch checked={!!value} onChange={(e) => onChange(e.target.checked)} />}
-                        label="Average DTWs across all wells"
-                      />
-                    )}
-                  />
-                  <Controller
-                    name="isComparingTo1970Average"
-                    control={control}
-                    render={({ field }) => (
-                      <FormControlLabel
-                        control={<Switch {...field} checked={field.value} />}
-                        label="Compare against the 1970 average"
-                      />
-                    )}
-                  />
-                </FormGroup>
-              </Box>
-              <Box flexGrow={1}>
-                <Typography variant="h5">Depth of Water over time</Typography>
+          <Grid container alignItems="center" spacing={2}>
+            <Grid item xs="auto">
+              <FormGroup>
+                <Controller
+                  name="isAveragingAllWells"
+                  control={control}
+                  render={({ field: { value, onChange } }) => (
+                    <FormControlLabel
+                      disabled={(wells?.length ?? 0) < 2}
+                      control={<Switch checked={!!value} onChange={(e) => onChange(e.target.checked)} />}
+                      label="Average DTWs across all wells"
+                    />
+                  )}
+                />
+                <Controller
+                  name="isComparingTo1970Average"
+                  control={control}
+                  render={({ field }) => (
+                    <FormControlLabel
+                      control={<Switch {...field} checked={field.value} />}
+                      label="Compare against the 1970 average"
+                    />
+                  )}
+                />
+              </FormGroup>
+            </Grid>
+            <Grid item xs>
+              <Box display="flex" flexDirection="column" alignItems="center">
+                <Typography variant="h5" gutterBottom>
+                  Depth of Water over Time
+                </Typography>
                 <LineChart
                   xAxis={[{
                     data: allTimestamps,
                     scaleType: "time",
-                    valueFormatter: (value) => dayjs(value).format("MMM D, YYYY HH:mm"),
+                    valueFormatter: (value) => {
+                      const date = dayjs(value);
+                      const isMidnight = date.hour() === 0 && date.minute() === 0;
+                      return isMidnight
+                        ? date.format("MMM D, YYYY")
+                        : date.format("MMM D, YYYY HH:mm");
+                    }
                   }]}
                   series={series}
                   slotProps={{
@@ -494,7 +501,7 @@ export const MonitoringWellsReportView = () => {
                   {...size}
                 />
               </Box>
-            </Stack>
+            </Grid>
           </Grid>
           <Grid container padding={2}>
             <DataGrid
