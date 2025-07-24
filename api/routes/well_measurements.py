@@ -79,78 +79,100 @@ def read_waterlevels(
     isComparingTo1970Average: bool = Query(False),
     db: Session = Depends(get_db)
 ):
+    MONITORING_USE_TYPE_ID = 11
+    synthetic_id_counter = -1
+
+    def group_and_average(measurements, group_by_label: str):
+        grouped = defaultdict(list)
+        for m in measurements:
+            key = m.timestamp.strftime("%Y-%m" if group_by_label == "month" else "%Y-%m-%d")
+            grouped[key].append(m.value)
+
+        result = []
+        for time_str, values in sorted(grouped.items()):
+            dt = datetime.strptime(time_str, "%Y-%m" if group_by_label == "month" else "%Y-%m-%d")
+            avg_value = sum(values) / len(values)
+            nonlocal synthetic_id_counter
+            result.append(well_schemas.WellMeasurementDTO(
+                id=synthetic_id_counter,
+                timestamp=dt,
+                value=avg_value,
+                submitting_user={"full_name": "System"},
+                well={"ra_number": "Average of wells"}
+            ))
+            synthetic_id_counter -= 1
+        return result
+
+    def get_measurements_by_ids(well_ids, start, end):
+        stmt = (
+            select(WellMeasurements)
+            .options(joinedload(WellMeasurements.submitting_user), joinedload(WellMeasurements.well))
+            .join(ObservedPropertyTypeLU)
+            .where(
+                and_(
+                    ObservedPropertyTypeLU.name == "Depth to water",
+                    WellMeasurements.well_id.in_(well_ids),
+                    *( [WellMeasurements.timestamp >= start] if start else [] ),
+                    *( [WellMeasurements.timestamp <= end] if end else [] ),
+                )
+            )
+            .order_by(WellMeasurements.well_id, WellMeasurements.timestamp)
+        )
+        return db.scalars(stmt).all()
+
+    # Parse dates
     from_date, to_date = None, None
     if from_month and to_month:
         try:
             from_date = datetime.strptime(from_month, "%Y-%m").replace(day=1)
             to_dt = datetime.strptime(to_month, "%Y-%m")
-            year, month = to_dt.year, to_dt.month
             today = datetime.now()
-
-            if year == today.year and month == today.month:
+            if to_dt.year == today.year and to_dt.month == today.month:
                 to_date = today
             else:
-                last_day = calendar.monthrange(year, month)[1]
+                last_day = calendar.monthrange(to_dt.year, to_dt.month)[1]
                 to_date = to_dt.replace(day=last_day, hour=23, minute=59, second=59)
         except ValueError:
             raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM.")
 
-    # Override well_ids with all monitoring wells if comparing to 1970 average
-    MONITORING_ID = 11
-    if isComparingTo1970Average:
-        monitoring_stmt = select(Wells.id).where(Wells.use_type_id == MONITORING_ID)
-        well_ids = [row[0] for row in db.execute(monitoring_stmt).all()]
-
-    if not well_ids:
+    if not well_ids and not isComparingTo1970Average:
         return []
 
-    # Fetch measurements
-    stmt = (
-        select(WellMeasurements)
-        .options(
-            joinedload(WellMeasurements.submitting_user),
-            joinedload(WellMeasurements.well)
-        )
-        .join(ObservedPropertyTypeLU)
-        .where(
-            and_(
-                ObservedPropertyTypeLU.name == "Depth to water",
-                WellMeasurements.well_id.in_(well_ids),
-                *( [WellMeasurements.timestamp >= from_date] if from_date else [] ),
-                *( [WellMeasurements.timestamp <= to_date] if to_date else [] ),
-            )
-        )
-        .order_by(WellMeasurements.well_id, WellMeasurements.timestamp)
-    )
-
-    results = db.scalars(stmt).all()
-
-    # If neither averaging flag is set, return raw data
-    if not isAveragingAllWells and not isComparingTo1970Average:
-        return results
-
-    # Grouping: by day or by month
     group_by = "month" if (to_date - from_date).days >= 365 else "day"
-    groups = defaultdict(list)
 
-    for record in results:
-        timestamp = record.timestamp
-        key = timestamp.strftime("%Y-%m") if group_by == "month" else timestamp.strftime("%Y-%m-%d")
-        groups[key].append(record.value)
+    response_data = []
 
-    averaged = []
-    for i, (time_str, values) in enumerate(sorted(groups.items())):
-        avg_value = sum(values) / len(values)
-        dt = datetime.strptime(time_str, "%Y-%m" if group_by == "month" else "%Y-%m-%d")
-        averaged.append(well_schemas.WellMeasurementDTO(
-            id=-(i + 1),  # synthetic ID
-            timestamp=dt,
-            value=avg_value,
-            submitting_user={"full_name": "System"},
-            well={"ra_number": "Average of wells"}
-        ))
+    # Add average for current selection (if requested)
+    if isAveragingAllWells and well_ids:
+        current_measurements = get_measurements_by_ids(well_ids, from_date, to_date)
+        averaged = group_and_average(current_measurements, group_by)
+        response_data.extend(averaged)
 
-    return averaged
+    # Add raw per-well measurements (if not averaging)
+    if not isAveragingAllWells and well_ids:
+        response_data.extend(get_measurements_by_ids(well_ids, from_date, to_date))
+
+    # Add 1970 average comparison (if requested)
+    if isComparingTo1970Average:
+        if (to_date - from_date).days >= 365:
+            start_1970 = datetime(1970, 1, 1)
+            end_1970 = datetime(1970, 12, 31, 23, 59, 59)
+        else:
+            start_1970 = datetime(1970, from_date.month, 1)
+            last_day = calendar.monthrange(1970, to_date.month)[1]
+            end_1970 = datetime(1970, to_date.month, last_day, 23, 59, 59)
+
+        monitoring_ids = [row[0] for row in db.execute(
+            select(Wells.id).where(Wells.use_type_id == MONITORING_USE_TYPE_ID)
+        ).all()]
+        measurements_1970 = get_measurements_by_ids(monitoring_ids, start_1970, end_1970)
+        averaged_1970 = group_and_average(measurements_1970, "month")  # Always by month
+        # Rename to distinguish
+        for dto in averaged_1970:
+            dto.well.ra_number = "1970 Average"
+        response_data.extend(averaged_1970)
+
+    return response_data
 
 
 @well_measurement_router.get(
