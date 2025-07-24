@@ -201,17 +201,28 @@ export const MonitoringWellsReportView = () => {
   const groupedByWell = useMemo(() => {
     const groups: Record<string, { x: Date; y: number }[]> = {};
 
+    const fromYear = dayjs(watch("from")).year();
+    const isComparingTo1970Average = watch("isComparingTo1970Average");
+
     manualMeasurementsQuery?.data?.forEach((m) => {
       const wellName = m.well.ra_number;
+
+      // Modify timestamp if this is the 1970 average line
+      let timestamp = m.timestamp;
+      if (isComparingTo1970Average && wellName === "1970 Average") {
+        const d = dayjs(timestamp);
+        timestamp = d.set("year", fromYear).toDate();
+      }
+
       if (!groups[wellName]) groups[wellName] = [];
       groups[wellName].push({
-        x: m.timestamp,
+        x: timestamp,
         y: m.value,
       });
     });
 
     return groups;
-  }, [manualMeasurementsQuery?.data]);
+  }, [manualMeasurementsQuery?.data, watch("from"), watch("isComparingTo1970Average")]);
 
   const allTimestamps = useMemo(() => {
     const timestamps = new Set<number>();
