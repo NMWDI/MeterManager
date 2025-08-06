@@ -13,6 +13,7 @@ import {
   MenuItem,
   OutlinedInput,
   Select,
+  Typography,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
@@ -23,7 +24,6 @@ import * as Yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { enqueueSnackbar } from "notistack";
 import { useFieldArray } from "react-hook-form";
-
 import {
   useCreatePart,
   useGetMeterTypeList,
@@ -56,7 +56,7 @@ interface PartDetailsCard {
   partAddMode: boolean;
 }
 
-export const PartDetailsCard = ({selectedPartID,partAddMode,}: PartDetailsCard) => {
+export const PartDetailsCard = ({ selectedPartID, partAddMode, }: PartDetailsCard) => {
   const {
     handleSubmit,
     control,
@@ -189,60 +189,52 @@ export const PartDetailsCard = ({selectedPartID,partAddMode,}: PartDetailsCard) 
           </Grid>
           <Grid container xs={12} columnSpacing={2} sx={{ mt: 1 }} display={(watch("part_type")?.id ?? 0) === 17 ? "flex" : "none"}>
             <Grid item xs={12}>
-            <h4>Register Properties</h4>
+              <Typography sx={{ paddingBottom: 2, paddingTop: 2 }} variant="h4">Register Properties</Typography>
             </Grid>
             <Grid item xs={12} xl={4}>
-                <ControlledTextbox
+              <ControlledTextbox
                 name="register_settings.ratio"
                 control={control}
                 label="Ratio"
                 value={watch("register_settings.ratio") ?? ''}
-                // error={errors?.register_settings?.ratio?.message != undefined}
-                // helperText={errors?.register_settings?.ratio?.message}
-                />
+              />
             </Grid>
             <Grid item xs={12} xl={4}>
-                <ControlledTextbox
+              <ControlledTextbox
                 name="register_settings.number_of_digits"
                 control={control}
                 label="Dial Digits"
                 type="number"
                 value={watch("register_settings.number_of_digits") ?? ''}
-                // error={errors?.dial_digits?.message != undefined}
-                // helperText={errors?.dial_digits?.message}
-                />
+              />
             </Grid>
             <Grid item xs={12} xl={4}>
-                <ControlledTextbox
+              <ControlledTextbox
                 name="register_settings.multiplier"
                 control={control}
                 label="Multiplier"
                 type="number"
                 inputProps={{ step: "0.01" }}
                 value={watch("register_settings.multiplier") ?? ''}
-                // error={errors?.multiplier?.message != undefined}
-                // helperText={errors?.multiplier?.message}
-                />
+              />
             </Grid>
             <Grid item xs={12} xl={6}>
-                <ControlledUnitsSelect
-                    name="register_settings.dial_units"
-                    control={control}
-                    label="Dial Units"
-                    //error={errors?.dial_units?.message}
-                    sx={{ mt: 2 }}
-                    value={watch("register_settings.dial_units")?.id ?? ''}
-                />
+              <ControlledUnitsSelect
+                name="register_settings.dial_units"
+                control={control}
+                label="Dial Units"
+                sx={{ mt: 2 }}
+                value={watch("register_settings.dial_units")?.id ?? ''}
+              />
             </Grid>
             <Grid item xs={12} xl={6}>
-                <ControlledUnitsSelect
-                    name="register_settings.totalizer_units"
-                    control={control}
-                    label="Totalizer Units"
-                    //error={errors?.register_units?.message}
-                    sx={{ mt: 2 }}
-                    value={watch("register_settings.totalizer_units")?.id ?? ''}
-                />
+              <ControlledUnitsSelect
+                name="register_settings.totalizer_units"
+                control={control}
+                label="Totalizer Units"
+                sx={{ mt: 2 }}
+                value={watch("register_settings.totalizer_units")?.id ?? ''}
+              />
             </Grid>
           </Grid>
           <Grid container xs={12} sx={{ mt: 2 }}>
@@ -294,7 +286,6 @@ export const PartDetailsCard = ({selectedPartID,partAddMode,}: PartDetailsCard) 
                     </Box>
                   )}
                 >
-                  {/* Scope list (with selected scopes filtered out)  */}
                   {meterTypeList.data
                     ?.filter(
                       (x) =>
@@ -312,7 +303,6 @@ export const PartDetailsCard = ({selectedPartID,partAddMode,}: PartDetailsCard) 
               </FormControl>
             </Grid>
           </Grid>
-          
         </Grid>
         <Grid container item xs={12} sx={{ mt: 2 }}>
           {hasErrors() ? (
