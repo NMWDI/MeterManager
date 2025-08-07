@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuthUser } from "react-auth-kit";
-import { Grid } from "@mui/material";
+import { Grid, Typography } from "@mui/material";
 import { useGetWorkOrders } from "./service/ApiServiceNew";
 import { WorkOrderStatus } from "./enums";
 import { WorkOrder } from "./interfaces";
@@ -50,6 +50,22 @@ export default function Sidenav() {
     return () => clearInterval(interval);
   }, []);
 
+  const generalNav = [
+    { route: "/home", label: "Home", Icon: Home },
+    { route: "/workorders", label: workOrderLabel, Icon: FormatListBulletedOutlined },
+    { route: "/meters", label: "Meters Information", Icon: ScreenshotMonitor },
+    { route: "/activities", label: "Activities", Icon: Construction },
+    { route: "/wells", label: "Monitoring Wells", Icon: MonitorHeart },
+    { route: "/wellmanagement", label: "Manage Wells", Icon: Plumbing },
+    { route: "/reports", label: "Reports", Icon: Assessment },
+  ];
+
+  const adminNav = [
+    { route: "/parts", label: "Manage Parts", Icon: Build },
+    { route: "/usermanagement", label: "Manage Users", Icon: People },
+    { route: "/chlorides", label: "Chlorides", Icon: Science },
+  ];
+
   return (
     <Grid
       container
@@ -63,33 +79,25 @@ export default function Sidenav() {
       }}
     >
       <Grid item sx={{ mt: 3, mb: 1 }}>
-        <h5 style={{ margin: 0, color: "#555555" }}>Pages</h5>
+        <Typography
+          variant="h5"
+          style={{ margin: 0, color: "#555555", fontSize: '13.28px', fontWeight: 700 }}
+        >Pages</Typography>
       </Grid>
-
-      <NavLink route="/home" label="Home" Icon={Home} />
-      <NavLink
-        route="/workorders"
-        label={workOrderLabel}
-        Icon={FormatListBulletedOutlined}
-      />
-      <NavLink
-        route="/meters"
-        label="Meters Information"
-        Icon={ScreenshotMonitor}
-      />
-      <NavLink route="/activities" label="Activities" Icon={Construction} />
-      <NavLink route="/wells" label="Monitoring Wells" Icon={MonitorHeart} />
-      <NavLink route="/wellmanagement" label="Manage Wells" Icon={Plumbing} />
-      <NavLink route="/reports" label="Reports" Icon={Assessment} />
-
+      {generalNav.map(({ route, label, Icon }) => (
+        <NavLink key={route} route={route} label={label} Icon={Icon} />
+      ))}
       {hasAdminScope && (
         <>
           <Grid item sx={{ mt: 3, mb: 1 }}>
-            <h5 style={{ margin: 0, color: "#555555" }}>Admin Management</h5>
+            <Typography
+              variant="h5"
+              style={{ margin: 0, color: "#555555", fontSize: '13.28px', fontWeight: 700 }}
+            >Admin Management</Typography>
           </Grid>
-          <NavLink route="/parts" label="Manage Parts" Icon={Build} />
-          <NavLink route="/usermanagement" label="Manage Users" Icon={People} />
-          <NavLink route="/chlorides" label="Chlorides" Icon={Science} />
+          {adminNav.map(({ route, label, Icon }) => (
+            <NavLink key={route} route={route} label={label} Icon={Icon} />
+          ))}
         </>
       )}
     </Grid>

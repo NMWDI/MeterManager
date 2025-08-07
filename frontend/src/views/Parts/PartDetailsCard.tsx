@@ -189,7 +189,7 @@ export const PartDetailsCard = ({ selectedPartID, partAddMode, }: PartDetailsCar
           </Grid>
           <Grid container xs={12} columnSpacing={2} sx={{ mt: 1 }} display={(watch("part_type")?.id ?? 0) === 17 ? "flex" : "none"}>
             <Grid item xs={12}>
-              <Typography sx={{ paddingBottom: 2, paddingTop: 2 }} variant="h4">Register Properties</Typography>
+              <Typography sx={{ paddingBottom: 3, paddingTop: 2 }} variant="h5">Register Properties</Typography>
             </Grid>
             <Grid item xs={12} xl={4}>
               <ControlledTextbox
