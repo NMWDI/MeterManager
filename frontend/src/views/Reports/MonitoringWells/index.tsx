@@ -35,9 +35,11 @@ import { useMemo } from "react";
 import { API_URL } from "../../../config";
 import { useAuthHeader } from "react-auth-kit";
 
-
-const schema = yup.object().shape({
-  from: yup.mixed<Dayjs>().nullable().required("From date is required"),
+export const schema = yup.object({
+  from: yup
+    .mixed<Dayjs>()
+    .nullable()
+    .required("From date is required"),
   to: yup
     .mixed<Dayjs>()
     .nullable()
@@ -66,7 +68,7 @@ const schema = yup.object().shape({
 const defaultSchema = {
   from: dayjs(),
   to: dayjs(),
-  wells: [],
+  wells: []
 };
 
 const size = {
@@ -122,7 +124,7 @@ export const MonitoringWellsReportView = () => {
     select: (res) => res.items,
   });
 
-  const { control, reset, watch } = useForm({
+  const { control, reset, watch } = useForm<yup.InferType<typeof schema>>({
     resolver: yupResolver(schema),
     defaultValues: defaultSchema,
   });
@@ -382,7 +384,7 @@ export const MonitoringWellsReportView = () => {
                   </li>
                 )}
                 renderTags={(value: MonitoredWell[], getTagProps: any) =>
-                  value.map((option: MonitoredWell & { group: string }, index: number) => {
+                  value.map((option: MonitoredWell & { group?: string }, index: number) => {
                     const isOutside = option.group === "Outside Recorder Wells";
                     return (
                       <Chip
