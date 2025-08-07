@@ -123,6 +123,11 @@ export const PartDetailsCard = ({ selectedPartID, partAddMode, }: PartDetailsCar
   // Determine if form is valid, {errors} in useEffect or formState's isValid don't work
   const hasErrors = () => Object.keys(errors).length > 0;
 
+  const registerSettings = watch("register_settings");
+  console.log({ registerSettings })
+  console.log(registerSettings?.totalizer_units?.id ?? "")
+  console.log(registerSettings?.dial_units?.id ?? "")
+
   return (
     <Card>
       <CustomCardHeader
@@ -220,20 +225,20 @@ export const PartDetailsCard = ({ selectedPartID, partAddMode, }: PartDetailsCar
             </Grid>
             <Grid item xs={12} xl={6}>
               <ControlledUnitsSelect
-                name="register_settings.dial_units"
+                name="register_settings.dial_units.id"
                 control={control}
                 label="Dial Units"
                 sx={{ mt: 2 }}
-                value={watch("register_settings.dial_units")?.id ?? ''}
+                value={watch("register_settings.dial_units.id") ?? ''}
               />
             </Grid>
             <Grid item xs={12} xl={6}>
               <ControlledUnitsSelect
-                name="register_settings.totalizer_units"
+                name="register_settings.totalizer_units.id"
                 control={control}
                 label="Totalizer Units"
                 sx={{ mt: 2 }}
-                value={watch("register_settings.totalizer_units")?.id ?? ''}
+                value={watch("register_settings.totalizer_units.id") ?? ''}
               />
             </Grid>
           </Grid>

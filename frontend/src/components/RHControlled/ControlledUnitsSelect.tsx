@@ -53,7 +53,6 @@ const ControlledUnitsSelect: React.FC<ControlledUnitsSelectProps> = ({
       error={error}
       sx={sx}
       {...childProps}
-      value={loading ? "Loading..." : childProps.value}
       options={loading ? [{ id: "Loading...", name: "Loading..." }] : units}
       getOptionLabel={(option: Unit) => option.name}
     />
