@@ -281,16 +281,52 @@ def download_waterlevels_pdf(
         averaged_1970 = group_and_average(measurements_1970, "month", "1970 Average")
         results.extend(averaged_1970)
 
-    # Prepare data for table + chart
+    report_title = "ROSWELL ARTESIAN BASIN"
+    report_subtext = None
+
+    if isAveragingAllWells:
+        num_wells = len(well_ids)
+        well_word = "WELL" if num_wells == 1 else "WELLS"
+        report_subtext = (
+            f"MONTHLY AVERAGE WATER LEVEL WITHIN {num_wells} PVACD RECORDER {well_word}\n"
+            "AVERAGES TAKEN FROM STEEL TAPE MEASUREMENTS MADE\n"
+            "ON OR NEAR THE 5TH, 15TH AND 25TH OF EACH MONTH"
+        )
+
+    # Assume from_date is already parsed
+    from_year = from_date.year if from_date else None
+
+
+    def shift_year_safe(dt, new_year: int):
+        """Shift dt to new_year, handling Feb 29 / month-end safely."""
+        try:
+            return dt.replace(year=new_year)
+        except ValueError:
+            # Handle Feb 29 or other invalid day in target year
+            last_day = calendar.monthrange(new_year, dt.month)[1]
+            return dt.replace(year=new_year, day=min(dt.day, last_day))
+
+    # Prepare data for table + chart (apply 1970 shifting if requested)
     rows = []
     data_by_well = defaultdict(list)
     for record in results:
+        original_ts = record["timestamp"]
+        value = record["value"]
+        well_label = record["well_ra_number"]
+
+        # Table row: keep original timestamp 
         rows.append({
-            "timestamp": record["timestamp"].strftime("%Y-%m-%d %H:%M"),
-            "depth_to_water": record["value"],
-            "well_ra_number": record["well_ra_number"],
+            "timestamp": original_ts.strftime("%Y-%m-%d %H:%M"),
+            "depth_to_water": value,
+            "well_ra_number": well_label,
         })
-        data_by_well[record["well_ra_number"]].append((record["timestamp"], record["value"]))
+
+        # Chart point: shift only the 1970 series when comparing
+        chart_ts = original_ts
+        if isComparingTo1970Average and well_label == "1970 Average" and from_year:
+            chart_ts = shift_year_safe(original_ts, from_year)
+
+        data_by_well[well_label].append((chart_ts, value))
 
     def make_line_chart(data: dict, title: str):
         if not data:
@@ -305,6 +341,7 @@ def download_waterlevels_pdf(
         ax.set_title(title)
         ax.set_xlabel("Time")
         ax.set_ylabel("Depth to Water")
+        ax.invert_yaxis()
         ax.legend()
         fig.autofmt_xdate()
         buf = BytesIO()
@@ -317,7 +354,9 @@ def download_waterlevels_pdf(
         from_month=from_month,
         to_month=to_month,
         observation_chart=chart_b64,
-        rows=rows
+        rows=rows,
+        report_title=report_title,
+        report_subtext=report_subtext,
     )
 
     pdf_io = BytesIO()

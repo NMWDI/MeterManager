@@ -263,30 +263,30 @@ export const MonitoringWellsReportView = () => {
       from,
       to,
       wellIds,
+      isAveragingAllWells,
+      isComparingTo1970Average,
     }: {
       from: Dayjs;
       to: Dayjs;
       wellIds: number[];
+      isAveragingAllWells: boolean;
+      isComparingTo1970Average: boolean;
     }) => {
       const params = new URLSearchParams({
         from_month: from.format("YYYY-MM"),
         to_month: to.format("YYYY-MM"),
+        isAveragingAllWells: isAveragingAllWells.toString(),
+        isComparingTo1970Average: isComparingTo1970Average.toString(),
       });
 
-      wellIds.forEach((id: number) => {
-        params.append("well_ids", id.toString());
-      });
+      wellIds.forEach((id) => params.append("well_ids", id.toString()));
 
       const response = await fetch(
         `${API_URL}/waterlevels/pdf?${params.toString()}`,
-        {
-          headers: { Authorization: authHeader() },
-        },
+        { headers: { Authorization: authHeader() } },
       );
 
-      if (!response.ok) {
-        throw new Error("PDF generation failed");
-      }
+      if (!response.ok) throw new Error("PDF generation failed");
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -304,7 +304,9 @@ export const MonitoringWellsReportView = () => {
     downloadPDFMutation.mutate({
       from,
       to,
-      wellIds
+      wellIds,
+      isAveragingAllWells,
+      isComparingTo1970Average,
     });
   };
 
