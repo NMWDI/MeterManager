@@ -499,6 +499,9 @@ export const MonitoringWellsReportView = () => {
                         : date.format("MMM D, YYYY HH:mm");
                     }
                   }]}
+                  yAxis={[{
+                    reverse: true,
+                  }]}
                   series={series}
                   slotProps={{
                     legend: {
