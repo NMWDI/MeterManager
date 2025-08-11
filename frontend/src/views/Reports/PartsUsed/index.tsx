@@ -5,8 +5,10 @@ import {
   Button,
   Card,
   CardContent,
+  FormControlLabel,
   Grid,
   IconButton,
+  Switch,
   TextField,
   Tooltip,
 } from "@mui/material";
@@ -61,7 +63,7 @@ const schema = yup.object().shape({
     .mixed<Dayjs>()
     .nullable()
     .required("To date is required")
-    .test("is-after", "'To' date must be after 'From'", function (value) {
+    .test("is-after", "'To' date must be after 'From'", function(value) {
       const { from } = this.parent;
       return !from || !value || dayjs(value).isAfter(dayjs(from));
     }),
@@ -85,6 +87,7 @@ const schema = yup.object().shape({
     .array()
     .of(yup.number().required())
     .min(1, "At least one Part is required"),
+  in_use: yup.bool().required()
 });
 
 const defaultSchema = {
@@ -92,6 +95,7 @@ const defaultSchema = {
   to: dayjs(),
   part_types: [],
   parts: [],
+  in_use: true
 };
 
 export const PartsUsedReportView = () => {
@@ -100,11 +104,17 @@ export const PartsUsedReportView = () => {
     defaultValues: defaultSchema,
   });
 
+  const from = watch("from");
+  const to = watch("to");
+  const selectedPartIds = watch("parts") ?? [];
+  const partTypes = watch("part_types");
+  const inUse = watch("in_use");
+
   const authHeader = useAuthHeader();
   const partsQuery = useQuery<Part[]>({
-    queryKey: ["Inventory", "report", "partslist"],
+    queryKey: ["Inventory", "report", "partslist", inUse],
     queryFn: async () => {
-      const response = await fetch(`${API_URL}/parts?in_use=true`, {
+      const response = await fetch(`${API_URL}/parts?in_use=${inUse}`, {
         headers: { Authorization: authHeader() },
       });
       if (!response.ok) {
@@ -115,11 +125,6 @@ export const PartsUsedReportView = () => {
     staleTime: 1000 * 60 * 60 * 24, // 24 hours
     cacheTime: 1000 * 60 * 60 * 24, // cache in memory for 24 hours
   });
-
-  const from = watch("from");
-  const to = watch("to");
-  const selectedPartIds = watch("parts") ?? [];
-  const partTypes = watch("part_types");
 
   const filteredParts = useMemo(() => {
     if (!partsQuery.data) return [];
@@ -390,6 +395,25 @@ export const PartsUsedReportView = () => {
                           placeholder="Begin typing to search"
                         />
                       )}
+                    />
+                  );
+                }}
+              />
+            </Grid>
+            <Grid item sx={{ display: 'flex', alignItems: 'center' }}>
+              <Controller
+                name="in_use"
+                control={control}
+                render={({ field: { value, onChange } }) => {
+                  return (
+                    <FormControlLabel
+                      label="In Use Parts Only"
+                      control={
+                        <Switch
+                          checked={!!value}
+                          onChange={(e) => onChange(e.target.checked)}
+                        />
+                      }
                     />
                   );
                 }}
