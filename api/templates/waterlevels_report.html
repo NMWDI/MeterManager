@@ -2,6 +2,11 @@
 
 <head>
   <style>
+    @page {
+      size: A4 landscape;
+      margin: 20px;
+    }
+
     body {
       font-family: sans-serif;
       padding: 1em;
@@ -36,7 +41,14 @@
 </head>
 
 <body>
-  <h1>Water Levels Report</h1>
+  <h1 style="text-align:center; margin-bottom:4px;">{{ report_title }}</h1>
+
+  {% if report_subtext %}
+  <p style="text-align:center; font-size:12px; white-space:pre-line; margin-top:0;">
+    {{ report_subtext }}
+  </p>
+  {% endif %}
+
   <p>
     <strong>From:</strong> {{ from_month }} &nbsp;&nbsp;
     <strong>To:</strong> {{ to_month }}
