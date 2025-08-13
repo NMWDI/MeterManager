@@ -32,6 +32,8 @@ services:
       context: ./api
       dockerfile: ./Dockerfile
     working_dir: /app
+    environment:
+    - APPDB_ENV=.env_devserver  
     command: >
       uvicorn api.main:app
       --host 0.0.0.0
