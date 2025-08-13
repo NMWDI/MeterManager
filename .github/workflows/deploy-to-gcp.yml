@@ -47,9 +47,9 @@ jobs:
             set -e
             cd ${{ secrets.DEPLOYMENT_PATH }}
 
-            git fetch origin
-            git checkout "${GITHUB_REF_NAME}"
-            git pull origin "${GITHUB_REF_NAME}"
+            git fetch origin --prune
+            git checkout "${{ github.ref_name }}"
+            git pull --ff-only origin "${{ github.ref_name }}"
 
             docker compose -f "${{ env.COMPOSE_FILE }}" down
             docker compose -f "${{ env.COMPOSE_FILE }}" up -d --build
