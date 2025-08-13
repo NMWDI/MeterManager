@@ -27,7 +27,7 @@ jobs:
       # Build Frontend Production Image
       - name: Build Frontend Docker Image
         run: |
-          docker build -t frontend-prod -f frontend/Dockerfile_production ./frontend
+          docker build -t frontend-prod -f frontend/Dockerfile ./frontend
 
       # Build Backend Production Image
       - name: Build API Docker Image

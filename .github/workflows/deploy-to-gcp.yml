@@ -1,0 +1,48 @@
+name: Deploy to GCP Compute VM
+
+on:
+  push:
+    branches:
+      - pre-production
+      - production
+
+jobs:
+  deploy:
+    name: Deploy to GCP VM
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set Environment Variables
+        id: set-vars
+        run: |
+          if [[ "${GITHUB_REF##*/}" == "production" ]]; then
+            echo "SSH_HOST=${{ secrets.GCP_PROD_SSH_HOST }}" >> $GITHUB_ENV
+            echo "SSH_KEY='${{ secrets.GCP_PROD_SSH_PRIVATE_KEY }}'" >> $GITHUB_ENV
+            echo "COMPOSE_FILE=docker-compose.production.yml" >> $GITHUB_ENV
+          else
+            echo "SSH_HOST=${{ secrets.GCP_PREPROD_SSH_HOST }}" >> $GITHUB_ENV
+            echo "SSH_KEY='${{ secrets.GCP_PREPROD_SSH_PRIVATE_KEY }}'" >> $GITHUB_ENV
+            echo "COMPOSE_FILE=docker-compose.development.yml" >> $GITHUB_ENV
+          fi
+
+      - name: Deploy to VM via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ env.SSH_HOST }}
+          username: ${{ secrets.GCP_SSH_USER }}
+          key: ${{ env.SSH_KEY }}
+          script: |
+            set -e
+            cd ${{ secrets.DEPLOYMENT_PATH }}
+
+            git fetch origin
+            git checkout ${GITHUB_REF##*/}
+            git pull origin ${GITHUB_REF##*/}
+
+            docker compose -f ${{ env.COMPOSE_FILE }} down
+            docker compose -f ${{ env.COMPOSE_FILE }} up -d --build
+
+            docker image prune -f
