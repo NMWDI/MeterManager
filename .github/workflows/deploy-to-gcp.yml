@@ -25,6 +25,17 @@ jobs:
             echo "COMPOSE_FILE=docker-compose.development.yml" >> "$GITHUB_ENV"
           fi
 
+      - name: Show CI key fingerprint
+        shell: bash
+        env:
+          KEY: ${{ github.ref_name == 'production' && secrets.GCP_PROD_SSH_PRIVATE_KEY || secrets.GCP_PREPROD_SSH_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          printf '%s\n' "$KEY" > key.pem
+          chmod 600 key.pem
+          echo -n "CI key fingerprint: "
+          ssh-keygen -yf key.pem | ssh-keygen -lf -
+
       # Use a single SSH step; choose the key by branch
       - name: Deploy to VM via SSH
         uses: appleboy/ssh-action@v1.0.3
