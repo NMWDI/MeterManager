@@ -7,8 +7,6 @@ services:
     build:
       context: ./frontend
       dockerfile: ./Dockerfile
-    environment:
-      - DEVSERVER=True
     env_file:
       - ./frontend/.env.devserver
     ports:
