@@ -31,11 +31,13 @@ services:
     build:
       context: ./api
       dockerfile: ./Dockerfile
-    command: bash -c "
-        uvicorn api.main:app 
-        --host 0.0.0.0 
-        --proxy-headers --root-path /api/v1
-      "
+    working_dir: /app
+    command: >
+      uvicorn main:app
+      --host 0.0.0.0
+      --port 8000
+      --proxy-headers
+      --root-path /api/v1
     ports:
       - "8000:8000"
     volumes:
