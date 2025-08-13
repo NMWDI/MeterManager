@@ -19,6 +19,7 @@ RUN apt-get update \
 ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
 ENV JDK_HOME=$JAVA_HOME
 ENV PATH="${JAVA_HOME}/bin:${PATH}"
+ENV PYTHONPATH=/app
 
 # Now install the rest of the requirements
 COPY ./requirements.txt .
@@ -27,5 +28,5 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel \
 
 RUN pip install --no-cache-dir --upgrade -r requirements.txt
 
-COPY . .
+COPY . /app/api
 
