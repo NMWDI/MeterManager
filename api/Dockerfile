@@ -5,11 +5,6 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-COPY ./requirements.txt .
-
-# Upgrade pip, setuptools, wheel, Cython
-RUN pip install --no-cache-dir --upgrade pip setuptools wheel "Cython==0.29.36"
-
 # Install system dependencies (trixie) + JDK (default is 21)
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
@@ -20,12 +15,16 @@ RUN apt-get update \
       default-jdk-headless \
  && rm -rf /var/lib/apt/lists/*
 
-# Preinstall jnius (derive JAVA_HOME dynamically for this layer)
-RUN export JAVA_PATH="$(dirname "$(dirname "$(readlink -f "$(which javac)")")")" \
- && export JAVA_HOME="$JAVA_PATH" JDK_HOME="$JAVA_PATH" \
- && pip install --no-cache-dir --no-build-isolation jnius==1.1.0
+# Make Java headers discoverable by builds
+ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+ENV JDK_HOME=$JAVA_HOME
+ENV PATH="${JAVA_HOME}/bin:${PATH}"
 
 # Now install the rest of the requirements
+COPY ./requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel \
+ && pip install --no-cache-dir -r requirements.txt
+
 RUN pip install --no-cache-dir --upgrade -r requirements.txt
 
 COPY . .
