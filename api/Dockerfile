@@ -5,30 +5,26 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-COPY ./requirements.txt .
+# Install system dependencies (trixie) + JDK (default is 21)
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      libpango-1.0-0 \
+      libcairo2 \
+      libgdk-pixbuf-2.0-0 \
+      libffi-dev \
+      default-jdk-headless \
+ && rm -rf /var/lib/apt/lists/*
 
-# Upgrade pip, setuptools, wheel, Cython
-RUN pip install --no-cache-dir --upgrade pip setuptools wheel "Cython==0.29.36"
-
-# Install system dependencies including JDK
-RUN apt-get update && apt-get install -y \
-    libpango-1.0-0 \
-    libcairo2 \
-    libgdk-pixbuf2.0-0 \
-    libffi-dev \
-    openjdk-17-jdk \
-    && apt-get clean \
-    && export JAVA_PATH=$(dirname $(dirname $(readlink -f $(which javac)))) \
-    && echo "JAVA_HOME=$JAVA_PATH" >> /etc/environment \
-    && echo "JDK_HOME=$JAVA_PATH" >> /etc/environment
-
-# Preinstall jnius with no-build-isolation (ensures Cython and JAVA_HOME are in place)
-RUN export JAVA_PATH=$(dirname $(dirname $(readlink -f $(which javac)))) \
-    && export JAVA_HOME=$JAVA_PATH \
-    && export JDK_HOME=$JAVA_PATH \
-    && pip install --no-cache-dir --no-build-isolation jnius==1.1.0
+# Make Java headers discoverable by builds
+ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+ENV JDK_HOME=$JAVA_HOME
+ENV PATH="${JAVA_HOME}/bin:${PATH}"
 
 # Now install the rest of the requirements
+COPY ./requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel \
+ && pip install --no-cache-dir -r requirements.txt
+
 RUN pip install --no-cache-dir --upgrade -r requirements.txt
 
 COPY . .
