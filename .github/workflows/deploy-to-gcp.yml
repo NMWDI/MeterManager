@@ -15,34 +15,32 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set Environment Variables
-        id: set-vars
+      - name: Set environment
         run: |
-          if [[ "${GITHUB_REF##*/}" == "production" ]]; then
-            echo "SSH_HOST=${{ secrets.GCP_PROD_SSH_HOST }}" >> $GITHUB_ENV
-            echo "SSH_KEY='${{ secrets.GCP_PROD_SSH_PRIVATE_KEY }}'" >> $GITHUB_ENV
-            echo "COMPOSE_FILE=docker-compose.production.yml" >> $GITHUB_ENV
+          if [[ "${GITHUB_REF_NAME}" == "production" ]]; then
+            echo "SSH_HOST=${{ secrets.GCP_PROD_SSH_HOST }}" >> "$GITHUB_ENV"
+            echo "COMPOSE_FILE=docker-compose.production.yml" >> "$GITHUB_ENV"
           else
-            echo "SSH_HOST=${{ secrets.GCP_PREPROD_SSH_HOST }}" >> $GITHUB_ENV
-            echo "SSH_KEY='${{ secrets.GCP_PREPROD_SSH_PRIVATE_KEY }}'" >> $GITHUB_ENV
-            echo "COMPOSE_FILE=docker-compose.development.yml" >> $GITHUB_ENV
+            echo "SSH_HOST=${{ secrets.GCP_PREPROD_SSH_HOST }}" >> "$GITHUB_ENV"
+            echo "COMPOSE_FILE=docker-compose.development.yml" >> "$GITHUB_ENV"
           fi
 
+      # Use a single SSH step; choose the key by branch
       - name: Deploy to VM via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ env.SSH_HOST }}
           username: ${{ secrets.GCP_SSH_USER }}
-          key: ${{ env.SSH_KEY }}
+          key: ${{ github.ref_name == 'production' && secrets.GCP_PROD_SSH_PRIVATE_KEY || secrets.GCP_PREPROD_SSH_PRIVATE_KEY }}
           script: |
             set -e
             cd ${{ secrets.DEPLOYMENT_PATH }}
 
             git fetch origin
-            git checkout ${GITHUB_REF##*/}
-            git pull origin ${GITHUB_REF##*/}
+            git checkout "${GITHUB_REF_NAME}"
+            git pull origin "${GITHUB_REF_NAME}"
 
-            docker compose -f ${{ env.COMPOSE_FILE }} down
-            docker compose -f ${{ env.COMPOSE_FILE }} up -d --build
+            docker compose -f "${{ env.COMPOSE_FILE }}" down
+            docker compose -f "${{ env.COMPOSE_FILE }}" up -d --build
 
             docker image prune -f
