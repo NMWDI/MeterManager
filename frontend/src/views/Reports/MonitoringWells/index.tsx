@@ -213,26 +213,38 @@ export const MonitoringWellsReportView = () => {
 
     const fromYear = dayjs(watch("from")).year();
     const isComparingTo1970Average = watch("isComparingTo1970Average");
+    const comparisonYear = watch("comparisonYear");
 
     manualMeasurementsQuery?.data?.forEach((m) => {
-      const wellName = m.well.ra_number;
+      const wellName = m.well.ra_number as string;
 
-      // Modify timestamp if this is the 1970 average line
+      // Detect series like "1970 Average" or "2021 Average"
+      const match = /^(\d{4}) Average$/.exec(wellName);
+      const seriesYear = match ? Number(match[1]) : undefined;
+
       let timestamp = m.timestamp;
-      if (isComparingTo1970Average && wellName === "1970 Average") {
+
+      // Timeshift ONLY the comparison series that are actually enabled/selected
+      const shouldShift =
+        (isComparingTo1970Average && seriesYear === 1970) ||
+        (comparisonYear !== undefined && !Number.isNaN(comparisonYear) && seriesYear === comparisonYear);
+
+      if (shouldShift) {
         const d = dayjs(timestamp);
         timestamp = d.set("year", fromYear).toDate();
       }
 
       if (!groups[wellName]) groups[wellName] = [];
-      groups[wellName].push({
-        x: timestamp,
-        y: m.value,
-      });
+      groups[wellName].push({ x: timestamp, y: m.value });
     });
 
     return groups;
-  }, [manualMeasurementsQuery?.data, watch("from"), watch("isComparingTo1970Average")]);
+  }, [
+    manualMeasurementsQuery?.data,
+    watch("from"),
+    watch("isComparingTo1970Average"),
+    watch("comparisonYear"),
+  ]);
 
   const allTimestamps = useMemo(() => {
     const timestamps = new Set<number>();
