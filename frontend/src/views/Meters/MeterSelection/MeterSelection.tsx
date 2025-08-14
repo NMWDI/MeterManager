@@ -128,7 +128,7 @@ export const MeterSelection = ({
         </TabPanel>
 
         <TabPanel currentTabIndex={currentTabIndex} tabIndex={1}>
-          <Grid container sx={{ mt: 1, height: 650 }}>
+          <Grid container sx={{ mt: 1, height: 550 }}>
             <MeterSelectionMap
               onMeterSelection={onMeterSelection}
               meterSearch={meterSearchQuery}

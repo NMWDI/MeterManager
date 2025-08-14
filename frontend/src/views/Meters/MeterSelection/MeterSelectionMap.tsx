@@ -52,7 +52,7 @@ function ColorLegend() {
 
   useEffect(() => {
     const legend = new L.Control({ position: "bottomleft" });
-    legend.onAdd = function () {
+    legend.onAdd = function() {
       const div = L.DomUtil.create("div", "info legend");
       const seasons = Object.keys(pm_colors);
 
@@ -111,58 +111,63 @@ export default function MeterSelectionMap({
 }: MeterSelectionMapProps) {
   const [meterSearchDebounced] = useDebounce(meterSearch, 250);
   const [meterMarkersMap, setMeterMarkersMap] = useState<any>([]);
-
-  const mapStyle = {
-    height: "100%",
-    width: "100%",
-  };
-
+  const mapStyle = { height: "100%", width: "100%" };
   const meterMarkers = useGetMeterLocations(meterSearchDebounced);
 
   useEffect(() => {
     setMeterMarkersMap(
-      meterMarkers.data?.map((meter: MeterMapDTO) => {
-        return (
-          <CircleMarker
-            key={meter.id}
-            center={[meter.location?.latitude, meter.location?.longitude]}
-            pathOptions={
-              meter.last_pm == null
-                ? { color: "black", fillOpacity: 0 }
-                : {
-                    color: "black",
-                    weight: 2,
-                    fillColor: getMeterColor(meter.last_pm),
-                    fillOpacity: 0.9,
-                  }
-            }
-            radius={6}
-            eventHandlers={{
-              click: () => {
-                onMeterSelection(meter.id);
-              },
-            }}
-          >
-            <Tooltip>{meter.serial_number}</Tooltip>
-          </CircleMarker>
-        );
-      }),
+      meterMarkers.data?.map((meter: MeterMapDTO) => (
+        <CircleMarker
+          key={meter.id}
+          center={[meter.location?.latitude, meter.location?.longitude]}
+          pathOptions={
+            meter.last_pm == null
+              ? { color: "black", fillOpacity: 0 }
+              : {
+                color: "black",
+                weight: 2,
+                fillColor: getMeterColor(meter.last_pm),
+                fillOpacity: 0.9,
+              }
+          }
+          radius={6}
+          eventHandlers={{
+            click: () => onMeterSelection(meter.id),
+          }}
+        >
+          <Tooltip>{meter.serial_number}</Tooltip>
+        </CircleMarker>
+      )) ?? []
     );
   }, [meterMarkers.data]);
 
   return (
     <MapContainer center={[33, -104.0]} zoom={8} style={mapStyle} maxZoom={18}>
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-      <Pane name="custom_markers" style={{ zIndex: 650 }}>
-        {meterMarkersMap}
-      </Pane>
-      <ColorLegend />
       <LayersControl position="topleft">
-        <Pane name="section_overlay" style={{ zIndex: 600 }}>
-          <LayersControl.Overlay name="Section">
+        {/* Base Layers */}
+        <LayersControl.BaseLayer name="Satellite">
+          <TileLayer
+            url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+            attribution="Imagery © Esri, Earthstar Geographics"
+          />
+        </LayersControl.BaseLayer>
+
+        <LayersControl.BaseLayer checked name="OpenStreetMap">
+          <TileLayer
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution="&copy; OpenStreetMap contributors"
+          />
+        </LayersControl.BaseLayer>
+
+        {/* Overlays */}
+        <LayersControl.Overlay name="Meters" checked>
+          <Pane name="custom_markers" style={{ zIndex: 650 }}>
+            {meterMarkersMap}
+          </Pane>
+        </LayersControl.Overlay>
+
+        <LayersControl.Overlay name="Section">
+          <Pane name="section_overlay" style={{ zIndex: 600 }}>
             <GeoJSON
               data={ssData}
               style={() => ({
@@ -172,10 +177,11 @@ export default function MeterSelectionMap({
                 fillOpacity: 0,
               })}
             />
-          </LayersControl.Overlay>
-        </Pane>
-        <Pane name="township_range_overlay" style={{ zIndex: 625 }}>
-          <LayersControl.Overlay name="Township Range">
+          </Pane>
+        </LayersControl.Overlay>
+
+        <LayersControl.Overlay name="Township Range">
+          <Pane name="township_range_overlay" style={{ zIndex: 625 }}>
             <GeoJSON
               data={trData}
               style={() => ({
@@ -184,7 +190,7 @@ export default function MeterSelectionMap({
                 fillOpacity: 0,
               })}
               onEachFeature={(feature, layer) => {
-                if (feature.properties && feature.properties.TWNSHPLAB) {
+                if (feature.properties?.TWNSHPLAB) {
                   layer.bindTooltip(feature.properties.TWNSHPLAB, {
                     permanent: true,
                     direction: "center",
@@ -193,9 +199,10 @@ export default function MeterSelectionMap({
                 }
               }}
             />
-          </LayersControl.Overlay>
-        </Pane>
+          </Pane>
+        </LayersControl.Overlay>
       </LayersControl>
+      <ColorLegend />
     </MapContainer>
   );
 }
