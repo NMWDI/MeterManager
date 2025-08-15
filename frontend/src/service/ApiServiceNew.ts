@@ -237,15 +237,21 @@ export function useGetMeterLocations(searchstring: string | undefined) {
   const navigate = useNavigate();
   const signOut = useSignOut();
 
-  return useQuery<MeterMapDTO[], Error>([route, searchstring], () =>
-    GETFetch(
+  return useQuery<MeterMapDTO[], Error>({
+    queryKey: [route, searchstring],
+    queryFn: () => GETFetch(
       route,
       { search_string: searchstring },
       authHeader(),
       signOut,
       navigate,
     ),
-  );
+    staleTime: 1000 * 60 * 60 * 24, // 24 hours
+    cacheTime: 1000 * 60 * 60 * 24, // keep in memory for 24 hours
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+  });
 }
 
 export function useGetMeterTypeList() {
