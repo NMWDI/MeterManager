@@ -1,6 +1,6 @@
-from typing import List
+from typing import List, Optional
 
-from fastapi import Depends, APIRouter, HTTPException
+from fastapi import Depends, APIRouter, HTTPException, Query
 from sqlalchemy import or_, select, desc, text
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import IntegrityError
@@ -64,6 +64,7 @@ def get_wells(
     sort_by: WellSortByField = WellSortByField.Name,
     sort_direction: SortDirection = SortDirection.Ascending,
     has_chloride_group: bool = None,
+    chloride_group_id: Optional[str] = Query(None, pattern=r"^$|^\d+$"),
     db: Session = Depends(get_db),
 ):
     def sort_by_field_to_schema_field(name: WellSortByField):
@@ -103,6 +104,12 @@ def get_wells(
 
     if has_chloride_group is not None:
         query_statement = query_statement.where(Wells.chloride_group_id.isnot(None))
+
+    if chloride_group_id:
+        query_statement = query_statement.where(
+            Wells.chloride_group_id == int(chloride_group_id)
+        )
+
 
     if sort_by:
         schema_field_name = sort_by_field_to_schema_field(sort_by)
