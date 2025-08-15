@@ -7,11 +7,16 @@ import {
   Card,
   CardContent,
   Chip,
+  FormControl,
   FormControlLabel,
   FormGroup,
+  FormHelperText,
   Grid,
   IconButton,
+  InputLabel,
   ListSubheader,
+  MenuItem,
+  Select,
   Switch,
   TextField,
   Tooltip,
@@ -65,6 +70,7 @@ const schema = yup.object().shape({
     .min(1, "At least one Well is required"),
   isAveragingAllWells: yup.boolean().required(),
   isComparingTo1970Average: yup.boolean().required(),
+  comparisonYear: yup.number().nullable(),
 });
 
 const defaultSchema = {
@@ -73,6 +79,7 @@ const defaultSchema = {
   wells: [],
   isAveragingAllWells: false,
   isComparingTo1970Average: false,
+  comparisonYear: null,
 };
 
 const size = {
@@ -141,6 +148,7 @@ export const MonitoringWellsReportView = () => {
 
   const isAveragingAllWells = watch('isAveragingAllWells');
   const isComparingTo1970Average = watch('isComparingTo1970Average');
+  const comparisonYear = watch('comparisonYear');
 
   useEffect(() => {
     if (((wells?.length ?? 0) < 2) && isAveragingAllWells) {
@@ -155,7 +163,8 @@ export const MonitoringWellsReportView = () => {
       from,
       to,
       isAveragingAllWells,
-      isComparingTo1970Average
+      isComparingTo1970Average,
+      comparisonYear
     ],
     queryFn: () => {
       const searchParams = new URLSearchParams({
@@ -163,6 +172,7 @@ export const MonitoringWellsReportView = () => {
         to_month: to?.format("YYYY-MM"),
         isAveragingAllWells: isAveragingAllWells.toString(),
         isComparingTo1970Average: isComparingTo1970Average.toString(),
+        comparisonYear: comparisonYear ? comparisonYear.toString() : ""
       });
 
       wellIds.forEach((id: number) => {
@@ -203,26 +213,38 @@ export const MonitoringWellsReportView = () => {
 
     const fromYear = dayjs(watch("from")).year();
     const isComparingTo1970Average = watch("isComparingTo1970Average");
+    const comparisonYear = watch("comparisonYear");
 
     manualMeasurementsQuery?.data?.forEach((m) => {
-      const wellName = m.well.ra_number;
+      const wellName = m.well.ra_number as string;
 
-      // Modify timestamp if this is the 1970 average line
+      // Detect series like "1970 Average" or "2021 Average"
+      const match = /^(\d{4}) Average$/.exec(wellName);
+      const seriesYear = match ? Number(match[1]) : undefined;
+
       let timestamp = m.timestamp;
-      if (isComparingTo1970Average && wellName === "1970 Average") {
+
+      // Timeshift ONLY the comparison series that are actually enabled/selected
+      const shouldShift =
+        (isComparingTo1970Average && seriesYear === 1970) ||
+        (comparisonYear !== undefined && !Number.isNaN(comparisonYear) && seriesYear === comparisonYear);
+
+      if (shouldShift) {
         const d = dayjs(timestamp);
         timestamp = d.set("year", fromYear).toDate();
       }
 
       if (!groups[wellName]) groups[wellName] = [];
-      groups[wellName].push({
-        x: timestamp,
-        y: m.value,
-      });
+      groups[wellName].push({ x: timestamp, y: m.value });
     });
 
     return groups;
-  }, [manualMeasurementsQuery?.data, watch("from"), watch("isComparingTo1970Average")]);
+  }, [
+    manualMeasurementsQuery?.data,
+    watch("from"),
+    watch("isComparingTo1970Average"),
+    watch("comparisonYear"),
+  ]);
 
   const allTimestamps = useMemo(() => {
     const timestamps = new Set<number>();
@@ -265,18 +287,21 @@ export const MonitoringWellsReportView = () => {
       wellIds,
       isAveragingAllWells,
       isComparingTo1970Average,
+      comparisonYear
     }: {
       from: Dayjs;
       to: Dayjs;
       wellIds: number[];
       isAveragingAllWells: boolean;
       isComparingTo1970Average: boolean;
+      comparisonYear: string;
     }) => {
       const params = new URLSearchParams({
         from_month: from.format("YYYY-MM"),
         to_month: to.format("YYYY-MM"),
         isAveragingAllWells: isAveragingAllWells.toString(),
         isComparingTo1970Average: isComparingTo1970Average.toString(),
+        comparisonYear
       });
 
       wellIds.forEach((id) => params.append("well_ids", id.toString()));
@@ -307,8 +332,15 @@ export const MonitoringWellsReportView = () => {
       wellIds,
       isAveragingAllWells,
       isComparingTo1970Average,
+      comparisonYear: comparisonYear ? comparisonYear.toString() : ""
     });
   };
+
+  // 1971 → current year
+  const years = Array.from(
+    { length: new Date().getFullYear() - 1971 + 1 },
+    (_, i) => 1971 + i
+  );
 
   return (
     <BackgroundBox>
@@ -483,6 +515,46 @@ export const MonitoringWellsReportView = () => {
                   )}
                 />
               </FormGroup>
+              <Box sx={{ pt: 2 }}>
+                <Controller
+                  name="comparisonYear"
+                  control={control}
+                  render={({ field, fieldState }) => (
+                    <FormControl
+                      fullWidth
+                      size="small"
+                      variant="outlined"
+                      error={!!fieldState.error}
+                    >
+                      <InputLabel shrink>Compare against year</InputLabel>
+                      <Select
+                        label="Compare against year"
+                        {...field}
+                        value={field.value || ""}
+                        onChange={(e) => field.onChange(e.target.value)}
+                        onBlur={field.onBlur}
+                        inputRef={field.ref}
+                        displayEmpty
+                        MenuProps={{
+                          PaperProps: { style: { maxHeight: 48 * 6.5 + 8, width: 220 } },
+                        }}
+                      >
+                        <MenuItem disabled value="">
+                          <em>Select a year</em>
+                        </MenuItem>
+                        {years.map((year) => (
+                          <MenuItem key={year} value={year}>
+                            {year}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                      {fieldState.error && (
+                        <FormHelperText>{fieldState.error.message}</FormHelperText>
+                      )}
+                    </FormControl>
+                  )}
+                />
+              </Box>
             </Grid>
             <Grid item xs>
               <Box display="flex" flexDirection="column" alignItems="center">

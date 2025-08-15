@@ -172,56 +172,78 @@ def get_meters_locations(
     search_string: str = None,
     db: Session = Depends(get_db),
 ):
-    # Build the query statement based on query params
-    # joinedload loads relationships, outer joins on relationship tables makes them search/sortable
     query_statement = (
-        select(Meters).join(Wells, isouter=True).join(Locations, isouter=True)
-    )
-
-    # Ensure there are coordinates and meter is installed
-    query_statement = query_statement.where(
-        and_(
-            Locations.latitude.is_not(None),
-            Locations.longitude.is_not(None),
-            Meters.status_id == 1,
+        select(
+            Meters.id,
+            Meters.serial_number,
+            Wells.id.label("well_id"),
+            Wells.ra_number,
+            Wells.name,
+            Locations.id.label("location_id"),
+            Locations.latitude,
+            Locations.longitude,
+            Locations.trss,
+        )
+        .select_from(Meters)
+        .join(Wells, Meters.well_id == Wells.id, isouter=True)
+        .join(Locations, Wells.location_id == Locations.id, isouter=True)
+        .where(
+            and_(
+                Locations.latitude.is_not(None),
+                Locations.longitude.is_not(None),
+                Meters.status_id == 1,  # Only installed meters
+            )
         )
     )
 
     if search_string:
+        ilike_term = f"%{search_string}%"
         query_statement = query_statement.where(
             or_(
-                Meters.serial_number.ilike(f"%{search_string}%"),
-                Wells.ra_number.ilike(f"%{search_string}%"),
-                Locations.trss.ilike(f"%{search_string}%"),
+                Meters.serial_number.ilike(ilike_term),
+                Wells.ra_number.ilike(ilike_term),
+                Locations.trss.ilike(ilike_term),
             )
         )
-    
-    meters = db.scalars(query_statement).all()
-    meter_ids = [meter.id for meter in meters]
-    
-    # Get the date of the last PM for each meter
-    pm_query = text('select max(timestamp_start) ' 
-                    'as last_pm, meter_id from "MeterActivities" ' 
-                    'where activity_type_id=4 and meter_id = ANY(:mids) '
-                    'group by meter_id')
-    
-    pm_years = db.execute(pm_query,{'mids':meter_ids}).fetchall()
 
-    # Create a dictionary of meter_id to last_pm
-    pm_dict = {pm[1]: pm[0] for pm in pm_years}
+    result = db.execute(query_statement).fetchall()
+    meter_ids = [row.id for row in result]
 
-    # Create a list of MeterMapDTO objects
+    if not meter_ids:
+        return []  # Short-circuit if nothing matched
+
+    # Query latest PMs for those meters 
+    pm_query = text(
+        """
+        SELECT MAX(timestamp_start) AS last_pm, meter_id
+        FROM "MeterActivities"
+        WHERE activity_type_id = 4
+          AND meter_id = ANY(:mids)
+        GROUP BY meter_id
+        """
+    )
+    pm_years = db.execute(pm_query, {"mids": meter_ids}).fetchall()
+    pm_dict = {row.meter_id: row.last_pm for row in pm_years}
+
+    # Map to DTOs manually for added performance 
     meter_map_list = []
-    for meter in meters:
-        # Find the last PM year for the meter
-        last_pm = pm_dict.get(meter.id, None)
+    for row in result:
         meter_map_list.append(
             meter_schemas.MeterMapDTO(
-                id=meter.id,
-                serial_number=meter.serial_number,
-                well=meter.well,
-                location=meter.well.location,
-                last_pm=last_pm
+                id=row.id,
+                serial_number=row.serial_number,
+                well={
+                    "id": row.well_id,
+                    "ra_number": row.ra_number,
+                    "name": row.name,
+                },
+                location={
+                    "id": row.location_id,
+                    "latitude": row.latitude,
+                    "longitude": row.longitude,
+                    "trss": row.trss,
+                },
+                last_pm=pm_dict.get(row.id)
             )
         )
 
