@@ -25,6 +25,8 @@ import * as ss_data from "../../../data/RoswellSS.json";
 import icon from "leaflet/dist/images/marker-icon.png";
 import iconShadow from "leaflet/dist/images/marker-shadow.png";
 import { Box, Typography } from "@mui/material";
+
+// @ts-ignore
 import MarkerClusterGroup from "@changey/react-leaflet-markercluster";
 
 const DefaultIcon = L.icon({ iconUrl: icon, shadowUrl: iconShadow });
