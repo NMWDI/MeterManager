@@ -210,8 +210,6 @@ export const WellDetailsCard = ({
                   label="Region ID"
                   type="number"
                   inputProps={{ min: 1, max: 128 }}
-                  //error={errors?.chloride_group_id?.message != undefined}
-                  //helperText={errors?.chloride_group_id?.message}
                 />
               </Grid>
             </Grid>

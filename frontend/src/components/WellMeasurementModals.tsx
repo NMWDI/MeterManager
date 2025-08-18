@@ -48,15 +48,18 @@ export function NewMeasurementModal({
 
   // Sends user entered information to the parent through callback
   function onMeasurementSubmitted() {
-    const d = new Date(
-      Date.parse(date?.format() ?? Date()),
-    ).toLocaleDateString();
-    const t = new Date(
-      Date.parse(time?.format() ?? Date()),
-    ).toLocaleTimeString();
+    // default fallback: now
+    const selectedDate = date ?? dayjs();
+    const selectedTime = time ?? dayjs();
+
+    // merge date + time into one object
+    const combinedDateTime = selectedDate
+      .hour(selectedTime.hour())
+      .minute(selectedTime.minute())
+      .second(selectedTime.second());
 
     handleSubmitNewMeasurement({
-      timestamp: new Date(Date.parse(d + " " + t)),
+      timestamp: combinedDateTime.toISOString(),
       value: value as number,
       submitting_user_id: selectedUserID as number,
       well_id: -1, // Set by parent

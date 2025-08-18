@@ -76,17 +76,20 @@ export const NewMeasurementModal = ({
   const [time, setTime] = useState<Dayjs | null>(dayjs.utc());
 
   function onMeasurementSubmitted() {
-    const d = new Date(
-      Date.parse(date?.format() ?? Date()),
-    ).toLocaleDateString();
-    const t = new Date(
-      Date.parse(time?.format() ?? Date()),
-    ).toLocaleTimeString();
+    // default fallback: now
+    const selectedDate = date ?? dayjs();
+    const selectedTime = time ?? dayjs();
+
+    // merge date + time into one object
+    const combinedDateTime = selectedDate
+      .hour(selectedTime.hour())
+      .minute(selectedTime.minute())
+      .second(selectedTime.second());
 
     handleSubmitNewMeasurement({
       region_id: 0, // Set by parent
       well_id: selectedWellID as number,
-      timestamp: new Date(Date.parse(d + " " + t)),
+      timestamp: combinedDateTime.toISOString(),
       value: value as number,
       submitting_user_id: selectedUserID as number,
     });

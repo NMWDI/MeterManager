@@ -555,7 +555,7 @@ export interface ST2Response {
 // The object that gets sent to the backend to add a new measurement
 export interface NewWellMeasurement {
   well_id: number
-  timestamp: Date
+  timestamp: string
   value: number
   submitting_user_id: number
 }
@@ -569,7 +569,7 @@ export interface PatchWellMeasurement {
 
 export interface NewRegionMeasurement {
   region_id: number
-  timestamp: Date
+  timestamp: string
   value: number
   submitting_user_id: number
   well_id: number

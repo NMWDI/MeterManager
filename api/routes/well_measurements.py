@@ -74,8 +74,8 @@ def add_waterlevel(
 )
 def read_waterlevels(
     well_ids: List[int] = Query(..., description="One or more well IDs"),
-    from_month: Optional[str] = Query(None, pattern=r"^\d{4}-\d{2}$"),
-    to_month: Optional[str] = Query(None, pattern=r"^\d{4}-\d{2}$"),
+    from_month: Optional[str] = Query(None, pattern=r"^$|^\d{4}-\d{2}$"),
+    to_month: Optional[str] = Query(None, pattern=r"^$|^\d{4}-\d{2}$"),
     isAveragingAllWells: bool = Query(False),
     isComparingTo1970Average: bool = Query(False),
     comparisonYear: Optional[str] = Query(None, pattern=r"^$|^\d{4}$"),
@@ -162,7 +162,9 @@ def read_waterlevels(
     if not well_ids and not isComparingTo1970Average and not comparisonYear:
         return []
 
-    group_by = "month" if (to_date - from_date).days >= 365 else "day"
+    group_by = None
+    if from_month and to_month:
+        group_by = "month" if (to_date - from_date).days >= 365 else "day"
 
     response_data = []
 

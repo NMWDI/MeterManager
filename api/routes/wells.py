@@ -170,7 +170,7 @@ def update_well(
     try:
         db.add(well_to_patch)
         db.commit()
-    except IntegrityError as e:
+    except IntegrityError as _e:
         raise HTTPException(status_code=409, detail="RA number already exists")
 
     # Get updated model with relationships
@@ -221,7 +221,7 @@ def create_well(new_well: well_schemas.SubmitWellCreate, db: Session = Depends(g
         db.commit()
         db.refresh(new_well_model)
 
-    except IntegrityError as e:
+    except IntegrityError as _e:
         db.rollback()
         db.delete(new_location_model)
         db.commit()
