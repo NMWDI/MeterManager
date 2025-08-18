@@ -28,7 +28,6 @@ from api.models.main_models import (
 from api.session import get_db
 from api.security import get_current_user
 from api.enums import ScopedUser, WorkOrderStatus
-from api.route_util import _patch
 
 activity_router = APIRouter()
 
@@ -123,7 +122,7 @@ def post_activity(
     try:
         db.add(meter_activity)
         db.commit()
-    except IntegrityError as e:
+    except IntegrityError as _e:
         raise HTTPException(
             status_code=409, detail="Activity overlaps with existing activity."
         )
@@ -466,63 +465,73 @@ def get_service_types(db: Session = Depends(get_db)):
 def get_note_types(db: Session = Depends(get_db)):
     return db.scalars(select(NoteTypeLU)).all()
 
-# Get work orders endpoint
 @activity_router.get(
     "/work_orders",
     dependencies=[Depends(ScopedUser.Read)],
-    response_model=List[meter_schemas.WorkOrder],
     tags=["Work Orders"],
 )
 def get_work_orders(
-    filter_by_status: list[WorkOrderStatus] = Query('Open'),
+    filter_by_status: list[WorkOrderStatus] = Query(['Open']),
     start_date: datetime = Query(datetime.strptime('2024-06-01', '%Y-%m-%d')),
-    db: Session = Depends(get_db)
-    ):
+    db: Session = Depends(get_db),
+):
     query_stmt = (
         select(workOrders)
         .options(
             joinedload(workOrders.status),
             joinedload(workOrders.meter),
-            joinedload(workOrders.assigned_user)
+            joinedload(workOrders.assigned_user),
         )
         .join(workOrderStatusLU)
         .where(workOrderStatusLU.name.in_(filter_by_status))
         .where(workOrders.date_created >= start_date)
     )
-    work_orders: list[workOrders] = db.scalars(query_stmt).all()
+    work_orders = db.scalars(query_stmt).all()
 
-    # I was unable to get associated_activities to work with joinedload, so I'm doing it manually here
-    relevant_activities = db.scalars(select(MeterActivities).where(MeterActivities.work_order_id.in_([wo.id for wo in work_orders]))).all()
+    # grab activities separately
+    relevant_activities = db.scalars(
+        select(MeterActivities)
+        .options(joinedload(MeterActivities.location))
+        .where(MeterActivities.work_order_id.in_([wo.id for wo in work_orders]))
+    ).all()
 
-    # Create a dictionary where the key is the work order ID and the value is a list of associated activities
-    associated_activities = {}
-    for activity in relevant_activities:
-        if activity.work_order_id in associated_activities:
-            associated_activities[activity.work_order_id].append(activity)
-        else:
-            associated_activities[activity.work_order_id] = [activity]
-    
-    # Create a WorkOrder schema for each work order returned
-    output_work_orders = []
+    # group activities by work_order_id
+    activities_by_wo = {}
+    for act in relevant_activities:
+        activities_by_wo.setdefault(act.work_order_id, []).append({
+            "id": act.id,
+            "timestamp_start": act.timestamp_start,
+            "timestamp_end": act.timestamp_end,
+            "description": act.description,
+            "submitting_user_id": act.submitting_user_id,
+            "meter_id": act.meter_id,
+            "activity_type_id": act.activity_type_id,
+            "location_id": act.location_id,
+            "location_name": act.location.name if act.location else None,
+            "ose_share": act.ose_share,
+            "water_users": act.water_users,
+        })
+
+    # build output
+    output = []
     for wo in work_orders:
-        work_order_schema = meter_schemas.WorkOrder(
-            work_order_id = wo.id,
-            ose_request_id=wo.ose_request_id,
-            date_created = wo.date_created,
-            creator = wo.creator,
-            meter_id = wo.meter.id,
-            meter_serial = wo.meter.serial_number,
-            title = wo.title,
-            description = wo.description,
-            status = wo.status.name,
-            notes = wo.notes,
-            assigned_user_id = wo.assigned_user_id,
-            assigned_user= wo.assigned_user.username if wo.assigned_user else None,
-            associated_activities=associated_activities[wo.id] if wo.id in associated_activities else []
-        )
-        output_work_orders.append(work_order_schema)
+        output.append({
+            "work_order_id": wo.id,
+            "ose_request_id": wo.ose_request_id,
+            "date_created": wo.date_created,
+            "creator": wo.creator,
+            "meter_id": wo.meter.id,
+            "meter_serial": wo.meter.serial_number,
+            "title": wo.title,
+            "description": wo.description,
+            "status": wo.status.name,
+            "notes": wo.notes,
+            "assigned_user_id": wo.assigned_user_id,
+            "assigned_user": wo.assigned_user.username if wo.assigned_user else None,
+            "associated_activities": activities_by_wo.get(wo.id, []),
+        })
 
-    return output_work_orders
+    return output
 
 # Create work order endpoint
 @activity_router.post(
@@ -564,7 +573,7 @@ def create_work_order(new_work_order: meter_schemas.CreateWorkOrder, db: Session
     try:
         db.add(work_order)
         db.commit()
-    except IntegrityError as e:
+    except IntegrityError as _e:
         raise HTTPException(
             status_code=409,
             detail="Title empty or already exists for this meter."
@@ -661,7 +670,7 @@ def patch_work_order(patch_work_order_form: meter_schemas.PatchWorkOrder, user: 
     # Database should block empty title and non-unique (date, title, meter_id) combinations
     try:
         db.commit()
-    except IntegrityError as e:
+    except IntegrityError as _e:
         raise HTTPException(
             status_code=409,
             detail="Title already exists for this meter."

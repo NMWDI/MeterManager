@@ -365,10 +365,30 @@ export default function WorkOrdersTable() {
       field: "assigned_user_id",
       headerName: "Technician Assigned",
       width: 200,
-      valueGetter: (id) => getUserFromID(id as number),
+      valueGetter: (id: number) => getUserFromID(id),
       type: "singleSelect",
       valueOptions: userList.data?.map((user) => user.full_name) ?? [],
       editable: hasAdminScope,
+    },
+    {
+      field: "location_name",
+      headerName: "Location Name",
+      width: 200,
+      renderCell: (params) => {
+        const activities = params.row.associated_activities ?? [];
+        return activities.length > 0 ? activities[0].location_name : "";
+      },
+    },
+    {
+      field: "water_users",
+      headerName: "Water Users",
+      width: 200,
+      renderCell: (params) => {
+        const activities = params.row.associated_activities ?? [];
+        return activities.length > 0 && activities[0].water_users
+          ? activities[0].water_users
+          : "";
+      },
     },
     {
       field: "actions",
