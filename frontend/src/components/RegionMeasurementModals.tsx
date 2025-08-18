@@ -51,7 +51,7 @@ export const NewMeasurementModal = ({
     Error,
     MonitoredWell[]
   >({
-    queryKey: ["wells", "has_chloride_groups"],
+    queryKey: ["wells", "has_chloride_groups", region_id],
     queryFn: () =>
       fetchWithAuth({
         method: "GET",
@@ -60,6 +60,7 @@ export const NewMeasurementModal = ({
           sort_by: "ra_number",
           sort_direction: "asc",
           has_chloride_group: true,
+          chloride_group_id: region_id,
           limit: 100,
         },
       }),

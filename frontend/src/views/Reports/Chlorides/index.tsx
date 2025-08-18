@@ -4,7 +4,6 @@ import {
   Button,
   Card,
   CardContent,
-  CardHeader,
   Grid,
   IconButton,
   Tooltip,
@@ -15,6 +14,7 @@ import { useForm } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import dayjs from "dayjs";
+import { CustomCardHeader } from "../../../components/CustomCardHeader";
 
 const schema = yup.object().shape({
   from: yup.mixed().nullable().required("From date is required"),
@@ -43,14 +43,9 @@ export const ChloridesReportView = () => {
       }}
     >
       <Card sx={{ height: "fit-content", width: "calc(100% - 16px)" }}>
-        <CardHeader
-          title={
-            <div className="custom-card-header">
-              <span>Chlorides Report</span>
-              <Science />
-            </div>
-          }
-          sx={{ mb: 0, pb: 0 }}
+        <CustomCardHeader
+          title="Chlorides Report"
+          icon={Science}
         />
         <CardContent>
           <Grid container justifyContent="space-between" alignContent="center">
