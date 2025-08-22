@@ -1,6 +1,8 @@
 import { ArrowBack, PictureAsPdf, Science } from "@mui/icons-material";
+import { useMutation } from "react-query";
+import dayjs, { Dayjs } from "dayjs";
+import { useAuthHeader } from "react-auth-kit";
 import {
-  Box,
   Button,
   Card,
   CardContent,
@@ -9,11 +11,12 @@ import {
   Tooltip,
 } from "@mui/material";
 import { Link } from "react-router-dom";
-import ControlledDatepicker from "../../../components/RHControlled/ControlledDatepicker";
 import { useForm } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
-import dayjs from "dayjs";
+import { BackgroundBox } from "../../../components/BackgroundBox";
+import { API_URL } from "../../../config";
+import ControlledDatepicker from "../../../components/RHControlled/ControlledDatepicker";
 import { CustomCardHeader } from "../../../components/CustomCardHeader";
 
 const schema = yup.object().shape({
@@ -27,28 +30,72 @@ const defaultSchema = {
 };
 
 export const ChloridesReportView = () => {
-  const { control, reset } = useForm({
+  const { control, reset, watch } = useForm({
     resolver: yupResolver(schema),
     defaultValues: defaultSchema,
   });
 
+  const from = watch("from");
+  const to = watch("to");
+
+  const authHeader = useAuthHeader();
+  const downloadPDFMutation = useMutation({
+    mutationFn: async ({
+      from,
+      to,
+    }: {
+      from: Dayjs;
+      to: Dayjs;
+    }) => {
+      const params = new URLSearchParams({
+        from_month: from.format("YYYY-MM"),
+        to_month: to.format("YYYY-MM"),
+      });
+
+      const response = await fetch(
+        `${API_URL}/chlorides/pdf?${params.toString()}`,
+        {
+          headers: { Authorization: authHeader() },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("PDF generation failed");
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "parts_used_report.pdf";
+      a.click();
+      window.URL.revokeObjectURL(url);
+    },
+  });
+
+  const handleDownloadPDF = () => {
+    if (!from || !to) return;
+
+    downloadPDFMutation.mutate({
+      from,
+      to,
+    });
+  };
+
   return (
-    <Box
-      sx={{
-        height: "fit-content",
-        width: "calc(100% - 16px)",
-        m: 2,
-        mt: 1,
-        pb: 3,
-      }}
-    >
-      <Card sx={{ height: "fit-content", width: "calc(100% - 16px)" }}>
+    <BackgroundBox>
+      <Card sx={{ height: "fit-content" }}>
         <CustomCardHeader
           title="Chlorides Report"
           icon={Science}
         />
         <CardContent>
-          <Grid container justifyContent="space-between" alignContent="center">
+          <Grid
+            container
+            justifyContent="space-between"
+            alignContent="center"
+            paddingBottom={2}
+          >
             <Grid item>
               <Link to="/reports">
                 <Tooltip title="Go back" placement="right">
@@ -60,7 +107,11 @@ export const ChloridesReportView = () => {
             </Grid>
             <Grid item>
               <Tooltip title="Export report as PDF" placement="left">
-                <IconButton aria-label="export report as pdf">
+                <IconButton
+                  aria-label="export report as pdf"
+                  onClick={handleDownloadPDF}
+                  disabled={downloadPDFMutation.isLoading}
+                >
                   <PictureAsPdf />
                 </IconButton>
               </Tooltip>
@@ -105,6 +156,6 @@ export const ChloridesReportView = () => {
           </Grid>
         </CardContent>
       </Card>
-    </Box>
+    </BackgroundBox>
   );
 };
