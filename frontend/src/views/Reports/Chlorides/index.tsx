@@ -1,5 +1,5 @@
 import { ArrowBack, PictureAsPdf, Science } from "@mui/icons-material";
-import { useMutation } from "react-query";
+import { useMutation, useQuery } from "react-query";
 import dayjs, { Dayjs } from "dayjs";
 import { useAuthHeader } from "react-auth-kit";
 import {
@@ -9,25 +9,65 @@ import {
   Grid,
   IconButton,
   Tooltip,
+  Typography,
+  Alert,
+  Skeleton,
+  Stack,
+  Divider,
+  Box,
 } from "@mui/material";
+import {
+  MapContainer,
+  TileLayer,
+  // Tooltip,
+  // GeoJSON,
+  LayersControl,
+  // Marker,
+  // Pane,
+} from "react-leaflet";
 import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { BackgroundBox } from "../../../components/BackgroundBox";
 import { API_URL } from "../../../config";
 import ControlledDatepicker from "../../../components/RHControlled/ControlledDatepicker";
-import { CustomCardHeader } from "../../../components/CustomCardHeader";
+import { CustomCardHeader, BackgroundBox, DirectionCard } from "../../../components";
+import { useFetchWithAuth } from "../../../hooks";
+
+import "leaflet/dist/leaflet.css";
+import "@changey/react-leaflet-markercluster/dist/styles.min.css";
 
 const schema = yup.object().shape({
-  from: yup.mixed().nullable().required("From date is required"),
-  to: yup.mixed().nullable().required("To date is required"),
+  from: yup.mixed<Dayjs>().nullable().required("From date is required"),
+  to: yup
+    .mixed<Dayjs>()
+    .nullable()
+    .required("To date is required")
+    .test("is-after", "'To' date must be after 'From'", function(value) {
+      const { from } = this.parent;
+      return !from || !value || dayjs(value).isAfter(dayjs(from));
+    }),
 });
 
 const defaultSchema = {
   from: dayjs(),
   to: dayjs(),
 };
+
+interface iMinMaxAvg {
+  min?: number;
+  max?: number;
+  avg?: number;
+}
+
+interface iChlorideReportNums {
+  north: iMinMaxAvg;
+  south: iMinMaxAvg;
+  east: iMinMaxAvg;
+  west: iMinMaxAvg;
+}
+
+const mapStyle = { height: "100%", width: "100%" };
 
 export const ChloridesReportView = () => {
   const { control, reset, watch } = useForm({
@@ -39,6 +79,24 @@ export const ChloridesReportView = () => {
   const to = watch("to");
 
   const authHeader = useAuthHeader();
+  const fetchWithAuth = useFetchWithAuth();
+
+  const chloridesQuery = useQuery<iChlorideReportNums, Error>({
+    queryKey: ["Chlorides", "Reports", from, to],
+    queryFn: async () => {
+      const searchParams = new URLSearchParams({
+        from_month: from?.format("YYYY-MM"),
+        to_month: to?.format("YYYY-MM"),
+      });
+
+      return fetchWithAuth({
+        method: "GET",
+        route: `/chlorides/report?${searchParams.toString()}`,
+      })
+    },
+    enabled: !!from && !!to,
+  });
+
   const downloadPDFMutation = useMutation({
     mutationFn: async ({
       from,
@@ -130,6 +188,7 @@ export const ChloridesReportView = () => {
                 label="From"
                 sx={{ minWidth: "15rem" }}
                 control={control}
+                size="medium"
                 name="from"
                 views={["year", "month"]}
                 openTo="year"
@@ -141,6 +200,7 @@ export const ChloridesReportView = () => {
                 label="To"
                 sx={{ minWidth: "15rem" }}
                 control={control}
+                size="medium"
                 name="to"
                 views={["year", "month"]}
                 openTo="year"
@@ -148,7 +208,109 @@ export const ChloridesReportView = () => {
               />
             </Grid>
           </Grid>
-          <Grid container></Grid>
+          <Grid
+            container
+            columnSpacing={3}
+            rowSpacing={3}
+            sx={{ py: 3, px: 2 }}
+          >
+            <Grid item xs={12} md={6}>
+              <Typography variant="h4" sx={{ textTransform: 'uppercase' }}>Chloride Reading:</Typography>
+              {chloridesQuery.isLoading && (
+                <Grid container spacing={2} sx={{ mt: 2 }}>
+                  {[0, 1, 2, 3].map((i) => (
+                    <Grid key={i} item xs={12} sm={6}>
+                      <Card variant="outlined" sx={{ height: 140, borderRadius: 3 }}>
+                        <CardContent>
+                          <Skeleton width="40%" />
+                          <Divider sx={{ my: 1.5 }} />
+                          <Stack direction="row" spacing={2} justifyContent="space-between">
+                            <Skeleton width={60} height={36} />
+                            <Skeleton width={60} height={36} />
+                            <Skeleton width={60} height={36} />
+                          </Stack>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  ))}
+                </Grid>
+              )}
+              {chloridesQuery.isError && (
+                <Alert severity="error" sx={{ mt: 2 }}>
+                  {chloridesQuery.error?.message || "Failed to load chloride readings."}
+                </Alert>
+              )}
+              {!chloridesQuery.isLoading && !chloridesQuery.isError && (
+                <Grid container spacing={2} sx={{ mt: 2 }}>
+                  <Grid item xs={12} sm={6}>
+                    <DirectionCard
+                      title="North"
+                      min={chloridesQuery.data?.north?.min}
+                      avg={chloridesQuery.data?.north?.avg}
+                      max={chloridesQuery.data?.north?.max}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <DirectionCard
+                      title="South"
+                      min={chloridesQuery.data?.south?.min}
+                      avg={chloridesQuery.data?.south?.avg}
+                      max={chloridesQuery.data?.south?.max}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <DirectionCard
+                      title="East"
+                      min={chloridesQuery.data?.east?.min}
+                      avg={chloridesQuery.data?.east?.avg}
+                      max={chloridesQuery.data?.east?.max}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <DirectionCard
+                      title="West"
+                      min={chloridesQuery.data?.west?.min}
+                      avg={chloridesQuery.data?.west?.avg}
+                      max={chloridesQuery.data?.west?.max}
+                    />
+                  </Grid>
+                </Grid>
+              )}
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Box sx={{
+                height: { xs: 360, md: "100%" },
+                minHeight: 360,
+                borderRadius: 2,
+                overflow: "hidden",
+                "& .leaflet-container": { height: "100%", width: "100%" },
+              }} >
+                <MapContainer
+                  center={[33, -104.0]}
+                  zoom={8}
+                  style={{ height: '100%', width: '100%' }}
+                  maxZoom={18}
+                >
+                  <LayersControl position="topleft">
+                    {/* Base Layers */}
+                    <LayersControl.BaseLayer name="Satellite">
+                      <TileLayer
+                        url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                        attribution="Imagery © Esri, Earthstar Geographics"
+                      />
+                    </LayersControl.BaseLayer>
+
+                    <LayersControl.BaseLayer checked name="OpenStreetMap">
+                      <TileLayer
+                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        attribution="&copy; OpenStreetMap contributors"
+                      />
+                    </LayersControl.BaseLayer>
+                  </LayersControl>
+                </MapContainer>
+              </Box>
+            </Grid>
+          </Grid>
           <Grid container>
             <Grid item>
               <Button onClick={() => reset()}>Reset</Button>
@@ -156,6 +318,6 @@ export const ChloridesReportView = () => {
           </Grid>
         </CardContent>
       </Card>
-    </BackgroundBox>
+    </BackgroundBox >
   );
 };

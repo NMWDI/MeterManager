@@ -100,38 +100,51 @@ export default function MeterSelectionMap({
 }: MeterSelectionMapProps) {
   const [meterSearchDebounced] = useDebounce(meterSearch, 250);
   const meterMarkers = useGetMeterLocations(meterSearchDebounced);
-  const mapStyle = { height: "100%", width: "100%" };
 
   return (
     <>
-      <MapContainer center={[33, -104.0]} zoom={8} style={mapStyle} maxZoom={18}>
-        <LayersControl position="topleft">
-          {/* Base Layers */}
-          <LayersControl.BaseLayer name="Satellite">
-            <TileLayer
-              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-              attribution="Imagery © Esri, Earthstar Geographics"
-            />
-          </LayersControl.BaseLayer>
+      <Box
+        sx={{
+          borderRadius: 2,
+          overflow: 'hidden',
+          height: '100%',
+          minHeight: 320,
+          '& .leaflet-container': { height: '100%', width: '100%' },
+        }}
+      >
+        <MapContainer
+          center={[33, -104.0]}
+          zoom={8}
+          style={{ height: '100%', width: '100%' }}
+          maxZoom={18}
+        >
+          <LayersControl position="topleft">
+            {/* Base Layers */}
+            <LayersControl.BaseLayer name="Satellite">
+              <TileLayer
+                url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                attribution="Imagery © Esri, Earthstar Geographics"
+              />
+            </LayersControl.BaseLayer>
 
-          <LayersControl.BaseLayer checked name="OpenStreetMap">
-            <TileLayer
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              attribution="&copy; OpenStreetMap contributors"
-            />
-          </LayersControl.BaseLayer>
+            <LayersControl.BaseLayer checked name="OpenStreetMap">
+              <TileLayer
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution="&copy; OpenStreetMap contributors"
+              />
+            </LayersControl.BaseLayer>
 
-          {/* Markers Cluster Overlay */}
-          <LayersControl.Overlay name="Meters" checked>
-            <MarkerClusterGroup
-              chunkedLoading
-              maxClusterRadius={35}
-              disableClusteringAtZoom={12}
-              iconCreateFunction={(cluster: any) => {
-                const count = cluster.getChildCount();
+            {/* Markers Cluster Overlay */}
+            <LayersControl.Overlay name="Meters" checked>
+              <MarkerClusterGroup
+                chunkedLoading
+                maxClusterRadius={35}
+                disableClusteringAtZoom={12}
+                iconCreateFunction={(cluster: any) => {
+                  const count = cluster.getChildCount();
 
-                return L.divIcon({
-                  html: `<div style="
+                  return L.divIcon({
+                    html: `<div style="
                       background-color: rgba(0, 123, 255, 0.8);
                       color: white;
                       width: 40px;
@@ -143,75 +156,76 @@ export default function MeterSelectionMap({
                       font-weight: bold;
                       border: 2px solid white;
                     ">${count}</div>`,
-                  className: "",
-                  iconSize: [40, 40],
-                });
-              }}
-            >
-              {meterMarkers.isSuccess &&
-                meterMarkers.data.map((meter: MeterMapDTO) => {
-                  const color = meter.last_pm ? getMeterColor(meter.last_pm) : "black";
-
-                  return (
-                    <Marker
-                      key={meter.id}
-                      position={[meter.location.latitude, meter.location.longitude]}
-                      eventHandlers={{
-                        click: () => onMeterSelection(meter.id),
-                      }}
-                      icon={L.divIcon({
-                        className: "",
-                        html: `<div style="background-color: ${color}; width: 12px; height: 12px; border-radius: 50%; border: 2px solid black;"></div>`,
-                      })}
-                    >
-                      <Tooltip>{meter.serial_number}</Tooltip>
-                    </Marker>
-                  );
-                })}
-            </MarkerClusterGroup>
-          </LayersControl.Overlay>
-
-          {/* Section GeoJSON */}
-          <LayersControl.Overlay name="Section">
-            <Pane name="section_overlay" style={{ zIndex: 600 }}>
-              <GeoJSON
-                data={ssData}
-                style={() => ({
-                  color: "red",
-                  dashArray: "5, 10",
-                  weight: 2,
-                  fillOpacity: 0,
-                })}
-              />
-            </Pane>
-          </LayersControl.Overlay>
-
-          {/* Township/Range GeoJSON */}
-          <LayersControl.Overlay name="Township Range">
-            <Pane name="township_range_overlay" style={{ zIndex: 625 }}>
-              <GeoJSON
-                data={trData}
-                style={() => ({
-                  color: "black",
-                  weight: 3,
-                  fillOpacity: 0,
-                })}
-                onEachFeature={(feature, layer) => {
-                  if (feature.properties?.TWNSHPLAB) {
-                    layer.bindTooltip(feature.properties.TWNSHPLAB, {
-                      permanent: true,
-                      direction: "center",
-                      className: "geojson-label",
-                    });
-                  }
+                    className: "",
+                    iconSize: [40, 40],
+                  });
                 }}
-              />
-            </Pane>
-          </LayersControl.Overlay>
-        </LayersControl>
+              >
+                {meterMarkers.isSuccess &&
+                  meterMarkers.data.map((meter: MeterMapDTO) => {
+                    const color = meter.last_pm ? getMeterColor(meter.last_pm) : "black";
 
-        <ColorLegend />
-      </MapContainer>
+                    return (
+                      <Marker
+                        key={meter.id}
+                        position={[meter.location.latitude, meter.location.longitude]}
+                        eventHandlers={{
+                          click: () => onMeterSelection(meter.id),
+                        }}
+                        icon={L.divIcon({
+                          className: "",
+                          html: `<div style="background-color: ${color}; width: 12px; height: 12px; border-radius: 50%; border: 2px solid black;"></div>`,
+                        })}
+                      >
+                        <Tooltip>{meter.serial_number}</Tooltip>
+                      </Marker>
+                    );
+                  })}
+              </MarkerClusterGroup>
+            </LayersControl.Overlay>
+
+            {/* Section GeoJSON */}
+            <LayersControl.Overlay name="Section">
+              <Pane name="section_overlay" style={{ zIndex: 600 }}>
+                <GeoJSON
+                  data={ssData}
+                  style={() => ({
+                    color: "red",
+                    dashArray: "5, 10",
+                    weight: 2,
+                    fillOpacity: 0,
+                  })}
+                />
+              </Pane>
+            </LayersControl.Overlay>
+
+            {/* Township/Range GeoJSON */}
+            <LayersControl.Overlay name="Township Range">
+              <Pane name="township_range_overlay" style={{ zIndex: 625 }}>
+                <GeoJSON
+                  data={trData}
+                  style={() => ({
+                    color: "black",
+                    weight: 3,
+                    fillOpacity: 0,
+                  })}
+                  onEachFeature={(feature, layer) => {
+                    if (feature.properties?.TWNSHPLAB) {
+                      layer.bindTooltip(feature.properties.TWNSHPLAB, {
+                        permanent: true,
+                        direction: "center",
+                        className: "geojson-label",
+                      });
+                    }
+                  }}
+                />
+              </Pane>
+            </LayersControl.Overlay>
+          </LayersControl>
+
+          <ColorLegend />
+        </MapContainer>
+      </Box>
 
       {/* Loading and empty states */}
       {meterMarkers.isLoading && (

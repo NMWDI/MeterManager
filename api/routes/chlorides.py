@@ -1,13 +1,14 @@
+from typing import Optional, List
+from datetime import datetime
+import calendar
 
-from typing import List
-
-from fastapi import Depends, APIRouter, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
+from sqlalchemy import and_, select
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import select, and_
-
 
 from api.schemas import well_schemas
-from api.models.main_models import WellMeasurements, Wells
+from api.models.main_models import WellMeasurements, Wells, Locations
 from api.session import get_db
 from api.enums import ScopedUser
 
@@ -52,6 +53,114 @@ def read_chlorides(
             )
         )
     ).all()
+
+
+class MinMaxAvg(BaseModel):
+    min: Optional[float] = None
+    max: Optional[float] = None
+    avg: Optional[float] = None
+
+
+class ChlorideReportNums(BaseModel):
+    north: MinMaxAvg
+    south: MinMaxAvg
+    east: MinMaxAvg
+    west: MinMaxAvg
+
+
+@chlorides_router.get(
+    "/chlorides/report",
+    dependencies=[Depends(ScopedUser.Read)],
+    response_model=ChlorideReportNums,
+    tags=["Chlorides"],
+)
+def get_chlorides_report(
+    from_month: Optional[str] = Query(
+        None,
+        description="Month start, 'YYYY-MM'",
+        pattern=r"^$|^\d{4}-\d{2}$",
+    ),
+    to_month: Optional[str] = Query(
+        None,
+        description="Month end, 'YYYY-MM'",
+        pattern=r"^$|^\d{4}-\d{2}$",
+    ),
+    db: Session = Depends(get_db),
+):
+    """
+    Returns min/max/avg for north/south/east/west halves **within the SE quadrant of New Mexico**,
+    over the specified [from_month, to_month] inclusive range, for chloride wells in the given group.
+    """
+
+    CHLORIDE_OBSERVED_PROPERTY_ID = 5
+
+    # Parse months
+    start_dt = _parse_month(from_month) if from_month else None
+    end_dt = _parse_month(to_month) if to_month else None
+    if start_dt and not end_dt:
+        end_dt = start_dt
+    if end_dt:
+        end_dt = _month_end(end_dt)
+
+    stmt = (
+        select(
+            WellMeasurements.value,
+            Locations.latitude,
+            Locations.longitude,
+        )
+        .join(Wells, Wells.id == WellMeasurements.well_id)
+        .join(Locations, Locations.id == Wells.location_id)
+        .where(
+            and_(
+                WellMeasurements.observed_property_id == CHLORIDE_OBSERVED_PROPERTY_ID,
+                Locations.latitude.is_not(None),
+                Locations.longitude.is_not(None),
+                # Restrict to NM bbox first
+                Locations.latitude >= NM_LAT_MIN,
+                Locations.latitude <= NM_LAT_MAX,
+                Locations.longitude >= NM_LON_MIN,
+                Locations.longitude <= NM_LON_MAX,
+                # Time range (optional)
+                *( [WellMeasurements.timestamp >= start_dt] if start_dt else [] ),
+                *( [WellMeasurements.timestamp <= end_dt] if end_dt else [] ),
+            )
+        )
+    )
+
+    rows = db.execute(stmt).all()
+
+    se_rows = [
+        (val, lat, lon)
+        for (val, lat, lon) in rows
+        if (lat is not None and lon is not None
+            and SE_MIN_LAT <= float(lat) <= SE_MAX_LAT
+            and SE_MIN_LON <= float(lon) <= SE_MAX_LON)
+    ]
+
+    north_vals: List[float] = []
+    south_vals: List[float] = []
+    east_vals:  List[float] = []
+    west_vals:  List[float] = []
+
+    for val, lat, lon in se_rows:
+        # North vs South halves within the SE quadrant
+        if float(lat) >= SE_MID_LAT:
+            north_vals.append(float(val))
+        else:
+            south_vals.append(float(val))
+
+        # East vs West halves within the SE quadrant
+        if float(lon) >= SE_MID_LON:
+            east_vals.append(float(val))
+        else:
+            west_vals.append(float(val))
+
+    return ChlorideReportNums(
+        north=_stats(north_vals),
+        south=_stats(south_vals),
+        east=_stats(east_vals),
+        west=_stats(west_vals),
+    )
 
 
 @chlorides_router.post(
@@ -121,3 +230,51 @@ def delete_chloride_measurement(chloride_measurement_id: int, db: Session = Depe
 
     return True
 
+
+def _parse_month(m: Optional[str]) -> Optional[datetime]:
+    """
+    Accepts 'YYYY-MM' or 'YYYY MM'. Returns the first day of month at 00:00:00.
+    """
+    if not m:
+        return None
+    m = m.strip()
+    # Try 'YYYY-MM'
+    for fmt in ("%Y-%m", "%Y %m"):
+        try:
+            dt = datetime.strptime(m, fmt)
+            return dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        except ValueError:
+            continue
+    raise HTTPException(status_code=400, detail="Invalid month format. Use 'YYYY-MM' or 'YYYY MM'.")
+
+def _month_end(dt: datetime) -> datetime:
+    last_day = calendar.monthrange(dt.year, dt.month)[1]
+    return dt.replace(day=last_day, hour=23, minute=59, second=59, microsecond=999999)
+
+def _stats(values: List[float]) -> MinMaxAvg:
+    if not values:
+        return MinMaxAvg()
+    return MinMaxAvg(
+        min=min(values),
+        max=max(values),
+        avg=(sum(values) / len(values))
+    )
+
+# Approx NM bounding box (degrees)
+NM_LAT_MIN = 31.3325
+NM_LAT_MAX = 37.0000
+NM_LON_MIN = -109.0500
+NM_LON_MAX = -103.0000
+
+# Precompute midlines for quadrants
+NM_MID_LAT = (NM_LAT_MIN + NM_LAT_MAX) / 2.0
+NM_MID_LON = (NM_LON_MIN + NM_LON_MAX) / 2.0
+
+# Southeast quadrant bounds
+SE_MIN_LAT = NM_LAT_MIN
+SE_MAX_LAT = NM_MID_LAT
+SE_MIN_LON = NM_MID_LON
+SE_MAX_LON = NM_LON_MAX
+
+SE_MID_LAT = (SE_MIN_LAT + SE_MAX_LAT) / 2.0
+SE_MID_LON = (SE_MIN_LON + SE_MAX_LON) / 2.0
