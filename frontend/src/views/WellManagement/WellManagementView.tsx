@@ -15,7 +15,7 @@ export default function WellManagementView() {
 
   return (
     <BackgroundBox>
-      <Grid container spacing={2}>
+      <Grid container spacing={2} sx={{ flex: 1 }} alignItems="stretch">
         <Grid item xs={8}>
           <WellsTable
             setSelectedWell={setSelectedWell}

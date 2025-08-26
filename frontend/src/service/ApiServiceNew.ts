@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "react-query";
 import { useAuthHeader, useSignOut } from "react-auth-kit";
 import { enqueueSnackbar, useSnackbar } from "notistack";
 import {
@@ -423,25 +423,37 @@ export function useGetWells(params: WellListQueryParams | undefined) {
   );
 }
 
-// Start Get Well List for Map View
 export function useGetWellLocations(searchstring: string | undefined) {
   const route = "well_locations";
   const authHeader = useAuthHeader();
   const navigate = useNavigate();
   const signOut = useSignOut();
+  const PAGE_SIZE = 500;
 
-  return useQuery<Page<Well>, Error>([route, searchstring], () =>
-    GETFetch(
-      route,
-      { search_string: searchstring },
-      authHeader(),
-      signOut,
-      navigate,
-    ),
-  );
+  return useInfiniteQuery<Well[], Error>({
+    queryKey: [route, searchstring],
+    queryFn: async ({ pageParam = 0 }) => {
+      return GETFetch(
+        route,
+        { search_string: searchstring, offset: pageParam, limit: PAGE_SIZE },
+        authHeader(),
+        signOut,
+        navigate
+      );
+    },
+    getNextPageParam: (lastPage, allPages) => {
+      // If we got less than PAGE_SIZE, we’re done
+      if (!lastPage || lastPage.length < PAGE_SIZE) return undefined;
+      return allPages.length * PAGE_SIZE; // next offset
+    },
+    staleTime: 1000 * 60 * 60 * 24,
+    cacheTime: 1000 * 60 * 60 * 24,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+  });
 }
 
-// End
 
 export function useGetWell(params: WellDetailsQueryParams | undefined) {
   const route = "well";
@@ -459,16 +471,6 @@ export function useGetWell(params: WellDetailsQueryParams | undefined) {
   );
 }
 
-// export function useGetWellLocations(searchstring: string | undefined) {
-//     const route = 'well_locations'
-//     const authHeader = useAuthHeader()
-//     const navigate = useNavigate()
-//     const signOut = useSignOut()
-
-//     return useQuery<Page<Well>, Error>([route, searchstring], () =>
-//         GETFetch(route, {search_string: searchstring}, authHeader(), signOut, navigate),
-//     )
-// }
 export function useGetMeter(params: MeterDetailsQueryParams | undefined) {
   const route = "meter";
   const authHeader = useAuthHeader();

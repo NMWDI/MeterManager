@@ -47,7 +47,6 @@ export const ReportsView = () => {
               Icon={People}
             />
             <NavLink
-              disabled
               route="/reports/chlorides"
               label="Chlorides"
               Icon={Science}

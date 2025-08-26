@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useDebounce } from "use-debounce";
 
-import { MapContainer, Marker, TileLayer } from "react-leaflet";
+import { LayersControl, MapContainer, Marker, Tooltip } from "react-leaflet";
 
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -10,62 +10,133 @@ import { Well } from "../../interfaces";
 
 import icon from "leaflet/dist/images/marker-icon.png";
 import iconShadow from "leaflet/dist/images/marker-shadow.png";
+import { Box, Typography } from "@mui/material";
+import { OpenStreetMapLayer, SatelliteLayer, SoutheastGuideLayer } from "../../components";
+
+// @ts-ignore
+import MarkerClusterGroup from "@changey/react-leaflet-markercluster";
+import "@changey/react-leaflet-markercluster/dist/styles.min.css";
+
 const DefaultIcon = L.icon({ iconUrl: icon, shadowUrl: iconShadow });
 
 L.Marker.prototype.options.icon = DefaultIcon;
 
-interface WellSelectionMapProps {
-  wellSearchQueryProp: string;
-  setSelectedWell: Function;
-}
-
 export default function WellSelectionMap({
   setSelectedWell,
   wellSearchQueryProp,
-}: WellSelectionMapProps) {
+}: {
+  wellSearchQueryProp: string;
+  setSelectedWell: Function;
+}) {
   const [wellSearchDebounced] = useDebounce(wellSearchQueryProp, 250);
-  const [wellMarkersMap, setwellMarkersMap] = useState<any>([]);
-
-  const mapStyle = {
-    height: "500px",
-  };
-
-  const wellMarkers: any = useGetWellLocations(wellSearchDebounced);
-  const onClickMarker = (well: Well) => {
-    setSelectedWell(well);
-  };
+  const wellQuery = useGetWellLocations(wellSearchDebounced);
 
   useEffect(() => {
-    setwellMarkersMap(
-      wellMarkers.data?.map((well: Well) => {
-        return (
-          <Marker
-            key={well.id}
-            position={[well.location?.latitude, well.location?.longitude]}
-            eventHandlers={{
-              click: () => {
-                onClickMarker(well);
-              },
-            }}
-          ></Marker>
-        );
-      }),
-    );
-  }, [wellMarkers.data]);
+    if (wellQuery.hasNextPage && !wellQuery.isFetchingNextPage) {
+      wellQuery.fetchNextPage();
+    }
+  }, [wellQuery.hasNextPage, wellQuery.isFetchingNextPage]);
+
+  const wellMarkers = wellQuery.data?.pages.flat() ?? [];
 
   return (
-    <MapContainer
-      center={[33, -104.0]}
-      zoom={8}
-      style={mapStyle}
-      //maxBounds={L.latLngBounds([30.38, -110.76], [38.56, -101.79])}
-      maxZoom={18}
-    >
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-      {wellMarkersMap}
-    </MapContainer>
+    <>
+      <Box
+        sx={{
+          borderRadius: 2,
+          overflow: 'hidden',
+          height: '100%',
+          minHeight: 500,
+          '& .leaflet-container': { height: '100%', width: '100%' },
+        }}
+      >
+        <MapContainer
+          center={[33, -104.0]}
+          zoom={8}
+          style={{ height: '100%', width: '100%', minHeight: 500 }}
+          maxZoom={18}
+        >
+          <LayersControl position="topleft">
+            {/* Base Layers */}
+            <SatelliteLayer />
+            <OpenStreetMapLayer />
+            <SoutheastGuideLayer />
+
+            {/* Wells Cluster Overlay */}
+            <LayersControl.Overlay name="Wells" checked>
+              <MarkerClusterGroup
+                chunkedLoading
+                maxClusterRadius={35}
+                disableClusteringAtZoom={12}
+                iconCreateFunction={(cluster: any) => {
+                  const count = cluster.getChildCount();
+                  return L.divIcon({
+                    html: `<div style="
+                      background-color: rgba(0, 123, 255, 0.8);
+                      color: white;
+                      width: 40px;
+                      height: 40px;
+                      border-radius: 50%;
+                      display: flex;
+                      justify-content: center;
+                      align-items: center;
+                      font-weight: bold;
+                      border: 2px solid white;
+                    ">${count}</div>`,
+                    className: "",
+                    iconSize: [40, 40],
+                  });
+                }}
+              >
+                {wellQuery.isSuccess &&
+                  wellMarkers.map((well: Well) => (
+                    <Marker
+                      key={well.id}
+                      position={[
+                        well.location?.latitude,
+                        well.location?.longitude,
+                      ]}
+                      eventHandlers={{
+                        click: () => setSelectedWell(well),
+                      }}
+                    >
+                      <Tooltip>
+                        {well.name || well.ra_number || well.id}
+                      </Tooltip>
+                    </Marker>
+                  ))}
+              </MarkerClusterGroup>
+            </LayersControl.Overlay>
+          </LayersControl>
+        </MapContainer>
+      </Box>
+      {/* Loading first page */}
+      {wellQuery.isLoading && (
+        <Box py={2}>
+          <Typography variant="h6">Loading well markers...</Typography>
+        </Box>
+      )}
+      {/* Loading additional pages */}
+      {wellQuery.isFetchingNextPage && (
+        <Box py={2}>
+          <Typography variant="h6">Loading more wells...</Typography>
+        </Box>
+      )}
+      {wellQuery.isSuccess && wellMarkers.length === 0 && (
+        <Box py={2}>
+          <Typography variant="h6" color="text.secondary">
+            No wells found for that search.
+          </Typography>
+        </Box>
+      )}
+      {/* Error */}
+      {wellQuery.isError && (
+        <Box py={2}>
+          <Typography variant="h6" color="error">
+            Failed to load wells: {wellQuery.error.message}
+          </Typography>
+        </Box>
+      )}
+    </>
   );
 }
