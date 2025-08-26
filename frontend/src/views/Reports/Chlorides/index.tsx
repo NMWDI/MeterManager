@@ -104,7 +104,7 @@ export const ChloridesReportView = () => {
       });
 
       const response = await fetch(
-        `${API_URL}/chlorides/pdf?${params.toString()}`,
+        `${API_URL}/chlorides/report/pdf?${params.toString()}`,
         {
           headers: { Authorization: authHeader() },
         },
@@ -118,7 +118,7 @@ export const ChloridesReportView = () => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "parts_used_report.pdf";
+      a.download = "chlorides_report.pdf";
       a.click();
       window.URL.revokeObjectURL(url);
     },
@@ -212,7 +212,7 @@ export const ChloridesReportView = () => {
               {chloridesQuery.isLoading && (
                 <Grid container spacing={2} sx={{ mt: 2 }}>
                   {[0, 1, 2, 3].map((i) => (
-                    <Grid key={i} item xs={12} sm={6}>
+                    <Grid key={i} item xs={12}>
                       <Card variant="outlined" sx={{ height: 140, borderRadius: 3 }}>
                         <CardContent>
                           <Skeleton width="40%" />

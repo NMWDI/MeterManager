@@ -1,7 +1,9 @@
 from typing import Optional, List
 from datetime import datetime
 import calendar
-
+from fastapi.responses import StreamingResponse
+from weasyprint import HTML
+from io import BytesIO
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy import and_, select
@@ -200,6 +202,52 @@ def get_chlorides_report(
         west=_stats(west_vals),
     )
 
+
+@chlorides_router.get(
+    "/chlorides/report/pdf",
+    dependencies=[Depends(ScopedUser.Read)],
+    tags=["Chlorides"],
+)
+def download_chlorides_report_pdf(
+    from_month: Optional[str] = Query(
+        None,
+        description="Month start, 'YYYY-MM'",
+        pattern=r"^$|^\d{4}-\d{2}$",
+    ),
+    to_month: Optional[str] = Query(
+        None,
+        description="Month end, 'YYYY-MM'",
+        pattern=r"^$|^\d{4}-\d{2}$",
+    ),
+    db: Session = Depends(get_db),
+):
+    """
+    Generate a PDF chloride report (north/south/east/west stats)
+    for the SE quadrant of New Mexico.
+    """
+    # Re-use your existing logic by calling the data endpoint’s function
+    report = get_chlorides_report(from_month=from_month, to_month=to_month, db=db)
+
+    # Render HTML using a template
+    template = templates.get_template("chlorides_report.html")
+    html_content = template.render(
+        report=report,
+        from_month=from_month,
+        to_month=to_month,
+    )
+
+    # Convert to PDF
+    pdf_io = BytesIO()
+    HTML(string=html_content).write_pdf(pdf_io)
+    pdf_io.seek(0)
+
+    return StreamingResponse(
+        pdf_io,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": "attachment; filename=chlorides_report.pdf"
+        },
+    )
 
 @chlorides_router.post(
     "/chlorides",
