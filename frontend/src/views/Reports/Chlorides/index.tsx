@@ -19,8 +19,6 @@ import {
 import {
   MapContainer,
   LayersControl,
-  // Marker,
-  // Pane,
 } from "react-leaflet";
 import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -237,7 +235,7 @@ export const ChloridesReportView = () => {
               )}
               {!chloridesQuery.isLoading && !chloridesQuery.isError && (
                 <Grid container spacing={2} sx={{ mt: 2 }}>
-                  <Grid item xs={12} sm={6}>
+                  <Grid item xs={12}>
                     <DirectionCard
                       title="North"
                       min={chloridesQuery.data?.north?.min}
@@ -245,7 +243,7 @@ export const ChloridesReportView = () => {
                       max={chloridesQuery.data?.north?.max}
                     />
                   </Grid>
-                  <Grid item xs={12} sm={6}>
+                  <Grid item xs={12}>
                     <DirectionCard
                       title="South"
                       min={chloridesQuery.data?.south?.min}
@@ -253,7 +251,7 @@ export const ChloridesReportView = () => {
                       max={chloridesQuery.data?.south?.max}
                     />
                   </Grid>
-                  <Grid item xs={12} sm={6}>
+                  <Grid item xs={12}>
                     <DirectionCard
                       title="East"
                       min={chloridesQuery.data?.east?.min}
@@ -261,7 +259,7 @@ export const ChloridesReportView = () => {
                       max={chloridesQuery.data?.east?.max}
                     />
                   </Grid>
-                  <Grid item xs={12} sm={6}>
+                  <Grid item xs={12}>
                     <DirectionCard
                       title="West"
                       min={chloridesQuery.data?.west?.min}

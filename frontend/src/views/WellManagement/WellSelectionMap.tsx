@@ -1,4 +1,4 @@
-// import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useDebounce } from "use-debounce";
 
 import { LayersControl, MapContainer, Marker, Tooltip } from "react-leaflet";
@@ -29,7 +29,15 @@ export default function WellSelectionMap({
   setSelectedWell: Function;
 }) {
   const [wellSearchDebounced] = useDebounce(wellSearchQueryProp, 250);
-  const wellMarkers: any = useGetWellLocations(wellSearchDebounced);
+  const wellQuery = useGetWellLocations(wellSearchDebounced);
+
+  useEffect(() => {
+    if (wellQuery.hasNextPage && !wellQuery.isFetchingNextPage) {
+      wellQuery.fetchNextPage();
+    }
+  }, [wellQuery.hasNextPage, wellQuery.isFetchingNextPage]);
+
+  const wellMarkers = wellQuery.data?.pages.flat() ?? [];
 
   return (
     <>
@@ -80,8 +88,8 @@ export default function WellSelectionMap({
                   });
                 }}
               >
-                {wellMarkers.isSuccess &&
-                  wellMarkers.data.map((well: Well) => (
+                {wellQuery.isSuccess &&
+                  wellMarkers.map((well: Well) => (
                     <Marker
                       key={well.id}
                       position={[
@@ -102,18 +110,30 @@ export default function WellSelectionMap({
           </LayersControl>
         </MapContainer>
       </Box>
-
-      {/* Loading and empty states */}
-      {wellMarkers.isLoading && (
+      {/* Loading first page */}
+      {wellQuery.isLoading && (
         <Box py={2}>
           <Typography variant="h6">Loading well markers...</Typography>
         </Box>
       )}
-
-      {wellMarkers.isSuccess && wellMarkers.data.length === 0 && (
+      {/* Loading additional pages */}
+      {wellQuery.isFetchingNextPage && (
+        <Box py={2}>
+          <Typography variant="h6">Loading more wells...</Typography>
+        </Box>
+      )}
+      {wellQuery.isSuccess && wellMarkers.length === 0 && (
         <Box py={2}>
           <Typography variant="h6" color="text.secondary">
             No wells found for that search.
+          </Typography>
+        </Box>
+      )}
+      {/* Error */}
+      {wellQuery.isError && (
+        <Box py={2}>
+          <Typography variant="h6" color="error">
+            Failed to load wells: {wellQuery.error.message}
           </Typography>
         </Box>
       )}
