@@ -31,7 +31,7 @@ import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { API_URL } from "../../../config";
 import ControlledDatepicker from "../../../components/RHControlled/ControlledDatepicker";
-import { CustomCardHeader, BackgroundBox, DirectionCard, SoutheastGuideLayer } from "../../../components";
+import { CustomCardHeader, BackgroundBox, DirectionCard, SoutheastGuideLayer, SatelliteLayer, OpenStreetMapLayer } from "../../../components";
 import { useFetchWithAuth } from "../../../hooks";
 
 import "leaflet/dist/leaflet.css";
@@ -291,19 +291,8 @@ export const ChloridesReportView = () => {
                 >
                   <LayersControl position="topleft">
                     {/* Base Layers */}
-                    <LayersControl.BaseLayer name="Satellite">
-                      <TileLayer
-                        url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-                        attribution="Imagery © Esri, Earthstar Geographics"
-                      />
-                    </LayersControl.BaseLayer>
-
-                    <LayersControl.BaseLayer checked name="OpenStreetMap">
-                      <TileLayer
-                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                        attribution="&copy; OpenStreetMap contributors"
-                      />
-                    </LayersControl.BaseLayer>
+                    <SatelliteLayer />
+                    <OpenStreetMapLayer />
                     <SoutheastGuideLayer />
                   </LayersControl>
                 </MapContainer>

@@ -28,6 +28,7 @@ import { Box, Typography } from "@mui/material";
 
 // @ts-ignore
 import MarkerClusterGroup from "@changey/react-leaflet-markercluster";
+import { OpenStreetMapLayer, SatelliteLayer } from "../../../components";
 
 const DefaultIcon = L.icon({ iconUrl: icon, shadowUrl: iconShadow });
 L.Marker.prototype.options.icon = DefaultIcon;
@@ -120,19 +121,8 @@ export default function MeterSelectionMap({
         >
           <LayersControl position="topleft">
             {/* Base Layers */}
-            <LayersControl.BaseLayer name="Satellite">
-              <TileLayer
-                url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-                attribution="Imagery © Esri, Earthstar Geographics"
-              />
-            </LayersControl.BaseLayer>
-
-            <LayersControl.BaseLayer checked name="OpenStreetMap">
-              <TileLayer
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                attribution="&copy; OpenStreetMap contributors"
-              />
-            </LayersControl.BaseLayer>
+            <SatelliteLayer />
+            <OpenStreetMapLayer />
 
             {/* Markers Cluster Overlay */}
             <LayersControl.Overlay name="Meters" checked>
