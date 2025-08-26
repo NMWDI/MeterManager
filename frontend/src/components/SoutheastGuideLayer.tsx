@@ -1,6 +1,6 @@
 // SoutheastGuideLayer.tsx
 import * as L from "leaflet";
-import { LayersControl, Pane, FeatureGroup, Rectangle, Polyline, Marker, Tooltip } from "react-leaflet";
+import { LayersControl, Pane, FeatureGroup, Rectangle, Polyline, Marker } from "react-leaflet";
 
 const NM_LAT_MIN = 31.3325;
 const NM_LAT_MAX = 37.0;
@@ -53,41 +53,41 @@ const labelIcon = (text: string) =>
   });
 
 export const SoutheastGuideLayer = () =>
-  (
-    <LayersControl.Overlay name="SE Quadrant Guide" checked>
-      {/* Lower than your GeoJSON panes (you used 600/625); markers still clickable above */}
-      <Pane name="se_quadrant_guide" style={{ zIndex: 550 }}>
-        <FeatureGroup>
-          {/* SE quadrant rectangle */}
-          <Rectangle
-            bounds={rectBounds}
-            pathOptions={{
-              color: "#1976d2",
-              weight: 2,
-              fillColor: "#1976d2",
-              fillOpacity: 0.06,
-            }}
-          />
+(
+  <LayersControl.Overlay name="SE Quadrant Guide" checked>
+    {/* Lower than your GeoJSON panes (you used 600/625); markers still clickable above */}
+    <Pane name="se_quadrant_guide" style={{ zIndex: 550 }}>
+      <FeatureGroup>
+        {/* SE quadrant rectangle */}
+        <Rectangle
+          bounds={rectBounds}
+          pathOptions={{
+            color: "#1976d2",
+            weight: 2,
+            fillColor: "#1976d2",
+            fillOpacity: 0.06,
+          }}
+        />
 
-          {/* Midlines */}
-          <Polyline
-            positions={horizLine}
-            pathOptions={{ color: "#1976d2", weight: 2, dashArray: "6 6" }}
-          />
-          <Polyline
-            positions={vertLine}
-            pathOptions={{ color: "#1976d2", weight: 2, dashArray: "6 6" }}
-          />
+        {/* Midlines */}
+        <Polyline
+          positions={horizLine}
+          pathOptions={{ color: "#1976d2", weight: 2, dashArray: "6 6" }}
+        />
+        <Polyline
+          positions={vertLine}
+          pathOptions={{ color: "#1976d2", weight: 2, dashArray: "6 6" }}
+        />
 
-          {/* Labels (placed toward the center of each half) */}
-          <Marker position={[SE_LAT_MAX - (SE_LAT_MAX - SE_MID_LAT) / 2, SE_MID_LON]} icon={labelIcon("North")} />
-          <Marker position={[SE_LAT_MIN + (SE_MID_LAT - SE_LAT_MIN) / 2, SE_MID_LON]} icon={labelIcon("South")} />
-          <Marker position={[SE_MID_LAT, SE_LON_MAX - (SE_LON_MAX - SE_MID_LON) / 2]} icon={labelIcon("East")} />
-          <Marker position={[SE_MID_LAT, SE_LON_MIN + (SE_MID_LON - SE_LON_MIN) / 2]} icon={labelIcon("West")} />
+        {/* Labels (placed toward the center of each half) */}
+        <Marker position={[SE_LAT_MAX - (SE_LAT_MAX - SE_MID_LAT) / 2, SE_MID_LON]} icon={labelIcon("North")} />
+        <Marker position={[SE_LAT_MIN + (SE_MID_LAT - SE_LAT_MIN) / 2, SE_MID_LON]} icon={labelIcon("South")} />
+        <Marker position={[SE_MID_LAT, SE_LON_MAX - (SE_LON_MAX - SE_MID_LON) / 2]} icon={labelIcon("East")} />
+        <Marker position={[SE_MID_LAT, SE_LON_MIN + (SE_MID_LON - SE_LON_MIN) / 2]} icon={labelIcon("West")} />
 
-          {/* Optional: center dot where lines cross */}
-          {/* <Marker position={[SE_MID_LAT, SE_MID_LON]} icon={L.divIcon({ html: '<div style="width:8px;height:8px;border-radius:50%;background:#1976d2;border:2px solid white"></div>' })} /> */}
-        </FeatureGroup>
-      </Pane>
-    </LayersControl.Overlay>
-  );
+        {/* Optional: center dot where lines cross */}
+        {/* <Marker position={[SE_MID_LAT, SE_MID_LON]} icon={L.divIcon({ html: '<div style="width:8px;height:8px;border-radius:50%;background:#1976d2;border:2px solid white"></div>' })} /> */}
+      </FeatureGroup>
+    </Pane>
+  </LayersControl.Overlay>
+);
