@@ -423,25 +423,29 @@ export function useGetWells(params: WellListQueryParams | undefined) {
   );
 }
 
-// Start Get Well List for Map View
 export function useGetWellLocations(searchstring: string | undefined) {
   const route = "well_locations";
   const authHeader = useAuthHeader();
   const navigate = useNavigate();
   const signOut = useSignOut();
 
-  return useQuery<Page<Well>, Error>([route, searchstring], () =>
-    GETFetch(
+  return useQuery<Page<Well>, Error>({
+    queryKey: [route, searchstring],
+    queryFn: () => GETFetch(
       route,
       { search_string: searchstring },
       authHeader(),
       signOut,
       navigate,
     ),
-  );
+    staleTime: 1000 * 60 * 60 * 24, // 24 hours
+    cacheTime: 1000 * 60 * 60 * 24, // keep in memory for 24 hours
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+  });
 }
 
-// End
 
 export function useGetWell(params: WellDetailsQueryParams | undefined) {
   const route = "well";

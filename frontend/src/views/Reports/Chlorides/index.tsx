@@ -18,9 +18,6 @@ import {
 } from "@mui/material";
 import {
   MapContainer,
-  TileLayer,
-  // Tooltip,
-  // GeoJSON,
   LayersControl,
   // Marker,
   // Pane,

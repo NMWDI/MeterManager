@@ -2,7 +2,6 @@ import { useEffect } from "react";
 import { useDebounce } from "use-debounce";
 import {
   MapContainer,
-  TileLayer,
   Tooltip,
   GeoJSON,
   LayersControl,
@@ -32,11 +31,6 @@ import { OpenStreetMapLayer, SatelliteLayer } from "../../../components";
 
 const DefaultIcon = L.icon({ iconUrl: icon, shadowUrl: iconShadow });
 L.Marker.prototype.options.icon = DefaultIcon;
-
-interface MeterSelectionMapProps {
-  meterSearch: string;
-  onMeterSelection: Function;
-}
 
 // Define marker colors which are based on the year of the last PM (July - June)
 const pm_colors: { [key: string]: string } = {
@@ -98,7 +92,10 @@ const ssData: FeatureCollection = ss_data as FeatureCollection;
 export default function MeterSelectionMap({
   onMeterSelection,
   meterSearch,
-}: MeterSelectionMapProps) {
+}: {
+  meterSearch: string;
+  onMeterSelection: Function;
+}) {
   const [meterSearchDebounced] = useDebounce(meterSearch, 250);
   const meterMarkers = useGetMeterLocations(meterSearchDebounced);
 

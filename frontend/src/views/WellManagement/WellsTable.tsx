@@ -15,28 +15,25 @@ import WellSelectionTable from "./WellSelectionTable";
 import WellSelectionMap from "./WellSelectionMap";
 import { CustomCardHeader } from "../../components/CustomCardHeader";
 
-interface WellsTableProps {
-  setSelectedWell: Function;
-  setWellAddMode: Function;
-}
-
 export const WellsTable = ({
   setSelectedWell,
   setWellAddMode,
-}: WellsTableProps) => {
+}: {
+  setSelectedWell: Function;
+  setWellAddMode: Function;
+}) => {
   const [wellSearchQuery, setWellSearchQuery] = useState<string>("");
-
   const [currentTabIndex, setCurrentTabIndex] = useState(0);
   const handleTabChange = (_: React.SyntheticEvent, newTabIndex: number) =>
     setCurrentTabIndex(newTabIndex);
 
   return (
-    <Card sx={{ height: "100%" }}>
+    <Card sx={{ height: "100%", minHeight: 'fit-content', display: 'flex', flexDirection: 'column' }}>
       <CustomCardHeader
         title="All Wells"
         icon={FormatListBulletedOutlinedIcon}
       />
-      <CardContent sx={{ height: "100%" }}>
+      <CardContent>
         <Grid container>
           <Grid item xs={9}>
             <Tabs value={currentTabIndex} onChange={handleTabChange}>
@@ -60,7 +57,7 @@ export const WellsTable = ({
             />
           </Grid>
         </Grid>
-        <Box sx={{ height: "89%" }}>
+        <Box sx={{ height: "fit-content" }}>
           <TabPanel currentTabIndex={currentTabIndex} tabIndex={0}>
             <WellSelectionTable
               setSelectedWell={setSelectedWell}
@@ -68,7 +65,6 @@ export const WellsTable = ({
               setWellAddMode={setWellAddMode}
             />
           </TabPanel>
-
           <TabPanel currentTabIndex={currentTabIndex} tabIndex={1}>
             <WellSelectionMap
               setSelectedWell={setSelectedWell}
