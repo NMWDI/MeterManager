@@ -31,7 +31,7 @@ import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { API_URL } from "../../../config";
 import ControlledDatepicker from "../../../components/RHControlled/ControlledDatepicker";
-import { CustomCardHeader, BackgroundBox, DirectionCard } from "../../../components";
+import { CustomCardHeader, BackgroundBox, DirectionCard, SoutheastGuideLayer } from "../../../components";
 import { useFetchWithAuth } from "../../../hooks";
 
 import "leaflet/dist/leaflet.css";
@@ -66,8 +66,6 @@ interface iChlorideReportNums {
   east: iMinMaxAvg;
   west: iMinMaxAvg;
 }
-
-const mapStyle = { height: "100%", width: "100%" };
 
 export const ChloridesReportView = () => {
   const { control, reset, watch } = useForm({
@@ -306,6 +304,7 @@ export const ChloridesReportView = () => {
                         attribution="&copy; OpenStreetMap contributors"
                       />
                     </LayersControl.BaseLayer>
+                    <SoutheastGuideLayer />
                   </LayersControl>
                 </MapContainer>
               </Box>
