@@ -245,6 +245,7 @@ def create_well(new_well: well_schemas.SubmitWellCreate, db: Session = Depends(g
 )
 def get_wells_locations(
     search_string: str = None,
+    has_chloride_group: bool = None,
     limit: int = 500,
     offset: int = 0,
     db: Session = Depends(get_db),
@@ -269,6 +270,9 @@ def get_wells_locations(
                 Wells.osetag.ilike(f"%{search_string}%")
             )
         )
+
+    if has_chloride_group is not None:
+        query_statement = query_statement.where(Wells.chloride_group_id.isnot(None))
 
     return db.scalars(query_statement.offset(offset).limit(limit)).all()
 

@@ -2,10 +2,10 @@
 import * as L from "leaflet";
 import { LayersControl, Pane, FeatureGroup, Rectangle, Polyline, Marker } from "react-leaflet";
 
-const NM_LAT_MIN = 31.3325;
-const NM_LAT_MAX = 37.0;
-const NM_LON_MIN = -109.05;
-const NM_LON_MAX = -103.0;
+const NM_LAT_MIN = 33.12500;
+const NM_LAT_MAX = 34.12500;
+const NM_LON_MIN = -105.25000;
+const NM_LON_MAX = -104.25000;
 
 const MID_LAT = (NM_LAT_MIN + NM_LAT_MAX) / 2;
 const MID_LON = (NM_LON_MIN + NM_LON_MAX) / 2;
@@ -54,7 +54,7 @@ const labelIcon = (text: string) =>
 
 export const SoutheastGuideLayer = () =>
 (
-  <LayersControl.Overlay name="SE Quadrant Guide" checked>
+  <LayersControl.Overlay name="Clorides Report Region Guide" checked>
     {/* Lower than your GeoJSON panes (you used 600/625); markers still clickable above */}
     <Pane name="se_quadrant_guide" style={{ zIndex: 550 }}>
       <FeatureGroup>

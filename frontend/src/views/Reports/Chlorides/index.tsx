@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { ArrowBack, PictureAsPdf, Science } from "@mui/icons-material";
 import { useMutation, useQuery } from "react-query";
 import dayjs, { Dayjs } from "dayjs";
@@ -16,21 +17,35 @@ import {
   Divider,
   Box,
 } from "@mui/material";
-import {
-  MapContainer,
-  LayersControl,
-} from "react-leaflet";
+import { LayersControl, MapContainer, Marker, Tooltip as MapTooltip } from "react-leaflet";
 import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
+import L from "leaflet";
 import { API_URL } from "../../../config";
 import ControlledDatepicker from "../../../components/RHControlled/ControlledDatepicker";
 import { CustomCardHeader, BackgroundBox, DirectionCard, SoutheastGuideLayer, SatelliteLayer, OpenStreetMapLayer } from "../../../components";
 import { useFetchWithAuth } from "../../../hooks";
+import { useGetWellLocations } from "../../../service/ApiServiceNew";
+import { Well } from "../../../interfaces";
 
+import iconRed from "../../../assets/leaflet/marker-icon-red.png";
+import iconShadow from "leaflet/dist/images/marker-shadow.png";
+
+// @ts-ignore
+import MarkerClusterGroup from "@changey/react-leaflet-markercluster";
 import "leaflet/dist/leaflet.css";
 import "@changey/react-leaflet-markercluster/dist/styles.min.css";
+
+const redIcon = L.icon({
+  iconUrl: iconRed,
+  shadowUrl: iconShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+});
 
 const schema = yup.object().shape({
   from: yup.mixed<Dayjs>().nullable().required("From date is required"),
@@ -133,6 +148,16 @@ export const ChloridesReportView = () => {
     });
   };
 
+  const wellQuery = useGetWellLocations('', true);
+
+  useEffect(() => {
+    if (wellQuery.hasNextPage && !wellQuery.isFetchingNextPage) {
+      wellQuery.fetchNextPage();
+    }
+  }, [wellQuery.hasNextPage, wellQuery.isFetchingNextPage]);
+
+  const wellMarkers = wellQuery.data?.pages.flat() ?? [];
+
   return (
     <BackgroundBox>
       <Card sx={{ height: "fit-content" }}>
@@ -208,7 +233,7 @@ export const ChloridesReportView = () => {
             sx={{ py: 3, px: 2 }}
           >
             <Grid item xs={12} md={6}>
-              <Typography variant="h4" sx={{ textTransform: 'uppercase' }}>Chloride Reading:</Typography>
+              <Typography variant="h4" sx={{ textTransform: 'uppercase' }}>Chlorides Reading:</Typography>
               {chloridesQuery.isLoading && (
                 <Grid container spacing={2} sx={{ mt: 2 }}>
                   {[0, 1, 2, 3].map((i) => (
@@ -289,9 +314,80 @@ export const ChloridesReportView = () => {
                     <SatelliteLayer />
                     <OpenStreetMapLayer />
                     <SoutheastGuideLayer />
+
+                    {/* Wells Cluster Overlay */}
+                    <LayersControl.Overlay name="Wells" checked>
+                      <MarkerClusterGroup
+                        chunkedLoading
+                        maxClusterRadius={35}
+                        disableClusteringAtZoom={12}
+                        iconCreateFunction={(cluster: any) => {
+                          const count = cluster.getChildCount();
+                          return L.divIcon({
+                            html: `<div style="
+                      background-color: rgba(0, 123, 255, 0.8);
+                      color: white;
+                      width: 40px;
+                      height: 40px;
+                      border-radius: 50%;
+                      display: flex;
+                      justify-content: center;
+                      align-items: center;
+                      font-weight: bold;
+                      border: 2px solid white;
+                    ">${count}</div>`,
+                            className: "",
+                            iconSize: [40, 40],
+                          });
+                        }}
+                      >
+                        {wellQuery.isSuccess &&
+                          wellMarkers.map((well: Well) => (
+                            <Marker
+                              key={well.id}
+                              position={[
+                                well.location?.latitude,
+                                well.location?.longitude,
+                              ]}
+                              icon={redIcon}
+                            >
+                              <MapTooltip>
+                                {well.name || well.ra_number || well.id}
+                              </MapTooltip>
+                            </Marker>
+                          ))}
+                      </MarkerClusterGroup>
+                    </LayersControl.Overlay>
                   </LayersControl>
                 </MapContainer>
               </Box>
+              {/* Loading first page */}
+              {wellQuery.isLoading && (
+                <Box py={2}>
+                  <Typography variant="h6">Loading well markers...</Typography>
+                </Box>
+              )}
+              {/* Loading additional pages */}
+              {wellQuery.isFetchingNextPage && (
+                <Box py={2}>
+                  <Typography variant="h6">Loading more wells...</Typography>
+                </Box>
+              )}
+              {wellQuery.isSuccess && wellMarkers.length === 0 && (
+                <Box py={2}>
+                  <Typography variant="h6" color="text.secondary">
+                    No wells found for that search.
+                  </Typography>
+                </Box>
+              )}
+              {/* Error */}
+              {wellQuery.isError && (
+                <Box py={2}>
+                  <Typography variant="h6" color="error">
+                    Failed to load wells: {wellQuery.error.message}
+                  </Typography>
+                </Box>
+              )}
             </Grid>
           </Grid>
           <Grid container>

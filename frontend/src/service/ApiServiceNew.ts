@@ -423,7 +423,7 @@ export function useGetWells(params: WellListQueryParams | undefined) {
   );
 }
 
-export function useGetWellLocations(searchstring: string | undefined) {
+export function useGetWellLocations(searchstring: string | undefined, has_chloride_group: boolean | null = null) {
   const route = "well_locations";
   const authHeader = useAuthHeader();
   const navigate = useNavigate();
@@ -431,11 +431,11 @@ export function useGetWellLocations(searchstring: string | undefined) {
   const PAGE_SIZE = 500;
 
   return useInfiniteQuery<Well[], Error>({
-    queryKey: [route, searchstring],
+    queryKey: [route, searchstring, has_chloride_group],
     queryFn: async ({ pageParam = 0 }) => {
       return GETFetch(
         route,
-        { search_string: searchstring, offset: pageParam, limit: PAGE_SIZE },
+        { search_string: searchstring, offset: pageParam, limit: PAGE_SIZE, has_chloride_group },
         authHeader(),
         signOut,
         navigate

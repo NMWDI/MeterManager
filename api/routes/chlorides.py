@@ -347,10 +347,10 @@ def _stats(values: List[float]) -> MinMaxAvg:
     )
 
 # Approx NM bounding box (degrees)
-NM_LAT_MIN = 31.3325
-NM_LAT_MAX = 37.0000
-NM_LON_MIN = -109.0500
-NM_LON_MAX = -103.0000
+NM_LAT_MIN = 33.12500
+NM_LAT_MAX = 34.12500
+NM_LON_MIN = -105.25000
+NM_LON_MAX = -104.25000
 
 # Precompute midlines for quadrants
 NM_MID_LAT = (NM_LAT_MIN + NM_LAT_MAX) / 2.0

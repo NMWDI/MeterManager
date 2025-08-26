@@ -4,22 +4,37 @@ import { useDebounce } from "use-debounce";
 import { LayersControl, MapContainer, Marker, Tooltip } from "react-leaflet";
 
 import L from "leaflet";
+import iconBlue from "leaflet/dist/images/marker-icon.png";
+import iconRed from "../../assets/leaflet/marker-icon-red.png";
+import iconShadow from "leaflet/dist/images/marker-shadow.png";
+
+const blueIcon = L.icon({
+  iconUrl: iconBlue,
+  shadowUrl: iconShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+});
+
+const redIcon = L.icon({
+  iconUrl: iconRed,
+  shadowUrl: iconShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+});
+
 import "leaflet/dist/leaflet.css";
 import { useGetWellLocations } from "../../service/ApiServiceNew";
 import { Well } from "../../interfaces";
-
-import icon from "leaflet/dist/images/marker-icon.png";
-import iconShadow from "leaflet/dist/images/marker-shadow.png";
 import { Box, Typography } from "@mui/material";
 import { OpenStreetMapLayer, SatelliteLayer, SoutheastGuideLayer } from "../../components";
 
 // @ts-ignore
 import MarkerClusterGroup from "@changey/react-leaflet-markercluster";
 import "@changey/react-leaflet-markercluster/dist/styles.min.css";
-
-const DefaultIcon = L.icon({ iconUrl: icon, shadowUrl: iconShadow });
-
-L.Marker.prototype.options.icon = DefaultIcon;
 
 export default function WellSelectionMap({
   setSelectedWell,
@@ -99,6 +114,7 @@ export default function WellSelectionMap({
                       eventHandlers={{
                         click: () => setSelectedWell(well),
                       }}
+                      icon={well.chloride_group_id != null ? redIcon : blueIcon}
                     >
                       <Tooltip>
                         {well.name || well.ra_number || well.id}
