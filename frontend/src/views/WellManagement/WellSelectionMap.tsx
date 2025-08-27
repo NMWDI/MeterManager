@@ -30,7 +30,7 @@ import "leaflet/dist/leaflet.css";
 import { useGetWellLocations } from "../../service/ApiServiceNew";
 import { Well } from "../../interfaces";
 import { Box, Typography } from "@mui/material";
-import { OpenStreetMapLayer, SatelliteLayer, SoutheastGuideLayer } from "../../components";
+import { OpenStreetMapLayer, SatelliteLayer, SoutheastGuideLayer, WellMapLegend } from "../../components";
 
 // @ts-ignore
 import MarkerClusterGroup from "@changey/react-leaflet-markercluster";
@@ -122,6 +122,7 @@ export default function WellSelectionMap({
                     </Marker>
                   ))}
               </MarkerClusterGroup>
+              <WellMapLegend />
             </LayersControl.Overlay>
           </LayersControl>
         </MapContainer>
@@ -129,18 +130,27 @@ export default function WellSelectionMap({
       {/* Loading first page */}
       {wellQuery.isLoading && (
         <Box py={2}>
-          <Typography variant="h6">Loading well markers...</Typography>
+          <Typography variant="h6" sx={{
+            pointerEvents: "none",
+            userSelect: "none",
+          }}>Loading well markers...</Typography>
         </Box>
       )}
       {/* Loading additional pages */}
       {wellQuery.isFetchingNextPage && (
         <Box py={2}>
-          <Typography variant="h6">Loading more wells...</Typography>
+          <Typography variant="h6" sx={{
+            pointerEvents: "none",
+            userSelect: "none",
+          }}>Loading more wells...</Typography>
         </Box>
       )}
       {wellQuery.isSuccess && wellMarkers.length === 0 && (
         <Box py={2}>
-          <Typography variant="h6" color="text.secondary">
+          <Typography variant="h6" color="text.secondary" sx={{
+            pointerEvents: "none",
+            userSelect: "none",
+          }}>
             No wells found for that search.
           </Typography>
         </Box>
@@ -148,7 +158,10 @@ export default function WellSelectionMap({
       {/* Error */}
       {wellQuery.isError && (
         <Box py={2}>
-          <Typography variant="h6" color="error">
+          <Typography variant="h6" color="error" sx={{
+            pointerEvents: "none",
+            userSelect: "none",
+          }}>
             Failed to load wells: {wellQuery.error.message}
           </Typography>
         </Box>

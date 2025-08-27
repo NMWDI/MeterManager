@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { useDebounce } from "use-debounce";
 import {
   MapContainer,
@@ -11,7 +10,6 @@ import {
 import { MeterMapDTO } from "../../../interfaces";
 
 import L from "leaflet";
-import { useLeafletContext } from "@react-leaflet/core";
 import { FeatureCollection } from "geojson";
 
 import "leaflet/dist/leaflet.css";
@@ -28,62 +26,11 @@ import { Box, Typography } from "@mui/material";
 // @ts-ignore
 import MarkerClusterGroup from "@changey/react-leaflet-markercluster";
 import { OpenStreetMapLayer, SatelliteLayer } from "../../../components";
+import { getMeterMarkerColor } from "../../../utils";
+import { MeterMapColorLegend } from "../../../components/MeterMapColorLegend";
 
 const DefaultIcon = L.icon({ iconUrl: icon, shadowUrl: iconShadow });
 L.Marker.prototype.options.icon = DefaultIcon;
-
-// Define marker colors which are based on the year of the last PM (July - June)
-const pm_colors: { [key: string]: string } = {
-  "2020/2021": "brown",
-  "2021/2022": "green",
-  "2022/2023": "purple",
-  "2023/2024": "turquoise",
-  "2024/2025": "red",
-  "2025/2026": "white",
-  "2026/2027": "yellow",
-  "2027/2028": "brown",
-  "2028/2029": "blue",
-};
-
-// Color legend component
-function ColorLegend() {
-  const context = useLeafletContext();
-
-  useEffect(() => {
-    const legend = new L.Control({ position: "bottomleft" });
-    legend.onAdd = function() {
-      const div = L.DomUtil.create("div", "info legend");
-      div.innerHTML = "<h4>PM Season</h4>";
-      for (const season in pm_colors) {
-        div.innerHTML += `<i style="background:${pm_colors[season]}"></i> ${season}<br>`;
-      }
-      return div;
-    };
-
-    const container = context.map;
-    container.addControl(legend);
-
-    return () => {
-      container.removeControl(legend);
-    };
-  }, [context.map]);
-
-  return null;
-}
-
-// Function for getting color from last PM
-function getMeterColor(last_pm: string) {
-  const last_pm_date = new Date(last_pm);
-  if (last_pm_date.getMonth() >= 7) {
-    return pm_colors[
-      last_pm_date.getFullYear() + "/" + (last_pm_date.getFullYear() + 1)
-    ];
-  } else {
-    return pm_colors[
-      last_pm_date.getFullYear() - 1 + "/" + last_pm_date.getFullYear()
-    ];
-  }
-}
 
 // Static geojson data
 const trData: FeatureCollection = tr_data as FeatureCollection;
@@ -150,7 +97,7 @@ export default function MeterSelectionMap({
               >
                 {meterMarkers.isSuccess &&
                   meterMarkers.data.map((meter: MeterMapDTO) => {
-                    const color = meter.last_pm ? getMeterColor(meter.last_pm) : "black";
+                    const color = meter.last_pm ? getMeterMarkerColor(meter.last_pm) : "black";
 
                     return (
                       <Marker
@@ -209,22 +156,36 @@ export default function MeterSelectionMap({
               </Pane>
             </LayersControl.Overlay>
           </LayersControl>
-
-          <ColorLegend />
+          <MeterMapColorLegend />
         </MapContainer>
       </Box>
-
       {/* Loading and empty states */}
       {meterMarkers.isLoading && (
         <Box py={2}>
-          <Typography variant="h6">Loading meter markers...</Typography>
+          <Typography variant="h6" sx={{
+            pointerEvents: "none",
+            userSelect: "none",
+          }}>Loading meter markers...</Typography>
         </Box>
       )}
-
-      {meterMarkers.isSuccess && meterMarkers.data.length === 0 && (
+      {meterMarkers.isSuccess && meterMarkers?.data.length === 0 && (
         <Box py={2}>
-          <Typography variant="h6" color="text.secondary">
+          <Typography variant="h6" color="text.secondary" sx={{
+            pointerEvents: "none",
+            userSelect: "none",
+          }}>
             No meters found for that search.
+          </Typography>
+        </Box>
+      )}
+      {/* Error */}
+      {meterMarkers.isError && (
+        <Box py={2}>
+          <Typography variant="h6" color="error" sx={{
+            pointerEvents: "none",
+            userSelect: "none",
+          }}>
+            Failed to load meters: {meterMarkers.error.message}
           </Typography>
         </Box>
       )}

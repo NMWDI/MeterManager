@@ -25,7 +25,7 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import L from "leaflet";
 import { API_URL } from "../../../config";
 import ControlledDatepicker from "../../../components/RHControlled/ControlledDatepicker";
-import { CustomCardHeader, BackgroundBox, DirectionCard, SoutheastGuideLayer, SatelliteLayer, OpenStreetMapLayer } from "../../../components";
+import { CustomCardHeader, BackgroundBox, DirectionCard, SoutheastGuideLayer, SatelliteLayer, OpenStreetMapLayer, WellMapLegend } from "../../../components";
 import { useFetchWithAuth } from "../../../hooks";
 import { useGetWellLocations } from "../../../service/ApiServiceNew";
 import { Well } from "../../../interfaces";
@@ -359,23 +359,33 @@ export const ChloridesReportView = () => {
                       </MarkerClusterGroup>
                     </LayersControl.Overlay>
                   </LayersControl>
+                  <WellMapLegend />
                 </MapContainer>
               </Box>
               {/* Loading first page */}
               {wellQuery.isLoading && (
                 <Box py={2}>
-                  <Typography variant="h6">Loading well markers...</Typography>
+                  <Typography variant="h6" sx={{
+                    pointerEvents: "none",
+                    userSelect: "none",
+                  }}>Loading well markers...</Typography>
                 </Box>
               )}
               {/* Loading additional pages */}
               {wellQuery.isFetchingNextPage && (
                 <Box py={2}>
-                  <Typography variant="h6">Loading more wells...</Typography>
+                  <Typography variant="h6" sx={{
+                    pointerEvents: "none",
+                    userSelect: "none",
+                  }}>Loading more wells...</Typography>
                 </Box>
               )}
               {wellQuery.isSuccess && wellMarkers.length === 0 && (
                 <Box py={2}>
-                  <Typography variant="h6" color="text.secondary">
+                  <Typography variant="h6" color="text.secondary" sx={{
+                    pointerEvents: "none",
+                    userSelect: "none",
+                  }}>
                     No wells found for that search.
                   </Typography>
                 </Box>
@@ -383,7 +393,10 @@ export const ChloridesReportView = () => {
               {/* Error */}
               {wellQuery.isError && (
                 <Box py={2}>
-                  <Typography variant="h6" color="error">
+                  <Typography variant="h6" color="error" sx={{
+                    pointerEvents: "none",
+                    userSelect: "none",
+                  }}>
                     Failed to load wells: {wellQuery.error.message}
                   </Typography>
                 </Box>
