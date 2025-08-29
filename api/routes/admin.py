@@ -11,10 +11,23 @@ from api.session import get_db
 from api.route_util import _patch
 from api.enums import ScopedUser
 
+from pathlib import Path
+from google.cloud import storage
+from dotenv import load_dotenv
+
+import os
+import subprocess
+import datetime
+
 admin_router = APIRouter()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-
+BUCKET_NAME = os.getenv("GCP_BUCKET_NAME", "")
+BACKUP_PREFIX = os.getenv("GCP_BACKUP_PREFIX", "")
+BACKUP_RETENTION_DAYS = int(os.getenv("BACKUP_RETENTION_DAYS", "30"))
+load_dotenv(os.getenv("APPDB_ENV", ".env"))
+DATABASE_URL = os.getenv("DATABASE_URL", "")
+   
 # define response models
 @admin_router.post(
     "/users/update_password",
@@ -195,3 +208,51 @@ def update_role(updated_role: security_schemas.UserRole, db: Session = Depends(g
         .where(UserRoles.id == updated_role.id)
         .options(joinedload(UserRoles.security_scopes))
     ).first()
+
+
+@admin_router.api_route(
+    "/backup-db/",
+    methods=["BACKUP"],
+    tags=["Admin"],
+    dependencies=[Depends(ScopedUser.Admin)]
+)
+def backup_and_send():
+    if not BUCKET_NAME:
+        raise ValueError("GCP_BUCKET_NAME environment variable is not set")
+    if not DATABASE_URL:
+        raise ValueError("DATABASE_URL environment variable is not set")
+
+    timestamp = datetime.datetime.utcnow().strftime("%Y-%m-%d-%H%M%S")
+    filename = f"backup-{timestamp}.dump"
+    local_path = Path(f"/tmp/{filename}")
+    
+    subprocess.run(
+        ["pg_dump", "-Fc", DATABASE_URL, "-f", str(local_path)],
+        check=True
+    )
+
+    client = storage.Client()
+    bucket = client.bucket(BUCKET_NAME)
+
+    blob_name = f"{BACKUP_PREFIX}/{filename}" if BACKUP_PREFIX else filename
+    blob = bucket.blob(blob_name)
+    blob.upload_from_filename(local_path)    
+
+    print(f"Backup uploaded to gs://{BUCKET_NAME}/{blob_name}")
+
+    local_path.unlink(missing_ok=True)
+
+    # Delete old backups (> BACKUP_RETENTION_DAYS)
+    cutoff_date = datetime.datetime.utcnow() - datetime.timedelta(days=BACKUP_RETENTION_DAYS)
+    blobs = client.list_blobs(BUCKET_NAME, prefix=BACKUP_PREFIX)
+
+    deleted = []
+    for old_blob in blobs:
+        if old_blob.time_created < cutoff_date:
+            old_blob.delete()
+            deleted.append(old_blob.name)
+    
+    return {
+        "status": f"Database backup uploaded to gs://{BUCKET_NAME}/{blob_name}",
+        "deleted_old_backups": deleted
+    }

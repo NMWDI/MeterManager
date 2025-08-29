@@ -69,3 +69,4 @@ weasyprint==65.1
 webencodings==0.5.1
 xlsxwriter==3.2.5
 zopfli==0.2.3.post1
+google-cloud-storage==3.3.0

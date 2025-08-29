@@ -29,11 +29,18 @@ services:
     build:
       context: ./api
       dockerfile: ./Dockerfile
-    command: bash -c "
-        uvicorn api.main:app 
-        --host 0.0.0.0 
-        --proxy-headers --root-path /api/v1
-      "
+    working_dir: /app
+    environment:
+    - GCP_BUCKET_NAME=pvacd
+    - GCP_BACKUP_PREFIX=prod-db-backups
+    - BACKUP_RETENTION_DAYS=90
+    - APPDB_ENV=.env_production  
+    command: >
+      uvicorn api.main:app
+      --host 0.0.0.0
+      --port 8000
+      --proxy-headers
+      --root-path /api/v1
     ports:
       - "8000:8000"
     volumes:
