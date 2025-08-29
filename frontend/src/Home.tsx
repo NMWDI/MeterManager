@@ -1,4 +1,4 @@
-import { Box, Card, CardContent, Typography } from "@mui/material";
+import { Grid, Card, CardContent, CardMedia, List, ListItem, ListItemText, Stack, Typography } from "@mui/material";
 import pvacd_logo from "./img/pvacd_logo.png";
 import meter_field from "./img/meter_field.jpg";
 import meter_storage from "./img/meter_storage.jpg";
@@ -26,30 +26,66 @@ export const Home = () => {
   return (
     <BackgroundBox>
       <Card sx={{ height: "fit-content" }}>
-        <CustomCardHeader title="Meter Manager Home" icon={HomeIcon} />
+        <CustomCardHeader title="Home" icon={HomeIcon} />
         <CardContent>
-          <Box>
-            <img src={pvacd_logo} />
-            <Box>
-              <Typography variant="body2">PVACD Meter Manager Info</Typography>
-              <Typography variant="h4">Version History</Typography>
-              <ul>
-                {versionHistory.map((version) => (
-                  <li key={version}>{version}</li>
-                ))}
-              </ul>
-              <Box
+          <Grid container pl={3} pt={3} pb={1} pr={1} spacing={3} alignItems="flex-start">
+            <Grid item xs={12} md={6}>
+              <CardMedia
+                component="img"
+                loading="lazy"
+                image={pvacd_logo}
+                alt="PVACD Logo"
                 sx={{
-                  display: "flex",
-                  justifyContent: "space-around",
-                  width: 600,
+                  maxWidth: 200,
+                  width: "100%",
+                  height: "auto",
                 }}
+              />
+              <Stack spacing={1} alignItems="flex-start" textAlign="left">
+                <Typography variant="body2">PVACD Meter Manager Info</Typography>
+                <Typography variant="h4">Version History</Typography>
+                <List dense>
+                  {versionHistory.map((version) => (
+                    <ListItem key={version} disablePadding>
+                      <ListItemText primary={version} />
+                    </ListItem>
+                  ))}
+                </List>
+              </Stack>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Stack
+                direction={{ xs: "column", xl: "row" }}
+                spacing={2}
+                justifyContent="center"
+                alignItems={{ xs: "center", xl: "flex-start" }}
+                sx={{ width: "100%" }}
               >
-                <img src={meter_field} width="200" />
-                <img src={meter_storage} width="200" />
-              </Box>
-            </Box>
-          </Box>
+                <CardMedia
+                  component="img"
+                  loading="lazy"
+                  image={meter_field}
+                  alt="Field Meter"
+                  sx={{
+                    maxWidth: 300,
+                    width: "100%",
+                    height: "auto",
+                  }}
+                />
+                <CardMedia
+                  component="img"
+                  loading="lazy"
+                  image={meter_storage}
+                  alt="Storage Meter"
+                  sx={{
+                    maxWidth: 300,
+                    width: "100%",
+                    height: "auto",
+                  }}
+                />
+              </Stack>
+            </Grid>
+          </Grid>
         </CardContent>
       </Card>
     </BackgroundBox>

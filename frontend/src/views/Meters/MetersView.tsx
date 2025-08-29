@@ -36,24 +36,23 @@ export const MetersView = () => {
     <BackgroundBox>
       <Grid
         container
-        item
         spacing={2}
         sx={{ minHeight: { xs: "100vh", lg: "60vh" } }}
       >
-        <Grid item xs={6}>
+        <Grid item xs={12} lg={6}>
           <MeterSelection
             onMeterSelection={setSelectedMeter}
             setMeterAddMode={setMeterAddMode}
           />
         </Grid>
-        <Grid item xs={6}>
+        <Grid item xs={12} lg={6}>
           <MeterDetailsFields
             selectedMeterID={selectedMeter}
             meterAddMode={meterAddMode}
           />
         </Grid>
       </Grid>
-      <Grid id="history_section" container item xs={12} sx={{ pt: 2 }}>
+      <Grid id="history_section" item xs={12} sx={{ pt: 2 }}>
         <MeterHistory selectedMeterID={selectedMeter} />
       </Grid>
     </BackgroundBox>

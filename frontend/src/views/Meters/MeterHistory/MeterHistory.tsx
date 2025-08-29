@@ -146,13 +146,13 @@ export const MeterHistory = ({
   return (
     <Box id="meter_history" sx={{ width: "100%" }}>
       <Grid container spacing={2} sx={{ minHeight: "700px" }}>
-        <Grid item xs={6}>
+        <Grid item xs={12} lg={6}>
           <MeterHistoryTable
             onHistoryItemSelection={setSelectedHistoryItem}
             selectedMeterHistory={meterHistory.data}
           />
         </Grid>
-        <Grid item xs={6}>
+        <Grid item xs={12} lg={6}>
           {getDetailsCard(selectedHistoryItem)}
         </Grid>
       </Grid>
