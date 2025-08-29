@@ -7,7 +7,7 @@ import { CustomCardHeader } from "../../components/CustomCardHeader";
 export default function WorkOrdersView() {
   return (
     <BackgroundBox>
-      <Card sx={{ height: "fit-content" }}>
+      <Card sx={{ height: "fit-content", overflowX: 'auto' }}>
         <CustomCardHeader
           title="Work Orders"
           icon={FormatListBulletedOutlinedIcon}

@@ -99,6 +99,8 @@ export const AppLayout = ({
         component="main"
         sx={(theme: Theme) => ({
           flexGrow: 1,
+          flexShrink: 1,
+          minWidth: 0,
           p: 3,
           mt: 8,
           ...theme.mixins.toolbar,

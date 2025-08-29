@@ -30,6 +30,7 @@ import {
   DialogContentText,
   DialogTitle,
   IconButton,
+  Stack,
   TextField,
 } from "@mui/material";
 import GridFooterWithButton from "../../components/GridFooterWithButton";
@@ -174,7 +175,9 @@ export default function WorkOrdersTable() {
     WorkOrderStatus.Open,
     WorkOrderStatus.Review,
   ]);
-  const workOrderList = useGetWorkOrders(workOrderFilters);
+  const workOrderList = useGetWorkOrders(workOrderFilters, {
+    refetchInterval: false,
+  });
   const updateWorkOrder = useUpdateWorkOrder();
   const deleteWorkOrder = useDeleteWorkOrder(() =>
     console.log("Work order deleted"),
@@ -216,14 +219,6 @@ export default function WorkOrdersTable() {
     //Unlike with the technicians, this filters on the frontend in case the admin wants to see all work orders
     initialFilter = [{ field: "status", operator: "not", value: "Closed" }];
   }
-
-  //Refresh work order list once a minute
-  useEffect(() => {
-    const interval = setInterval(() => {
-      workOrderList.refetch();
-    }, 60000);
-    return () => clearInterval(interval);
-  }, [workOrderList]);
 
   //Update list of work orders if technician level to only show open and review.
   //useEffect prevents this from running on every render
@@ -279,25 +274,30 @@ export default function WorkOrdersTable() {
 
   const handleNewWorkOrder = (newWorkOrder: NewWorkOrder) => {
     createWorkOrder.mutateAsync(newWorkOrder).then(() => {
-      //Get the updated rows
       workOrderList.refetch();
     });
   };
 
-  // Define the columns for the table
   const columns: GridColDef<any>[] = [
-    { field: "work_order_id", headerName: "ID", width: 50 }, //Note next line... for some reason this value comes in from the API as a string, not a date
+    {
+      field: "work_order_id",
+      headerName: "ID",
+      flex: 1,
+      minWidth: 50
+    },
     {
       field: "date_created",
       headerName: "Date",
-      width: 100,
+      flex: 1,
+      minWidth: 100,
       valueGetter: (value) => new Date(value),
       valueFormatter: (value: Date) => value.toLocaleDateString(),
     },
     {
       field: "meter_serial",
       headerName: "Meter",
-      width: 100,
+      flex: 1,
+      minWidth: 100,
       renderCell: (params) => {
         return (
           <Link
@@ -314,25 +314,29 @@ export default function WorkOrdersTable() {
     {
       field: "title",
       headerName: "Title",
-      width: 200,
+      flex: 2,
+      minWidth: 200,
       editable: hasAdminScope,
     },
     {
       field: "description",
       headerName: "Description",
-      width: 300,
+      flex: 2,
+      minWidth: 300,
       editable: hasAdminScope,
     },
     {
       field: "creator",
       headerName: "Created By",
-      width: 150,
+      flex: 2,
+      minWidth: 150,
       editable: hasAdminScope,
     },
     {
       field: "status",
       headerName: "Status",
-      width: 125,
+      flex: 1,
+      minWidth: 125,
       type: "singleSelect",
       valueOptions: status_options,
       editable: true,
@@ -341,7 +345,8 @@ export default function WorkOrdersTable() {
     {
       field: "associated_activities",
       headerName: "Activity IDs",
-      width: 150,
+      flex: 1,
+      minWidth: 150,
       renderCell: (params) => {
         const activities = (params.value as MeterActivity[]) ?? [];
         const links = activities.map((activity, index) => (
@@ -364,7 +369,8 @@ export default function WorkOrdersTable() {
     {
       field: "assigned_user_id",
       headerName: "Technician Assigned",
-      width: 200,
+      flex: 2,
+      minWidth: 200,
       valueGetter: (id: number) => getUserFromID(id),
       type: "singleSelect",
       valueOptions: userList.data?.map((user) => user.full_name) ?? [],
@@ -373,7 +379,8 @@ export default function WorkOrdersTable() {
     {
       field: "location_name",
       headerName: "Location Name",
-      width: 200,
+      flex: 2,
+      minWidth: 200,
       renderCell: (params) => {
         const activities = params.row.associated_activities ?? [];
         return activities.length > 0 ? activities[0].location_name : "";
@@ -382,7 +389,8 @@ export default function WorkOrdersTable() {
     {
       field: "water_users",
       headerName: "Water Users",
-      width: 200,
+      flex: 2,
+      minWidth: 200,
       renderCell: (params) => {
         const activities = params.row.associated_activities ?? [];
         return activities.length > 0 && activities[0].water_users
@@ -393,7 +401,8 @@ export default function WorkOrdersTable() {
     {
       field: "actions",
       headerName: "Actions",
-      width: 100,
+      flex: 1,
+      minWidth: 100,
       sortable: false,
       renderCell: (params: GridRenderCellParams<any>) => {
         const isOpen = params.row.status === "Open";
@@ -440,12 +449,13 @@ export default function WorkOrdersTable() {
   ];
 
   return (
-    <div style={{ height: 700, width: "100%" }}>
+    <Box sx={{ height: 700, width: "100%", overflowX: 'auto' }}>
       <DataGrid
         rows={workOrderList.data ?? []}
         getRowHeight={() => "auto"}
         getRowId={(row) => row.work_order_id}
         columns={columns}
+        disableColumnResize={false}
         initialState={{
           columns: {
             columnVisibilityModel: {
@@ -463,15 +473,22 @@ export default function WorkOrdersTable() {
         slotProps={{
           footer: {
             button: hasAdminScope && (
-              <Button
-                sx={{ ml: 1 }}
-                variant="contained"
-                size="small"
-                onClick={() => setIsNewWorkOrderModalOpen(true)}
+              <Stack
+                direction={{ xs: "column", sm: "row" }}
+                spacing={1}
+                sx={{ ml: { xs: 0, sm: 1 }, mt: { xs: 1, sm: 0 }, width: "100%" }}
+                alignItems={{ xs: "stretch", sm: "center" }}
               >
-                <AddIcon style={{ fontSize: "1rem" }} />
-                Add a New Work Order
-              </Button>
+                <Button
+                  variant="contained"
+                  size="small"
+                  onClick={() => setIsNewWorkOrderModalOpen(true)}
+                  sx={{ flexShrink: 0, width: { xs: "100%", sm: "auto" } }}
+                >
+                  <AddIcon fontSize="small" sx={{ mr: 0.5 }} />
+                  Create
+                </Button>
+              </Stack>
             ),
           },
         }}
@@ -481,6 +498,6 @@ export default function WorkOrdersTable() {
         closeNewWorkOrderModal={() => setIsNewWorkOrderModalOpen(false)}
         submitNewWorkOrder={handleNewWorkOrder}
       />
-    </div>
+    </Box>
   );
 }

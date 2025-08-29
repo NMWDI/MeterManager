@@ -81,7 +81,10 @@ export const MeterSelection = ({
               value={currentTabIndex}
               onChange={handleTabChange}
               aria-label="Switch between Meter List & Map"
-              sx={{ width: '100%', maxWidth: '100rem' }}
+              sx={{
+                width: "100%",
+                maxWidth: "100rem",
+              }}
             >
               <Tab label="Meter List" />
               <Tab label="Meter Map" />
