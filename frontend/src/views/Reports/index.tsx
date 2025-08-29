@@ -19,12 +19,14 @@ export const ReportsView = () => {
         <CustomCardHeader title="Reports" icon={Assessment} />
         <CardContent>
           <Box sx={{ minWidth: "15rem", maxWidth: "15%" }} py={1}>
+            {/*
             <NavLink
               disabled
               route="/reports/workorders"
               label="Work Orders"
               Icon={FormatListBulletedOutlined}
             />
+            */}
             <NavLink
               route="/reports/wells"
               label="Monitoring Wells"
@@ -40,12 +42,14 @@ export const ReportsView = () => {
               label="Parts Used"
               Icon={Build}
             />
+            {/*
             <NavLink
               disabled
               route="/reports/board"
               label="Board"
               Icon={People}
             />
+            */}
             <NavLink
               route="/reports/chlorides"
               label="Chlorides"

@@ -8,6 +8,7 @@ import {
   MenuItem,
   Button,
   Box,
+  Divider,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import { useNavigate } from "react-router-dom";
@@ -122,6 +123,22 @@ export default function Topbar({ onMenuClick, sx }: { onMenuClick: () => void; s
               anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
               transformOrigin={{ horizontal: "right", vertical: "top" }}
             >
+              <MenuItem
+                disabled
+                sx={{
+                  opacity: 1,
+                  fontWeight: "bold",
+                  color: "darkblue",
+                  "&.Mui-disabled": { opacity: 1 },
+                }}
+              >
+                <Box sx={{ display: "flex", alignItems: "center", gap: "0.5rem", textTransform: 'uppercase' }}>
+                  <Typography variant="body2" fontWeight="bold" color="darkblue">
+                    Role: {role ?? "Unknown"}
+                  </Typography>
+                </Box>
+              </MenuItem>
+              <Divider />
               <MenuItem
                 onClick={() => {
                   navigate("/settings")
