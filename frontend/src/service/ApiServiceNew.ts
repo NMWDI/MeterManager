@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient, UseQueryOptions } from "react-query";
 import { useAuthHeader, useSignOut } from "react-auth-kit";
 import { enqueueSnackbar, useSnackbar } from "notistack";
 import {
@@ -558,23 +558,26 @@ export function useGetST2WaterLevels(datastreamID: number | undefined) {
   );
 }
 
-export function useGetWorkOrders(status_filter: WorkOrderStatus[]) {
+export function useGetWorkOrders(
+  status_filter: WorkOrderStatus[],
+  options?: UseQueryOptions<WorkOrder[], Error>
+) {
   const route = "work_orders";
   const authHeader = useAuthHeader();
   const navigate = useNavigate();
   const signOut = useSignOut();
 
-  //Convert status filter array to
-
-  return useQuery<WorkOrder[], Error>([route, status_filter], () =>
-    GETFetch(
+  return useQuery<WorkOrder[], Error>({
+    queryKey: [route, { status_filter: status_filter.sort() }],
+    queryFn: () => GETFetch(
       route,
       { filter_by_status: status_filter },
       authHeader(),
       signOut,
       navigate,
     ),
-  );
+    ...options
+  });
 }
 
 export function useCreateUser(onSuccess: Function) {

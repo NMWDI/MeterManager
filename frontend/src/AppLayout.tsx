@@ -1,0 +1,89 @@
+import { useAuthUser } from "react-auth-kit";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Box } from "@mui/material";
+import { Theme } from "@mui/material/styles";
+import { SecurityScope } from "./interfaces";
+import Topbar from "./components/Topbar";
+import Sidenav from "./sidenav";
+
+const drawerWidth = 270;
+
+export const AppLayout = ({
+  pageComponent,
+  requiredScopes = null,
+  setErrorMessage = null,
+}: any) => {
+  const authUser = useAuthUser();
+  const navigate = useNavigate();
+
+  const isLoggedIn = authUser() != null;
+  const userScopes = authUser()?.user_role?.security_scopes?.map(
+    (scope: SecurityScope) => scope.scope_string
+  );
+  const hasScopes =
+    requiredScopes == null
+      ? true
+      : requiredScopes?.every((scope: string) => userScopes?.includes(scope));
+
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      if (setErrorMessage) setErrorMessage("You must login to view pages.");
+      navigate("/");
+    } else if (!hasScopes) {
+      if (setErrorMessage)
+        setErrorMessage(
+          "You do not have sufficient permissions to view this page."
+        );
+      navigate("/home");
+    }
+  }, [isLoggedIn, hasScopes]);
+
+  if (!isLoggedIn || !hasScopes) return null;
+
+  return (
+    <Box sx={{ display: "flex", flexGrow: 1, overflow: 'hidden' }}>
+      <Topbar
+        onMenuClick={() => setDrawerOpen(!drawerOpen)}
+        sx={(theme: Theme) => ({
+          zIndex: theme.zIndex.drawer + 1,
+          transition: theme.transitions.create(["margin", "width"], {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.leavingScreen,
+          }),
+          ...(drawerOpen && {
+            width: `calc(100% - ${drawerWidth}px)`,
+            ml: `${drawerWidth}px`,
+            transition: theme.transitions.create(["margin", "width"], {
+              easing: theme.transitions.easing.easeOut,
+              duration: theme.transitions.duration.enteringScreen,
+            }),
+          }),
+        })}
+      />
+      <Sidenav
+        open={drawerOpen}
+        drawerWidth={drawerWidth}
+        onClose={() => setDrawerOpen(false)}
+      />
+      <Box
+        component="main"
+        sx={(theme: Theme) => ({
+          flexGrow: 1,
+          p: 3,
+          mt: 8,
+          ...theme.mixins.toolbar,
+          transition: theme.transitions.create("margin", {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.leavingScreen,
+          }),
+        })}
+      >
+        {pageComponent}
+      </Box>
+    </Box>
+  );
+};
+
