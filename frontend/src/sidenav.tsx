@@ -4,7 +4,7 @@ import { Box, Drawer, Grid, IconButton, Toolbar, Typography } from "@mui/materia
 import { useNavigate } from "react-router-dom";
 import { useGetWorkOrders } from "./service/ApiServiceNew";
 import { WorkOrderStatus } from "./enums";
-import { WorkOrder } from "./interfaces";
+import { SecurityScope, WorkOrder } from "./interfaces";
 import {
   Assessment,
   Build,
@@ -31,21 +31,29 @@ export default function Sidenav({
 }) {
   const navigate = useNavigate();
   const authUser = useAuthUser();
-  const hasAdminScope = authUser()
-    ?.user_role.security_scopes.map((scope: any) => scope.scope_string)
-    .includes("admin");
+
+  // Normalize scopes into a Set for O(1) lookups
+  const scopes: Set<string> = new Set(
+    authUser()?.user_role?.security_scopes?.map(
+      (scope: SecurityScope) => scope.scope_string
+    ) ?? []
+  );
+
+  const hasReadScope = scopes.has("read");
+  const hasAdminScope = scopes.has("admin");
   const userID = authUser()?.id;
 
   const [workOrderLabel, setWorkOrderLabel] = useState("Work Orders");
   const workOrderList = useGetWorkOrders([WorkOrderStatus.Open], {
-    refetchInterval: 30_000,
+    refetchInterval: 45_000,
     refetchIntervalInBackground: true,
+    enabled: hasReadScope && !!authUser()
   });
 
   useEffect(() => {
     if (workOrderList.data && userID) {
       const userWorkOrders = workOrderList.data.filter(
-        (workOrder: WorkOrder) => workOrder.assigned_user_id == userID
+        (workOrder: WorkOrder) => workOrder.assigned_user_id === userID
       );
       setWorkOrderLabel(
         userWorkOrders.length > 0
@@ -67,15 +75,16 @@ export default function Sidenav({
           width: drawerWidth,
           boxSizing: "border-box",
           backgroundColor: "white",
-          overflowY: 'hidden',
+          overflowY: "hidden",
         },
       }}
     >
+      {/* Header */}
       <Box
         sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between'
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
         }}
       >
         <Typography
@@ -93,7 +102,7 @@ export default function Sidenav({
               xl: "1.75rem",
             },
           }}
-          onClick={() => navigate("/home")}
+          onClick={() => navigate("/")}
         >
           Meter Manager
         </Typography>
@@ -110,6 +119,8 @@ export default function Sidenav({
           </IconButton>
         </Toolbar>
       </Box>
+
+      {/* Nav Items */}
       <Grid
         container
         direction="column"
@@ -122,35 +133,34 @@ export default function Sidenav({
           <h5 style={{ margin: 0, color: "#555555" }}>Pages</h5>
         </Grid>
 
-        <NavLink route="/home" label="Home" Icon={Home} />
-        <NavLink
-          route="/workorders"
-          label={workOrderLabel}
-          Icon={FormatListBulletedOutlined}
-        />
-        <NavLink
-          route="/meters"
-          label="Meters Information"
-          Icon={ScreenshotMonitor}
-        />
-        <NavLink route="/activities" label="Activities" Icon={Construction} />
-        <NavLink route="/wells" label="Monitoring Wells" Icon={MonitorHeart} />
-        <NavLink route="/wellmanagement" label="Manage Wells" Icon={Plumbing} />
-        <NavLink route="/reports" label="Reports" Icon={Assessment} />
+        <NavLink route="/" label="Home" Icon={Home} />
+
+        {hasReadScope && (
+          <>
+            <NavLink
+              route="/workorders"
+              label={workOrderLabel}
+              Icon={FormatListBulletedOutlined}
+            />
+            <NavLink
+              route="/meters"
+              label="Meters Information"
+              Icon={ScreenshotMonitor}
+            />
+            <NavLink route="/activities" label="Activities" Icon={Construction} />
+            <NavLink route="/wells" label="Monitoring Wells" Icon={MonitorHeart} />
+            <NavLink route="/wellmanagement" label="Manage Wells" Icon={Plumbing} />
+            <NavLink route="/reports" label="Reports" Icon={Assessment} />
+          </>
+        )}
 
         {hasAdminScope && (
           <>
             <Grid item sx={{ mt: 3, mb: 1 }}>
-              <h5 style={{ margin: 0, color: "#555555" }}>
-                Admin Management
-              </h5>
+              <h5 style={{ margin: 0, color: "#555555" }}>Admin Management</h5>
             </Grid>
             <NavLink route="/parts" label="Manage Parts" Icon={Build} />
-            <NavLink
-              route="/usermanagement"
-              label="Manage Users"
-              Icon={People}
-            />
+            <NavLink route="/usermanagement" label="Manage Users" Icon={People} />
             <NavLink route="/chlorides" label="Chlorides" Icon={Science} />
           </>
         )}

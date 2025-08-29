@@ -10,22 +10,42 @@ import {
   Box,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuthUser, useSignOut } from "react-auth-kit";
-import { useRef, useState } from "react";
+import { useState } from "react";
+import { Badge, Engineering, Face, Login } from "@mui/icons-material";
 
 export default function Topbar({ onMenuClick, sx }: { onMenuClick: () => void; sx?: any }) {
-  const location = useLocation();
   const navigate = useNavigate();
   const signOut = useSignOut();
   const authUser = useAuthUser();
+  const role = authUser()?.user_role?.name;
+  const isLoggedIn = !!authUser();
 
-  const profileMenuRef = useRef<HTMLButtonElement | null>(null);
-  const [isProfileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
 
   const fullSignOut = () => {
     navigate("/");
     signOut();
+  };
+
+  const renderRoleIcon = () => {
+    switch (role) {
+      case "Admin":
+        return <Badge fontSize="small" />;
+      case "Technician":
+        return <Engineering fontSize="small" />;
+      default:
+        return <Face fontSize="small" />;
+    }
   };
 
   return (
@@ -61,18 +81,17 @@ export default function Topbar({ onMenuClick, sx }: { onMenuClick: () => void; s
                 xl: "2rem",
               },
             }}
-            onClick={() => navigate("/home")}
+            onClick={() => navigate("/")}
           >
             Meter Manager
           </Typography>
         </Box>
 
-        {location.pathname !== "/" && (
+        {isLoggedIn ? (
           <Box>
             <Button
               color="inherit"
-              ref={profileMenuRef}
-              onClick={() => setProfileMenuOpen(true)}
+              onClick={handleMenuOpen}
               sx={{
                 textTransform: "uppercase",
                 fontWeight: "bolder",
@@ -85,31 +104,65 @@ export default function Topbar({ onMenuClick, sx }: { onMenuClick: () => void; s
             >
               {authUser()?.username ?? "Username"}
               <Avatar
-                sx={{ width: 32, height: 32, ml: 1, bgcolor: "rgb(89,90,182)" }}
+                sx={{
+                  width: 32,
+                  height: 32,
+                  ml: 1,
+                  bgcolor: "rgb(89,90,182)",
+                }}
               >
-                {authUser()?.username?.charAt(0) ?? "U"}
+                {renderRoleIcon()}
               </Avatar>
             </Button>
             <Menu
               id="profile-menu"
-              anchorEl={profileMenuRef.current}
-              open={isProfileMenuOpen}
-              onClose={() => setProfileMenuOpen(false)}
+              anchorEl={anchorEl}
+              open={Boolean(anchorEl)}
+              onClose={handleMenuClose}
               anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
               transformOrigin={{ horizontal: "right", vertical: "top" }}
             >
               <MenuItem
                 onClick={() => {
-                  navigate("/settings");
-                  setProfileMenuOpen(false);
+                  navigate("/settings")
+                  handleMenuClose()
                 }}
               >
                 Settings
               </MenuItem>
-              <MenuItem onClick={fullSignOut}>Logout</MenuItem>
+              <MenuItem onClick={() => {
+                fullSignOut()
+                handleMenuClose()
+              }}>Logout</MenuItem>
             </Menu>
           </Box>
-        )}
+        )
+          : (
+            <Button
+              onClick={() => navigate("/login")}
+              sx={{
+                textTransform: "uppercase",
+                fontWeight: "bolder",
+                backgroundColor: "darkblue",
+                color: "white",
+                "&:hover": {
+                  backgroundColor: "#00008b",
+                },
+              }}
+            >
+              Login
+              <Avatar
+                sx={{
+                  width: 32,
+                  height: 32,
+                  ml: 1,
+                  bgcolor: "rgb(89,90,182)",
+                }}
+              >
+                <Login fontSize="small" />
+              </Avatar>
+            </Button>
+          )}
       </Toolbar>
     </AppBar>
   );

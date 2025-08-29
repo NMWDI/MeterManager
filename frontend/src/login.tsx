@@ -7,16 +7,15 @@ import {
   Button,
   Card,
   CardContent,
-  CardHeader,
   Alert,
-  Divider,
-  Typography,
   Stack,
   Grid,
 } from "@mui/material";
+import LoginIcon from '@mui/icons-material/Login';
 import { enqueueSnackbar } from "notistack";
 import { SecurityScope } from "./interfaces";
 import { API_URL } from "./config";
+import { CustomCardHeader } from "./components";
 
 const Login = () => {
   const [username, setUsername] = useState("");
@@ -37,7 +36,7 @@ const Login = () => {
       .then(handleLogin)
       .catch((_) => {
         setError(
-          "Unable to connect to the server. Please check your internet connection and try again. If the issue persists, contact support.",
+          "Unable to connect to the server. Please check your internet connection and try again. If the issue persists, contact support."
         );
       });
   };
@@ -52,7 +51,7 @@ const Login = () => {
         ) {
           enqueueSnackbar(
             "Your role does not have access to the site UI. Please try accessing data via our API.",
-            { variant: "error" },
+            { variant: "error" }
           );
           return;
         }
@@ -66,8 +65,7 @@ const Login = () => {
         ) {
           localStorage.setItem("_auth", data.access_token);
           localStorage.setItem("loggedIn", "true");
-
-          navigate("/home");
+          navigate("/");
         } else {
           setError("Invalid username or password. Please try again.");
         }
@@ -78,82 +76,84 @@ const Login = () => {
   }
 
   return (
-    <>
-      <Box
-        sx={{
-          height: "100%",
-          m: 2,
-          mt: 0,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-        }}
-      >
-        <Typography variant="h2" style={{ color: "#212121", fontWeight: 500 }}>
-          PVACD Meter Manager Home
-        </Typography>
-        <Card sx={{ width: "25%" }}>
-          <CardHeader
-            title={
-              <div className="custom-card-header">
-                <span>Login</span>
-              </div>
-            }
-            sx={{ mb: 0, pb: 0 }}
-          />
-          <CardContent
-            sx={{
-              pt: 0,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-            }}
+    <Box
+      sx={{
+        height: "100%",
+        m: 2,
+        mt: 0,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+      }}
+    >
+      <Card sx={{ width: "25%", minWidth: 300 }}>
+        <CustomCardHeader
+          title="Login"
+          icon={LoginIcon}
+        />
+        <CardContent
+          sx={{
+            pt: 0,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          }}
+        >
+          <Box
+            component="form"
+            autoComplete="off"
+            onSubmit={handleSubmit}
+            sx={{ width: "100%" }}
           >
-            <Box
-              component="form"
-              autoComplete="off"
-              onSubmit={handleSubmit}
-              sx={{ width: "100%" }}
+            <Stack
+              spacing={2}
+              sx={{ paddingTop: "1.5rem", paddingBottom: "1.5rem" }}
             >
-              <Stack
-                spacing={2}
-                sx={{ paddingTop: "1.5rem", paddingBottom: "1.5rem" }}
+              <TextField
+                value={username}
+                required
+                fullWidth
+                label="Username"
+                name="username"
+                onChange={(e) => setUsername(e.target.value)}
+              />
+              <TextField
+                value={password}
+                required
+                fullWidth
+                label="Password"
+                type="password"
+                name="password"
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </Stack>
+            <Grid container justifyContent="flex-end">
+              <Button
+                type="submit"
+                variant="contained"
+                sx={{
+                  backgroundColor: "darkblue",
+                  color: "white",
+                  fontWeight: "bold",
+                  "&:hover": {
+                    backgroundColor: "#00008b",
+                  },
+                }}
               >
-                <TextField
-                  value={username}
-                  required
-                  fullWidth
-                  label="Username"
-                  name="username"
-                  onChange={(e) => setUsername(e.target.value)}
-                />
-                <TextField
-                  value={password}
-                  required
-                  fullWidth
-                  label="Password"
-                  type="password"
-                  name="password"
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </Stack>
-              <Grid container justifyContent="right">
-                <Button type="submit" variant="contained">
-                  Login
-                </Button>
-              </Grid>
-            </Box>
-          </CardContent>
-        </Card>
-        <Divider />
-        {error?.trim() && (
-          <Alert sx={{ alignItems: "center", mt: 2 }} severity="error">
-            {error}
-          </Alert>
-        )}
-      </Box>
-    </>
+                Login
+              </Button>
+            </Grid>
+          </Box>
+        </CardContent>
+      </Card>
+      {error?.trim() && (
+        <Alert sx={{ alignItems: "center", mt: 2 }} severity="error">
+          {error}
+        </Alert>
+      )}
+    </Box>
   );
 };
 
 export default Login;
+

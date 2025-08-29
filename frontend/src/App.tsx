@@ -54,13 +54,19 @@ export const App = () => {
           >
             <Router>
               <Routes>
-                <Route path="/" element={<Login />} />
+                <Route path="/login" element={
+                  <AppLayout
+                    pageComponent={<Login />}
+                    requiredScopes={[]}
+                    setErrorMessage={setErrorMessage}
+                  />
+                } />
                 <Route
-                  path="/home"
+                  path="/"
                   element={
                     <AppLayout
                       pageComponent={<Home />}
-                      requiredScopes={["read"]}
+                      requiredScopes={[]}
                       setErrorMessage={setErrorMessage}
                     />
                   }
