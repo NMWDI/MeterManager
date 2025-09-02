@@ -1,6 +1,5 @@
 import { useId, useState, useMemo } from "react";
 import {
-  Box,
   FormControl,
   Select,
   MenuItem,
@@ -10,6 +9,10 @@ import {
   Typography,
   ListSubheader,
   useTheme,
+  Grid,
+  Alert,
+  Button,
+  AlertTitle,
 } from "@mui/material";
 import { useQuery } from "react-query";
 import { useAuthUser } from "react-auth-kit";
@@ -164,19 +167,32 @@ export const MonitoringWellsView = () => {
         <CustomCardHeader title="Monitored Well Values" icon={MonitorHeart} />
         <CardContent>
           {error && (
-            <Typography variant="h4">
-              An error had occurred while attempting to loading data
-            </Typography>
+            <Alert
+              severity="error"
+              sx={{ mb: 2 }}
+              action={
+                <Button
+                  variant="outlined"
+                  color="inherit"
+                  size="small"
+                  onClick={() => monitoredWellsQuery.refetch()}
+                >
+                  Retry
+                </Button>
+              }
+            >
+              <AlertTitle>Error Loading Data</AlertTitle>
+              We couldn’t load monitoring wells. Please check your connection or try
+              again.
+            </Alert>
           )}
-
           <FormControl
-            sx={{ minWidth: "100px" }}
+            sx={{ minWidth: "100px", maxWidth: 600, width: "100%" }}
             disabled={monitoredWellsQuery?.isFetching || !!monitoredWellsQuery?.isError}
           >
             <InputLabel id={`${selectWellId}-label`}>Site</InputLabel>
             <Select
               label="Site"
-              sx={{ width: "100%", maxWidth: "600px" }}
               labelId={`${selectWellId}-label`}
               value={wellId ?? ""}
               onChange={(e) => setWellId(Number(e.target.value))}
@@ -247,27 +263,12 @@ export const MonitoringWellsView = () => {
               ))}
             </Select>
           </FormControl>
-
-          <Box
-            sx={{
-              mt: "1rem",
-              gap: "1rem",
-              display: "flex",
-              flexDirection: { xs: "column", md: "row" },
-              width: "100%",
-              height: 600,
-            }}
+          <Grid
+            container
+            spacing={2}
+            sx={{ mt: "1rem" }}
           >
-            <Box sx={{ flex: { xs: 1, md: 1 / 3 }, minWidth: 0 }}>
-              <MonitoringWellsTable
-                rows={manualMeasurements ?? []}
-                selectedWell={monitoredWellsQuery?.data?.find((well) => well.id == wellId)}
-                isWellSelected={!!wellId}
-                onOpenModal={() => setIsNewModalOpen(true)}
-                onMeasurementSelect={handleMeasurementSelect}
-              />
-            </Box>
-            <Box sx={{ flex: { xs: 1, md: 2 / 3 }, minWidth: 0 }}>
+            <Grid item xs={12} xl={7}>
               <MonitoringWellsPlot
                 isLoading={isLoadingManual || isLoadingSt2}
                 manual_dates={(Array.isArray(manualMeasurements) ? manualMeasurements : []).map((m) => m.timestamp)}
@@ -275,15 +276,22 @@ export const MonitoringWellsView = () => {
                 logger_dates={(Array.isArray(st2Measurements) ? st2Measurements : []).map((m) => m.resultTime)}
                 logger_vals={(Array.isArray(st2Measurements) ? st2Measurements : []).map((m) => m.result)}
               />
-            </Box>
-          </Box>
-
+            </Grid>
+            <Grid item xs={12} xl={5}>
+              <MonitoringWellsTable
+                rows={manualMeasurements ?? []}
+                selectedWell={monitoredWellsQuery?.data?.find((well) => well.id == wellId)}
+                isWellSelected={!!wellId}
+                onOpenModal={() => setIsNewModalOpen(true)}
+                onMeasurementSelect={handleMeasurementSelect}
+              />
+            </Grid>
+          </Grid>
           <NewMeasurementModal
             isNewMeasurementModalOpen={isNewModalOpen}
             handleCloseNewMeasurementModal={() => setIsNewModalOpen(false)}
             handleSubmitNewMeasurement={handleSubmitNewMeasurement}
           />
-
           <UpdateMeasurementModal
             isMeasurementModalOpen={isUpdateModalOpen}
             handleCloseMeasurementModal={() => setIsUpdateModalOpen(false)}

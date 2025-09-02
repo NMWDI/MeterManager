@@ -7,7 +7,10 @@ import {
   InputLabel,
   Card,
   CardContent,
-  Typography,
+  Alert,
+  Button,
+  AlertTitle,
+  Grid,
 } from "@mui/material";
 import { useMutation, useQuery } from "react-query";
 import { useAuthUser } from "react-auth-kit";
@@ -54,6 +57,7 @@ export const ChloridesView = () => {
     data: regions,
     isLoading: isLoadingRegions,
     error: errorRegions,
+    refetch: refetchRegions,
   } = useQuery<{ id: number; names: string[] }[], Error>({
     queryKey: ["regions"],
     queryFn: () =>
@@ -184,19 +188,32 @@ export const ChloridesView = () => {
         <CustomCardHeader title="Chlorides" icon={Science} />
         <CardContent>
           {error && (
-            <Typography variant="h4">
-              An error had occurred while attempting to loading data
-            </Typography>
+            <Alert
+              severity="error"
+              sx={{ mb: 2 }}
+              action={
+                <Button
+                  variant="outlined"
+                  color="inherit"
+                  size="small"
+                  onClick={() => refetchRegions()}
+                >
+                  Retry
+                </Button>
+              }
+            >
+              <AlertTitle>Error Loading Data</AlertTitle>
+              We couldn’t load chloride data. Please check your connection or try
+              again.
+            </Alert>
           )}
-
           <FormControl
-            sx={{ minWidth: "100px" }}
+            sx={{ minWidth: "100px", maxWidth: 600, width: "100%" }}
             disabled={isLoadingRegions || !!errorRegions}
           >
             <InputLabel id={`${selectedRegionId}-label`}>Region</InputLabel>
             <Select
               label="Region"
-              sx={{ width: "600px" }}
               labelId={`${selectedRegionId}-label`}
               value={regionId ?? ""}
               onChange={(e) => setregionId(Number(e.target.value))}
@@ -215,26 +232,12 @@ export const ChloridesView = () => {
               ))}
             </Select>
           </FormControl>
-
-          <Box
-            sx={{
-              mt: "1rem",
-              gap: "1rem",
-              display: "flex",
-              flexDirection: { xs: "column", md: "row" },
-              width: "100%",
-              height: 600,
-            }}
+          <Grid
+            container
+            spacing={2}
+            sx={{ mt: "1rem" }}
           >
-            <Box sx={{ flex: { xs: 1, md: 1 / 3 }, minWidth: 0 }}>
-              <ChloridesTable
-                rows={manualMeasurements ?? []}
-                isRegionSelected={!!regionId}
-                onOpenModal={() => setIsNewModalOpen(true)}
-                onMeasurementSelect={handleMeasurementSelect}
-              />
-            </Box>
-            <Box sx={{ flex: { xs: 1, md: 2 / 3 }, minWidth: 0 }}>
+            <Grid item xs={12} xl={7}>
               <ChloridesPlot
                 isLoading={isLoadingManual}
                 manual_dates={manualMeasurements?.map((m) => m.timestamp) ?? []}
@@ -245,16 +248,22 @@ export const ChloridesView = () => {
                   })) ?? []
                 }
               />
-            </Box>
-          </Box>
-
+            </Grid>
+            <Grid item xs={12} xl={5}>
+              <ChloridesTable
+                rows={manualMeasurements ?? []}
+                isRegionSelected={!!regionId}
+                onOpenModal={() => setIsNewModalOpen(true)}
+                onMeasurementSelect={handleMeasurementSelect}
+              />
+            </Grid>
+          </Grid>
           <NewMeasurementModal
             region_id={regionId ?? 0}
             isNewMeasurementModalOpen={isNewModalOpen}
             handleCloseNewMeasurementModal={() => setIsNewModalOpen(false)}
             handleSubmitNewMeasurement={handleSubmitNewMeasurement}
           />
-
           <UpdateMeasurementModal
             region_id={regionId ?? 0}
             isMeasurementModalOpen={isUpdateModalOpen}
