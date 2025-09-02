@@ -373,11 +373,11 @@ export const MonitoringWellsReportView = () => {
             container
             justifyContent="flex-start"
             alignContent="center"
-            gap={2}
+            spacing={2}
             paddingTop={2}
             paddingBottom={2}
           >
-            <Grid item xs={2}>
+            <Grid item xs={12} sm={6} md={3}>
               <ControlledDatepicker
                 label="From"
                 sx={{ width: "100%" }}
@@ -389,7 +389,7 @@ export const MonitoringWellsReportView = () => {
                 format="YYYY MMMM"
               />
             </Grid>
-            <Grid item xs={2}>
+            <Grid item xs={12} sm={6} md={3}>
               <ControlledDatepicker
                 label="To"
                 sx={{ width: "100%" }}
@@ -477,7 +477,6 @@ export const MonitoringWellsReportView = () => {
                   return (
                     <TextField
                       {...params}
-                      sx={{ minWidth: "30rem" }}
                       label="Wells"
                       size="small"
                       placeholder="Begin typing to search"

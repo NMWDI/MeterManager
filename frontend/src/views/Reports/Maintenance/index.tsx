@@ -8,7 +8,6 @@ import {
   Chip,
   Grid,
   IconButton,
-  Stack,
   TextField,
   Tooltip,
   Typography,
@@ -74,11 +73,6 @@ const defaultSchema = {
   to: dayjs(),
   techicians: [{ ...allTechniciansOption }],
   trss: "",
-};
-
-const size = {
-  width: 400,
-  height: 400,
 };
 
 export const MaintenanceReportView = () => {
@@ -305,45 +299,43 @@ export const MaintenanceReportView = () => {
           </Grid>
           <Grid
             container
-            justifyContent="flex-start"
-            alignContent="center"
-            gap={2}
+            spacing={2}
             padding={2}
           >
-            <Grid item>
+            <Grid item xs={12} sm={6} md={3}>
               <ControlledDatepicker
+                sx={{ width: "100%" }}
+                size="small"
                 label="From"
-                sx={{ minWidth: "15rem" }}
                 control={control}
-                size="medium"
                 name="from"
                 views={["year", "month"]}
                 openTo="year"
                 format="YYYY MMMM"
               />
             </Grid>
-            <Grid item>
+            <Grid item xs={12} sm={6} md={3}>
               <ControlledDatepicker
+                sx={{ width: "100%" }}
+                size="small"
                 label="To"
-                sx={{ minWidth: "15rem" }}
                 control={control}
-                size="medium"
                 name="to"
                 views={["year", "month"]}
                 openTo="year"
                 format="YYYY MMMM"
               />
             </Grid>
-            <Grid item>
+            <Grid item xs={12} md={6}>
               <ControlledTextbox
-                sx={{ minWidth: "30rem" }}
+                sx={{ width: "100%" }}
+                size="small"
                 name="trss"
                 label="TRSS"
                 control={control}
-                size="medium"
               />
             </Grid>
-            <Grid item>
+            <Grid item xs={12}>
               <ControlledAutocomplete
                 name="techicians"
                 multiple
@@ -377,7 +369,7 @@ export const MaintenanceReportView = () => {
                       {...params}
                       label="Technician(s)"
                       sx={{ minWidth: "15rem" }}
-                      size="medium"
+                      size="small"
                       placeholder="Begin typing to search"
                     />
                   );
@@ -394,59 +386,75 @@ export const MaintenanceReportView = () => {
               />
             </Grid>
           </Grid>
-          <Grid container>
-            <Stack direction="row" width="100%" textAlign="center" spacing={2}>
-              <Box flexGrow={1}>
-                <Typography variant="h5">Number of Repairs</Typography>
+          <Grid container spacing={2} padding={2}>
+            <Grid item xs={12} md={6} sx={{ display: 'flex', justifyContent: 'center' }}>
+              <Box
+                sx={{
+                  width: "100%",
+                  maxWidth: 550,
+                  height: "100%",
+                  minHeight: 400,
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+              >
+                <Typography variant="h5" align="center">
+                  Number of Repairs
+                  {numberOfRepairsPieChartData?.length ? `: ${numberOfRepairsPieChartData?.length}` : null}
+                </Typography>
                 <PieChart
                   series={[
                     {
                       data: numberOfRepairsPieChartData,
-                      innerRadius: 66.6,
-                      paddingAngle: 1,
-                      cornerRadius: 7.5,
+                      innerRadius: numberOfRepairsPieChartData?.length > 10 ? 0 : 10,
+                      paddingAngle: numberOfRepairsPieChartData?.length > 10 ? 0 : 1,
+                      cornerRadius: numberOfRepairsPieChartData?.length > 10 ? 0 : 10,
                     },
                   ]}
-                  slotProps={{
-                    legend: {
-                      direction: "horizontal",
-                      position: {
-                        vertical: "bottom",
-                        horizontal: "center",
-                      },
-                    },
+                  hideLegend={true}
+                  sx={{
+                    width: "100%",
+                    height: "100%",
                   }}
-                  {...size}
                 />
               </Box>
-              <Box flexGrow={1}>
-                <Typography variant="h5">
+            </Grid>
+            <Grid item xs={12} md={6} sx={{ display: 'flex', justifyContent: 'center' }}>
+              <Box
+                sx={{
+                  width: "100%",
+                  maxWidth: 550,
+                  height: "100%",
+                  minHeight: 400,
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+              >
+                <Typography variant="h5" align="center"></Typography>
+
+                <Typography variant="h5" align="center">
                   Number of Preventative Maintenances
+                  {numberOfPMsPieChartData?.length ? `: ${numberOfPMsPieChartData?.length}` : null}
                 </Typography>
                 <PieChart
                   series={[
                     {
                       data: numberOfPMsPieChartData,
-                      innerRadius: 66.6,
-                      paddingAngle: 1,
-                      cornerRadius: 7.5,
+                      innerRadius: numberOfPMsPieChartData?.length > 10 ? 0 : 10,
+                      paddingAngle: numberOfPMsPieChartData?.length > 10 ? 0 : 1,
+                      cornerRadius: numberOfPMsPieChartData?.length > 10 ? 0 : 10,
                     },
                   ]}
-                  slotProps={{
-                    legend: {
-                      direction: "horizontal",
-                      position: {
-                        vertical: "bottom",
-                        horizontal: "center",
-                      },
-                    },
+                  hideLegend={true}
+                  sx={{
+                    width: "100%",
+                    height: "100%",
                   }}
-                  {...size}
                 />
               </Box>
-            </Stack>
+            </Grid>
           </Grid>
-          <Grid container padding={2}>
+          <Grid item xs={12}>
             <DataGrid
               rows={tableRows ?? []}
               columns={columns}
@@ -460,10 +468,8 @@ export const MaintenanceReportView = () => {
               }}
             />
           </Grid>
-          <Grid container>
-            <Grid item>
-              <Button onClick={() => reset()}>Reset</Button>
-            </Grid>
+          <Grid item xs={12}>
+            <Button onClick={() => reset()}>Reset</Button>
           </Grid>
         </CardContent>
       </Card>
