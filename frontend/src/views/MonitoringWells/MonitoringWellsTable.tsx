@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { Box, Button, Tooltip } from "@mui/material";
 import { DataGrid, GridPagination, GridColDef } from "@mui/x-data-grid";
+import AddIcon from "@mui/icons-material/Add";
 import { MonitoredWell, WellMeasurementDTO } from "../../interfaces";
 import dayjs, { Dayjs } from "dayjs";
 import utc from "dayjs/plugin/utc";
@@ -110,8 +111,15 @@ const Footer = ({
             arrow
           >
             <span>
-              <Button disabled={isPlugged} variant="text" onClick={onOpenModal}>
-                + Add Measurement
+              <Button
+                variant="contained"
+                size="small"
+                onClick={onOpenModal}
+                disabled={isPlugged}
+                sx={{ flexShrink: 0, width: { xs: "100%", sm: "auto" }, ml: 1.5 }}
+              >
+                <AddIcon fontSize="small" sx={{ mr: 0.5 }} />
+                Create
               </Button>
             </span>
           </Tooltip>

@@ -11,10 +11,12 @@ import {
   CardContent,
   ToggleButtonGroup,
   ToggleButton,
+  InputAdornment,
 } from "@mui/material";
 import FormatListBulletedOutlinedIcon from "@mui/icons-material/FormatListBulletedOutlined";
 import { MeterStatusNames } from "../../../enums";
 import { CustomCardHeader } from "../../../components/CustomCardHeader";
+import { Search } from "@mui/icons-material";
 
 export const MeterSelection = ({
   onMeterSelection,
@@ -74,21 +76,36 @@ export const MeterSelection = ({
       />
       <CardContent sx={{ height: "100%" }}>
         <Grid container justifyContent="space-between">
-          <Grid item xs={4}>
-            <Tabs value={currentTabIndex} onChange={handleTabChange}>
+          <Grid item xs={6} >
+            <Tabs
+              value={currentTabIndex}
+              onChange={handleTabChange}
+              aria-label="Switch between Meter List & Map"
+              sx={{
+                width: "100%",
+                maxWidth: "100rem",
+              }}
+            >
               <Tab label="Meter List" />
               <Tab label="Meter Map" />
             </Tabs>
           </Grid>
-          <Grid item xs={3}>
+          <Grid item xs={6} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
             <TextField
-              sx={{ mt: 1 }}
-              label="Search Meter"
+              sx={{ m: 0, pl: 2, width: '100%', maxWidth: '75rem' }}
+              placeholder="Search Meter..."
               variant="outlined"
               size="small"
               value={meterSearchQuery}
               onChange={(e) => {
                 setMeterSearchQuery(e.target.value);
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search />
+                  </InputAdornment>
+                ),
               }}
             />
           </Grid>

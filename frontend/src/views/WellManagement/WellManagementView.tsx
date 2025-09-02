@@ -15,14 +15,17 @@ export default function WellManagementView() {
 
   return (
     <BackgroundBox>
-      <Grid container spacing={2} sx={{ flex: 1 }} alignItems="stretch">
-        <Grid item xs={8}>
+      <Grid
+        container
+        spacing={2}
+      >
+        <Grid item xs={12} lg={7}>
           <WellsTable
             setSelectedWell={setSelectedWell}
             setWellAddMode={setWellAddMode}
           />
         </Grid>
-        <Grid item xs={4}>
+        <Grid item xs={12} lg={5}>
           <WellDetailsCard
             selectedWell={selectedWell}
             wellAddMode={wellAddMode}

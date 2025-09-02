@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { Box, Button } from "@mui/material";
 import { DataGrid, GridPagination, GridColDef } from "@mui/x-data-grid";
+import AddIcon from "@mui/icons-material/Add";
 import { RegionMeasurementDTO } from "../../interfaces";
 import dayjs, { Dayjs } from "dayjs";
 import utc from "dayjs/plugin/utc";
@@ -10,7 +11,7 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 
 declare module "@mui/x-data-grid" {
-  interface FooterPropsOverrides extends Partial<FooterExtraProps> {}
+  interface FooterPropsOverrides extends Partial<FooterExtraProps> { }
 }
 
 interface FooterExtraProps {
@@ -102,8 +103,14 @@ const Footer = ({
     <Box sx={{ display: "flex", justifyContent: "space-between" }}>
       <Box sx={{ my: "auto" }}>
         {isRegionSelected ? (
-          <Button variant="text" onClick={onOpenModal}>
-            + Add Measurement
+          <Button
+            variant="contained"
+            size="small"
+            onClick={onOpenModal}
+            sx={{ flexShrink: 0, width: { xs: "100%", sm: "auto" }, ml: 1.5 }}
+          >
+            <AddIcon fontSize="small" sx={{ mr: 0.5 }} />
+            Create
           </Button>
         ) : null}
       </Box>
