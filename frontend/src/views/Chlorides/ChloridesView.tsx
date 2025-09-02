@@ -1,6 +1,5 @@
 import { useId, useState } from "react";
 import {
-  Box,
   FormControl,
   Select,
   MenuItem,

@@ -1,9 +1,7 @@
 import {
   Assessment,
   Build,
-  FormatListBulletedOutlined,
   MonitorHeart,
-  People,
   Plumbing,
   Science,
 } from "@mui/icons-material";
