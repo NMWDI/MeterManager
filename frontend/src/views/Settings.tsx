@@ -7,12 +7,13 @@ import {
   Divider,
   Typography,
   Box,
-  Button,
+  // Button,
   MenuItem,
   TextField,
   Grid,
   Alert,
   ListItemIcon,
+  Chip,
 } from "@mui/material";
 import SettingsIcon from "@mui/icons-material/Settings";
 import { useAuthUser } from "react-auth-kit";
@@ -55,6 +56,28 @@ const schema = yup.object().shape({
 
 const FALLBACK_REDIRECT = "/";
 
+const RoleChip = ({ role }: { role: string }) => {
+  switch (role) {
+    case "Admin": {
+      return <Chip size="small" label="Admin" color="primary" />;
+    }
+    case "Technician": {
+      return <Chip size="small" label="Technician" color="secondary" />;
+    }
+    default: {
+      return <Chip size="small" label={role} color="warning" />;
+    }
+  }
+}
+
+const IsActiveChip = ({ active }: { active: boolean }) => {
+  return active ? (
+    <Chip variant="outlined" size="small" label="True" color="success" />
+  ) : (
+    <Chip variant="outlined" size="small" label="False" color="error" />
+  );
+}
+
 export const Settings = () => {
   const authUser = useAuthUser();
   const [savedMessage, setSavedMessage] = useState<string>("");
@@ -74,7 +97,7 @@ export const Settings = () => {
     control,
     handleSubmit,
     watch,
-    formState: { errors, isValid },
+    // formState: { errors, isValid },
   } = useForm({
     resolver: yupResolver(schema),
     mode: "onChange",
@@ -112,38 +135,74 @@ export const Settings = () => {
             </Typography>
             <Divider sx={{ my: 2 }} />
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={6} lg={4}>
                 <Typography>
-                  <b>Full Name:</b> {user?.full_name ?? "N/A"}
+                  <b>Full Name:</b>{" "}
+                  <Box
+                    component="span"
+                    sx={{
+                      fontFamily: "monospace",
+                      px: 1,
+                      py: 0.5,
+                      borderRadius: 3,
+                      border: '1px solid black'
+                    }}
+                  >
+                    {user?.full_name ?? "N/A"}
+                  </Box>
                 </Typography>
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={6} lg={4}>
                 <Typography>
-                  <b>Email:</b> {user?.email ?? "N/A"}
+                  <b>Email:</b>{" "}
+                  <Box
+                    component="span"
+                    sx={{
+                      fontFamily: "monospace",
+                      px: 1,
+                      py: 0.5,
+                      borderRadius: 3,
+                      border: '1px solid black'
+                    }}
+                  >
+                    {user?.email ?? "N/A"}
+                  </Box>
                 </Typography>
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={6} lg={4}>
                 <Typography>
-                  <b>Username:</b> {user?.username ?? "N/A"}
+                  <b>Username:</b>{" "}
+                  <Box
+                    component="span"
+                    sx={{
+                      fontFamily: "monospace",
+                      px: 1,
+                      py: 0.5,
+                      borderRadius: 3,
+                      border: '1px solid black'
+                    }}
+                  >
+                    {user?.username ?? "N/A"}
+                  </Box>
                 </Typography>
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={6} lg={4} sx={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                 <Typography>
-                  <b>Role:</b> {user?.user_role?.name ?? "N/A"}
+                  <b>Role:</b>
                 </Typography>
+                <RoleChip role={user?.user_role?.name ?? "N/A"} />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={6} lg={4} sx={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                 <Typography>
-                  <b>Active:</b> {!user?.disabled ? "Yes" : "No"}
+                  <b>Active:</b>
                 </Typography>
+                <IsActiveChip active={!user?.disabled} />
               </Grid>
             </Grid>
           </Box>
-
           <Divider sx={{ my: 2 }} />
-
           <form onSubmit={handleSubmit(onSubmit)}>
-            <Typography variant="h5" gutterBottom>
+            <Typography variant="h5" gutterBottom py={2}>
               Preferences
             </Typography>
             <Controller
@@ -168,19 +227,19 @@ export const Settings = () => {
                 </TextField>
               )}
             />
-
-            <Typography variant="h5" gutterBottom>
+            {/*
+            <Divider sx={{ my: 2 }} />
+            <Typography variant="h5" gutterBottom py={2}>
               Password Reset
             </Typography>
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={3}>
+              <Grid item xs={12} sm={6} lg={4}>
                 <Controller
                   name="currentPassword"
                   control={control}
                   render={({ field }) => (
                     <TextField
                       {...field}
-                      disabled
                       label="Current Password"
                       type="password"
                       fullWidth
@@ -190,14 +249,13 @@ export const Settings = () => {
                   )}
                 />
               </Grid>
-              <Grid item xs={12} sm={3}>
+              <Grid item xs={12} sm={6} lg={4}>
                 <Controller
                   name="newPassword"
                   control={control}
                   render={({ field }) => (
                     <TextField
                       {...field}
-                      disabled
                       label="New Password"
                       type="password"
                       fullWidth
@@ -207,14 +265,13 @@ export const Settings = () => {
                   )}
                 />
               </Grid>
-              <Grid item xs={12} sm={3}>
+              <Grid item xs={12} sm={6} lg={4}>
                 <Controller
                   name="confirmPassword"
                   control={control}
                   render={({ field }) => (
                     <TextField
                       {...field}
-                      disabled
                       label="Confirm New Password"
                       type="password"
                       fullWidth
@@ -229,7 +286,7 @@ export const Settings = () => {
               <Button
                 type="submit"
                 variant="contained"
-                disabled={!isValid || true}
+                disabled={!isValid}
                 sx={{
                   backgroundColor: "darkblue",
                   "&:hover": { backgroundColor: "#00008b" },
@@ -238,6 +295,7 @@ export const Settings = () => {
                 Save
               </Button>
             </Box>
+          */}
           </form>
           {savedMessage && (
             <Alert severity="info" sx={{ mt: 2 }}>
