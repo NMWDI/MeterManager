@@ -211,6 +211,7 @@ export const Settings = () => {
               render={({ field }) => (
                 <TextField
                   {...field}
+                  size='small'
                   select
                   fullWidth
                   label="Page to redirect after login"
