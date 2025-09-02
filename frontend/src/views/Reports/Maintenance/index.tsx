@@ -27,7 +27,13 @@ import ControlledTextbox from "../../../components/RHControlled/ControlledTextbo
 import { useAuthHeader } from "react-auth-kit";
 import { API_URL } from "../../../config";
 import { PieChart } from "@mui/x-charts";
-import { DataGrid, GridColDef } from "@mui/x-data-grid";
+import {
+  DataGrid,
+  GridColDef,
+  GridValueGetter,
+  GridValueFormatter
+} from "@mui/x-data-grid";
+
 
 interface User {
   full_name: string;
@@ -47,7 +53,7 @@ const schema = yup.object().shape({
     .mixed<Dayjs>()
     .nullable()
     .required("To date is required")
-    .test("is-after", "'To' date must be after 'From'", function (value) {
+    .test("is-after", "'To' date must be after 'From'", function(value) {
       const { from } = this.parent;
       return !from || !value || dayjs(value).isAfter(dayjs(from));
     }),
@@ -78,7 +84,7 @@ const size = {
 export const MaintenanceReportView = () => {
   const authHeader = useAuthHeader();
   const techiciansQuery = useQuery({
-    queryKey: ["Repairs", "report", "techicians"],
+    queryKey: ["users"],
     queryFn: async () => {
       const response = await fetch(`${API_URL}/users`, {
         headers: { Authorization: authHeader() },
@@ -91,6 +97,9 @@ export const MaintenanceReportView = () => {
     },
     staleTime: 1000 * 60 * 60 * 24, // 24 hours
     cacheTime: 1000 * 60 * 60 * 24, // cache in memory for 24 hours
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
   });
 
   const { control, reset, setValue, watch } = useForm({
@@ -109,7 +118,15 @@ export const MaintenanceReportView = () => {
   }, [techiciansQuery.data]);
 
   const dataQuery = useQuery({
-    queryKey: ["Inventory", "report", "maintenance", from, to, technicians],
+    queryKey: [
+      "maintenance",
+      {
+        from: from?.format("YYYY-MM"),
+        to: to?.format("YYYY-MM"),
+        trss: trss ?? "",
+        technicians: technicians?.map((t) => t.id) ?? [],
+      },
+    ],
     queryFn: async () => {
       const queryParams = new URLSearchParams();
       queryParams.set("from_month", from?.format("YYYY-MM"));
@@ -168,7 +185,20 @@ export const MaintenanceReportView = () => {
   }, [dataQuery.data]);
 
   const columns: GridColDef[] = [
-    { field: "date_time", headerName: "Date / Time", flex: 1 },
+    {
+      field: "date_time",
+      headerName: "Date / Time",
+      type: "dateTime",
+      flex: 1,
+      valueGetter: ((value: any) => {
+        return value ? new Date(value as string) : new Date();
+      }) as GridValueGetter<Date>,
+      valueFormatter: ((value) => {
+        if (!value) return "";
+        const date = value as Date;
+        return date.toLocaleString();
+      }) as GridValueFormatter,
+    },
     { field: "technician", headerName: "Technician", flex: 1 },
     {
       field: "number_of_repairs",
@@ -185,6 +215,11 @@ export const MaintenanceReportView = () => {
     {
       field: "meter",
       headerName: "Meter",
+      flex: 1,
+    },
+    {
+      field: "trss",
+      headerName: "TRSS",
       flex: 1,
     },
   ];

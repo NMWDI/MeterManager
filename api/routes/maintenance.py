@@ -44,9 +44,10 @@ class MeterSummary(BaseModel):
 class MaintenanceRow(BaseModel):
     date_time: datetime
     technician: str
+    meter: str
+    trss: str
     number_of_repairs: int
     number_of_pms: int
-    meter: str
 
 
 class MaintenanceSummaryResponse(BaseModel):
@@ -93,27 +94,22 @@ def get_maintenance_summary(
     matching_meter_ids = None
     if trss:
         try:
-            parts = list(map(int, trss.strip().split(".")))
-            if len(parts) >= 4:
-                township, range_, section, quarter = parts[:4]
+            # normalize input (strip spaces)
+            trss_str = trss.strip()
 
-                location_subq = (
-                    db.query(Locations.id)
-                    .filter(
-                        Locations.township == township,
-                        Locations.range == range_,
-                        Locations.section == section,
-                        Locations.quarter == quarter,
-                    )
+            location_ids = (
+                db.query(Locations.id)
+                .filter(Locations.trss.like(f"{trss_str}%"))
+                .all()
+            )
+            location_ids = [loc_id for (loc_id,) in location_ids]
+
+            if location_ids:
+                meter_subq = (
+                    db.query(Meters.id)
+                    .filter(Meters.location_id.in_(location_ids))
                 )
-                location_ids = [loc_id for (loc_id,) in location_subq.all()]
-
-                if location_ids:
-                    meter_subq = (
-                        db.query(Meters.id)
-                        .filter(Meters.location_id.in_(location_ids))
-                    )
-                    matching_meter_ids = [m_id for (m_id,) in meter_subq.all()]
+                matching_meter_ids = [m_id for (m_id,) in meter_subq.all()]
         except Exception:
             pass  # Ignore invalid TRSS input silently
 
@@ -123,7 +119,8 @@ def get_maintenance_summary(
             MeterActivities.timestamp_start.label("date_time"),
             Users.full_name.label("technician"),
             Meters.serial_number.label("meter"),
-            ActivityTypeLU.name.label("activity_type")
+            ActivityTypeLU.name.label("activity_type"),
+            Locations.trss.label("trss")
         )
         .join(Users, Users.id == MeterActivities.submitting_user_id)
         .join(Meters, Meters.id == MeterActivities.meter_id)
@@ -131,6 +128,7 @@ def get_maintenance_summary(
               ActivityTypeLU,
               ActivityTypeLU.id == MeterActivities.activity_type_id
         )
+        .join(Locations, Locations.id == Meters.location_id, isouter=True)
         .filter(MeterActivities.timestamp_start >= from_date)
         .filter(MeterActivities.timestamp_start <= to_date)
     )
@@ -158,7 +156,7 @@ def get_maintenance_summary(
     grouped_rows = defaultdict(lambda: {"number_of_repairs": 0, "number_of_pms": 0})
 
     for row in base_query:
-        key = (row.date_time, row.technician, row.meter)
+        key = (row.date_time, row.technician, row.meter, row.trss)
         if row.activity_type == "Repair":
             repairs_by_meter[row.meter] += 1
             grouped_rows[key]["number_of_repairs"] += 1
@@ -170,11 +168,12 @@ def get_maintenance_summary(
     pms_result = [{"meter": meter, "count": count} for meter, count in pms_by_meter.items()]
 
     table_rows = []
-    for (date_time, technician, meter), counts in grouped_rows.items():
+    for (date_time, technician, meter, trss), counts in grouped_rows.items():
         table_rows.append({
             "date_time": date_time,
             "technician": technician,
             "meter": meter,
+            "trss": trss or "",
             "number_of_repairs": counts["number_of_repairs"],
             "number_of_pms": counts["number_of_pms"],
         })
