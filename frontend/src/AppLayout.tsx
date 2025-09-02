@@ -7,7 +7,7 @@ import { SecurityScope } from "./interfaces";
 import Topbar from "./components/Topbar";
 import Sidenav from "./sidenav";
 
-const drawerWidth = 300;
+const drawerWidth = 250;
 
 export const AppLayout = ({
   pageComponent,
@@ -73,20 +73,13 @@ export const AppLayout = ({
   return (
     <Box sx={{ display: "flex", flexGrow: 1, overflow: 'hidden' }}>
       <Topbar
+        open={drawerOpen}
         onMenuClick={() => setDrawerOpen(!drawerOpen)}
         sx={(theme: Theme) => ({
           zIndex: theme.zIndex.drawer + 1,
           transition: theme.transitions.create(["margin", "width"], {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.leavingScreen,
-          }),
-          ...(drawerOpen && {
-            width: `calc(100% - ${drawerWidth}px)`,
-            ml: `${drawerWidth}px`,
-            transition: theme.transitions.create(["margin", "width"], {
-              easing: theme.transitions.easing.easeOut,
-              duration: theme.transitions.duration.enteringScreen,
-            }),
           }),
         })}
       />

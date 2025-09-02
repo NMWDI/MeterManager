@@ -9,6 +9,11 @@ import { QueryClient, QueryClientProvider } from "react-query";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { SnackbarProvider, enqueueSnackbar } from "notistack";
+import {
+  Home,
+  Login,
+  Settings,
+} from './views'
 import { MonitoringWellsView } from "./views/MonitoringWells/MonitoringWellsView";
 import { ActivitiesView } from "./views/Activities/ActivitiesView";
 import { MetersView } from "./views/Meters/MetersView";
@@ -16,8 +21,6 @@ import { PartsView } from "./views/Parts/PartsView";
 import { UserManagementView } from "./views/UserManagement/UserManagementView";
 import WellManagementView from "./views/WellManagement/WellManagementView";
 import WorkOrdersView from "./views/WorkOrders/WorkOrdersView";
-import { Home } from "./Home";
-import Login from "./login";
 import { ChloridesView } from "./views/Chlorides/ChloridesView";
 import { ReportsView } from "./views/Reports";
 import { WorkOrdersReportView } from "./views/Reports/WorkOrders";
@@ -54,6 +57,16 @@ export const App = () => {
           >
             <Router>
               <Routes>
+                <Route
+                  path="/"
+                  element={
+                    <AppLayout
+                      pageComponent={<Home />}
+                      requiredScopes={[]}
+                      setErrorMessage={setErrorMessage}
+                    />
+                  }
+                />
                 <Route path="/login" element={
                   <AppLayout
                     pageComponent={<Login />}
@@ -62,11 +75,11 @@ export const App = () => {
                   />
                 } />
                 <Route
-                  path="/"
+                  path="/settings"
                   element={
                     <AppLayout
-                      pageComponent={<Home />}
-                      requiredScopes={[]}
+                      pageComponent={<Settings />}
+                      requiredScopes={["read"]}
                       setErrorMessage={setErrorMessage}
                     />
                   }

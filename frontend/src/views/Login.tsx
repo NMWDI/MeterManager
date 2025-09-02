@@ -13,11 +13,11 @@ import {
 } from "@mui/material";
 import LoginIcon from '@mui/icons-material/Login';
 import { enqueueSnackbar } from "notistack";
-import { SecurityScope } from "./interfaces";
-import { API_URL } from "./config";
-import { CustomCardHeader } from "./components";
+import { SecurityScope } from "../interfaces";
+import { API_URL } from "../config";
+import { CustomCardHeader } from "../components";
 
-const Login = () => {
+export const Login = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -65,7 +65,8 @@ const Login = () => {
         ) {
           localStorage.setItem("_auth", data.access_token);
           localStorage.setItem("loggedIn", "true");
-          navigate("/");
+          const savedRedirect = localStorage.getItem("redirectPage") ?? "/";
+          navigate(savedRedirect);
         } else {
           setError("Invalid username or password. Please try again.");
         }

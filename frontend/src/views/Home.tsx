@@ -1,10 +1,10 @@
 import { Grid, Card, CardContent, CardMedia, List, ListItem, ListItemText, Stack, Typography } from "@mui/material";
-import pvacd_logo from "./img/pvacd_logo.png";
-import meter_field from "./img/meter_field.jpg";
-import meter_storage from "./img/meter_storage.jpg";
+import pvacd_logo from "../img/pvacd_logo.png";
+import meter_field from "../img/meter_field.jpg";
+import meter_storage from "../img/meter_storage.jpg";
 import HomeIcon from "@mui/icons-material/Home";
-import { BackgroundBox } from "./components/BackgroundBox";
-import { CustomCardHeader } from "./components/CustomCardHeader";
+import { BackgroundBox } from "../components/BackgroundBox";
+import { CustomCardHeader } from "../components/CustomCardHeader";
 
 export const Home = () => {
   const versionHistory = [

@@ -96,10 +96,10 @@ export default function Sidenav({
             fontWeight: "bold",
             ml: 2,
             fontSize: {
-              sx: "1.25rem",
-              md: "1.5rem",
-              lg: "1.625rem",
-              xl: "1.75rem",
+              sx: "1rem",
+              md: "1.25rem",
+              lg: "1.5rem",
+              xl: "1.625remrem",
             },
           }}
           onClick={() => navigate("/")}

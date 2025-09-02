@@ -6,7 +6,6 @@ import {
   InputLabel,
   Card,
   CardContent,
-  Typography,
   ListSubheader,
   useTheme,
   Grid,
@@ -268,7 +267,7 @@ export const MonitoringWellsView = () => {
             spacing={2}
             sx={{ mt: "1rem" }}
           >
-            <Grid item xs={12} xl={7}>
+            <Grid item xs={12} lg={7}>
               <MonitoringWellsPlot
                 isLoading={isLoadingManual || isLoadingSt2}
                 manual_dates={(Array.isArray(manualMeasurements) ? manualMeasurements : []).map((m) => m.timestamp)}
@@ -277,7 +276,7 @@ export const MonitoringWellsView = () => {
                 logger_vals={(Array.isArray(st2Measurements) ? st2Measurements : []).map((m) => m.result)}
               />
             </Grid>
-            <Grid item xs={12} xl={5}>
+            <Grid item xs={12} lg={5}>
               <MonitoringWellsTable
                 rows={manualMeasurements ?? []}
                 selectedWell={monitoredWellsQuery?.data?.find((well) => well.id == wellId)}

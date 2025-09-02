@@ -16,7 +16,7 @@ import { useAuthUser, useSignOut } from "react-auth-kit";
 import { useState } from "react";
 import { Badge, Engineering, Face, Login } from "@mui/icons-material";
 
-export default function Topbar({ onMenuClick, sx }: { onMenuClick: () => void; sx?: any }) {
+export default function Topbar({ open, onMenuClick, sx }: { open: boolean, onMenuClick: () => void; sx?: any }) {
   const navigate = useNavigate();
   const signOut = useSignOut();
   const authUser = useAuthUser();
@@ -67,25 +67,27 @@ export default function Topbar({ onMenuClick, sx }: { onMenuClick: () => void; s
           >
             <MenuIcon />
           </IconButton>
-          <Typography
-            variant="h6"
-            noWrap
-            sx={{
-              color: "darkblue",
-              cursor: "pointer",
-              fontWeight: "bold",
-              ml: 1,
-              fontSize: {
-                xs: "1.5rem",
-                md: "1.625rem",
-                lg: "1.75rem",
-                xl: "2rem",
-              },
-            }}
-            onClick={() => navigate("/")}
-          >
-            Meter Manager
-          </Typography>
+          {!open ?
+            <Typography
+              variant="h6"
+              noWrap
+              sx={{
+                color: "darkblue",
+                cursor: "pointer",
+                fontWeight: "bold",
+                ml: 1,
+                fontSize: {
+                  xs: "1.5rem",
+                  md: "1.625rem",
+                  lg: "1.75rem",
+                  xl: "2rem",
+                },
+              }}
+              onClick={() => navigate("/")}
+            >
+              Meter Manager
+            </Typography>
+            : null}
         </Box>
 
         {isLoggedIn ? (

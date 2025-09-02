@@ -237,7 +237,7 @@ export const ChloridesView = () => {
             spacing={2}
             sx={{ mt: "1rem" }}
           >
-            <Grid item xs={12} xl={7}>
+            <Grid item xs={12} lg={7}>
               <ChloridesPlot
                 isLoading={isLoadingManual}
                 manual_dates={manualMeasurements?.map((m) => m.timestamp) ?? []}
@@ -249,7 +249,7 @@ export const ChloridesView = () => {
                 }
               />
             </Grid>
-            <Grid item xs={12} xl={5}>
+            <Grid item xs={12} lg={5}>
               <ChloridesTable
                 rows={manualMeasurements ?? []}
                 isRegionSelected={!!regionId}
