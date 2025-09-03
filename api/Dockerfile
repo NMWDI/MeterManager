@@ -5,7 +5,7 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-# Install system dependencies (trixie) + JDK (default is 21)
+# Install system dependencies (trixie) + JDK (default is 21) + PostgreSQL client
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
       libpango-1.0-0 \
@@ -13,6 +13,7 @@ RUN apt-get update \
       libgdk-pixbuf-2.0-0 \
       libffi-dev \
       default-jdk-headless \
+      postgresql-client \
  && rm -rf /var/lib/apt/lists/*
 
 # Make Java headers discoverable by builds
@@ -25,8 +26,6 @@ ENV PYTHONPATH=/app
 COPY ./requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel \
  && pip install --no-cache-dir -r requirements.txt
-
-RUN pip install --no-cache-dir --upgrade -r requirements.txt
 
 COPY . /app/api
 
