@@ -1,3 +1,5 @@
+# /etc/systemd/system/meter-manager.service
+ 
 [Unit]
 Description=Meter Manager Docker Compose Daemon
 Requires=docker.service
@@ -11,10 +13,12 @@ WorkingDirectory=/home/deploy/WaterManagerDB
 # Default is production
 Environment="METER_MANAGER_ENV=production"
 
-ExecStart=/usr/bin/docker compose -f docker-compose.${METER_MANAGER_ENV}.yml up -d
+# Run in foreground so systemd tracks it
+ExecStart=/usr/bin/docker compose -f docker-compose.${METER_MANAGER_ENV}.yml up
 ExecStop=/usr/bin/docker compose -f docker-compose.${METER_MANAGER_ENV}.yml down
 
 Restart=always
+RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
