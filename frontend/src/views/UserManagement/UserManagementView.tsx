@@ -26,56 +26,34 @@ export const UserManagementView = () => {
   return (
     <BackgroundBox>
       <Grid container spacing={2}>
-        <Grid
-          container
-          item
-          spacing={2}
-          sx={{ minHeight: { xs: "100vh", lg: "70vh" } }}
-        >
-          <Grid item xs={8}>
-            <UsersTable
-              setSelectedUser={setSelectedUser}
-              setUserAddMode={setUserAddMode}
-            />
-          </Grid>
-          <Grid item xs={4}>
-            <UserDetailsCard
-              selectedUser={selectedUser}
-              userAddMode={userAddMode}
-            />
-          </Grid>
+        <Grid item xs={12} lg={8}>
+          <UsersTable
+            setSelectedUser={setSelectedUser}
+            setUserAddMode={setUserAddMode}
+          />
         </Grid>
-        <Grid
-          container
-          item
-          spacing={2}
-          sx={{ minHeight: { xs: "100vh", lg: "70vh" } }}
-        >
-          <Grid item xs={8}>
-            <RolesTable
-              setSelectedRole={setSelectedRole}
-              setRoleAddMode={setRoleAddMode}
-            />
-          </Grid>
-          <Grid item xs={4}>
-            <RoleDetailsCard
-              selectedRole={selectedRole}
-              roleAddMode={roleAddMode}
-            />
-          </Grid>
+        <Grid item xs={12} lg={4}>
+          <UserDetailsCard
+            selectedUser={selectedUser}
+            userAddMode={userAddMode}
+          />
         </Grid>
-        <Grid
-          id="permissions_section"
-          container
-          item
-          spacing={2}
-          sx={{ minHeight: { xs: "100vh", lg: "70vh" } }}
-        >
-          <Grid item xs={8}>
-            <PermissionsTable />
-          </Grid>
+        <Grid item xs={12} lg={8}>
+          <RolesTable
+            setSelectedRole={setSelectedRole}
+            setRoleAddMode={setRoleAddMode}
+          />
+        </Grid>
+        <Grid item xs={12} lg={4}>
+          <RoleDetailsCard
+            selectedRole={selectedRole}
+            roleAddMode={roleAddMode}
+          />
+        </Grid>
+        <Grid item xs={12} lg={8}>
+          <PermissionsTable />
         </Grid>
       </Grid>
-    </BackgroundBox>
+    </BackgroundBox >
   );
 };

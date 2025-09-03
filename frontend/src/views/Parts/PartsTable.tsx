@@ -6,12 +6,15 @@ import {
   CardContent,
   Chip,
   Grid,
+  InputAdornment,
+  Stack,
   TextField,
+  Typography,
 } from "@mui/material";
+import { Search } from "@mui/icons-material";
 import FormatListBulletedOutlinedIcon from "@mui/icons-material/FormatListBulletedOutlined";
 import { useGetParts } from "../../service/ApiServiceNew";
 import AddIcon from "@mui/icons-material/Add";
-import SearchIcon from "@mui/icons-material/Search";
 import { Part } from "../../interfaces";
 import TristateToggle from "../../components/TristateToggle";
 import GridFooterWithButton from "../../components/GridFooterWithButton";
@@ -82,70 +85,80 @@ export const PartsTable = ({
   }, [partSearchQuery, partsList.data, inUseFilter, commonlyUsedFilter]);
 
   return (
-    <Card sx={{ height: "100%" }}>
+    <Card>
       <CustomCardHeader
         title="All Parts"
         icon={FormatListBulletedOutlinedIcon}
       />
-      <CardContent sx={{ height: "100%" }}>
-        <Grid container>
-          <Grid item xs={5}>
+      <CardContent>
+        <Grid container spacing={2}>
+          <Grid item xs={6} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
             <TextField
-              label={
-                <div style={{ display: "inline-flex", alignItems: "center" }}>
-                  <SearchIcon sx={{ fontSize: "1.2rem" }} />{" "}
-                  <span style={{ marginTop: 1 }}>&nbsp;Search Parts</span>
-                </div>
-              }
+              sx={{ m: 0, width: '100%', maxWidth: '75rem' }}
+              placeholder="Search Parts..."
               variant="outlined"
               size="small"
               value={partSearchQuery}
               onChange={(event: any) => setPartSearchQuery(event.target.value)}
-              sx={{ marginBottom: "10px" }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search />
+                  </InputAdornment>
+                ),
+              }}
             />
           </Grid>
-          <Grid item xs={7}>
-            <div style={{ float: "right" }}>
-              <h5 style={{ display: "inline" }}>Choose Filters: </h5>
-              <TristateToggle
-                label="In Use"
-                onToggle={(state: boolean | undefined) => setInUseFilter(state)}
-              />
-              <TristateToggle
-                label="Commonly Used"
-                onToggle={(state: boolean | undefined) =>
-                  setCommonlyUsedFilter(state)
-                }
-              />
-            </div>
+          <Grid item xs={6} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+            <Typography variant="body1" style={{ display: "inline" }}>Choose Filters: </Typography>
+            <TristateToggle
+              label="In Use"
+              onToggle={(state: boolean | undefined) => setInUseFilter(state)}
+            />
+            <TristateToggle
+              label="Commonly Used"
+              onToggle={(state: boolean | undefined) =>
+                setCommonlyUsedFilter(state)
+              }
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <DataGrid
+              sx={{ height: 550, border: "none" }}
+              rows={filteredRows ?? []}
+              loading={partsList.isLoading}
+              columns={cols}
+              disableColumnMenu
+              onRowClick={(selectedRow) => {
+                setSelectedPartID(selectedRow.row.id);
+              }}
+              slots={{ footer: GridFooterWithButton }}
+              slotProps={{
+                footer: {
+                  button: (
+                    <Stack
+                      direction={{ xs: "column", sm: "row" }}
+                      spacing={1}
+                      sx={{ ml: { xs: 0, sm: 1 }, mt: { xs: 1, sm: 0 }, width: "100%" }}
+                      alignItems={{ xs: "stretch", sm: "center" }}
+                    >
+                      <Button
+                        variant="contained"
+                        size="small"
+                        onClick={() => setPartAddMode(true)}
+                        sx={{ flexShrink: 0, width: { xs: "100%", sm: "auto" } }}
+                      >
+                        <AddIcon fontSize="small" sx={{ mr: 0.5 }} />
+                        Create
+                      </Button>
+                    </Stack>
+                  ),
+                },
+              }}
+              disableColumnFilter
+            />
           </Grid>
         </Grid>
-        <DataGrid
-          sx={{ height: "500px", border: "none" }}
-          rows={filteredRows ?? []}
-          loading={partsList.isLoading}
-          columns={cols}
-          disableColumnMenu
-          onRowClick={(selectedRow) => {
-            setSelectedPartID(selectedRow.row.id);
-          }}
-          slots={{ footer: GridFooterWithButton }}
-          slotProps={{
-            footer: {
-              button: (
-                <Button
-                  sx={{ mt: 2 }}
-                  variant="contained"
-                  onClick={() => setPartAddMode(true)}
-                >
-                  <AddIcon style={{ fontSize: "1rem" }} />
-                  Add a New Part
-                </Button>
-              ),
-            },
-          }}
-          disableColumnFilter
-        />
       </CardContent>
     </Card>
   );
