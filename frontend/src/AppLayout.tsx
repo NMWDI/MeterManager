@@ -2,7 +2,6 @@ import { useAuthUser } from "react-auth-kit";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Box } from "@mui/material";
-import { Theme } from "@mui/material/styles";
 import { SecurityScope } from "./interfaces";
 import Topbar from "./components/Topbar";
 import Sidenav from "./sidenav";
@@ -75,13 +74,6 @@ export const AppLayout = ({
       <Topbar
         open={drawerOpen}
         onMenuClick={() => setDrawerOpen(!drawerOpen)}
-        sx={(theme: Theme) => ({
-          zIndex: theme.zIndex.drawer + 1,
-          transition: theme.transitions.create(["margin", "width"], {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.leavingScreen,
-          }),
-        })}
       />
       <Sidenav
         open={drawerOpen}
@@ -90,22 +82,17 @@ export const AppLayout = ({
       />
       <Box
         component="main"
-        sx={(theme: Theme) => ({
+        sx={{
           flexGrow: 1,
           flexShrink: 1,
           minWidth: 0,
           p: 3,
           mt: 8,
-          ...theme.mixins.toolbar,
-          transition: theme.transitions.create("margin", {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.leavingScreen,
-          }),
-        })}
+        }}
       >
         {pageComponent}
       </Box>
-    </Box>
+    </Box >
   );
 };
 

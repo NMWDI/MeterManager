@@ -6,12 +6,14 @@ import {
   CardContent,
   Chip,
   Grid,
+  InputAdornment,
   TextField,
+  Typography,
 } from "@mui/material";
+import { Search } from "@mui/icons-material";
 import { useGetUserAdminList } from "../../service/ApiServiceNew";
 import AddIcon from "@mui/icons-material/Add";
 import FormatListBulletedOutlinedIcon from "@mui/icons-material/FormatListBulletedOutlined";
-import SearchIcon from "@mui/icons-material/Search";
 import { User } from "../../interfaces";
 import TristateToggle from "../../components/TristateToggle";
 import GridFooterWithButton from "../../components/GridFooterWithButton";
@@ -85,77 +87,80 @@ export const UsersTable = ({
   }, [userSearchQuery, usersList.data, isActiveFilter, isTechnicianFilter]);
 
   return (
-    <Card sx={{ height: "100%" }}>
+    <Card>
       <CustomCardHeader
         title="All Users"
         icon={FormatListBulletedOutlinedIcon}
       />
-      <CardContent sx={{ height: "100%" }}>
-        <Grid container>
-          <Grid item xs={5}>
+      <CardContent>
+        <Grid container spacing={2}>
+          <Grid item xs={6} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
             <TextField
-              label={
-                <div style={{ display: "inline-flex", alignItems: "center" }}>
-                  <SearchIcon sx={{ fontSize: "1.2rem" }} />{" "}
-                  <span style={{ marginTop: 1 }}>&nbsp;Search Users</span>
-                </div>
-              }
+              sx={{ m: 0, width: '100%', maxWidth: '75rem' }}
+              placeholder="Search Users..."
               variant="outlined"
               size="small"
               value={userSearchQuery}
               onChange={(event: any) => setUserSearchQuery(event.target.value)}
-              sx={{ marginBottom: "10px" }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search />
+                  </InputAdornment>
+                ),
+              }}
             />
           </Grid>
-          <Grid item xs={7}>
-            <div style={{ float: "right" }}>
-              <h5 style={{ display: "inline" }}>Choose Filters: </h5>
-              <TristateToggle
-                label="Active"
-                onToggle={(state: boolean | undefined) =>
-                  setIsActiveFilter(state)
-                }
-              />
-              <TristateToggle
-                label="Technician User"
-                onToggle={(state: boolean | undefined) =>
-                  setIsTechnicianFilter(state)
-                }
-              />
-            </div>
+          <Grid item xs={6} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+            <Typography variant="body1" style={{ display: "inline" }}>Choose Filters: </Typography>
+            <TristateToggle
+              label="Active"
+              onToggle={(state: boolean | undefined) =>
+                setIsActiveFilter(state)
+              }
+            />
+            <TristateToggle
+              label="Technician User"
+              onToggle={(state: boolean | undefined) =>
+                setIsTechnicianFilter(state)
+              }
+            />
           </Grid>
         </Grid>
-        <DataGrid
-          sx={{ height: "500px", border: "none" }}
-          rows={filteredRows ?? []}
-          loading={usersList.isLoading}
-          columns={cols}
-          disableColumnMenu
-          onRowClick={(selectedRow) => {
-            setSelectedUser(
-              usersList.data?.find(
-                (user: User) => user.id == selectedRow.row.id,
-              ),
-            );
-          }}
-          slots={{ footer: GridFooterWithButton }}
-          slotProps={{
-            footer: {
-              button: (
-                <Button
-                  sx={{ mt: 1 }}
-                  variant="contained"
-                  onClick={() => setUserAddMode(true)}
-                >
-                  <AddIcon style={{ fontSize: "1rem" }} />
-                  Add a New User
-                </Button>
-              ),
-            },
-          }}
-          disableColumnFilter
-        />
+        <Grid item xs={12}>
+          <DataGrid
+            sx={{ height: 550, border: "none" }}
+            rows={filteredRows ?? []}
+            loading={usersList.isLoading}
+            columns={cols}
+            disableColumnMenu
+            onRowClick={(selectedRow) => {
+              setSelectedUser(
+                usersList.data?.find(
+                  (user: User) => user.id == selectedRow.row.id,
+                ),
+              );
+            }}
+            slots={{ footer: GridFooterWithButton }}
+            slotProps={{
+              footer: {
+                button: (
+                  <Button
+                    variant="contained"
+                    size="small"
+                    onClick={() => setUserAddMode(true)}
+                    sx={{ flexShrink: 0, width: { xs: "100%", sm: "auto" } }}
+                  >
+                    <AddIcon fontSize="small" sx={{ mr: 0.5 }} />
+                    Create
+                  </Button>
+                ),
+              },
+            }}
+            disableColumnFilter
+          />
+        </Grid>
       </CardContent>
-    </Card>
+    </Card >
   );
 };

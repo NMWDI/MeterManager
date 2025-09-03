@@ -24,46 +24,32 @@ export const PartsView = () => {
 
   return (
     <BackgroundBox>
-      <Grid container spacing={4}>
-        <Grid
-          container
-          item
-          spacing={2}
-          sx={{ minHeight: { xs: "100vh", lg: "70vh" } }}
-        >
-          <Grid item xs={8}>
-            <PartsTable
-              setSelectedPartID={setSelectedPartID}
-              setPartAddMode={setPartAddMode}
-            />
-          </Grid>
-          <Grid item xs={4}>
-            <PartDetailsCard
-              selectedPartID={selectedPartID}
-              partAddMode={partAddMode}
-            />
-          </Grid>
+      <Grid container spacing={2}>
+        <Grid item xs={12} lg={8}>
+          <PartsTable
+            setSelectedPartID={setSelectedPartID}
+            setPartAddMode={setPartAddMode}
+          />
         </Grid>
-        <Grid
-          container
-          item
-          spacing={2}
-          sx={{ minHeight: { xs: "100vh", lg: "70vh" }, mt: -4 }}
-        >
-          <Grid item xs={8}>
-            <MeterTypesTable
-              setSelectedMeterType={setSelectedMeterType}
-              setMeterTypeAddMode={setMeterTypeAddMode}
-            />
-          </Grid>
-          <Grid item xs={4}>
-            <MeterTypeDetailsCard
-              selectedMeterType={selectedMeterType}
-              meterTypeAddMode={meterTypeAddMode}
-            />
-          </Grid>
+        <Grid item xs={12} lg={4}>
+          <PartDetailsCard
+            selectedPartID={selectedPartID}
+            partAddMode={partAddMode}
+          />
+        </Grid>
+        <Grid item xs={12} lg={8}>
+          <MeterTypesTable
+            setSelectedMeterType={setSelectedMeterType}
+            setMeterTypeAddMode={setMeterTypeAddMode}
+          />
+        </Grid>
+        <Grid item xs={12} lg={4}>
+          <MeterTypeDetailsCard
+            selectedMeterType={selectedMeterType}
+            meterTypeAddMode={meterTypeAddMode}
+          />
         </Grid>
       </Grid>
-    </BackgroundBox>
+    </BackgroundBox >
   );
 };

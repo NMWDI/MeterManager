@@ -6,12 +6,13 @@ import {
   CardContent,
   Chip,
   Grid,
+  InputAdornment,
   TextField,
 } from "@mui/material";
+import { Search } from "@mui/icons-material";
 import { useGetRoles } from "../../service/ApiServiceNew";
 import AddIcon from "@mui/icons-material/Add";
 import FormatListBulletedOutlinedIcon from "@mui/icons-material/FormatListBulletedOutlined";
-import SearchIcon from "@mui/icons-material/Search";
 import { UserRole } from "../../interfaces";
 import GridFooterWithButton from "../../components/GridFooterWithButton";
 import { CustomCardHeader } from "../../components/CustomCardHeader";
@@ -65,57 +66,64 @@ export const RolesTable = ({
   }, [roleSearchQuery, rolesList.data]);
 
   return (
-    <Card sx={{ height: "100%" }}>
+    <Card>
       <CustomCardHeader
         title="All Roles"
         icon={FormatListBulletedOutlinedIcon}
       />
-      <CardContent sx={{ height: "100%" }}>
-        <Grid container>
-          <TextField
-            label={
-              <div style={{ display: "inline-flex", alignItems: "center" }}>
-                <SearchIcon sx={{ fontSize: "1.2rem" }} />{" "}
-                <span style={{ marginTop: 1 }}>&nbsp;Search Roles</span>
-              </div>
-            }
-            variant="outlined"
-            size="small"
-            value={roleSearchQuery}
-            onChange={(event: any) => setRoleSearchQuery(event.target.value)}
-            sx={{ marginBottom: "10px" }}
-          />
+      <CardContent>
+        <Grid container spacing={2}>
+          <Grid item xs={6} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
+            <TextField
+              sx={{ m: 0, width: '100%', maxWidth: '75rem' }}
+              placeholder="Search Roles..."
+              variant="outlined"
+              size="small"
+              value={roleSearchQuery}
+              onChange={(event: any) => setRoleSearchQuery(event.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search />
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <DataGrid
+              sx={{ height: 550, border: "none" }}
+              rows={filteredRows ?? []}
+              loading={rolesList.isLoading}
+              columns={cols}
+              disableColumnMenu
+              onRowClick={(selectedRow) => {
+                setSelectedRole(
+                  rolesList.data?.find(
+                    (role: UserRole) => role.id == selectedRow.row.id,
+                  ),
+                );
+              }}
+              slots={{ footer: GridFooterWithButton }}
+              slotProps={{
+                footer: {
+                  button: (
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={() => setRoleAddMode(true)}
+                      sx={{ flexShrink: 0, width: { xs: "100%", sm: "auto" } }}
+                    >
+                      <AddIcon fontSize="small" sx={{ mr: 0.5 }} />
+                      Create
+                    </Button>
+                  ),
+                },
+              }}
+              disableColumnFilter
+            />
+          </Grid>
         </Grid>
-        <DataGrid
-          sx={{ height: "500px", border: "none" }}
-          rows={filteredRows ?? []}
-          loading={rolesList.isLoading}
-          columns={cols}
-          disableColumnMenu
-          onRowClick={(selectedRow) => {
-            setSelectedRole(
-              rolesList.data?.find(
-                (role: UserRole) => role.id == selectedRow.row.id,
-              ),
-            );
-          }}
-          slots={{ footer: GridFooterWithButton }}
-          slotProps={{
-            footer: {
-              button: (
-                <Button
-                  variant="contained"
-                  sx={{ mt: 1 }}
-                  onClick={() => setRoleAddMode(true)}
-                >
-                  <AddIcon style={{ fontSize: "1rem" }} />
-                  Add a New Role
-                </Button>
-              ),
-            },
-          }}
-          disableColumnFilter
-        />
       </CardContent>
     </Card>
   );

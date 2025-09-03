@@ -207,6 +207,7 @@ export const ChloridesView = () => {
             </Alert>
           )}
           <FormControl
+            size="small"
             sx={{ minWidth: "100px", maxWidth: 600, width: "100%" }}
             disabled={isLoadingRegions || !!errorRegions}
           >

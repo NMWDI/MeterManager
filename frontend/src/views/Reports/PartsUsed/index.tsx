@@ -306,39 +306,39 @@ export const PartsUsedReportView = () => {
             container
             justifyContent="flex-start"
             alignContent="center"
-            gap={2}
+            spacing={2}
             padding={2}
           >
-            <Grid item>
+            <Grid item xs={12} sm={6} md={3}>
               <ControlledDatepicker
+                sx={{ width: "100%" }}
+                size="small"
                 label="From"
-                sx={{ minWidth: "15rem" }}
                 control={control}
-                size="medium"
                 name="from"
                 views={["year", "month"]}
                 openTo="year"
                 format="YYYY MMMM"
               />
             </Grid>
-            <Grid item>
+            <Grid item xs={12} sm={6} md={3}>
               <ControlledDatepicker
+                sx={{ width: "100%" }}
+                size="small"
                 label="To"
-                sx={{ minWidth: "15rem" }}
                 control={control}
-                size="medium"
                 name="to"
                 views={["year", "month"]}
                 openTo="year"
                 format="YYYY MMMM"
               />
             </Grid>
-            <Grid item>
+            <Grid item xs={12} md={6}>
               <ControlledSelect
+                sx={{ width: "100%" }}
+                size="small"
                 label="Part Types"
                 control={control}
-                sx={{ minWidth: "15rem" }}
-                size="medium"
                 name="part_types"
                 multiple
                 disabled={partsQuery.isFetching}
@@ -355,7 +355,7 @@ export const PartsUsedReportView = () => {
                 getOptionLabel={(option: any) => option.type.name}
               />
             </Grid>
-            <Grid item>
+            <Grid item xs={12}>
               <Controller
                 name="parts"
                 control={control}
@@ -389,8 +389,8 @@ export const PartsUsedReportView = () => {
                       renderInput={(params) => (
                         <TextField
                           {...params}
-                          size="medium"
-                          sx={{ minWidth: "30rem" }}
+                          size="small"
+                          sx={{ width: "100%" }}
                           label="Parts"
                           placeholder="Begin typing to search"
                         />
@@ -400,7 +400,7 @@ export const PartsUsedReportView = () => {
                 }}
               />
             </Grid>
-            <Grid item sx={{ display: 'flex', alignItems: 'center' }}>
+            <Grid item xs={12} sx={{ display: 'flex', alignItems: 'center' }}>
               <Controller
                 name="in_use"
                 control={control}
@@ -420,7 +420,7 @@ export const PartsUsedReportView = () => {
               />
             </Grid>
           </Grid>
-          <Grid container padding={2}>
+          <Grid item xs={12} padding={2}>
             <DataGrid
               rows={rows}
               columns={columns}
@@ -434,10 +434,8 @@ export const PartsUsedReportView = () => {
               }}
             />
           </Grid>
-          <Grid container padding={2}>
-            <Grid item>
-              <Button onClick={() => reset(defaultSchema)}>Reset</Button>
-            </Grid>
+          <Grid item xs={12}>
+            <Button onClick={() => reset(defaultSchema)}>Reset</Button>
           </Grid>
         </CardContent>
       </Card>

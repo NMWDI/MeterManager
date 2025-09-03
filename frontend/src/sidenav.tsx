@@ -65,9 +65,13 @@ export default function Sidenav({
 
   return (
     <Drawer
-      variant="persistent"
+      variant="temporary"
       anchor="left"
       open={open}
+      onClose={onClose}
+      ModalProps={{
+        keepMounted: true, // improves performance on mobile
+      }}
       sx={{
         flexShrink: 0,
         width: open ? drawerWidth : 0,

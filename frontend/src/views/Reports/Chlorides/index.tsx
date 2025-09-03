@@ -197,28 +197,28 @@ export const ChloridesReportView = () => {
             container
             justifyContent="flex-start"
             alignContent="center"
-            gap={2}
+            spacing={2}
             paddingTop={2}
             paddingBottom={2}
           >
-            <Grid item>
+            <Grid item xs={12} sm={6} md={3}>
               <ControlledDatepicker
+                sx={{ width: "100%" }}
+                size="small"
                 label="From"
-                sx={{ minWidth: "15rem" }}
                 control={control}
-                size="medium"
                 name="from"
                 views={["year", "month"]}
                 openTo="year"
                 format="YYYY MMMM"
               />
             </Grid>
-            <Grid item>
+            <Grid item xs={12} sm={6} md={3}>
               <ControlledDatepicker
+                sx={{ width: "100%" }}
+                size="small"
                 label="To"
-                sx={{ minWidth: "15rem" }}
                 control={control}
-                size="medium"
                 name="to"
                 views={["year", "month"]}
                 openTo="year"

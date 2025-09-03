@@ -35,7 +35,9 @@ import dayjs, { Dayjs } from "dayjs";
 import { BackgroundBox } from "../../../components/BackgroundBox";
 import { CustomCardHeader } from "../../../components/CustomCardHeader";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
-import { LineChart } from "@mui/x-charts";
+import {
+  LineChart,
+} from "@mui/x-charts";
 import { MonitoredWell, WellMeasurementDTO } from "../../../interfaces";
 import { useFetchWithAuth } from "../../../hooks";
 import { separateAndSortMonitoredWells } from "../../../utils";
@@ -80,11 +82,6 @@ const defaultSchema = {
   isAveragingAllWells: false,
   isComparingTo1970Average: false,
   comparisonYear: null,
-};
-
-const size = {
-  width: 1000,
-  height: 600,
 };
 
 export const MonitoringWellsReportView = () => {
@@ -376,35 +373,35 @@ export const MonitoringWellsReportView = () => {
             container
             justifyContent="flex-start"
             alignContent="center"
-            gap={2}
+            spacing={2}
             paddingTop={2}
             paddingBottom={2}
           >
-            <Grid item>
+            <Grid item xs={12} sm={6} md={3}>
               <ControlledDatepicker
                 label="From"
-                sx={{ minWidth: "15rem" }}
+                sx={{ width: "100%" }}
                 control={control}
-                size="medium"
+                size="small"
                 name="from"
                 views={["year", "month"]}
                 openTo="year"
                 format="YYYY MMMM"
               />
             </Grid>
-            <Grid item>
+            <Grid item xs={12} sm={6} md={3}>
               <ControlledDatepicker
                 label="To"
-                sx={{ minWidth: "15rem" }}
+                sx={{ width: "100%" }}
                 control={control}
-                size="medium"
+                size="small"
                 name="to"
                 views={["year", "month"]}
                 openTo="year"
                 format="YYYY MMMM"
               />
             </Grid>
-            <Grid item>
+            <Grid item xs={12}>
               <ControlledAutocomplete
                 name="wells"
                 control={control}
@@ -480,9 +477,8 @@ export const MonitoringWellsReportView = () => {
                   return (
                     <TextField
                       {...params}
-                      sx={{ minWidth: "30rem" }}
                       label="Wells"
-                      size="medium"
+                      size="small"
                       placeholder="Begin typing to search"
                     />
                   );
@@ -490,8 +486,8 @@ export const MonitoringWellsReportView = () => {
               />
             </Grid>
           </Grid>
-          <Grid container alignItems="center" spacing={2}>
-            <Grid item xs="auto">
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={4}>
               <FormGroup>
                 <Controller
                   name="isAveragingAllWells"
@@ -556,42 +552,44 @@ export const MonitoringWellsReportView = () => {
                 />
               </Box>
             </Grid>
-            <Grid item xs>
+            <Grid item xs={12} md={8}>
               <Box display="flex" flexDirection="column" alignItems="center">
                 <Typography variant="h5" gutterBottom>
                   Depth of Water over Time
                 </Typography>
-                <LineChart
-                  xAxis={[{
-                    data: allTimestamps,
-                    scaleType: "time",
-                    valueFormatter: (value) => {
-                      const date = dayjs(value);
-                      const isMidnight = date.hour() === 0 && date.minute() === 0;
-                      return isMidnight
-                        ? date.format("MMM D, YYYY")
-                        : date.format("MMM D, YYYY HH:mm");
-                    }
-                  }]}
-                  yAxis={[{
-                    reverse: true,
-                  }]}
-                  series={series}
-                  slotProps={{
-                    legend: {
-                      direction: "horizontal",
-                      position: {
-                        vertical: "bottom",
-                        horizontal: "center",
+                <Box sx={{ width: "100%", height: 550 }}>
+                  <LineChart
+                    xAxis={[{
+                      data: allTimestamps,
+                      scaleType: "time",
+                      valueFormatter: (value) => {
+                        const date = dayjs(value);
+                        const isMidnight = date.hour() === 0 && date.minute() === 0;
+                        return isMidnight
+                          ? date.format("MMM D, YYYY")
+                          : date.format("MMM D, YYYY HH:mm");
+                      }
+                    }]}
+                    yAxis={[{
+                      reverse: true,
+                    }]}
+                    series={series}
+                    slotProps={{
+                      legend: {
+                        direction: "horizontal",
+                        position: {
+                          vertical: "bottom",
+                          horizontal: "center",
+                        },
                       },
-                    },
-                  }}
-                  {...size}
-                />
+                    }}
+                    sx={{ width: "100%", height: "100%" }}
+                  />
+                </Box>
               </Box>
             </Grid>
           </Grid>
-          <Grid container padding={2}>
+          <Grid item xs={12}>
             <DataGrid
               rows={tableRows ?? []}
               columns={columns}
@@ -605,10 +603,8 @@ export const MonitoringWellsReportView = () => {
               }}
             />
           </Grid>
-          <Grid container>
-            <Grid item>
-              <Button onClick={() => reset()}>Reset</Button>
-            </Grid>
+          <Grid item xs={12}>
+            <Button onClick={() => reset()}>Reset</Button>
           </Grid>
         </CardContent>
       </Card>

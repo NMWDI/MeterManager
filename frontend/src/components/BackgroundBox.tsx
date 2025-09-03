@@ -9,6 +9,8 @@ export const BackgroundBox: React.FC<BoxProps> = ({
   return (
     <Box
       sx={{
+        mx: "auto",             // center horizontally
+        maxWidth: "xl",         // limit to MUI's `xl` breakpoint (default is 1536px)
         height: "fit-content",
         pb: 6,
         ...sx,
