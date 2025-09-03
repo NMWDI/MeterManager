@@ -222,7 +222,8 @@ def backup_and_send():
     if not DATABASE_URL:
         raise ValueError("DATABASE_URL environment variable is not set")
 
-    timestamp = datetime.datetime.utcnow().strftime("%Y-%m-%d-%H%M%S")
+    # Use UTC-aware timestamp
+    timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d-%H%M%S")
     filename = f"backup-{timestamp}.dump"
     local_path = Path(f"/tmp/{filename}")
     
@@ -242,8 +243,8 @@ def backup_and_send():
 
     local_path.unlink(missing_ok=True)
 
-    # Delete old backups (> BACKUP_RETENTION_DAYS)
-    cutoff_date = datetime.datetime.utcnow() - datetime.timedelta(days=BACKUP_RETENTION_DAYS)
+    # Delete old backups (> BACKUP_RETENTION_DAYS) using UTC-aware cutoff
+    cutoff_date = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=BACKUP_RETENTION_DAYS)
     blobs = client.list_blobs(BUCKET_NAME, prefix=BACKUP_PREFIX)
 
     deleted = []
