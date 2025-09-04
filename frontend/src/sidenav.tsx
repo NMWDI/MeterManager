@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuthUser } from "react-auth-kit";
 import { Box, Drawer, Grid, IconButton, Toolbar, Typography } from "@mui/material";
-import { useNavigate } from "react-router-dom";
+import { createSearchParams, useNavigate } from "react-router-dom";
 import { useGetWorkOrders } from "./service/ApiServiceNew";
 import { WorkOrderStatus } from "./enums";
 import { SecurityScope, WorkOrder } from "./interfaces";
@@ -41,27 +41,22 @@ export default function Sidenav({
 
   const hasReadScope = scopes.has("read");
   const hasAdminScope = scopes.has("admin");
-  const userID = authUser()?.id;
-
-  const [workOrderLabel, setWorkOrderLabel] = useState("Work Orders");
-  const workOrderList = useGetWorkOrders([WorkOrderStatus.Open], {
+  const userId = authUser()?.id;
+  const roleId = authUser()?.user_role_id;
+  const [workOrderCount, setWorkOrderCount] = useState(0);
+  const openWorkOrdersQuery = useGetWorkOrders([WorkOrderStatus.Open], {
     refetchInterval: 45_000,
     refetchIntervalInBackground: true,
     enabled: hasReadScope && !!authUser()
   });
 
   useEffect(() => {
-    if (workOrderList.data && userID) {
-      const userWorkOrders = workOrderList.data.filter(
-        (workOrder: WorkOrder) => workOrder.assigned_user_id === userID
-      );
-      setWorkOrderLabel(
-        userWorkOrders.length > 0
-          ? `Work Orders (${userWorkOrders.length})`
-          : "Work Orders"
-      );
+    if (openWorkOrdersQuery.data && userId) {
+      setWorkOrderCount(openWorkOrdersQuery.data.filter(
+        (workOrder: WorkOrder) => workOrder.assigned_user_id === userId
+      )?.length ?? 0);
     }
-  }, [workOrderList.data, userID]);
+  }, [openWorkOrdersQuery.data, userId]);
 
   return (
     <Drawer
@@ -142,10 +137,16 @@ export default function Sidenav({
         {hasReadScope && (
           <>
             <NavLink
-              route="/workorders"
-              label={workOrderLabel}
+              route={{
+                pathname: "/workorders",
+                search: createSearchParams({
+                  userId: userId.toString(),
+                  roleId: roleId.toString(),
+                }).toString(),
+              }}
+              label="Work Orders"
               Icon={FormatListBulletedOutlined}
-            />
+              badgeContent={workOrderCount} />
             <NavLink
               route="/meters"
               label="Meters Information"
