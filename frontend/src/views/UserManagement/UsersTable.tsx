@@ -17,7 +17,7 @@ import FormatListBulletedOutlinedIcon from "@mui/icons-material/FormatListBullet
 import { User } from "../../interfaces";
 import TristateToggle from "../../components/TristateToggle";
 import GridFooterWithButton from "../../components/GridFooterWithButton";
-import { CustomCardHeader } from "../../components/CustomCardHeader";
+import { RoleChip, CustomCardHeader } from "../../components";
 
 export const UsersTable = ({
   setSelectedUser,
@@ -41,19 +41,7 @@ export const UsersTable = ({
       headerName: "Role",
       width: 200,
       valueGetter: (_, row) => row.user_role.name,
-      renderCell: (params: any) => {
-        switch (params.value) {
-          case "Admin": {
-            return <Chip size="small" label="Admin" color="primary" />;
-          }
-          case "Technician": {
-            return <Chip size="small" label="Technician" color="secondary" />;
-          }
-          default: {
-            return <Chip size="small" label={params.value} color="warning" />;
-          }
-        }
-      },
+      renderCell: (params: any) => <RoleChip role={params.value} />
     },
     {
       field: "disabled",

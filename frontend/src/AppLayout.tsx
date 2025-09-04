@@ -69,6 +69,12 @@ export const AppLayout = ({
     }
   }, [isLoggedIn, hasScopes, userScopes, location.pathname]);
 
+  const bodyElement = document.querySelector('body')
+
+  if (bodyElement)
+    bodyElement.style.backgroundColor = '#333'
+  // bodyElement.style.backgroundColor = '#a5adb5'
+
   return (
     <Box sx={{ display: "flex", flexGrow: 1, overflow: 'hidden' }}>
       <Topbar

@@ -29,7 +29,7 @@ import {
   Assessment,
   Science
 } from '@mui/icons-material';
-import { BackgroundBox, CustomCardHeader } from "../components";
+import { BackgroundBox, CustomCardHeader, RoleChip } from "../components";
 
 const redirectOptions = [
   { value: "/", label: "Home", icon: <HomeIcon fontSize="small" /> },
@@ -55,20 +55,6 @@ const schema = yup.object().shape({
 });
 
 const FALLBACK_REDIRECT = "/";
-
-const RoleChip = ({ role }: { role: string }) => {
-  switch (role) {
-    case "Admin": {
-      return <Chip size="small" label="Admin" color="primary" />;
-    }
-    case "Technician": {
-      return <Chip size="small" label="Technician" color="secondary" />;
-    }
-    default: {
-      return <Chip size="small" label={role} color="warning" />;
-    }
-  }
-}
 
 const IsActiveChip = ({ active }: { active: boolean }) => {
   return active ? (
@@ -126,7 +112,7 @@ export const Settings = () => {
   return (
     <BackgroundBox>
       <Card sx={{ height: "fit-content" }}>
-        <CustomCardHeader title="Settings" icon={SettingsIcon} />
+        <CustomCardHeader title="Account Settings" icon={SettingsIcon} />
         <CardContent>
           {/* User Info */}
           <Box sx={{ mb: 3 }}>
@@ -187,15 +173,11 @@ export const Settings = () => {
                 </Typography>
               </Grid>
               <Grid item xs={12} sm={6} lg={4} sx={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                <Typography>
-                  <b>Role:</b>
-                </Typography>
+                <Typography fontWeight="bold">Role:</Typography>
                 <RoleChip role={user?.user_role?.name ?? "N/A"} />
               </Grid>
               <Grid item xs={12} sm={6} lg={4} sx={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                <Typography>
-                  <b>Active:</b>
-                </Typography>
+                <Typography fontWeight="bold">Active:</Typography>
                 <IsActiveChip active={!user?.disabled} />
               </Grid>
             </Grid>

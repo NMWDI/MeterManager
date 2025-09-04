@@ -9,12 +9,14 @@ import {
   Button,
   Box,
   Divider,
+  ListItemIcon,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import { useNavigate } from "react-router-dom";
 import { useAuthUser, useSignOut } from "react-auth-kit";
 import { useState } from "react";
-import { Badge, Engineering, Face, Login } from "@mui/icons-material";
+import { Badge, Engineering, Face, Login, Logout, Settings } from "@mui/icons-material";
+import { RoleChip } from "./RoleChip";
 
 export default function Topbar({ open, onMenuClick, sx }: { open: boolean, onMenuClick: () => void; sx?: any }) {
   const navigate = useNavigate();
@@ -118,28 +120,27 @@ export default function Topbar({ open, onMenuClick, sx }: { open: boolean, onMen
               </Avatar>
             </Button>
             <Menu
-              id="profile-menu"
               anchorEl={anchorEl}
               open={Boolean(anchorEl)}
               onClose={handleMenuClose}
-              anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
-              transformOrigin={{ horizontal: "right", vertical: "top" }}
+              transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+              anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
             >
-              <MenuItem
-                disabled
+              <Box
                 sx={{
-                  opacity: 1,
-                  fontWeight: "bold",
-                  color: "darkblue",
-                  "&.Mui-disabled": { opacity: 1 },
+                  px: 2,
+                  pt: 0.5,
+                  pb: 1.5,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
                 }}
               >
-                <Box sx={{ display: "flex", alignItems: "center", gap: "0.5rem", textTransform: 'uppercase' }}>
-                  <Typography variant="body2" fontWeight="bold" color="darkblue">
-                    Role: {role ?? "Unknown"}
-                  </Typography>
-                </Box>
-              </MenuItem>
+                <Typography variant="body2" fontWeight="bold" color="text.secondary">
+                  Role:
+                </Typography>
+                <RoleChip role={role ?? "Unknown"} />
+              </Box>
               <Divider />
               <MenuItem
                 onClick={() => {
@@ -147,12 +148,23 @@ export default function Topbar({ open, onMenuClick, sx }: { open: boolean, onMen
                   handleMenuClose()
                 }}
               >
-                Settings
+                <ListItemIcon>
+                  <Settings fontSize="small" />
+                </ListItemIcon>
+                <Typography variant="body1">Account Settings</Typography>
               </MenuItem>
-              <MenuItem onClick={() => {
-                fullSignOut()
-                handleMenuClose()
-              }}>Logout</MenuItem>
+
+              <MenuItem
+                onClick={() => {
+                  fullSignOut()
+                  handleMenuClose()
+                }}
+              >
+                <ListItemIcon>
+                  <Logout fontSize="small" />
+                </ListItemIcon>
+                <Typography variant="body1">Logout</Typography>
+              </MenuItem>
             </Menu>
           </Box>
         )
