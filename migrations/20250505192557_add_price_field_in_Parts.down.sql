@@ -1,0 +1,2 @@
+ALTER TABLE "Parts"
+DROP COLUMN price;

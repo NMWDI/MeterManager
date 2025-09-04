@@ -4,6 +4,7 @@ import { Controller } from "react-hook-form";
 export default function ControlledDatepicker({
   name,
   control,
+  size = "small",
   ...childProps
 }: any) {
   return (
@@ -13,7 +14,7 @@ export default function ControlledDatepicker({
       render={({ field }) => (
         <DatePicker
           {...field}
-          slotProps={{ textField: { size: "small" } }}
+          slotProps={{ textField: { size: size } }}
           {...childProps}
         />
       )}

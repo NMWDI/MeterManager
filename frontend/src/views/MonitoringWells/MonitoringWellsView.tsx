@@ -1,16 +1,17 @@
 import { useId, useState, useMemo } from "react";
 import {
-  Box,
   FormControl,
   Select,
   MenuItem,
   InputLabel,
   Card,
   CardContent,
-  Typography,
   ListSubheader,
   useTheme,
-  CardHeader,
+  Grid,
+  Alert,
+  Button,
+  AlertTitle,
 } from "@mui/material";
 import { useQuery } from "react-query";
 import { useAuthUser } from "react-auth-kit";
@@ -37,28 +38,11 @@ import dayjs, { Dayjs } from "dayjs";
 import { useFetchWithAuth, useFetchST2 } from "../../hooks";
 import { getDataStreamId } from "../../utils/DataStreamUtils";
 import { MonitorHeart } from "@mui/icons-material";
+import { BackgroundBox } from "../../components/BackgroundBox";
+import { CustomCardHeader } from "../../components/CustomCardHeader";
+import { separateAndSortMonitoredWells } from "../../utils";
 
-const separateAndSortWells = (
-  wells: MonitoredWell[] = [],
-): [MonitoredWell[], MonitoredWell[]] => {
-  const sortWells = (w: MonitoredWell[]) =>
-    w.slice().sort((a, b) => {
-      if (!a.name) return 1; // Move undefined/null names to the bottom
-      if (!b.name) return -1;
-      return a.name.localeCompare(b.name);
-    });
-
-  const outsideRecorderWells = sortWells(
-    wells.filter((well) => well.outside_recorder === true),
-  );
-  const regularWells = sortWells(
-    wells.filter((well) => well.outside_recorder !== true),
-  );
-
-  return [outsideRecorderWells, regularWells];
-};
-
-export default function MonitoringWellsView() {
+export const MonitoringWellsView = () => {
   const theme = useTheme();
 
   const fetchWithAuth = useFetchWithAuth();
@@ -81,11 +65,7 @@ export default function MonitoringWellsView() {
     (s: SecurityScope) => s.scope_string === "admin",
   );
 
-  const {
-    data: wells,
-    isLoading: isLoadingWells,
-    error: errorWells,
-  } = useQuery<{ items: MonitoredWell[] }, Error, MonitoredWell[]>({
+  const monitoredWellsQuery = useQuery<{ items: MonitoredWell[] }, Error, MonitoredWell[]>({
     queryKey: ["wells"],
     queryFn: () =>
       fetchWithAuth({
@@ -111,7 +91,7 @@ export default function MonitoringWellsView() {
       fetchWithAuth({
         method: "GET",
         route: "/waterlevels",
-        params: { well_id: wellId },
+        params: { well_ids: wellId },
       }),
     enabled: !!wellId,
   });
@@ -136,7 +116,7 @@ export default function MonitoringWellsView() {
   const updateMeasurement = useUpdateWaterLevel(() => refetchManual());
   const deleteMeasurement = useDeleteWaterLevel();
 
-  const error = errorWells || errorManual || errorSt2;
+  const error = monitoredWellsQuery.isError || errorManual || errorSt2;
 
   const handleSubmitNewMeasurement = (data: NewWellMeasurement) => {
     if (wellId) {
@@ -178,42 +158,48 @@ export default function MonitoringWellsView() {
     setIsUpdateModalOpen(true);
   };
 
-  const [outsideRecorderWells, regularWells] = separateAndSortWells(wells);
+  const [outsideRecorderWells, regularWells] = separateAndSortMonitoredWells(monitoredWellsQuery?.data);
 
   return (
-    <Box sx={{ height: "100%", width: "100%", m: 2, mt: 0 }}>
-      <Card sx={{ width: "100%", height: "100%" }}>
-        <CardHeader
-          title={
-            <div className="custom-card-header">
-              <span>Monitored Well Values</span>
-              <MonitorHeart />
-            </div>
-          }
-          sx={{ mb: 0, pb: 0 }}
-        />
+    <BackgroundBox>
+      <Card sx={{ height: "fit-content" }}>
+        <CustomCardHeader title="Monitored Well Values" icon={MonitorHeart} />
         <CardContent>
           {error && (
-            <Typography variant="h4">
-              An error had occurred while attempting to loading data
-            </Typography>
+            <Alert
+              severity="error"
+              sx={{ mb: 2 }}
+              action={
+                <Button
+                  variant="outlined"
+                  color="inherit"
+                  size="small"
+                  onClick={() => monitoredWellsQuery.refetch()}
+                >
+                  Retry
+                </Button>
+              }
+            >
+              <AlertTitle>Error Loading Data</AlertTitle>
+              We couldn’t load monitoring wells. Please check your connection or try
+              again.
+            </Alert>
           )}
-
           <FormControl
-            sx={{ minWidth: "100px" }}
-            disabled={isLoadingWells || !!errorWells}
+            size="small"
+            sx={{ minWidth: "100px", maxWidth: 600, width: "100%" }}
+            disabled={monitoredWellsQuery?.isFetching || !!monitoredWellsQuery?.isError}
           >
             <InputLabel id={`${selectWellId}-label`}>Site</InputLabel>
             <Select
               label="Site"
-              sx={{ width: "100%", maxWidth: "600px" }}
               labelId={`${selectWellId}-label`}
               value={wellId ?? ""}
               onChange={(e) => setWellId(Number(e.target.value))}
             >
-              {isLoadingWells && <MenuItem disabled>Loading...</MenuItem>}
-              {errorWells && <MenuItem disabled>Error loading wells</MenuItem>}
-              {regularWells.length > 0 ? (
+              {monitoredWellsQuery?.isFetching && <MenuItem disabled>Loading...</MenuItem>}
+              {monitoredWellsQuery?.isError && <MenuItem disabled>Error loading wells</MenuItem>}
+              {monitoredWellsQuery?.data?.length ?? 0 > 0 ? (
                 <ListSubheader
                   sx={{
                     color: theme.palette.primary.main,
@@ -277,43 +263,35 @@ export default function MonitoringWellsView() {
               ))}
             </Select>
           </FormControl>
-
-          <Box
-            sx={{
-              mt: "1rem",
-              gap: "1rem",
-              display: "flex",
-              flexDirection: { xs: "column", md: "row" },
-              width: "100%",
-              height: 600,
-            }}
+          <Grid
+            container
+            spacing={2}
+            sx={{ mt: "1rem" }}
           >
-            <Box sx={{ flex: { xs: 1, md: 1 / 3 }, minWidth: 0 }}>
+            <Grid item xs={12} lg={7}>
+              <MonitoringWellsPlot
+                isLoading={isLoadingManual || isLoadingSt2}
+                manual_dates={(Array.isArray(manualMeasurements) ? manualMeasurements : []).map((m) => m.timestamp)}
+                manual_vals={(Array.isArray(manualMeasurements) ? manualMeasurements : []).map((m) => m.value)}
+                logger_dates={(Array.isArray(st2Measurements) ? st2Measurements : []).map((m) => m.resultTime)}
+                logger_vals={(Array.isArray(st2Measurements) ? st2Measurements : []).map((m) => m.result)}
+              />
+            </Grid>
+            <Grid item xs={12} lg={5}>
               <MonitoringWellsTable
                 rows={manualMeasurements ?? []}
-                selectedWell={wells?.find((well) => well.id == wellId)}
+                selectedWell={monitoredWellsQuery?.data?.find((well) => well.id == wellId)}
                 isWellSelected={!!wellId}
                 onOpenModal={() => setIsNewModalOpen(true)}
                 onMeasurementSelect={handleMeasurementSelect}
               />
-            </Box>
-            <Box sx={{ flex: { xs: 1, md: 2 / 3 }, minWidth: 0 }}>
-              <MonitoringWellsPlot
-                isLoading={isLoadingManual || isLoadingSt2}
-                manual_dates={manualMeasurements?.map((m) => m.timestamp) ?? []}
-                manual_vals={manualMeasurements?.map((m) => m.value) ?? []}
-                logger_dates={st2Measurements?.map((m) => m.resultTime) ?? []}
-                logger_vals={st2Measurements?.map((m) => m.result) ?? []}
-              />
-            </Box>
-          </Box>
-
+            </Grid>
+          </Grid>
           <NewMeasurementModal
             isNewMeasurementModalOpen={isNewModalOpen}
             handleCloseNewMeasurementModal={() => setIsNewModalOpen(false)}
             handleSubmitNewMeasurement={handleSubmitNewMeasurement}
           />
-
           <UpdateMeasurementModal
             isMeasurementModalOpen={isUpdateModalOpen}
             handleCloseMeasurementModal={() => setIsUpdateModalOpen(false)}
@@ -326,6 +304,6 @@ export default function MonitoringWellsView() {
           />
         </CardContent>
       </Card>
-    </Box>
+    </BackgroundBox>
   );
-}
+};

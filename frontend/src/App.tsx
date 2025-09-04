@@ -1,84 +1,37 @@
-import "./App.css";
 import { useEffect, useState } from "react";
-import { AuthProvider, useAuthUser } from "react-auth-kit";
+import { AuthProvider } from "react-auth-kit";
 import {
   Route,
   BrowserRouter as Router,
   Routes,
-  useNavigate,
 } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "react-query";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { SnackbarProvider, enqueueSnackbar } from "notistack";
-import { Grid } from "@mui/material";
-
-import MonitoringWellsView from "./views/MonitoringWells/MonitoringWellsView";
-import ActivitiesView from "./views/Activities/ActivitiesView";
-import MetersView from "./views/Meters/MetersView";
-import PartsView from "./views/Parts/PartsView";
-import UserManagementView from "./views/UserManagement/UserManagementView";
+import {
+  Home,
+  Login,
+  Settings,
+} from './views'
+import { MonitoringWellsView } from "./views/MonitoringWells/MonitoringWellsView";
+import { ActivitiesView } from "./views/Activities/ActivitiesView";
+import { MetersView } from "./views/Meters/MetersView";
+import { PartsView } from "./views/Parts/PartsView";
+import { UserManagementView } from "./views/UserManagement/UserManagementView";
 import WellManagementView from "./views/WellManagement/WellManagementView";
 import WorkOrdersView from "./views/WorkOrders/WorkOrdersView";
+import { ChloridesView } from "./views/Chlorides/ChloridesView";
+import { ReportsView } from "./views/Reports";
+import { WorkOrdersReportView } from "./views/Reports/WorkOrders";
+import { MonitoringWellsReportView } from "./views/Reports/MonitoringWells";
+import { MaintenanceReportView } from "./views/Reports/Maintenance";
+import { PartsUsedReportView } from "./views/Reports/PartsUsed";
+import { BoardReportView } from "./views/Reports/Board";
+import { ChloridesReportView } from "./views/Reports/Chlorides";
+import { AppLayout } from "./AppLayout";
 
-import Sidenav from "./sidenav";
-import Home from "./Home";
-import Topbar from "./components/Topbar";
-import Login from "./login";
-import { SecurityScope } from "./interfaces";
-import ChloridesView from "./views/Chlorides/ChloridesView";
-
-// A wrapper that handles checking that the user is logged in and has any necessary scopes
-function AppLayout({
-  pageComponent,
-  requiredScopes = null,
-  setErrorMessage = null,
-}: any) {
-  const authUser = useAuthUser();
-  const navigate = useNavigate();
-
-  const isLoggedIn = authUser() != null;
-  const userScopes = authUser()?.user_role?.security_scopes?.map(
-    (scope: SecurityScope) => scope.scope_string,
-  );
-  const hasScopes =
-    requiredScopes == null
-      ? true
-      : requiredScopes?.every((scope: string) => userScopes?.includes(scope));
-
-  useEffect(() => {
-    if (!isLoggedIn) {
-      if (setErrorMessage) setErrorMessage("You must login to view pages.");
-      navigate("/");
-    } else if (!hasScopes) {
-      if (setErrorMessage)
-        setErrorMessage(
-          "You do not have sufficient permissions to view this page.",
-        );
-      navigate("/home");
-    }
-  }, [authUser()]);
-
-  if (isLoggedIn && hasScopes)
-    return (
-      <Grid container>
-        <Grid item xs={12}>
-          <Topbar />
-        </Grid>
-        <Grid container item xs={12}>
-          <Grid container item width="15%">
-            <Sidenav />
-          </Grid>
-          <Grid item width="85%" sx={{ mt: 1 }}>
-            {pageComponent}
-          </Grid>
-        </Grid>
-      </Grid>
-    );
-  return null;
-}
-
-export default function App() {
+export const App = () => {
   const queryClient = new QueryClient();
 
   // Showing messages between navigation (eg: accessing forbidden page, accessing while not logged in) results in duplicated snackbars, this is a workaround
@@ -104,12 +57,28 @@ export default function App() {
           >
             <Router>
               <Routes>
-                <Route path="/" element={<Login />} />
                 <Route
-                  path="/home"
+                  path="/"
                   element={
                     <AppLayout
                       pageComponent={<Home />}
+                      requiredScopes={[]}
+                      setErrorMessage={setErrorMessage}
+                    />
+                  }
+                />
+                <Route path="/login" element={
+                  <AppLayout
+                    pageComponent={<Login />}
+                    requiredScopes={[]}
+                    setErrorMessage={setErrorMessage}
+                  />
+                } />
+                <Route
+                  path="/settings"
+                  element={
+                    <AppLayout
+                      pageComponent={<Settings />}
                       requiredScopes={["read"]}
                       setErrorMessage={setErrorMessage}
                     />
@@ -140,6 +109,76 @@ export default function App() {
                   element={
                     <AppLayout
                       pageComponent={<MonitoringWellsView />}
+                      requiredScopes={["read"]}
+                      setErrorMessage={setErrorMessage}
+                    />
+                  }
+                />
+                <Route
+                  path="/reports"
+                  element={
+                    <AppLayout
+                      pageComponent={<ReportsView />}
+                      requiredScopes={["read"]}
+                      setErrorMessage={setErrorMessage}
+                    />
+                  }
+                />
+                <Route
+                  path="/reports/workorders"
+                  element={
+                    <AppLayout
+                      pageComponent={<WorkOrdersReportView />}
+                      requiredScopes={["read"]}
+                      setErrorMessage={setErrorMessage}
+                    />
+                  }
+                />
+                <Route
+                  path="/reports/wells"
+                  element={
+                    <AppLayout
+                      pageComponent={<MonitoringWellsReportView />}
+                      requiredScopes={["read"]}
+                      setErrorMessage={setErrorMessage}
+                    />
+                  }
+                />
+                <Route
+                  path="/reports/maintenance"
+                  element={
+                    <AppLayout
+                      pageComponent={<MaintenanceReportView />}
+                      requiredScopes={["read"]}
+                      setErrorMessage={setErrorMessage}
+                    />
+                  }
+                />
+                <Route
+                  path="/reports/partsused"
+                  element={
+                    <AppLayout
+                      pageComponent={<PartsUsedReportView />}
+                      requiredScopes={["read"]}
+                      setErrorMessage={setErrorMessage}
+                    />
+                  }
+                />
+                <Route
+                  path="/reports/board"
+                  element={
+                    <AppLayout
+                      pageComponent={<BoardReportView />}
+                      requiredScopes={["read"]}
+                      setErrorMessage={setErrorMessage}
+                    />
+                  }
+                />
+                <Route
+                  path="/reports/chlorides"
+                  element={
+                    <AppLayout
+                      pageComponent={<ChloridesReportView />}
                       requiredScopes={["read"]}
                       setErrorMessage={setErrorMessage}
                     />
@@ -212,4 +251,4 @@ export default function App() {
       </LocalizationProvider>
     </QueryClientProvider>
   );
-}
+};

@@ -1,14 +1,7 @@
 import { useEffect } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { useAuthUser } from "react-auth-kit";
-import {
-  Grid,
-  Card,
-  CardContent,
-  CardHeader,
-  Stack,
-  Button,
-} from "@mui/material";
+import { Grid, Card, CardContent, Stack, Button } from "@mui/material";
 import SaveIcon from "@mui/icons-material/Save";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import {
@@ -34,8 +27,9 @@ import NotesChipSelect from "../../../components/RHControlled/NotesChipSelect";
 import ServicesChipSelect from "../../../components/RHControlled/ServicesChipSelect";
 import PartsChipSelect from "../../../components/RHControlled/PartsChipSelect";
 import ControlledCheckbox from "../../../components/RHControlled/ControlledCheckbox";
+import { CustomCardHeader } from "../../../components/CustomCardHeader";
 
-export default function SelectedActivityDetails({
+export const SelectedActivityDetails = ({
   selectedActivity,
   onDeletion,
   afterSave,
@@ -43,7 +37,7 @@ export default function SelectedActivityDetails({
   selectedActivity: PatchActivityForm;
   onDeletion: () => void; //Function to call when the activity is deleted, use to update the history table
   afterSave: () => void;
-}) {
+}) => {
   const {
     handleSubmit,
     control,
@@ -124,14 +118,9 @@ export default function SelectedActivityDetails({
 
   return (
     <Card>
-      <CardHeader
-        title={
-          <div className="custom-card-header">
-            <span>Activity ID: {selectedActivity.activity_id}</span>
-            <InfoOutlinedIcon />
-          </div>
-        }
-        sx={{ mb: 0, pb: 0 }}
+      <CustomCardHeader
+        title={`Activity ID: ${selectedActivity.activity_id}`}
+        icon={InfoOutlinedIcon}
       />
       <CardContent>
         <Grid container item xs={10}>
@@ -259,4 +248,4 @@ export default function SelectedActivityDetails({
       </CardContent>
     </Card>
   );
-}
+};

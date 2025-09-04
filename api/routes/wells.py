@@ -1,6 +1,6 @@
-from typing import List
+from typing import List, Optional
 
-from fastapi import Depends, APIRouter, HTTPException
+from fastapi import Depends, APIRouter, HTTPException, Query
 from sqlalchemy import or_, select, desc, text
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import IntegrityError
@@ -64,6 +64,7 @@ def get_wells(
     sort_by: WellSortByField = WellSortByField.Name,
     sort_direction: SortDirection = SortDirection.Ascending,
     has_chloride_group: bool = None,
+    chloride_group_id: Optional[str] = Query(None, pattern=r"^$|^\d+$"),
     db: Session = Depends(get_db),
 ):
     def sort_by_field_to_schema_field(name: WellSortByField):
@@ -103,6 +104,12 @@ def get_wells(
 
     if has_chloride_group is not None:
         query_statement = query_statement.where(Wells.chloride_group_id.isnot(None))
+
+    if chloride_group_id:
+        query_statement = query_statement.where(
+            Wells.chloride_group_id == int(chloride_group_id)
+        )
+
 
     if sort_by:
         schema_field_name = sort_by_field_to_schema_field(sort_by)
@@ -163,7 +170,7 @@ def update_well(
     try:
         db.add(well_to_patch)
         db.commit()
-    except IntegrityError as e:
+    except IntegrityError as _e:
         raise HTTPException(status_code=409, detail="RA number already exists")
 
     # Get updated model with relationships
@@ -214,7 +221,7 @@ def create_well(new_well: well_schemas.SubmitWellCreate, db: Session = Depends(g
         db.commit()
         db.refresh(new_well_model)
 
-    except IntegrityError as e:
+    except IntegrityError as _e:
         db.rollback()
         db.delete(new_location_model)
         db.commit()
@@ -230,10 +237,6 @@ def create_well(new_well: well_schemas.SubmitWellCreate, db: Session = Depends(g
     return new_well_model
 
 
-
-# Get List of well for MapView
-# Get search for well similar to /well but no pagination and only for installed well
-# Returns all installed well with a location when search is None
 @well_router.get(
     "/well_locations",
     dependencies=[Depends(ScopedUser.Read)],
@@ -242,13 +245,20 @@ def create_well(new_well: well_schemas.SubmitWellCreate, db: Session = Depends(g
 )
 def get_wells_locations(
     search_string: str = None,
+    has_chloride_group: bool = None,
+    limit: int = 500,
+    offset: int = 0,
     db: Session = Depends(get_db),
 ):
-    # Build the query statement based on query params
-    # joinedload loads relationships, outer joins on relationship tables makes them search/sortable
     query_statement = (
         select(Wells)
-        .options(joinedload(Wells.location), joinedload(Wells.use_type))
+        .options(
+            joinedload(Wells.location),
+            joinedload(Wells.use_type),
+        )
+        .where(
+            Wells.location_id.isnot(None)
+        )
     )
 
     if search_string:
@@ -261,11 +271,11 @@ def get_wells_locations(
             )
         )
 
+    if has_chloride_group is not None:
+        query_statement = query_statement.where(Wells.chloride_group_id.isnot(None))
 
-    return db.scalars(query_statement).all()
+    return db.scalars(query_statement.offset(offset).limit(limit)).all()
 
-
-# End
 
 @well_router.get(
     "/well",
@@ -340,40 +350,3 @@ def merge_well(well: well_schemas.SubmitWellMerge, db: Session = Depends(get_db)
     return True
 
 
-@well_router.get(
-    "/chloride_groups",
-    dependencies=[Depends(ScopedUser.Read)],
-    response_model=List[well_schemas.ChlorideGroupResponse],
-    tags=["Chlorides"],
-)
-def get_chloride_groups(
-    sort_direction: SortDirection = SortDirection.Ascending,
-    db: Session = Depends(get_db),
-):
-    query = (
-        select(Wells)
-        .options(joinedload(Wells.location), joinedload(Wells.use_type))
-        .join(Locations, isouter=True)
-        .join(WellUseLU, isouter=True)
-        .where(Wells.chloride_group_id.isnot(None))
-    )
-
-    if sort_direction == SortDirection.Ascending:
-        query = query.order_by(Wells.chloride_group_id.asc())
-    else:
-        query = query.order_by(Wells.chloride_group_id.desc())
-
-    wells = db.scalars(query).all()
-
-    groups = {}
-    for well in wells:
-        group_id = well.chloride_group_id
-        if group_id not in groups:
-            groups[group_id] = []
-        if well.ra_number:
-            groups[group_id].append(well.ra_number)
-
-    return [
-        {"id": group_id, "names": sorted(names)}
-        for group_id, names in groups.items()
-    ]

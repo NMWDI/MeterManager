@@ -1,21 +1,15 @@
 import { useEffect, useState } from "react";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
-import {
-  Button,
-  Card,
-  CardHeader,
-  CardContent,
-  Grid,
-  TextField,
-} from "@mui/material";
+import { Button, Card, CardContent, Grid, InputAdornment, TextField, Tooltip } from "@mui/material";
 import { useGetSecurityScopes } from "../../service/ApiServiceNew";
 import AddIcon from "@mui/icons-material/Add";
-import SearchIcon from "@mui/icons-material/Search";
+import { Search } from "@mui/icons-material";
 import FormatListBulletedOutlinedIcon from "@mui/icons-material/FormatListBulletedOutlined";
 import { SecurityScope } from "../../interfaces";
 import GridFooterWithButton from "../../components/GridFooterWithButton";
+import { CustomCardHeader } from "../../components/CustomCardHeader";
 
-export default function PermissionsTable() {
+export const PermissionsTable = () => {
   const securityScopesList = useGetSecurityScopes();
   const [permissionSearchQuery, setPermissionSearchQuery] =
     useState<string>("");
@@ -39,54 +33,61 @@ export default function PermissionsTable() {
   }, [permissionSearchQuery, securityScopesList.data]);
 
   return (
-    <Card sx={{ height: "100%" }}>
-      <CardHeader
-        title={
-          <div className="custom-card-header">
-            <span>All Permissions</span>
-            <FormatListBulletedOutlinedIcon />
-          </div>
-        }
-        sx={{ mb: 0, pb: 0 }}
+    <Card>
+      <CustomCardHeader
+        title="All Permissions"
+        icon={FormatListBulletedOutlinedIcon}
       />
-      <CardContent sx={{ height: "100%" }}>
-        <Grid container xs={12}>
-          <TextField
-            label={
-              <div style={{ display: "inline-flex", alignItems: "center" }}>
-                <SearchIcon sx={{ fontSize: "1.2rem" }} />{" "}
-                <span style={{ marginTop: 1 }}>&nbsp;Search Permissions</span>
-              </div>
-            }
-            variant="outlined"
-            size="small"
-            value={permissionSearchQuery}
-            onChange={(event: any) =>
-              setPermissionSearchQuery(event.target.value)
-            }
-            sx={{ marginBottom: "10px" }}
-          />
+      <CardContent>
+        <Grid container spacing={2}>
+          <Grid item xs={6} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
+            <TextField
+              sx={{ m: 0, width: '100%', maxWidth: '75rem' }}
+              placeholder="Search Permissions..."
+              variant="outlined"
+              size="small"
+              onChange={(event: any) => setPermissionSearchQuery(event.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search />
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <DataGrid
+              sx={{ height: 550, border: "none" }}
+              rows={filteredRows ?? []}
+              loading={securityScopesList.isLoading}
+              columns={cols}
+              disableColumnMenu
+              slots={{ footer: GridFooterWithButton }}
+              slotProps={{
+                footer: {
+                  button: (
+                    <Tooltip title="Permissions must be created by a developer">
+                      <span>
+                        <Button
+                          disabled
+                          variant="contained"
+                          size="small"
+                          sx={{ flexShrink: 0, width: { xs: "100%", sm: "auto" } }}
+                        >
+                          <AddIcon fontSize="small" sx={{ mr: 0.5 }} />
+                          Create
+                        </Button>
+                      </span>
+                    </Tooltip>
+                  ),
+                },
+              }}
+              disableColumnFilter
+            />
+          </Grid>
         </Grid>
-        <DataGrid
-          sx={{ height: "400px", border: "none" }}
-          rows={filteredRows ?? []}
-          loading={securityScopesList.isLoading}
-          columns={cols}
-          disableColumnMenu
-          slots={{ footer: GridFooterWithButton }}
-          slotProps={{
-            footer: {
-              button: (
-                <Button disabled variant="contained" size="small">
-                  <AddIcon style={{ fontSize: "1rem" }} />
-                  Permissions must be configured by a developer
-                </Button>
-              ),
-            },
-          }}
-          disableColumnFilter
-        />
       </CardContent>
     </Card>
   );
-}
+};

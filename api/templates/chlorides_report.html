@@ -1,0 +1,73 @@
+<html>
+
+<head>
+  <style>
+    body {
+      font-family: sans-serif;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1em;
+    }
+
+    th,
+    td {
+      border: 1px solid #ccc;
+      padding: 6px;
+      text-align: center;
+    }
+
+    th {
+      background-color: #f5f5f5;
+    }
+  </style>
+</head>
+
+<body>
+  <h2>Chloride Report</h2>
+  <p>
+    <strong>From:</strong> {{ from_month or "All Data" }}
+    &nbsp;&nbsp;
+    <strong>To:</strong> {{ to_month or "All Data" }}
+  </p>
+  <table>
+    <thead>
+      <tr>
+        <th>Region</th>
+        <th>Min</th>
+        <th>Max</th>
+        <th>Average</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>North</td>
+        <td>{{ report.north.min }}</td>
+        <td>{{ report.north.max }}</td>
+        <td>{{ "%.2f"|format(report.north.avg or 0) }}</td>
+      </tr>
+      <tr>
+        <td>South</td>
+        <td>{{ report.south.min }}</td>
+        <td>{{ report.south.max }}</td>
+        <td>{{ "%.2f"|format(report.south.avg or 0) }}</td>
+      </tr>
+      <tr>
+        <td>East</td>
+        <td>{{ report.east.min }}</td>
+        <td>{{ report.east.max }}</td>
+        <td>{{ "%.2f"|format(report.east.avg or 0) }}</td>
+      </tr>
+      <tr>
+        <td>West</td>
+        <td>{{ report.west.min }}</td>
+        <td>{{ report.west.max }}</td>
+        <td>{{ "%.2f"|format(report.west.avg or 0) }}</td>
+      </tr>
+    </tbody>
+  </table>
+</body>
+
+</html>

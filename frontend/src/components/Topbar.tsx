@@ -1,93 +1,189 @@
-import { useState, useRef } from "react";
 import {
-  Button,
+  AppBar,
+  Toolbar,
+  Typography,
+  IconButton,
+  Avatar,
   Menu,
   MenuItem,
-  Avatar,
-  Grid,
-  Typography,
+  Button,
+  Box,
+  Divider,
 } from "@mui/material";
-import { useLocation, useNavigate } from "react-router-dom";
-import { useSignOut, useAuthUser } from "react-auth-kit";
+import MenuIcon from "@mui/icons-material/Menu";
+import { useNavigate } from "react-router-dom";
+import { useAuthUser, useSignOut } from "react-auth-kit";
+import { useState } from "react";
+import { Badge, Engineering, Face, Login } from "@mui/icons-material";
 
-export default function Topbar() {
-  const location = useLocation();
+export default function Topbar({ open, onMenuClick, sx }: { open: boolean, onMenuClick: () => void; sx?: any }) {
   const navigate = useNavigate();
   const signOut = useSignOut();
   const authUser = useAuthUser();
+  const role = authUser()?.user_role?.name;
+  const isLoggedIn = !!authUser();
 
-  const profileMenuRef = useRef<HTMLButtonElement | null>(null);
-  const [isProfileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
 
   const fullSignOut = () => {
     navigate("/");
     signOut();
   };
 
+  const renderRoleIcon = () => {
+    switch (role) {
+      case "Admin":
+        return <Badge fontSize="small" />;
+      case "Technician":
+        return <Engineering fontSize="small" />;
+      default:
+        return <Face fontSize="small" />;
+    }
+  };
+
   return (
-    <Grid container sx={styles.container}>
-      <Grid item xs={2}>
-        <Typography
-          variant="h1"
-          sx={styles.logo}
-          onClick={() => navigate("/home")}
-        >
-          Meter Manager
-        </Typography>
-      </Grid>
-
-      {location.pathname !== "/" && (
-        <Grid item xs={2} sx={{ textAlign: "right", mr: 3 }}>
-          <Button
-            variant="contained"
-            ref={profileMenuRef}
-            onClick={() => setProfileMenuOpen(true)}
-            sx={styles.button}
+    <AppBar
+      position="fixed"
+      sx={{
+        backgroundColor: "white",
+        ...sx,
+      }}
+    >
+      <Toolbar sx={{ justifyContent: "space-between" }}>
+        <Box sx={{ display: "flex", alignItems: "center" }}>
+          <IconButton
+            edge="start"
+            color="inherit"
+            onClick={onMenuClick}
+            sx={{ mr: 1, color: "darkblue" }}
           >
-            <Avatar sx={styles.avatar}>
-              {authUser()?.username?.charAt(0) ?? "U"}
-            </Avatar>
-            {authUser()?.username}
-          </Button>
+            <MenuIcon />
+          </IconButton>
+          {!open ?
+            <Typography
+              variant="h6"
+              noWrap
+              sx={{
+                color: "darkblue",
+                cursor: "pointer",
+                fontWeight: "bold",
+                ml: 1,
+                fontSize: {
+                  xs: "1.5rem",
+                  md: "1.625rem",
+                  lg: "1.75rem",
+                  xl: "2rem",
+                },
+              }}
+              onClick={() => navigate("/")}
+            >
+              Meter Manager
+            </Typography>
+            : null}
+        </Box>
 
-          <Menu
-            id="profile-menu"
-            anchorEl={profileMenuRef.current}
-            open={isProfileMenuOpen}
-            onClose={() => setProfileMenuOpen(false)}
-            anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
-            transformOrigin={{ horizontal: "right", vertical: "top" }}
-          >
-            <MenuItem onClick={fullSignOut}>Logout</MenuItem>
-          </Menu>
-        </Grid>
-      )}
-    </Grid>
+        {isLoggedIn ? (
+          <Box>
+            <Button
+              color="inherit"
+              onClick={handleMenuOpen}
+              sx={{
+                textTransform: "uppercase",
+                fontWeight: "bolder",
+                backgroundColor: "darkblue",
+                color: "white",
+                "&:hover": {
+                  backgroundColor: "#00008b",
+                },
+              }}
+            >
+              {authUser()?.username ?? "Username"}
+              <Avatar
+                sx={{
+                  width: 32,
+                  height: 32,
+                  ml: 1,
+                  bgcolor: "rgb(89,90,182)",
+                }}
+              >
+                {renderRoleIcon()}
+              </Avatar>
+            </Button>
+            <Menu
+              id="profile-menu"
+              anchorEl={anchorEl}
+              open={Boolean(anchorEl)}
+              onClose={handleMenuClose}
+              anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
+              transformOrigin={{ horizontal: "right", vertical: "top" }}
+            >
+              <MenuItem
+                disabled
+                sx={{
+                  opacity: 1,
+                  fontWeight: "bold",
+                  color: "darkblue",
+                  "&.Mui-disabled": { opacity: 1 },
+                }}
+              >
+                <Box sx={{ display: "flex", alignItems: "center", gap: "0.5rem", textTransform: 'uppercase' }}>
+                  <Typography variant="body2" fontWeight="bold" color="darkblue">
+                    Role: {role ?? "Unknown"}
+                  </Typography>
+                </Box>
+              </MenuItem>
+              <Divider />
+              <MenuItem
+                onClick={() => {
+                  navigate("/settings")
+                  handleMenuClose()
+                }}
+              >
+                Settings
+              </MenuItem>
+              <MenuItem onClick={() => {
+                fullSignOut()
+                handleMenuClose()
+              }}>Logout</MenuItem>
+            </Menu>
+          </Box>
+        )
+          : (
+            <Button
+              onClick={() => navigate("/login")}
+              sx={{
+                textTransform: "uppercase",
+                fontWeight: "bolder",
+                backgroundColor: "darkblue",
+                color: "white",
+                "&:hover": {
+                  backgroundColor: "#00008b",
+                },
+              }}
+            >
+              Login
+              <Avatar
+                sx={{
+                  width: 32,
+                  height: 32,
+                  ml: 1,
+                  bgcolor: "rgb(89,90,182)",
+                }}
+              >
+                <Login fontSize="small" />
+              </Avatar>
+            </Button>
+          )}
+      </Toolbar>
+    </AppBar>
   );
 }
 
-const styles = {
-  container: {
-    zIndex: "100 !important",
-    justifyContent: "space-between",
-    backgroundColor: "white",
-    py: 1,
-    boxShadow: "3px 2px 5px -2px rgba(0,0,0,0.2)",
-  },
-  logo: {
-    fontWeight: "bold",
-    fontSize: "32px",
-    color: "darkblue",
-    cursor: "pointer",
-    marginLeft: "10px",
-  },
-  button: {
-    marginTop: "auto",
-    marginBottom: "auto",
-  },
-  avatar: {
-    width: 32,
-    height: 32,
-    marginRight: 1,
-  },
-};

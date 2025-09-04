@@ -1,4 +1,4 @@
-import { Box, Button } from "@mui/material";
+import { Box, Button, Stack } from "@mui/material";
 import { Link } from "react-router-dom";
 import { DataGrid, GridColDef, GridSortModel } from "@mui/x-data-grid";
 import React, { useEffect, useState } from "react";
@@ -47,12 +47,23 @@ export default function WellSelectionTable({
     .includes("admin");
 
   const cols: GridColDef[] = [
-    { field: "ra_number", headerName: "RA Number", width: 100 },
-    { field: "osetag", headerName: "OSE Tag", width: 100 },
+    {
+      field: "ra_number",
+      headerName: "RA Number",
+      flex: 1,
+      minWidth: 100,
+    },
+    {
+      field: "osetag",
+      headerName: "OSE Tag",
+      flex: 1,
+      minWidth: 100,
+    },
     {
       field: "water_users",
       headerName: "Water Users",
-      width: 150,
+      flex: 1,
+      minWidth: 150,
       sortable: false,
       valueGetter: (_, row: Well) =>
         row.meters.map((meter) => meter.water_users).join(", "),
@@ -60,19 +71,22 @@ export default function WellSelectionTable({
     {
       field: "use_type",
       headerName: "Use Type",
-      width: 150,
+      flex: 1,
+      minWidth: 150,
       valueGetter: (_, row) => row.use_type?.use_type,
     },
     {
       field: "location",
       headerName: "TRSS",
-      width: 150,
+      flex: 1,
+      minWidth: 150,
       valueGetter: (_, row) => row.location?.trss,
     },
     {
       field: "meters",
       headerName: "Meters",
-      width: 200,
+      flex: 2,
+      minWidth: 200,
       sortable: false,
       renderCell: (params) => {
         const meters = params.value as Well["meters"];
@@ -110,7 +124,7 @@ export default function WellSelectionTable({
   // Ternaries in sorting make sure that the view defaults to showing the backend's defaults
 
   return (
-    <Box sx={{ height: "500px" }}>
+    <Box sx={{ height: "550px" }}>
       <DataGrid
         sx={{ border: "none" }}
         rows={wellsList.data?.items ?? []}
@@ -134,16 +148,23 @@ export default function WellSelectionTable({
         slots={{ footer: GridFooterWithButton }}
         slotProps={{
           footer: {
-            button: (
-              <Button
-                variant="contained"
-                size="small"
-                onClick={() => setWellAddMode(true)}
-                disabled={!hasAdminScope}
+            button: hasAdminScope && (
+              <Stack
+                direction={{ xs: "column", sm: "row" }}
+                spacing={1}
+                sx={{ ml: { xs: 0, sm: 1 }, mt: { xs: 1, sm: 0 }, width: "100%" }}
+                alignItems={{ xs: "stretch", sm: "center" }}
               >
-                <AddIcon style={{ fontSize: "1rem" }} />
-                Add a New Well
-              </Button>
+                <Button
+                  variant="contained"
+                  size="small"
+                  onClick={() => setWellAddMode(true)}
+                  sx={{ flexShrink: 0, width: { xs: "100%", sm: "auto" } }}
+                >
+                  <AddIcon fontSize="small" sx={{ mr: 0.5 }} />
+                  Create
+                </Button>
+              </Stack>
             ),
           },
         }}

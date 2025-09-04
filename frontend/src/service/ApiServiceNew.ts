@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient, UseQueryOptions } from "react-query";
 import { useAuthHeader, useSignOut } from "react-auth-kit";
 import { enqueueSnackbar, useSnackbar } from "notistack";
 import {
@@ -237,15 +237,21 @@ export function useGetMeterLocations(searchstring: string | undefined) {
   const navigate = useNavigate();
   const signOut = useSignOut();
 
-  return useQuery<MeterMapDTO[], Error>([route, searchstring], () =>
-    GETFetch(
+  return useQuery<MeterMapDTO[], Error>({
+    queryKey: [route, searchstring],
+    queryFn: () => GETFetch(
       route,
       { search_string: searchstring },
       authHeader(),
       signOut,
       navigate,
     ),
-  );
+    staleTime: 1000 * 60 * 60 * 24, // 24 hours
+    cacheTime: 1000 * 60 * 60 * 24, // keep in memory for 24 hours
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+  });
 }
 
 export function useGetMeterTypeList() {
@@ -417,25 +423,37 @@ export function useGetWells(params: WellListQueryParams | undefined) {
   );
 }
 
-// Start Get Well List for Map View
-export function useGetWellLocations(searchstring: string | undefined) {
+export function useGetWellLocations(searchstring: string | undefined, has_chloride_group: boolean | null = null) {
   const route = "well_locations";
   const authHeader = useAuthHeader();
   const navigate = useNavigate();
   const signOut = useSignOut();
+  const PAGE_SIZE = 500;
 
-  return useQuery<Page<Well>, Error>([route, searchstring], () =>
-    GETFetch(
-      route,
-      { search_string: searchstring },
-      authHeader(),
-      signOut,
-      navigate,
-    ),
-  );
+  return useInfiniteQuery<Well[], Error>({
+    queryKey: [route, searchstring, has_chloride_group],
+    queryFn: async ({ pageParam = 0 }) => {
+      return GETFetch(
+        route,
+        { search_string: searchstring, offset: pageParam, limit: PAGE_SIZE, has_chloride_group },
+        authHeader(),
+        signOut,
+        navigate
+      );
+    },
+    getNextPageParam: (lastPage, allPages) => {
+      // If we got less than PAGE_SIZE, we’re done
+      if (!lastPage || lastPage.length < PAGE_SIZE) return undefined;
+      return allPages.length * PAGE_SIZE; // next offset
+    },
+    staleTime: 1000 * 60 * 60 * 24,
+    cacheTime: 1000 * 60 * 60 * 24,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+  });
 }
 
-// End
 
 export function useGetWell(params: WellDetailsQueryParams | undefined) {
   const route = "well";
@@ -453,16 +471,6 @@ export function useGetWell(params: WellDetailsQueryParams | undefined) {
   );
 }
 
-// export function useGetWellLocations(searchstring: string | undefined) {
-//     const route = 'well_locations'
-//     const authHeader = useAuthHeader()
-//     const navigate = useNavigate()
-//     const signOut = useSignOut()
-
-//     return useQuery<Page<Well>, Error>([route, searchstring], () =>
-//         GETFetch(route, {search_string: searchstring}, authHeader(), signOut, navigate),
-//     )
-// }
 export function useGetMeter(params: MeterDetailsQueryParams | undefined) {
   const route = "meter";
   const authHeader = useAuthHeader();
@@ -550,23 +558,26 @@ export function useGetST2WaterLevels(datastreamID: number | undefined) {
   );
 }
 
-export function useGetWorkOrders(status_filter: WorkOrderStatus[]) {
+export function useGetWorkOrders(
+  status_filter: WorkOrderStatus[],
+  options?: UseQueryOptions<WorkOrder[], Error>
+) {
   const route = "work_orders";
   const authHeader = useAuthHeader();
   const navigate = useNavigate();
   const signOut = useSignOut();
 
-  //Convert status filter array to
-
-  return useQuery<WorkOrder[], Error>([route, status_filter], () =>
-    GETFetch(
+  return useQuery<WorkOrder[], Error>({
+    queryKey: [route, { status_filter: status_filter.sort() }],
+    queryFn: () => GETFetch(
       route,
       { filter_by_status: status_filter },
       authHeader(),
       signOut,
       navigate,
     ),
-  );
+    ...options
+  });
 }
 
 export function useCreateUser(onSuccess: Function) {

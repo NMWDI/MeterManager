@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Box, Typography } from "@mui/material";
+import { Box, CircularProgress, Typography } from "@mui/material";
 import Plot from "react-plotly.js";
 import { Data } from "plotly.js";
 
@@ -12,22 +12,6 @@ export const ChloridesPlot = ({
   manual_vals: { value: number; well: string }[];
   isLoading: boolean;
 }) => {
-  if (isLoading) {
-    return (
-      <Box
-        sx={{
-          height: 600,
-          width: 800,
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <Typography variant="h4">Loading...</Typography>
-      </Box>
-    );
-  }
-
   const data: Partial<Data>[] = useMemo(() => {
     const wellData: Record<string, { x: Date[]; y: number[] }> = {};
 
@@ -50,28 +34,46 @@ export const ChloridesPlot = ({
   }, [manual_dates, manual_vals]);
 
   return (
-    <Box sx={{ height: 600, width: 700 }}> {/* Added margin of 5 pixels */}
-      <Plot
-        data={data}
-        layout={{
-          autosize: true,
-          legend: {
-            x: 1,
-            y: 1,
-            xanchor: "right",
-            yanchor: "top",
-            bordercolor: "grey", // Add border color
-            borderwidth: 1, // Add border width
-          },
-          xaxis: { title: { text: "Date", font: { size: 16 } } },
-          yaxis: {
-            title: { text: "Chlorides (ppm)", font: { size: 16 } },
-          },
-          margin: { t: 40, b: 50, l: 60, r: 10 },
-        }}
-        useResizeHandler
-        style={{ width: "100%", height: "100%" }}
-      />
+    <Box sx={{ height: 600, width: '100%' }}>
+      {isLoading ?
+        <Box
+          sx={{
+            height: 600,
+            width: "100%",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            flexDirection: "column",
+          }}
+        >
+          <CircularProgress size={48} thickness={4} sx={{ mb: 2 }} />
+          <Typography variant="body1" color="text.secondary">
+            Loading plot data...
+          </Typography>
+        </Box>
+        :
+        <Plot
+          data={data}
+          layout={{
+            autosize: true,
+            legend: {
+              x: 1,
+              y: 1,
+              xanchor: "right",
+              yanchor: "top",
+              bordercolor: "grey", // Add border color
+              borderwidth: 1, // Add border width
+            },
+            xaxis: { title: { text: "Date", font: { size: 16 } } },
+            yaxis: {
+              title: { text: "Chlorides (ppm)", font: { size: 16 } },
+            },
+            margin: { t: 40, b: 50, l: 60, r: 10 },
+          }}
+          useResizeHandler
+          style={{ width: "100%", height: "100%" }}
+        />
+      }
     </Box>
   );
 };

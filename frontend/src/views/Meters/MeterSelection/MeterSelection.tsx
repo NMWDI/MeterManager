@@ -1,9 +1,7 @@
 import { useState } from "react";
-
-import MeterSelectionTable from "./MeterSelectionTable";
+import { MeterSelectionTable } from "./MeterSelectionTable";
 import MeterSelectionMap from "./MeterSelectionMap";
 import TabPanel from "../../../components/TabPanel";
-
 import {
   Tabs,
   Tab,
@@ -11,20 +9,22 @@ import {
   Grid,
   Card,
   CardContent,
-  CardHeader,
   ToggleButtonGroup,
   ToggleButton,
+  InputAdornment,
 } from "@mui/material";
 import FormatListBulletedOutlinedIcon from "@mui/icons-material/FormatListBulletedOutlined";
 import { MeterStatusNames } from "../../../enums";
+import { CustomCardHeader } from "../../../components/CustomCardHeader";
+import { Search } from "@mui/icons-material";
 
-export default function MeterSelection({
+export const MeterSelection = ({
   onMeterSelection,
   setMeterAddMode,
 }: {
   onMeterSelection: Function;
   setMeterAddMode: Function;
-}) {
+}) => {
   const [currentTabIndex, setCurrentTabIndex] = useState(0);
   const [meterSearchQuery, setMeterSearchQuery] = useState<string>("");
   const [meterFilterButtons, setMeterFilterButtons] = useState<string[]>([
@@ -70,32 +70,42 @@ export default function MeterSelection({
 
   return (
     <Card sx={{ height: "100%" }}>
-      <CardHeader
-        title={
-          <div className="custom-card-header">
-            <span>All Meters</span>
-            <FormatListBulletedOutlinedIcon />
-          </div>
-        }
-        sx={{ mb: 0, pb: 0 }}
+      <CustomCardHeader
+        title="All Meters"
+        icon={FormatListBulletedOutlinedIcon}
       />
       <CardContent sx={{ height: "100%" }}>
         <Grid container justifyContent="space-between">
-          <Grid item xs={4}>
-            <Tabs value={currentTabIndex} onChange={handleTabChange}>
+          <Grid item xs={6} >
+            <Tabs
+              value={currentTabIndex}
+              onChange={handleTabChange}
+              aria-label="Switch between Meter List & Map"
+              sx={{
+                width: "100%",
+                maxWidth: "100rem",
+              }}
+            >
               <Tab label="Meter List" />
               <Tab label="Meter Map" />
             </Tabs>
           </Grid>
-          <Grid item xs={3}>
+          <Grid item xs={6} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
             <TextField
-              sx={{ mt: 1 }}
-              label="Search Meter"
+              sx={{ m: 0, pl: 2, width: '100%', maxWidth: '75rem' }}
+              placeholder="Search Meter..."
               variant="outlined"
               size="small"
               value={meterSearchQuery}
               onChange={(e) => {
                 setMeterSearchQuery(e.target.value);
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search />
+                  </InputAdornment>
+                ),
               }}
             />
           </Grid>
@@ -135,14 +145,16 @@ export default function MeterSelection({
         </TabPanel>
 
         <TabPanel currentTabIndex={currentTabIndex} tabIndex={1}>
-          <Grid container sx={{ mt: 1, height: 650 }}>
-            <MeterSelectionMap
-              onMeterSelection={onMeterSelection}
-              meterSearch={meterSearchQuery}
-            />
+          <Grid container sx={{ mt: 1, height: 550 }}>
+            <Grid item xs={12} sx={{ height: '100%' }}>
+              <MeterSelectionMap
+                onMeterSelection={onMeterSelection}
+                meterSearch={meterSearchQuery}
+              />
+            </Grid>
           </Grid>
         </TabPanel>
       </CardContent>
     </Card>
   );
-}
+};

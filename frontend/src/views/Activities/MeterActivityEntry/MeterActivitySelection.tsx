@@ -10,13 +10,6 @@ import { ControlledWorkOrderSelect } from "../../../components/RHControlled/Cont
 export function MeterActivitySelection({ control, errors, setValue }: any) {
   return (
     <Grid container item>
-      <h4
-        className="custom-card-header-small"
-        style={{ marginTop: 0, marginBottom: "20px", width: "100%" }}
-      >
-        Activity Details
-      </h4>
-
       <Grid container item xs={12} spacing={2}>
         <Grid item xs={4}>
           <ControlledMeterSelection

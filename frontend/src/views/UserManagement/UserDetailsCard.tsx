@@ -8,7 +8,6 @@ import {
   Button,
   Card,
   CardContent,
-  CardHeader,
   Grid,
   Typography,
 } from "@mui/material";
@@ -34,6 +33,7 @@ import {
   ControlledSelect,
   ControlledSelectNonObject,
 } from "../../components/RHControlled/ControlledSelect";
+import { CustomCardHeader } from "../../components/CustomCardHeader";
 
 const UserResolverSchema: Yup.ObjectSchema<any> = Yup.object().shape({
   username: Yup.string().required("Please enter a username."),
@@ -96,10 +96,10 @@ interface UserDetailsCardProps {
 // If updating a user password, a special endpoint is called
 // When updating or creating a user, the values are validated, then the submit handler is called
 // Any validation not in the validation schema must be checked in the submit handler
-export default function UserDetailsCard({
+export const UserDetailsCard = ({
   selectedUser,
   userAddMode,
-}: UserDetailsCardProps) {
+}: UserDetailsCardProps) => {
   const rolesList = useGetRoles();
 
   // React hook form for user field values
@@ -127,7 +127,7 @@ export default function UserDetailsCard({
     enqueueSnackbar("Successfully Created New User!", { variant: "success" });
     reset();
   }
-  const onErr = (data: any) => console.log("ERR: ", data);
+  const onErr = (data: any) => console.error("ERR: ", data);
 
   const updateUser = useUpdateUser(onSuccessfulUpdate);
   const createUser = useCreateUser(onSuccessfulCreate);
@@ -177,27 +177,13 @@ export default function UserDetailsCard({
   }, [userAddMode]);
 
   // Determine if form is valid, {errors} in useEffect or formState's isValid don't work
-  function hasErrors() {
-    return Object.keys(errors).length > 0;
-  }
+  const hasErrors = () => Object.keys(errors).length > 0;
 
   return (
     <Card>
-      <CardHeader
-        title={
-          userAddMode ? (
-            <div className="custom-card-header">
-              <span>Create User</span>
-              <AddIcon style={{ fontSize: "1rem" }} />{" "}
-            </div>
-          ) : (
-            <div className="custom-card-header">
-              <span>Edit User</span>
-              <EditIcon style={{ fontSize: "1rem" }} />{" "}
-            </div>
-          )
-        }
-        sx={{ mb: 0, pb: 0 }}
+      <CustomCardHeader
+        title={userAddMode ? "Create User" : "Edit User"}
+        icon={userAddMode ? AddIcon : EditIcon}
       />
       <CardContent>
         <Grid container>
@@ -302,4 +288,4 @@ export default function UserDetailsCard({
       </CardContent>
     </Card>
   );
-}
+};

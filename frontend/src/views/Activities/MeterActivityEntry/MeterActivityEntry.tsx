@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useState } from "react";
-import { Alert, Button, Grid } from "@mui/material";
+import { Alert, Box, Button, Stack, Typography } from "@mui/material";
 import { useSnackbar } from "notistack";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -79,17 +79,17 @@ export default function MeterActivityEntry() {
     setHasMeterActivityConflict(
       (meterDetails.data?.status.status_name == "Installed" &&
         watch("activity_details.activity_type")?.name ==
-          ActivityType.Install) ||
-        (meterDetails.data?.status.status_name != "Installed" &&
-          watch("activity_details.activity_type")?.name ==
-            ActivityType.Uninstall),
+        ActivityType.Install) ||
+      (meterDetails.data?.status.status_name != "Installed" &&
+        watch("activity_details.activity_type")?.name ==
+        ActivityType.Uninstall),
     );
   }, [meterDetails.data, watch("activity_details.activity_type")?.name]);
 
   useEffect(() => {
     setIsMeterAndActivitySelected(
       watch("activity_details.selected_meter") != null &&
-        watch("activity_details.activity_type") != null,
+      watch("activity_details.activity_type") != null,
     );
   }, [
     watch("activity_details.selected_meter"),
@@ -115,48 +115,20 @@ export default function MeterActivityEntry() {
   const hasErrors = (errors: any) => Object.keys(errors).length > 0;
 
   return (
-    <>
-      <MeterActivitySelection
-        control={control}
-        errors={errors}
-        watch={watch}
-        setValue={setValue}
-      />
+    <Stack spacing={3}>
+      <MeterActivitySelection control={control} errors={errors} watch={watch} setValue={setValue} />
+
       {!hasMeterActivityConflict && isMeterAndActivitySelected ? (
-        <>
-          <MeterInstallation
-            control={control}
-            errors={errors}
-            watch={watch}
-            setValue={setValue}
-          />
-          <ObservationSelection
-            control={control}
-            errors={errors}
-            watch={watch}
-            setValue={setValue}
-          />
-          <MaintenanceRepairSelection
-            control={control}
-            errors={errors}
-            watch={watch}
-            setValue={setValue}
-          />
-          <NotesSelection
-            control={control}
-            errors={errors}
-            watch={watch}
-            setValue={setValue}
-          />
-          <PartsSelection
-            control={control}
-            errors={errors}
-            watch={watch}
-            setValue={setValue}
-          />
-          <Grid item sx={{ mt: 4 }}>
+        <Stack spacing={3}>
+          <MeterInstallation control={control} errors={errors} watch={watch} setValue={setValue} />
+          <ObservationSelection control={control} errors={errors} watch={watch} setValue={setValue} />
+          <MaintenanceRepairSelection control={control} errors={errors} watch={watch} setValue={setValue} />
+          <NotesSelection control={control} errors={errors} watch={watch} setValue={setValue} />
+          <PartsSelection control={control} errors={errors} watch={watch} setValue={setValue} />
+
+          <Box sx={{ mt: 2, display: "flex", justifyContent: { xs: "center", sm: "flex-start" } }}>
             {hasErrors(errors) ? (
-              <Alert severity="error" sx={{ width: "20%" }}>
+              <Alert severity="error" sx={{ width: { xs: "100%", sm: "auto" } }}>
                 Please correct any errors before submission.
               </Alert>
             ) : (
@@ -164,27 +136,27 @@ export default function MeterActivityEntry() {
                 variant="contained"
                 type="submit"
                 onClick={handleSubmit(onSubmit)}
+                sx={{ width: { xs: "100%", sm: "auto" } }}
               >
                 Submit
               </Button>
             )}
-          </Grid>
-        </>
+          </Box>
+        </Stack>
       ) : (
-        <Grid container sx={{ mt: 4 }}>
-          <Grid item xs={5}>
-            {hasMeterActivityConflict ? (
-              <h4>
-                You cannot install a meter that is already installed, or
-                uninstall a meter that is not currently installed. Please choose
-                a different activity or meter.
-              </h4>
-            ) : (
-              <h4>Please select a meter and activity to begin.</h4>
-            )}
-          </Grid>
-        </Grid>
+        <Box sx={{ mt: 4 }}>
+          <Typography
+            variant="body1"
+            color="text.secondary"
+            align="center"
+            sx={{ px: { xs: 2, sm: 0 } }}
+          >
+            {hasMeterActivityConflict
+              ? "You cannot install a meter that is already installed, or uninstall a meter that is not currently installed. Please choose a different activity or meter."
+              : "Please select a meter and activity to begin."}
+          </Typography>
+        </Box>
       )}
-    </>
+    </Stack>
   );
 }

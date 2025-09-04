@@ -1,10 +1,8 @@
 import { useState, useEffect } from "react";
 import { useDebounce } from "use-debounce";
-
-import { Box, Button } from "@mui/material";
+import { Box, Button, Stack } from "@mui/material";
 import { DataGrid, GridSortModel, GridColDef } from "@mui/x-data-grid";
 import AddIcon from "@mui/icons-material/Add";
-
 import { MeterListQueryParams, SecurityScope } from "../../../interfaces";
 import {
   SortDirection,
@@ -22,12 +20,12 @@ interface MeterSelectionTableProps {
   setMeterAddMode: Function;
 }
 
-export default function MeterSelectionTable({
+export const MeterSelectionTable = ({
   onMeterSelection,
   meterSearchQuery,
   setMeterAddMode,
   meterStatusFilter,
-}: MeterSelectionTableProps) {
+}: MeterSelectionTableProps) => {
   const [meterSearchQueryDebounced] = useDebounce(meterSearchQuery, 250);
   const [meterListQueryParams, setMeterListQueryParams] =
     useState<MeterListQueryParams>({
@@ -108,11 +106,10 @@ export default function MeterSelectionTable({
     if (meterList.data) {
       setGridRowCount(meterList.data.total);
     }
-    //setGridRowCount(meterList.data?.total ?? 0) // Update the meter count when new list is recieved from API
   }, [meterList]);
 
   return (
-    <Box sx={{ height: "500px" }}>
+    <Box sx={{ height: "550px" }}>
       <DataGrid
         sx={{ border: "none" }}
         rows={meterList.data?.items ?? []}
@@ -131,19 +128,26 @@ export default function MeterSelectionTable({
         slotProps={{
           footer: {
             button: hasAdminScope && (
-              <Button
-                sx={{ mt: 1 }}
-                variant="contained"
-                size="small"
-                onClick={() => setMeterAddMode(true)}
+              <Stack
+                direction={{ xs: "column", sm: "row" }}
+                spacing={1}
+                sx={{ ml: { xs: 0, sm: 1 }, mt: { xs: 1, sm: 0 }, width: "100%" }}
+                alignItems={{ xs: "stretch", sm: "center" }}
               >
-                <AddIcon style={{ fontSize: "1rem" }} />
-                Add a New Meter
-              </Button>
+                <Button
+                  variant="contained"
+                  size="small"
+                  onClick={() => setMeterAddMode(true)}
+                  sx={{ flexShrink: 0, width: { xs: "100%", sm: "auto" } }}
+                >
+                  <AddIcon fontSize="small" sx={{ mr: 0.5 }} />
+                  Create
+                </Button>
+              </Stack>
             ),
           },
         }}
       />
     </Box>
   );
-}
+};

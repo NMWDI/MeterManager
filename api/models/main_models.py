@@ -69,6 +69,7 @@ class Parts(Base):
     note: Mapped[Optional[str]]
     in_use: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     commonly_used: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    price: Mapped[Optional[float]] = mapped_column(Float)
 
     part_type_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("PartTypeLU.id"), nullable=False
@@ -580,6 +581,7 @@ class meterRegisters(Base):
     __tablename__ = "meter_registers"
     brand: Mapped[str] = mapped_column(String, nullable=False)
     meter_size: Mapped[float] = mapped_column(Float, nullable=False)
+    part_id: Mapped[int] = mapped_column(Integer, ForeignKey("Parts.id"))
     ratio: Mapped[str] = mapped_column(String)
     dial_units_id: Mapped[int] = mapped_column(Integer, ForeignKey("Units.id"), nullable=False)
     totalizer_units_id: Mapped[int] = mapped_column(Integer, ForeignKey("Units.id"), nullable=False)

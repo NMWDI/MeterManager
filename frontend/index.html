@@ -1,46 +1,66 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
-    <meta
-      name="description"
-      content="Web application for managing PVACD's water meters efficiently and effectively."
-    />
-    <meta
-      name="keywords"
-      content="water meters, PVACD, meter management, utility tracking, smart meters"
-    />
-    <meta name="author" content="New Mexico Water Data Initiative" />
-    <meta name="robots" content="index, follow" />
-    <meta name="googlebot" content="index, follow" />
-    <meta name="bingbot" content="index, follow" />
-    <link rel="canonical" href="https://pvacd.newmexicowaterdata.org/" />
 
-    <!-- Open Graph Meta Tags for Social Media -->
-    <meta
-      property="og:title"
-      content="Meter Manager DB - Efficient Water Meter Management"
-    />
-    <meta
-      property="og:description"
-      content="Manage and track PVACD's water meters, wells, and work orders with ease using our intuitive web application."
-    />
-    <meta
-      property="og:image"
-      content="https://pvacd.newmexicowaterdata.org/pvacd-banner.png"
-    />
-    <meta property="og:url" content="https://pvacd.newmexicowaterdata.org/" />
-    <meta property="og:type" content="website" />
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#000000" />
+  <meta name="description" content="Web application for managing PVACD's water meters efficiently and effectively." />
+  <meta name="keywords" content="water meters, PVACD, meter management, utility tracking, smart meters" />
+  <meta name="author" content="New Mexico Water Data Initiative" />
+  <meta name="robots" content="index, follow" />
+  <meta name="googlebot" content="index, follow" />
+  <meta name="bingbot" content="index, follow" />
+  <link rel="canonical" href="https://pvacd.newmexicowaterdata.org/" />
 
-    <link rel="icon" href="favicon.ico" />
-    <link rel="apple-touch-icon" href="logo.png" />
-    <title>Meter Manager DB</title>
-  </head>
-  <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+  <!-- Open Graph Meta Tags for Social Media -->
+  <meta property="og:title" content="Meter Manager DB - Efficient Water Meter Management" />
+  <meta property="og:description"
+    content="Manage and track PVACD's water meters, wells, and work orders with ease using our intuitive web application." />
+  <meta property="og:image" content="https://pvacd.newmexicowaterdata.org/pvacd-banner.png" />
+  <meta property="og:url" content="https://pvacd.newmexicowaterdata.org/" />
+  <meta property="og:type" content="website" />
+
+  <link rel="icon" href="favicon.ico" />
+  <link rel="apple-touch-icon" href="logo.png" />
+  <title>Meter Manager</title>
+</head>
+
+<body>
+  <noscript>You need to enable JavaScript to run this app.</noscript>
+  <style>
+    body {
+      margin: 0;
+      font-family:
+        -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+        "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
+        sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      background-color: #a5adb5;
+    }
+
+    code {
+      font-family:
+        source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
+    }
+
+    .flex-container {
+      display: flex;
+    }
+
+    .flex-child {
+      flex: 1;
+      border: 2px solid blue;
+    }
+
+    .flex-child:first-child {
+      margin-right: 20px;
+      width: 700px;
+    }
+  </style>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
 </html>

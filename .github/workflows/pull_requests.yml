@@ -1,0 +1,35 @@
+name: PRs Docker Build Test
+
+on:
+  pull_request:
+
+jobs:
+  docker-build:
+    name: Test Production Docker Builds
+    runs-on: ubuntu-latest
+
+    services:
+      docker:
+        image: docker:24.0.5
+        options: --privileged
+        ports:
+          - 5173:80
+          - 8000:8000
+          - 8080:8080
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Build Frontend Production Image
+      - name: Build Frontend Docker Image
+        run: |
+          docker build -t frontend-prod -f frontend/Dockerfile ./frontend
+
+      # Build Backend Production Image
+      - name: Build API Docker Image
+        run: |
+          docker build -t api-prod -f api/Dockerfile ./api

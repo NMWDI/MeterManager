@@ -4,26 +4,29 @@ import {
   Button,
   Card,
   CardContent,
-  CardHeader,
   Chip,
   Grid,
+  InputAdornment,
+  Stack,
   TextField,
+  Typography,
 } from "@mui/material";
+import { Search } from "@mui/icons-material";
 import { useGetMeterTypeList } from "../../service/ApiServiceNew";
 import AddIcon from "@mui/icons-material/Add";
 import FormatListBulletedOutlinedIcon from "@mui/icons-material/FormatListBulletedOutlined";
-import SearchIcon from "@mui/icons-material/Search";
 import { MeterTypeLU } from "../../interfaces";
 import TristateToggle from "../../components/TristateToggle";
 import GridFooterWithButton from "../../components/GridFooterWithButton";
+import { CustomCardHeader } from "../../components/CustomCardHeader";
 
-export default function MeterTypesTable({
+export const MeterTypesTable = ({
   setSelectedMeterType,
   setMeterTypeAddMode,
 }: {
   setSelectedMeterType: Function;
   setMeterTypeAddMode: Function;
-}) {
+}) => {
   const meterTypes = useGetMeterTypeList();
   const [meterTypeSearchQuery, setMeterTypeSearchQuery] = useState<string>("");
   const [filteredRows, setFilteredRows] = useState<MeterTypeLU[]>();
@@ -31,7 +34,11 @@ export default function MeterTypesTable({
 
   const cols: GridColDef[] = [
     { field: "brand", headerName: "Brand", width: 200 },
-    { field: "series", headerName: "Series", width: 100 },
+    {
+      field: "series",
+      headerName: "Series",
+      width: 100,
+    },
     { field: "model", headerName: "Model Number", width: 200 },
     { field: "size", headerName: "Size", width: 100 },
     { field: "description", headerName: "Description", width: 200 },
@@ -65,72 +72,76 @@ export default function MeterTypesTable({
   }, [meterTypeSearchQuery, meterTypes.data, inUseFilter]);
 
   return (
-    <Card sx={{ height: "100%" }}>
-      <CardHeader
-        title={
-          <div className="custom-card-header">
-            <span>All Meter Types</span>
-            <FormatListBulletedOutlinedIcon />
-          </div>
-        }
-        sx={{ mb: 0, pb: 0 }}
+    <Card>
+      <CustomCardHeader
+        title="All Meter Types"
+        icon={FormatListBulletedOutlinedIcon}
       />
-      <CardContent sx={{ height: "100%" }}>
-        <Grid container xs={12}>
-          <Grid item xs={5}>
+      <CardContent>
+        <Grid container spacing={2}>
+          <Grid item xs={6} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
             <TextField
-              label={
-                <div style={{ display: "inline-flex", alignItems: "center" }}>
-                  <SearchIcon sx={{ fontSize: "1.2rem" }} />{" "}
-                  <span style={{ marginTop: 1 }}>&nbsp;Search Meter Types</span>
-                </div>
-              }
+              sx={{ m: 0, width: '100%', maxWidth: '75rem' }}
+              placeholder="Search Meter Types..."
               variant="outlined"
               size="small"
               value={meterTypeSearchQuery}
-              onChange={(event: any) =>
-                setMeterTypeSearchQuery(event.target.value)
-              }
-              sx={{ marginBottom: "10px" }}
+              onChange={(event: any) => setMeterTypeSearchQuery(event.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search />
+                  </InputAdornment>
+                ),
+              }}
             />
           </Grid>
-          <Grid item xs={7}>
-            <div style={{ float: "right" }}>
-              <h5 style={{ display: "inline" }}>Choose Filters: </h5>
-              <TristateToggle
-                label="In Use"
-                onToggle={(state: boolean | undefined) => setInUseFilter(state)}
-              />
-            </div>
+          <Grid item xs={6} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+            <Typography variant="body1" style={{ display: "inline" }}>Choose Filters: </Typography>
+            <TristateToggle
+              label="In Use"
+              onToggle={(state: boolean | undefined) => setInUseFilter(state)}
+            />
           </Grid>
         </Grid>
-        <DataGrid
-          sx={{ height: "400px", border: "none" }}
-          rows={filteredRows ?? []}
-          loading={meterTypes.isLoading}
-          columns={cols}
-          disableColumnMenu
-          onRowClick={(selectedRow) => {
-            setSelectedMeterType(selectedRow.row);
-          }}
-          slots={{ footer: GridFooterWithButton }}
-          slotProps={{
-            footer: {
-              button: (
-                <Button
-                  variant="contained"
-                  size="small"
-                  onClick={() => setMeterTypeAddMode(true)}
-                >
-                  <AddIcon style={{ fontSize: "1rem" }} />
-                  Add a New Meter Type
-                </Button>
-              ),
-            },
-          }}
-          disableColumnFilter
-        />
+        <Grid item xs={12}>
+          <DataGrid
+            sx={{ height: 550, border: "none" }}
+            rows={filteredRows ?? []}
+            loading={meterTypes.isLoading}
+            columns={cols}
+            disableColumnMenu
+            onRowClick={(selectedRow) => {
+              setSelectedMeterType(selectedRow.row);
+            }}
+            slots={{ footer: GridFooterWithButton }}
+            slotProps={{
+              footer: {
+                button: (
+                  <Stack
+                    direction={{ xs: "column", sm: "row" }}
+                    spacing={1}
+                    sx={{ ml: { xs: 0, sm: 1 }, mt: { xs: 1, sm: 0 }, width: "100%" }}
+                    alignItems={{ xs: "stretch", sm: "center" }}
+                  >
+                    <Button
+                      variant="contained"
+                      size="small"
+
+                      onClick={() => setMeterTypeAddMode(true)}
+                      sx={{ flexShrink: 0, width: { xs: "100%", sm: "auto" } }}
+                    >
+                      <AddIcon fontSize="small" sx={{ mr: 0.5 }} />
+                      Create
+                    </Button>
+                  </Stack>
+                ),
+              },
+            }}
+            disableColumnFilter
+          />
+        </Grid>
       </CardContent>
-    </Card>
+    </Card >
   );
-}
+};

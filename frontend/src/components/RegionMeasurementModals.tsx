@@ -51,7 +51,7 @@ export const NewMeasurementModal = ({
     Error,
     MonitoredWell[]
   >({
-    queryKey: ["wells", "has_chloride_groups"],
+    queryKey: ["wells", "has_chloride_groups", region_id],
     queryFn: () =>
       fetchWithAuth({
         method: "GET",
@@ -60,6 +60,7 @@ export const NewMeasurementModal = ({
           sort_by: "ra_number",
           sort_direction: "asc",
           has_chloride_group: true,
+          chloride_group_id: region_id,
           limit: 100,
         },
       }),
@@ -75,17 +76,20 @@ export const NewMeasurementModal = ({
   const [time, setTime] = useState<Dayjs | null>(dayjs.utc());
 
   function onMeasurementSubmitted() {
-    const d = new Date(
-      Date.parse(date?.format() ?? Date()),
-    ).toLocaleDateString();
-    const t = new Date(
-      Date.parse(time?.format() ?? Date()),
-    ).toLocaleTimeString();
+    // default fallback: now
+    const selectedDate = date ?? dayjs();
+    const selectedTime = time ?? dayjs();
+
+    // merge date + time into one object
+    const combinedDateTime = selectedDate
+      .hour(selectedTime.hour())
+      .minute(selectedTime.minute())
+      .second(selectedTime.second());
 
     handleSubmitNewMeasurement({
       region_id: 0, // Set by parent
       well_id: selectedWellID as number,
-      timestamp: new Date(Date.parse(d + " " + t)),
+      timestamp: combinedDateTime.toISOString(),
       value: value as number,
       submitting_user_id: selectedUserID as number,
     });
@@ -120,7 +124,7 @@ export const NewMeasurementModal = ({
     }
   };
 
-const WellSelection = ({ region_id }: { region_id: number }) => {
+  const WellSelection = ({ region_id }: { region_id: number }) => {
     return (
       <FormControl size="small" fullWidth required>
         <InputLabel>Well</InputLabel>
@@ -255,7 +259,7 @@ export const UpdateMeasurementModal = ({
     Error,
     MonitoredWell[]
   >({
-    queryKey: ["wells", "has_chloride_groups"],
+    queryKey: ["wells", "has_chloride_groups", region_id],
     queryFn: () =>
       fetchWithAuth({
         method: "GET",
@@ -264,6 +268,7 @@ export const UpdateMeasurementModal = ({
           sort_by: "ra_number",
           sort_direction: "asc",
           has_chloride_group: true,
+          chloride_group_id: region_id,
           limit: 100,
         },
       }),

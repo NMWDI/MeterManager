@@ -1,35 +1,23 @@
-import { useState } from "react";
-import { Box, Grid, CardContent, Card } from "@mui/material";
-import TabPanel from "../../components/TabPanel";
+import { CardContent, Card } from "@mui/material";
 import MeterActivityEntry from "./MeterActivityEntry/MeterActivityEntry";
+import { Construction } from "@mui/icons-material";
+import { BackgroundBox } from "../../components/BackgroundBox";
+import { CustomCardHeader } from "../../components/CustomCardHeader";
 
 export const gridBreakpoints = { xs: 12 };
 export const toggleStyle = {
   "&.Mui-selected": { borderColor: "blue", border: 1 },
 };
 
-export default function ActivitiesView() {
-  const [currentTabIndex, _] = useState(0);
-
+export const ActivitiesView = () => {
   return (
-    <Box sx={{ height: "100%", width: "100%", m: 2, mt: 0 }}>
-      <h2 style={{ color: "#292929", fontWeight: "500" }}>
-        Submit an Activity
-      </h2>
-      <Grid container>
-        <Grid item xs={11} sm={11} lg={8} xl={7}>
-          <Card>
-            <CardContent>
-              <TabPanel currentTabIndex={currentTabIndex} tabIndex={0}>
-                <MeterActivityEntry />
-              </TabPanel>
-              <TabPanel currentTabIndex={currentTabIndex} tabIndex={1}>
-                <div>Not Yet Implemented</div>
-              </TabPanel>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-    </Box>
+    <BackgroundBox>
+      <Card sx={{ height: "fit-content" }}>
+        <CustomCardHeader title="Submit an Activity" icon={Construction} />
+        <CardContent>
+          <MeterActivityEntry />
+        </CardContent>
+      </Card>
+    </BackgroundBox>
   );
-}
+};

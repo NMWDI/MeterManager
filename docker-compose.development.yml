@@ -1,14 +1,12 @@
 # Docker Compose for development server
-# Uses remote database - see configuration in api/.env_production
+# Uses remote database - see configuration in api/.env_devserver
 
 version: "3.9"
 services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: ./Dockerfile_production
-    environment:
-      - DEVSERVER=True
+      dockerfile: ./Dockerfile
     env_file:
       - ./frontend/.env.devserver
     ports:
@@ -31,11 +29,18 @@ services:
     build:
       context: ./api
       dockerfile: ./Dockerfile
-    command: bash -c "
-        uvicorn api.main:app 
-        --host 0.0.0.0 
-        --proxy-headers --root-path /api/v1
-      "
+    working_dir: /app
+    environment:
+    - GCP_BUCKET_NAME=pvacd
+    - GCP_BACKUP_PREFIX=pre-prod-db-backups
+    - BACKUP_RETENTION_DAYS=14
+    - APPDB_ENV=.env_devserver  
+    command: >
+      uvicorn api.main:app
+      --host 0.0.0.0
+      --port 8000
+      --proxy-headers
+      --root-path /api/v1
     ports:
       - "8000:8000"
     volumes:
@@ -71,17 +76,15 @@ services:
       - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
       - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
 
-      # for production deployment testing  make sure the next line is uncommented. Comment out once you know all app components are working
-      - "--certificatesresolvers.myresolver.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
       - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
       - "--certificatesresolvers.myresolver.acme.email=newmexicowaterdata@gmail.com"
-      - "--certificatesresolvers.myresolver.acme.storage=acme.json"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
       - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
-#      - "--traefik.http.middlewares.force-secure.redirectscheme.scheme=https"
-#      - "--traefik.http.middlewares.force-secure.redirectscheme.permanent=true"
+
     ports:
       - "80:80"
       - "443:443"
       - "8080:8080"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - ./letsencrypt:/letsencrypt

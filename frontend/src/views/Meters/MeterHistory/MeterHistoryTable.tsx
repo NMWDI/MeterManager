@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader } from "@mui/material";
+import { Card, CardContent } from "@mui/material";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import HistoryIcon from "@mui/icons-material/History";
 import dayjs from "dayjs";
@@ -9,14 +9,15 @@ dayjs.extend(timezone);
 
 import { MeterHistoryType } from "../../../enums";
 import { MeterHistoryDTO } from "../../../interfaces";
+import { CustomCardHeader } from "../../../components/CustomCardHeader";
 
-export default function MeterHistoryTable({
+export const MeterHistoryTable = ({
   onHistoryItemSelection,
   selectedMeterHistory,
 }: {
   onHistoryItemSelection: Function;
   selectedMeterHistory: MeterHistoryDTO[] | undefined;
-}) {
+}) => {
   const handleRowSelect = (rowDetails: any) => {
     onHistoryItemSelection(rowDetails.row);
   };
@@ -68,16 +69,8 @@ export default function MeterHistoryTable({
 
   return (
     <Card sx={{ height: "100%" }}>
-      <CardHeader
-        title={
-          <div className="custom-card-header">
-            <span>Meter History</span>
-            <HistoryIcon />
-          </div>
-        }
-        sx={{ mb: 0, pb: 0 }}
-      />
-      <CardContent sx={{ height: "500px" }}>
+      <CustomCardHeader title="Meter History" icon={HistoryIcon} />
+      <CardContent sx={{ height: "550px" }}>
         <DataGrid
           sx={{ height: "100%", border: "none" }}
           columns={columns}
@@ -87,4 +80,4 @@ export default function MeterHistoryTable({
       </CardContent>
     </Card>
   );
-}
+};

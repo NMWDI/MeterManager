@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
-import PartsTable from "./PartsTable";
-import { Box, Grid } from "@mui/material";
-import PartDetailsCard from "./PartDetailsCard";
-import MeterTypesTable from "./MeterTypesTable";
-import MeterTypeDetailsCard from "./MeterTypeDetailsCard";
+import { PartsTable } from "./PartsTable";
+import { Grid } from "@mui/material";
+import { PartDetailsCard } from "./PartDetailsCard";
+import { MeterTypesTable } from "./MeterTypesTable";
+import { MeterTypeDetailsCard } from "./MeterTypeDetailsCard";
 import { MeterTypeLU } from "../../interfaces";
+import { BackgroundBox } from "../../components/BackgroundBox";
 
-export default function PartsView() {
+export const PartsView = () => {
   const [selectedPartID, setSelectedPartID] = useState<number>();
   const [partAddMode, setPartAddMode] = useState<boolean>(true);
   const [selectedMeterType, setSelectedMeterType] = useState<MeterTypeLU>();
@@ -22,49 +23,33 @@ export default function PartsView() {
   }, [selectedMeterType]);
 
   return (
-    <Box sx={{ m: 2, mt: 0, width: "100%" }}>
-      <h2 style={{ color: "#292929", fontWeight: "500" }}>Manage Parts</h2>
-
-      <Grid container spacing={4}>
-        <Grid
-          container
-          item
-          spacing={2}
-          sx={{ minHeight: { xs: "100vh", lg: "70vh" } }}
-        >
-          <Grid item xs={7}>
-            <PartsTable
-              setSelectedPartID={setSelectedPartID}
-              setPartAddMode={setPartAddMode}
-            />
-          </Grid>
-          <Grid item xs={4}>
-            <PartDetailsCard
-              selectedPartID={selectedPartID}
-              partAddMode={partAddMode}
-            />
-          </Grid>
+    <BackgroundBox>
+      <Grid container spacing={2}>
+        <Grid item xs={12} lg={8}>
+          <PartsTable
+            setSelectedPartID={setSelectedPartID}
+            setPartAddMode={setPartAddMode}
+          />
         </Grid>
-        <Grid
-          container
-          item
-          spacing={2}
-          sx={{ minHeight: { xs: "100vh", lg: "70vh" } }}
-        >
-          <Grid item xs={7}>
-            <MeterTypesTable
-              setSelectedMeterType={setSelectedMeterType}
-              setMeterTypeAddMode={setMeterTypeAddMode}
-            />
-          </Grid>
-          <Grid item xs={4}>
-            <MeterTypeDetailsCard
-              selectedMeterType={selectedMeterType}
-              meterTypeAddMode={meterTypeAddMode}
-            />
-          </Grid>
+        <Grid item xs={12} lg={4}>
+          <PartDetailsCard
+            selectedPartID={selectedPartID}
+            partAddMode={partAddMode}
+          />
+        </Grid>
+        <Grid item xs={12} lg={8}>
+          <MeterTypesTable
+            setSelectedMeterType={setSelectedMeterType}
+            setMeterTypeAddMode={setMeterTypeAddMode}
+          />
+        </Grid>
+        <Grid item xs={12} lg={4}>
+          <MeterTypeDetailsCard
+            selectedMeterType={selectedMeterType}
+            meterTypeAddMode={meterTypeAddMode}
+          />
         </Grid>
       </Grid>
-    </Box>
+    </BackgroundBox >
   );
-}
+};

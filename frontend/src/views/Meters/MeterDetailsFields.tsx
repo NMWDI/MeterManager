@@ -7,7 +7,7 @@ import GradingIcon from "@mui/icons-material/Grading";
 import AddIcon from "@mui/icons-material/Add";
 import SaveIcon from "@mui/icons-material/Save";
 import SaveAsIcon from "@mui/icons-material/SaveAs";
-import { Button, Grid, Card, CardContent, CardHeader } from "@mui/material";
+import { Button, Grid, Card, CardContent } from "@mui/material";
 import {
   Table,
   TableBody,
@@ -27,10 +27,10 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import ControlledTextbox from "../../components/RHControlled/ControlledTextbox";
 import ControlledMeterTypeSelect from "../../components/RHControlled/ControlledMeterTypeSelect";
 import ControlledWellSelection from "../../components/RHControlled/ControlledWellSelection";
-import ControlledMeterStatusTypeSelect from "../../components/RHControlled/ControlledMeterStatusTypeSelect"; // This import is missing from the snippet
-
+import ControlledMeterStatusTypeSelect from "../../components/RHControlled/ControlledMeterStatusTypeSelect";
 import { formatLatLong } from "../../conversions";
 import ControlledMeterRegisterSelect from "../../components/RHControlled/ControlledMeterRegisterSelect";
+import { CustomCardHeader } from "../../components/CustomCardHeader";
 
 const MeterResolverSchema: Yup.ObjectSchema<any> = Yup.object().shape({
   serial_number: Yup.string().required("Please enter a serial number."),
@@ -38,13 +38,13 @@ const MeterResolverSchema: Yup.ObjectSchema<any> = Yup.object().shape({
   meter_register: Yup.object().required("Please select a meter register."),
 });
 
-export default function MeterDetailsFields({
+export const MeterDetailsFields = ({
   selectedMeterID,
   meterAddMode,
 }: {
   selectedMeterID?: number;
   meterAddMode: boolean;
-}) {
+}) => {
   const meterDetails = useGetMeter({ meter_id: selectedMeterID });
   const navigate = useNavigate();
   const authUser = useAuthUser();
@@ -77,7 +77,6 @@ export default function MeterDetailsFields({
   const createMeter = useCreateMeter(onSuccessfulCreate);
 
   const onSaveChanges: SubmitHandler<any> = (data) => {
-    //console.log(data)
     updateMeter.mutate(data);
   };
   const onAddMeter: SubmitHandler<any> = (data) => {
@@ -110,19 +109,7 @@ export default function MeterDetailsFields({
     }
   }, [meterAddMode]);
 
-  // Clear meter register when meter type changes
-  // const prevMeterTypeRef = React.useRef<any>();
-  // useEffect(() => {
-  //     console.log('changing meter type')
-  //     const currentMeterType = watch("meter_type");
-  //     //Only clear if changing from one meter type to another
-  //     if (prevMeterTypeRef.current !== undefined && prevMeterTypeRef.current !== currentMeterType) {
-  //         setValue('meter_register', undefined);
-  //     }
-  //     prevMeterTypeRef.current = currentMeterType;
-  // }, [watch("meter_type")]);
-
-  function navigateToNewActivity() {
+  const navigateToNewActivity = () => {
     navigate({
       pathname: "/activities",
       search: createSearchParams({
@@ -130,25 +117,13 @@ export default function MeterDetailsFields({
         serial_number: meterDetails.data?.serial_number ?? "",
       }).toString(),
     });
-  }
+  };
 
   return (
     <Card>
-      <CardHeader
-        title={
-          meterAddMode ? (
-            <div className="custom-card-header">
-              <span>Add New Meter</span>
-              <AddIcon style={{ fontSize: "1.5rem" }} />
-            </div>
-          ) : (
-            <div className="custom-card-header">
-              <span>Selected Meter Details</span>
-              <GradingIcon style={{ fontSize: "1.5rem" }} />
-            </div>
-          )
-        }
-        sx={{ mb: 0, pb: 0 }}
+      <CustomCardHeader
+        title={meterAddMode ? "Add New Meter" : "Selected Meter Details"}
+        icon={meterAddMode ? AddIcon : GradingIcon}
       />
       <CardContent>
         <Grid container spacing={2}>
@@ -343,4 +318,4 @@ export default function MeterDetailsFields({
       </CardContent>
     </Card>
   );
-}
+};
