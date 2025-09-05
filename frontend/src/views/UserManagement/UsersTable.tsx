@@ -17,7 +17,7 @@ import FormatListBulletedOutlinedIcon from "@mui/icons-material/FormatListBullet
 import { User } from "../../interfaces";
 import TristateToggle from "../../components/TristateToggle";
 import GridFooterWithButton from "../../components/GridFooterWithButton";
-import { RoleChip, CustomCardHeader } from "../../components";
+import { RoleChip, CustomCardHeader, IsTrueChip } from "../../components";
 
 export const UsersTable = ({
   setSelectedUser,
@@ -46,12 +46,7 @@ export const UsersTable = ({
     {
       field: "disabled",
       headerName: "Active",
-      renderCell: (params: any) =>
-        params.value != true ? (
-          <Chip variant="outlined" size="small" label="True" color="success" />
-        ) : (
-          <Chip variant="outlined" size="small" label="False" color="error" />
-        ),
+      renderCell: (params: any) => <IsTrueChip assert={params.value != true} />
     },
   ];
 

@@ -4,7 +4,6 @@ import {
   Button,
   Card,
   CardContent,
-  Chip,
   Grid,
   InputAdornment,
   Stack,
@@ -19,6 +18,7 @@ import { Part } from "../../interfaces";
 import TristateToggle from "../../components/TristateToggle";
 import GridFooterWithButton from "../../components/GridFooterWithButton";
 import { CustomCardHeader } from "../../components/CustomCardHeader";
+import { IsTrueChip } from "../../components";
 
 export const PartsTable = ({
   setSelectedPartID,
@@ -46,22 +46,12 @@ export const PartsTable = ({
     {
       field: "in_use",
       headerName: "In Use",
-      renderCell: (params: any) =>
-        params.value == true ? (
-          <Chip variant="outlined" size="small" label="True" color="success" />
-        ) : (
-          <Chip variant="outlined" size="small" label="False" color="error" />
-        ),
+      renderCell: (params: any) => <IsTrueChip assert={params.value == true} />
     },
     {
       field: "commonly_used",
       headerName: "Commonly Used",
-      renderCell: (params: any) =>
-        params.value == true ? (
-          <Chip variant="outlined" size="small" label="True" color="success" />
-        ) : (
-          <Chip variant="outlined" size="small" label="False" color="error" />
-        ),
+      renderCell: (params: any) => <IsTrueChip assert={params.value == true} />
     },
   ];
 

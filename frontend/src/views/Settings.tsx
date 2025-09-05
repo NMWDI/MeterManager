@@ -29,7 +29,7 @@ import {
   Assessment,
   Science
 } from '@mui/icons-material';
-import { BackgroundBox, CustomCardHeader, RoleChip } from "../components";
+import { BackgroundBox, CustomCardHeader, IsTrueChip, RoleChip } from "../components";
 
 const redirectOptions = [
   { value: "/", label: "Home", icon: <HomeIcon fontSize="small" /> },
@@ -55,14 +55,6 @@ const schema = yup.object().shape({
 });
 
 const FALLBACK_REDIRECT = "/";
-
-const IsActiveChip = ({ active }: { active: boolean }) => {
-  return active ? (
-    <Chip variant="outlined" size="small" label="True" color="success" />
-  ) : (
-    <Chip variant="outlined" size="small" label="False" color="error" />
-  );
-}
 
 export const Settings = () => {
   const authUser = useAuthUser();
@@ -121,56 +113,17 @@ export const Settings = () => {
             </Typography>
             <Divider sx={{ my: 2 }} />
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={6} lg={4}>
-                <Typography>
-                  <b>Full Name:</b>{" "}
-                  <Box
-                    component="span"
-                    sx={{
-                      fontFamily: "monospace",
-                      px: 1,
-                      py: 0.5,
-                      borderRadius: 3,
-                      border: '1px solid black'
-                    }}
-                  >
-                    {user?.full_name ?? "N/A"}
-                  </Box>
-                </Typography>
+              <Grid item xs={12} sm={6} lg={4} sx={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <Typography fontWeight="bold">Full Name:</Typography>
+                <Chip sx={{ fontFamily: "monospace" }} label={user?.full_name ?? "N/A"} variant='outlined' />
               </Grid>
-              <Grid item xs={12} sm={6} lg={4}>
-                <Typography>
-                  <b>Email:</b>{" "}
-                  <Box
-                    component="span"
-                    sx={{
-                      fontFamily: "monospace",
-                      px: 1,
-                      py: 0.5,
-                      borderRadius: 3,
-                      border: '1px solid black'
-                    }}
-                  >
-                    {user?.email ?? "N/A"}
-                  </Box>
-                </Typography>
+              <Grid item xs={12} sm={6} lg={4} sx={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <Typography fontWeight="bold">Email:</Typography>
+                <Chip sx={{ fontFamily: "monospace" }} label={user?.email ?? "N/A"} variant='outlined' />
               </Grid>
-              <Grid item xs={12} sm={6} lg={4}>
-                <Typography>
-                  <b>Username:</b>{" "}
-                  <Box
-                    component="span"
-                    sx={{
-                      fontFamily: "monospace",
-                      px: 1,
-                      py: 0.5,
-                      borderRadius: 3,
-                      border: '1px solid black'
-                    }}
-                  >
-                    {user?.username ?? "N/A"}
-                  </Box>
-                </Typography>
+              <Grid item xs={12} sm={6} lg={4} sx={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <Typography fontWeight="bold">Username:</Typography>
+                <Chip sx={{ fontFamily: "monospace" }} label={user?.username ?? "N/A"} variant='outlined' />
               </Grid>
               <Grid item xs={12} sm={6} lg={4} sx={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                 <Typography fontWeight="bold">Role:</Typography>
@@ -178,7 +131,7 @@ export const Settings = () => {
               </Grid>
               <Grid item xs={12} sm={6} lg={4} sx={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                 <Typography fontWeight="bold">Active:</Typography>
-                <IsActiveChip active={!user?.disabled} />
+                <IsTrueChip assert={!user?.disabled} />
               </Grid>
             </Grid>
           </Box>
