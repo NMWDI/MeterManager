@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Grid, Button, Box, Typography, IconButton } from "@mui/material";
+import { Grid, Button, Box, Typography, IconButton, Dialog, DialogContent } from "@mui/material";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import CloseIcon from "@mui/icons-material/Close";
 
@@ -12,6 +12,18 @@ const VisuallyHiddenInput = (props: any) => (
 
 export const ImageUploadWithPreview = () => {
   const [previews, setPreviews] = useState<string[]>([]);
+  const [open, setOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+  const handleOpen = (src: string) => {
+    setSelectedImage(src);
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+    setSelectedImage(null);
+  };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -75,6 +87,7 @@ export const ImageUploadWithPreview = () => {
                   border: "1px solid #ddd",
                   overflow: "hidden",
                 }}
+                onDoubleClick={() => handleOpen(src)}
               >
                 <Box
                   component="img"
@@ -102,6 +115,37 @@ export const ImageUploadWithPreview = () => {
                 </IconButton>
               </Box>
             ))}
+            <Dialog open={open} onClose={handleClose} maxWidth="lg">
+              <DialogContent sx={{ p: 0, position: "relative" }}>
+                <IconButton
+                  onClick={handleClose}
+                  sx={{
+                    position: "absolute",
+                    top: 8,
+                    right: 8,
+                    zIndex: 1,
+                    backgroundColor: "rgba(0,0,0,0.6)",
+                    color: "white",
+                    "&:hover": { backgroundColor: "rgba(0,0,0,0.8)" },
+                  }}
+                >
+                  <CloseIcon />
+                </IconButton>
+                {selectedImage && (
+                  <Box
+                    component="img"
+                    src={selectedImage}
+                    alt="full-preview"
+                    sx={{
+                      maxWidth: "100%",
+                      maxHeight: "80vh",
+                      display: "block",
+                      margin: "auto",
+                    }}
+                  />
+                )}
+              </DialogContent>
+            </Dialog>
           </Box>
         </Box>
       )}
