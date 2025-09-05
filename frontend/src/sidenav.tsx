@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuthUser } from "react-auth-kit";
 import { Box, Drawer, Grid, IconButton, Toolbar, Typography } from "@mui/material";
-import { createSearchParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useGetWorkOrders } from "./service/ApiServiceNew";
 import { WorkOrderStatus } from "./enums";
 import { SecurityScope, WorkOrder } from "./interfaces";
@@ -42,7 +42,6 @@ export default function Sidenav({
   const hasReadScope = scopes.has("read");
   const hasAdminScope = scopes.has("admin");
   const userId = authUser()?.id;
-  const roleId = authUser()?.user_role_id;
   const [workOrderCount, setWorkOrderCount] = useState(0);
   const openWorkOrdersQuery = useGetWorkOrders([WorkOrderStatus.Open], {
     refetchInterval: 45_000,
@@ -137,13 +136,7 @@ export default function Sidenav({
         {hasReadScope && (
           <>
             <NavLink
-              route={{
-                pathname: "/workorders",
-                search: createSearchParams({
-                  userId: userId.toString(),
-                  roleId: roleId.toString(),
-                }).toString(),
-              }}
+              route="/workorders"
               label="Work Orders"
               Icon={FormatListBulletedOutlined}
               badgeContent={workOrderCount} />
