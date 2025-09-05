@@ -6,12 +6,11 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Typography,
 } from "@mui/material";
-import { gridBreakpoints } from "../ActivitiesView";
 import { ActivityType } from "../../../enums";
 import ControlledTextbox from "../../../components/RHControlled/ControlledTextbox";
 import ControlledWellSelection from "../../../components/RHControlled/ControlledWellSelection";
-
 import { formatLatLong } from "../../../conversions";
 
 export default function MeterInstallation({ control, errors, watch }: any) {
@@ -22,13 +21,10 @@ export default function MeterInstallation({ control, errors, watch }: any) {
     );
 
   return (
-    <Grid container item {...gridBreakpoints} sx={{ mt: 6 }}>
-      <h4
-        className="custom-card-header-small"
-        style={{ marginTop: 0, marginBottom: "20px", width: "100%" }}
-      >
+    <Grid container item xs={12} sx={{ mt: 6 }}>
+      <Typography variant="h6" fontWeight="bold">
         Current Installation
-      </h4>
+      </Typography>
       <Grid item xs={12}>
         <TableContainer sx={{ mb: 3, mt: 2 }}>
           <Table size="small">
@@ -66,12 +62,12 @@ export default function MeterInstallation({ control, errors, watch }: any) {
                 </TableCell>
                 <TableCell sx={{ fontSize: "1rem" }}>
                   {watch("current_installation.well")?.location?.latitude ==
-                  null
+                    null
                     ? "--"
                     : formatLatLong(
-                        watch("current_installation.well")?.location?.latitude,
-                        watch("current_installation.well")?.location?.longitude,
-                      )}
+                      watch("current_installation.well")?.location?.latitude,
+                      watch("current_installation.well")?.location?.longitude,
+                    )}
                 </TableCell>
                 <TableCell sx={{ fontSize: "1rem" }}>
                   {watch("current_installation.well")?.osetag ?? "--"}
@@ -82,7 +78,7 @@ export default function MeterInstallation({ control, errors, watch }: any) {
         </TableContainer>
       </Grid>
       <Grid container item xs={12} spacing={2}>
-        <Grid item xs={4}>
+        <Grid item xs={12} sm={4}>
           <ControlledTextbox
             name="current_installation.meter.water_users"
             control={control}
@@ -95,7 +91,7 @@ export default function MeterInstallation({ control, errors, watch }: any) {
             }
           />
         </Grid>
-        <Grid item xs={4}>
+        <Grid item xs={12} sm={4}>
           <ControlledTextbox
             name="current_installation.meter.meter_owner"
             control={control}
@@ -103,7 +99,7 @@ export default function MeterInstallation({ control, errors, watch }: any) {
             disabled={!isActivity([ActivityType.Sell])}
           />
         </Grid>
-        <Grid item xs={4}>
+        <Grid item xs={12} sm={4}>
           <ControlledWellSelection
             name="current_installation.well"
             control={control}
@@ -112,7 +108,7 @@ export default function MeterInstallation({ control, errors, watch }: any) {
             helperText={errors?.well?.message}
           />
         </Grid>
-        <Grid item xs={3}>
+        <Grid item xs={12} sm={4}>
           <ControlledTextbox
             name="current_installation.meter.contact_name"
             control={control}
@@ -120,7 +116,7 @@ export default function MeterInstallation({ control, errors, watch }: any) {
             value={watch("current_installation.meter")?.contact_name ?? ""}
           />
         </Grid>
-        <Grid item xs={3}>
+        <Grid item xs={12} sm={4}>
           <ControlledTextbox
             name="current_installation.meter.contact_phone"
             control={control}

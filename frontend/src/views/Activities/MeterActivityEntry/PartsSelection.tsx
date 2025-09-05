@@ -7,11 +7,11 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Typography,
 } from "@mui/material";
-import ToggleButton from "@mui/material/ToggleButton";
 import { useFieldArray } from "react-hook-form";
-import { gridBreakpoints, toggleStyle } from "../ActivitiesView";
 import { Part } from "../../../interfaces";
+import { StyledToggleButton } from "../../../components";
 import { useGetMeterPartsList } from "../../../service/ApiServiceNew";
 
 export default function PartsSelection({ control, watch, setValue }: any) {
@@ -45,29 +45,29 @@ export default function PartsSelection({ control, watch, setValue }: any) {
   const selectPart = (ID: number) => append(ID);
 
   const PartToggleButton = ({ part }: { part: Part }) => (
-    <Grid item xs={4} key={part.id}>
-      <ToggleButton
+    <Grid item xs={12} md={6} key={part.id}>
+      <StyledToggleButton
         value="check"
-        color="primary"
         selected={isSelected(part.id)}
-        fullWidth
         onChange={() => {
           isSelected(part.id) ? unselectPart(part.id) : selectPart(part.id);
         }}
-        sx={toggleStyle}
+        sx={{ flexGrow: 1, height: "100%" }}
         key={part.id}
       >
         {`${part.part_type?.name} - ${part.description} (${part.part_number})`}
-      </ToggleButton>
+      </StyledToggleButton>
     </Grid>
   );
 
   return (
     <Box sx={{ mt: 6 }}>
-      <h4 className="custom-card-header-small">Parts Used</h4>
+      <Typography variant="h6" fontWeight="bold">
+        Parts Used
+      </Typography>
       <Grid container sx={{ mt: 3 }}>
         <Grid container item xs={12}>
-          <Grid container item {...gridBreakpoints} spacing={2}>
+          <Grid container item spacing={2}>
             {partsList.data
               ?.filter((p: Part) => p.in_use)
               .map((p: Part) => {
@@ -77,37 +77,35 @@ export default function PartsSelection({ control, watch, setValue }: any) {
               })}
           </Grid>
         </Grid>
-        <Grid item xs={12} sx={{ mt: 2 }}>
-          <Grid item xs={3}>
-            <FormControl size="small" fullWidth>
-              <InputLabel>Add Other Parts</InputLabel>
-              <Select
-                value={""}
-                label="Add Other Parts"
-                onChange={(event: any) => {
-                  setVisiblePartIDs(
-                    produce(visiblePartIDs, (newParts) => {
-                      newParts.push(event.target.value);
-                    }),
-                  );
-                  selectPart(event.target.value);
-                }}
-              >
-                {partsList.data
-                  ?.filter((p: Part) => p.in_use)
-                  .map((p: Part) => {
-                    if (!visiblePartIDs.some((x) => x == p.id)) {
-                      return (
-                        <MenuItem
-                          key={p.id}
-                          value={p.id}
-                        >{`${p.description} (${p.part_number})`}</MenuItem>
-                      );
-                    }
-                  })}
-              </Select>
-            </FormControl>
-          </Grid>
+        <Grid item xs={12} sm={4} sx={{ mt: 2, mr: 2 }}>
+          <FormControl size="small" fullWidth>
+            <InputLabel>Add Other Parts</InputLabel>
+            <Select
+              value={""}
+              label="Add Other Parts"
+              onChange={(event: any) => {
+                setVisiblePartIDs(
+                  produce(visiblePartIDs, (newParts) => {
+                    newParts.push(event.target.value);
+                  }),
+                );
+                selectPart(event.target.value);
+              }}
+            >
+              {partsList.data
+                ?.filter((p: Part) => p.in_use)
+                .map((p: Part) => {
+                  if (!visiblePartIDs.some((x) => x == p.id)) {
+                    return (
+                      <MenuItem
+                        key={p.id}
+                        value={p.id}
+                      >{`${p.description} (${p.part_number})`}</MenuItem>
+                    );
+                  }
+                })}
+            </Select>
+          </FormControl>
         </Grid>
       </Grid>
     </Box>
