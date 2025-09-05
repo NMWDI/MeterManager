@@ -1,27 +1,24 @@
 import { SvgIconProps, Badge, ListItem, ListItemButton, ListItemIcon, ListItemText } from "@mui/material";
 import TableViewIcon from "@mui/icons-material/TableView";
-import { Link, useLocation, type LinkProps } from "react-router-dom";
+import { Link, type LinkProps } from "react-router-dom";
+import { useIsActiveRoute } from "../hooks";
 
 export const NavLink = ({
   disabled = false,
   route,
   label,
-  Icon,
+  icon: Icon,
   badgeContent,
+  subItem = false,
 }: {
   disabled?: boolean;
   route: LinkProps["to"];
   label: string;
-  Icon?: React.ComponentType<SvgIconProps>;
+  icon?: React.ComponentType<SvgIconProps>;
   badgeContent?: number;
+  subItem?: boolean;
 }) => {
-  const location = useLocation();
-  const currentPath = location.pathname;
-  const targetPath = typeof route === "string"
-    ? route.split("?")[0].split("#")[0]
-    : route.pathname ?? "";
-
-  const isActive = currentPath === targetPath;
+  const isActive = useIsActiveRoute(route);
 
   return (
     <ListItem disablePadding dense>
@@ -31,6 +28,7 @@ export const NavLink = ({
         to={route}
         disabled={disabled}
         sx={{
+          ml: subItem ? 2 : 0,
           borderRadius: "10px",
           "&.Mui-selected": {
             backgroundColor: "rgb(240,240,255)",
@@ -51,7 +49,14 @@ export const NavLink = ({
             <TableViewIcon fontSize="small" />
           )}
         </ListItemIcon>
-        <ListItemText primary={label} />
+        <ListItemText
+          primary={label}
+          primaryTypographyProps={{
+            fontSize: 14,
+            fontWeight: isActive ? "bold" : "normal",
+            color: disabled ? "text.disabled" : "text.primary",
+          }}
+        />
       </ListItemButton>
     </ListItem>
   );

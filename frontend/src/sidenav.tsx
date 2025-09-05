@@ -1,12 +1,18 @@
 import { useEffect, useState } from "react";
 import { useAuthUser } from "react-auth-kit";
-import { Box, Drawer, Grid, IconButton, Toolbar, Typography } from "@mui/material";
-import { useNavigate } from "react-router-dom";
-import { useGetWorkOrders } from "./service/ApiServiceNew";
-import { WorkOrderStatus } from "./enums";
-import { SecurityScope, WorkOrder } from "./interfaces";
 import {
-  Assessment,
+  Box,
+  Collapse,
+  Drawer,
+  Grid,
+  IconButton,
+  List,
+  ListSubheader,
+  Toolbar,
+  Typography
+} from "@mui/material";
+import { useNavigate } from "react-router-dom";
+import {
   Build,
   ChevronLeft,
   Construction,
@@ -18,7 +24,14 @@ import {
   Science,
   ScreenshotMonitor,
 } from "@mui/icons-material";
-import { NavLink } from "./components/NavLink";
+import {
+  NavLink,
+  ReportsNavItem,
+  RoleChip
+} from "./components";
+import { useGetWorkOrders } from "./service/ApiServiceNew";
+import { WorkOrderStatus } from "./enums";
+import { SecurityScope, WorkOrder } from "./interfaces";
 
 export default function Sidenav({
   open,
@@ -29,6 +42,7 @@ export default function Sidenav({
   drawerWidth: number;
   onClose: () => void;
 }) {
+  const [openReportsMenu, setOpenReportsMenu] = useState(true);
   const navigate = useNavigate();
   const authUser = useAuthUser();
 
@@ -127,41 +141,73 @@ export default function Sidenav({
           px: "1rem",
         }}
       >
-        <Grid item sx={{ mt: 2, mb: 1 }}>
-          <h5 style={{ margin: 0, color: "#555555" }}>Pages</h5>
-        </Grid>
-
-        <NavLink route="/" label="Home" Icon={Home} />
-
-        {hasReadScope && (
-          <>
-            <NavLink
-              route="/workorders"
-              label="Work Orders"
-              Icon={FormatListBulletedOutlined}
-              badgeContent={workOrderCount} />
-            <NavLink
-              route="/meters"
-              label="Meters Information"
-              Icon={ScreenshotMonitor}
-            />
-            <NavLink route="/activities" label="Activities" Icon={Construction} />
-            <NavLink route="/wells" label="Monitoring Wells" Icon={MonitorHeart} />
-            <NavLink route="/wellmanagement" label="Manage Wells" Icon={Plumbing} />
-            <NavLink route="/reports" label="Reports" Icon={Assessment} />
-          </>
-        )}
-
-        {hasAdminScope && (
-          <>
-            <Grid item sx={{ mt: 3, mb: 1 }}>
-              <h5 style={{ margin: 0, color: "#555555" }}>Admin Management</h5>
-            </Grid>
-            <NavLink route="/parts" label="Manage Parts" Icon={Build} />
-            <NavLink route="/usermanagement" label="Manage Users" Icon={People} />
-            <NavLink route="/chlorides" label="Chlorides" Icon={Science} />
-          </>
-        )}
+        <List
+          subheader={
+            <ListSubheader component="div">
+              Pages
+            </ListSubheader>
+          }>
+          <NavLink route="/" label="Home" icon={Home} />
+          {hasReadScope && (
+            <>
+              <ListSubheader component="div" hidden={true}>
+                <RoleChip role="Technician" /> Pages
+              </ListSubheader>
+              <NavLink
+                route="/workorders"
+                label="Work Orders"
+                icon={FormatListBulletedOutlined}
+                badgeContent={workOrderCount} />
+              <NavLink
+                route="/meters"
+                label="Meters Information"
+                icon={ScreenshotMonitor}
+              />
+              <NavLink route="/activities" label="Activities" icon={Construction} />
+              <NavLink route="/wells" label="Monitoring Wells" icon={MonitorHeart} />
+              <NavLink route="/wellmanagement" label="Manage Wells" icon={Plumbing} />
+              <ReportsNavItem open={openReportsMenu} setOpen={setOpenReportsMenu} />
+              <Collapse in={openReportsMenu} timeout="auto" unmountOnExit>
+                <List disablePadding dense>
+                  <NavLink
+                    subItem
+                    route="/reports/wells"
+                    label="Monitoring Wells"
+                    icon={MonitorHeart}
+                  />
+                  <NavLink
+                    subItem
+                    route="/reports/maintenance"
+                    label="Maintenance"
+                    icon={Plumbing}
+                  />
+                  <NavLink
+                    subItem
+                    route="/reports/partsused"
+                    label="Parts Used"
+                    icon={Build}
+                  />
+                  <NavLink
+                    subItem
+                    route="/reports/chlorides"
+                    label="Chlorides"
+                    icon={Science}
+                  />
+                </List>
+              </Collapse>
+            </>
+          )}
+          {hasAdminScope && (
+            <>
+              <ListSubheader component="div">
+                <RoleChip role="Admin" /> Pages
+              </ListSubheader>
+              <NavLink route="/parts" label="Manage Parts" icon={Build} />
+              <NavLink route="/usermanagement" label="Manage Users" icon={People} />
+              <NavLink route="/chlorides" label="Chlorides" icon={Science} />
+            </>
+          )}
+        </List>
       </Grid>
     </Drawer>
   );

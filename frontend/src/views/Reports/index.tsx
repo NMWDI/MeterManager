@@ -28,17 +28,17 @@ export const ReportsView = () => {
             <NavLink
               route="/reports/wells"
               label="Monitoring Wells"
-              Icon={MonitorHeart}
+              icon={MonitorHeart}
             />
             <NavLink
               route="/reports/maintenance"
               label="Maintenance"
-              Icon={Plumbing}
+              icon={Plumbing}
             />
             <NavLink
               route="/reports/partsused"
               label="Parts Used"
-              Icon={Build}
+              icon={Build}
             />
             {/*
             <NavLink
@@ -51,7 +51,7 @@ export const ReportsView = () => {
             <NavLink
               route="/reports/chlorides"
               label="Chlorides"
-              Icon={Science}
+              icon={Science}
             />
           </Box>
         </CardContent>
