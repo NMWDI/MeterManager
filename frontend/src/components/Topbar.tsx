@@ -1,3 +1,4 @@
+import { useState, useMemo } from "react";
 import {
   AppBar,
   Toolbar,
@@ -14,16 +15,24 @@ import {
 import MenuIcon from "@mui/icons-material/Menu";
 import { useNavigate } from "react-router-dom";
 import { useAuthUser, useSignOut } from "react-auth-kit";
-import { useState } from "react";
-import { Badge, Engineering, Face, Login, Logout, Settings } from "@mui/icons-material";
+import { createAvatar } from '@dicebear/core';
+import { identicon } from '@dicebear/collection';
+import { Login, Logout, Settings } from "@mui/icons-material";
 import { RoleChip } from "./RoleChip";
+import { getRoleColor } from "../utils";
 
 export default function Topbar({ open, onMenuClick, sx }: { open: boolean, onMenuClick: () => void; sx?: any }) {
   const navigate = useNavigate();
   const signOut = useSignOut();
   const authUser = useAuthUser();
-  const role = authUser()?.user_role?.name;
+  const role: string = authUser()?.user_role?.name;
   const isLoggedIn = !!authUser();
+  const avatar = useMemo(() => {
+    return createAvatar(identicon, {
+      size: 128,
+      seed: authUser()?.full_name
+    }).toDataUri();
+  }, []);
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
@@ -38,17 +47,6 @@ export default function Topbar({ open, onMenuClick, sx }: { open: boolean, onMen
   const fullSignOut = () => {
     navigate("/");
     signOut();
-  };
-
-  const renderRoleIcon = () => {
-    switch (role) {
-      case "Admin":
-        return <Badge fontSize="small" />;
-      case "Technician":
-        return <Engineering fontSize="small" />;
-      default:
-        return <Face fontSize="small" />;
-    }
   };
 
   return (
@@ -95,16 +93,14 @@ export default function Topbar({ open, onMenuClick, sx }: { open: boolean, onMen
         {isLoggedIn ? (
           <Box>
             <Button
-              color="inherit"
+              color={getRoleColor(role)}
+              variant="contained"
               onClick={handleMenuOpen}
               sx={{
                 textTransform: "uppercase",
+                fontFamily: "monospace",
                 fontWeight: "bolder",
-                backgroundColor: "darkblue",
                 color: "white",
-                "&:hover": {
-                  backgroundColor: "#00008b",
-                },
               }}
             >
               {authUser()?.username ?? "Username"}
@@ -113,10 +109,9 @@ export default function Topbar({ open, onMenuClick, sx }: { open: boolean, onMen
                   width: 32,
                   height: 32,
                   ml: 1,
-                  bgcolor: "rgb(89,90,182)",
                 }}
+                src={avatar}
               >
-                {renderRoleIcon()}
               </Avatar>
             </Button>
             <Menu
@@ -173,6 +168,7 @@ export default function Topbar({ open, onMenuClick, sx }: { open: boolean, onMen
               onClick={() => navigate("/login")}
               sx={{
                 textTransform: "uppercase",
+                fontFamily: "monospace",
                 fontWeight: "bolder",
                 backgroundColor: "darkblue",
                 color: "white",

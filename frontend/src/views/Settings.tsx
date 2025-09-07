@@ -7,43 +7,32 @@ import {
   Divider,
   Typography,
   Box,
-  // Button,
   MenuItem,
   TextField,
   Grid,
   Alert,
   ListItemIcon,
   Chip,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Button,
+  Avatar,
 } from "@mui/material";
 import SettingsIcon from "@mui/icons-material/Settings";
 import { useAuthUser } from "react-auth-kit";
 import { useEffect, useMemo, useState } from "react";
-import HomeIcon from "@mui/icons-material/Home";
 import {
-  Build,
-  FormatListBulletedOutlined,
-  ScreenshotMonitor,
-  Construction,
-  MonitorHeart,
-  Plumbing,
-  Assessment,
-  Science
+  ExpandMore
 } from '@mui/icons-material';
+import { createAvatar } from '@dicebear/core';
+import { identicon } from '@dicebear/collection';
 import { BackgroundBox, CustomCardHeader, IsTrueChip, RoleChip } from "../components";
+import AvatarPicker from '../components/AvatarPicker';
+import { navConfig } from '../constants';
+import { getRoleColor } from '../utils';
 
-const redirectOptions = [
-  { value: "/", label: "Home", icon: <HomeIcon fontSize="small" /> },
-  { value: "/workorders", label: "Work Orders", icon: <FormatListBulletedOutlined fontSize="small" /> },
-  { value: "/meters", label: "Meter Information", icon: <ScreenshotMonitor fontSize="small" /> },
-  { value: "/activities", label: "Activities", icon: <Construction fontSize="small" /> },
-  { value: "/wells", label: "Monitoring Wells", icon: <MonitorHeart fontSize="small" /> },
-  { value: "/wellmanagement", label: "Manage Wells", icon: <Plumbing fontSize="small" /> },
-  { value: "/reports", label: "Reports", icon: <Assessment fontSize="small" /> },
-  { value: "/reports/wells", label: "Monitoring Wells Report", icon: <MonitorHeart fontSize="small" /> },
-  { value: "/reports/maintenance", label: "Maintenance Report", icon: <Construction fontSize="small" /> },
-  { value: "/reports/partsused", label: "Parts Used Report", icon: <Build fontSize="small" /> },
-  { value: "/reports/chlorides", label: "Chlorides Report", icon: <Science fontSize="small" /> },
-];
+const redirectOptions = navConfig.filter(item => item.role !== "Admin");
 
 const schema = yup.object().shape({
   redirectPage: yup.string().optional(),
@@ -58,7 +47,15 @@ const FALLBACK_REDIRECT = "/";
 
 export const Settings = () => {
   const authUser = useAuthUser();
+  const role: string = authUser()?.user_role?.name;
   const [savedMessage, setSavedMessage] = useState<string>("");
+  const [userAvatar, setUserAvatar] = useState<string | null>(null);
+  const avatar = useMemo(() => {
+    return createAvatar(identicon, {
+      size: 128,
+      seed: authUser()?.full_name
+    }).toDataUri();
+  }, []);
 
   // always read the latest from localStorage
   const defaultValues = useMemo(() => {
@@ -140,29 +137,135 @@ export const Settings = () => {
             <Typography variant="h5" gutterBottom py={2}>
               Preferences
             </Typography>
-            <Controller
-              name="redirectPage"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  size='small'
-                  select
-                  fullWidth
-                  label="Page to redirect after login"
-                  sx={{ mb: 3, maxWidth: 600 }}
-                >
-                  {redirectOptions.map((option) => (
-                    <MenuItem key={option.value} value={option.value}>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                        <ListItemIcon sx={{ minWidth: 0 }}>{option.icon}</ListItemIcon>
-                        <Typography variant="body2">{option.label}</Typography>
-                      </Box>
-                    </MenuItem>
-                  ))}
-                </TextField>
-              )}
-            />
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <Accordion>
+                  <AccordionSummary expandIcon={<ExpandMore />}>
+                    <Typography component="span">Update Avatar</Typography>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    <Grid container spacing={2}>
+                      <Grid item xs="auto" p={2}>
+                        <Typography variant="body1" textAlign="center">
+                          Current Avatar
+                        </Typography>
+                        <Box
+                          component="img"
+                          src={avatar}
+                          sx={{ width: 150, height: 150, borderRadius: "50%", mt: 1 }}
+                        />
+                      </Grid>
+                      <Grid item xs="auto" p={2}>
+                        <Typography variant="body1" textAlign="center">
+                          Selected Avatar
+                        </Typography>
+                        {userAvatar && (
+                          <Box
+                            component="img"
+                            src={userAvatar}
+                            sx={{ width: 150, height: 150, borderRadius: "50%", mt: 1 }}
+                          />
+                        )}
+                      </Grid>
+                      <Grid item xs="auto" p={2}>
+                        <Typography variant="body1" textAlign="center">
+                          Preview
+                        </Typography>
+                        {userAvatar && (<Button
+                          color={getRoleColor(role)}
+                          variant="contained"
+                          sx={{
+                            textTransform: "uppercase",
+                            fontFamily: "monospace",
+                            fontWeight: "bolder",
+                            color: "white",
+                          }}
+                        >
+                          {authUser()?.username ?? "Username"}
+                          <Avatar
+                            sx={{
+                              width: 32,
+                              height: 32,
+                              ml: 1,
+                            }}
+                            src={userAvatar}
+                          >
+                          </Avatar>
+                        </Button>
+                        )}
+                      </Grid>
+                      <Grid item xs={12}>
+                        <AvatarPicker
+                          onSelect={(avatar) => setUserAvatar(avatar)}
+                          initialSeed={authUser()?.full_name}
+                        />
+                      </Grid>
+                      <Grid item xs sx={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center' }}>
+                        <Button variant="contained" sx={{ py: 1, px: 4 }}>
+                          Save
+                        </Button>
+                      </Grid>
+                    </Grid>
+                  </AccordionDetails>
+                </Accordion>
+                <Accordion>
+                  <AccordionSummary expandIcon={<ExpandMore />}>
+                    <Typography component="span">Redirect Page After Login</Typography>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    <Grid container spacing={2}>
+                      <Grid item xs={12}>
+                        <Controller
+                          name="redirectPage"
+                          control={control}
+                          render={({ field }) => (
+                            <TextField
+                              {...field}
+                              size='small'
+                              select
+                              fullWidth
+                              label="Page to redirect after login"
+                              sx={{ maxWidth: 600 }}
+                            >
+                              {redirectOptions.map((option) => {
+                                const Icon = option.icon;
+                                return (
+                                  <MenuItem key={option.path} value={option.path}>
+                                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                      <ListItemIcon sx={{ minWidth: 0 }}>
+                                        <Icon fontSize="small" />
+                                      </ListItemIcon>
+                                      <Typography variant="body2">{option.label}{option?.parent ? " Report" : null}</Typography>
+                                    </Box>
+                                  </MenuItem>
+                                );
+                              })}
+                            </TextField>
+                          )}
+                        />
+                      </Grid>
+                      <Grid item xs sx={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center' }}>
+                        <Button variant="contained" sx={{ py: 1, px: 4 }}>
+                          Save
+                        </Button>
+                      </Grid>
+                    </Grid>
+                  </AccordionDetails>
+                </Accordion>
+                <Accordion disabled>
+                  <AccordionSummary expandIcon={<ExpandMore />}>
+                    <Typography component="span">Password Resetting</Typography>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    <Grid container spacing={2}>
+                      <Grid item xs={12}>
+
+                      </Grid>
+                    </Grid>
+                  </AccordionDetails>
+                </Accordion>
+              </Grid>
+            </Grid>
             {/*
             <Divider sx={{ my: 2 }} />
             <Typography variant="h5" gutterBottom py={2}>

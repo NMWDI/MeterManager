@@ -30,6 +30,7 @@ import { PartsUsedReportView } from "./views/Reports/PartsUsed";
 import { BoardReportView } from "./views/Reports/Board";
 import { ChloridesReportView } from "./views/Reports/Chlorides";
 import { AppLayout } from "./AppLayout";
+import { NotFound } from "./views/NotFound";
 
 export const App = () => {
   const queryClient = new QueryClient();
@@ -67,13 +68,16 @@ export const App = () => {
                     />
                   }
                 />
-                <Route path="/login" element={
-                  <AppLayout
-                    pageComponent={<Login />}
-                    requiredScopes={[]}
-                    setErrorMessage={setErrorMessage}
-                  />
-                } />
+                <Route
+                  path="/login"
+                  element={
+                    <AppLayout
+                      pageComponent={<Login />}
+                      requiredScopes={[]}
+                      setErrorMessage={setErrorMessage}
+                    />
+                  }
+                />
                 <Route
                   path="/settings"
                   element={
@@ -85,10 +89,10 @@ export const App = () => {
                   }
                 />
                 <Route
-                  path="/meters"
+                  path="/workorders"
                   element={
                     <AppLayout
-                      pageComponent={<MetersView />}
+                      pageComponent={<WorkOrdersView />}
                       requiredScopes={["read"]}
                       setErrorMessage={setErrorMessage}
                     />
@@ -105,10 +109,30 @@ export const App = () => {
                   }
                 />
                 <Route
-                  path="/wells"
+                  path="/monitoringwells"
                   element={
                     <AppLayout
                       pageComponent={<MonitoringWellsView />}
+                      requiredScopes={["read"]}
+                      setErrorMessage={setErrorMessage}
+                    />
+                  }
+                />
+                <Route
+                  path="/manage/meters"
+                  element={
+                    <AppLayout
+                      pageComponent={<MetersView />}
+                      requiredScopes={["read"]}
+                      setErrorMessage={setErrorMessage}
+                    />
+                  }
+                />
+                <Route
+                  path="/manage/wells"
+                  element={
+                    <AppLayout
+                      pageComponent={<WellManagementView />}
                       requiredScopes={["read"]}
                       setErrorMessage={setErrorMessage}
                     />
@@ -135,7 +159,7 @@ export const App = () => {
                   }
                 />
                 <Route
-                  path="/reports/wells"
+                  path="/reports/monitoringwells"
                   element={
                     <AppLayout
                       pageComponent={<MonitoringWellsReportView />}
@@ -195,7 +219,7 @@ export const App = () => {
                   }
                 />
                 <Route
-                  path="/parts"
+                  path="/manage/parts"
                   element={
                     <AppLayout
                       pageComponent={<PartsView />}
@@ -205,7 +229,7 @@ export const App = () => {
                   }
                 />
                 <Route
-                  path="/usermanagement"
+                  path="/manage/users"
                   element={
                     <AppLayout
                       pageComponent={<UserManagementView />}
@@ -215,31 +239,11 @@ export const App = () => {
                   }
                 />
                 <Route
-                  path="/wellmanagement"
-                  element={
-                    <AppLayout
-                      pageComponent={<WellManagementView />}
-                      requiredScopes={["read"]}
-                      setErrorMessage={setErrorMessage}
-                    />
-                  }
-                />
-                <Route
-                  path="/workorders"
-                  element={
-                    <AppLayout
-                      pageComponent={<WorkOrdersView />}
-                      requiredScopes={["read"]}
-                      setErrorMessage={setErrorMessage}
-                    />
-                  }
-                />
-                <Route
                   path="*"
                   element={
                     <AppLayout
-                      pageComponent={<Home />}
-                      requiredScopes={["read"]}
+                      pageComponent={<NotFound />}
+                      requiredScopes={[]}
                       setErrorMessage={setErrorMessage}
                     />
                   }

@@ -167,7 +167,7 @@ export default function WorkOrdersTable() {
         return (
           <Link
             to={{
-              pathname: "/meters",
+              pathname: "/manage/meters",
               search: `?meter_id=${params.row.meter_id}`,
             }}
           >
@@ -218,7 +218,7 @@ export default function WorkOrdersTable() {
           <span key={activity.id}>
             <Link
               to={{
-                pathname: "/meters",
+                pathname: "/manage/meters",
                 search: `?meter_id=${activity.meter_id}&activity_id=${activity.id}`,
               }}
             >

@@ -32,6 +32,7 @@ import {
 import { useGetWorkOrders } from "./service/ApiServiceNew";
 import { WorkOrderStatus } from "./enums";
 import { SecurityScope, WorkOrder } from "./interfaces";
+import { navConfig } from "./constants";
 
 export default function Sidenav({
   open,
@@ -147,52 +148,41 @@ export default function Sidenav({
               Pages
             </ListSubheader>
           }>
-          <NavLink route="/" label="Home" icon={Home} />
+          {navConfig
+            .filter(item => !item.role)
+            .map(item => (
+              <NavLink key={item.path} route={item.path} label={item.label} icon={item.icon} />
+            ))}
           {hasReadScope && (
             <>
-              <ListSubheader component="div" hidden={true}>
+              <ListSubheader component="div">
                 <RoleChip role="Technician" /> Pages
               </ListSubheader>
-              <NavLink
-                route="/workorders"
-                label="Work Orders"
-                icon={FormatListBulletedOutlined}
-                badgeContent={workOrderCount} />
-              <NavLink
-                route="/meters"
-                label="Meters Information"
-                icon={ScreenshotMonitor}
-              />
-              <NavLink route="/activities" label="Activities" icon={Construction} />
-              <NavLink route="/wells" label="Monitoring Wells" icon={MonitorHeart} />
-              <NavLink route="/wellmanagement" label="Manage Wells" icon={Plumbing} />
+              {navConfig
+                .filter(item => item.role === "Technician" && !item.parent)
+                .map(item => (
+                  <NavLink
+                    key={item.path}
+                    route={item.path}
+                    label={item.label}
+                    icon={item.icon}
+                    badgeContent={item.path === "/workorders" ? workOrderCount : undefined}
+                  />
+                ))}
               <ReportsNavItem open={openReportsMenu} setOpen={setOpenReportsMenu} />
               <Collapse in={openReportsMenu} timeout="auto" unmountOnExit>
                 <List disablePadding dense>
-                  <NavLink
-                    subItem
-                    route="/reports/wells"
-                    label="Monitoring Wells"
-                    icon={MonitorHeart}
-                  />
-                  <NavLink
-                    subItem
-                    route="/reports/maintenance"
-                    label="Maintenance"
-                    icon={Plumbing}
-                  />
-                  <NavLink
-                    subItem
-                    route="/reports/partsused"
-                    label="Parts Used"
-                    icon={Build}
-                  />
-                  <NavLink
-                    subItem
-                    route="/reports/chlorides"
-                    label="Chlorides"
-                    icon={Science}
-                  />
+                  {navConfig
+                    .filter(item => item.parent === "reports")
+                    .map(item => (
+                      <NavLink
+                        key={item.path}
+                        subItem
+                        route={item.path}
+                        label={item.label}
+                        icon={item.icon}
+                      />
+                    ))}
                 </List>
               </Collapse>
             </>
@@ -202,9 +192,11 @@ export default function Sidenav({
               <ListSubheader component="div">
                 <RoleChip role="Admin" /> Pages
               </ListSubheader>
-              <NavLink route="/parts" label="Manage Parts" icon={Build} />
-              <NavLink route="/usermanagement" label="Manage Users" icon={People} />
-              <NavLink route="/chlorides" label="Chlorides" icon={Science} />
+              {navConfig
+                .filter(item => item.role === "Admin")
+                .map(item => (
+                  <NavLink key={item.path} route={item.path} label={item.label} icon={item.icon} />
+                ))}
             </>
           )}
         </List>

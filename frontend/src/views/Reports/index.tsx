@@ -26,7 +26,7 @@ export const ReportsView = () => {
             />
             */}
             <NavLink
-              route="/reports/wells"
+              route="/reports/monitoringwells"
               label="Monitoring Wells"
               icon={MonitorHeart}
             />

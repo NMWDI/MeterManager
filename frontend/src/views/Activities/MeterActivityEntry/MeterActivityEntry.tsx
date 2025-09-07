@@ -39,7 +39,7 @@ export default function MeterActivityEntry() {
 
   function onSuccessfulSubmit() {
     enqueueSnackbar("Successfully Submitted Activity!", { variant: "success" });
-    navigate("/meters");
+    navigate("/manage/meters");
   }
 
   const createActivity = useCreateActivity(onSuccessfulSubmit);
