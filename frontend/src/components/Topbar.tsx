@@ -16,10 +16,9 @@ import MenuIcon from "@mui/icons-material/Menu";
 import { useNavigate } from "react-router-dom";
 import { useAuthUser, useSignOut } from "react-auth-kit";
 import { createAvatar } from '@dicebear/core';
-import { identicon } from '@dicebear/collection';
+import { initials } from '@dicebear/collection';
 import { Login, Logout, Settings } from "@mui/icons-material";
-import { RoleChip } from "./RoleChip";
-import { getRoleColor } from "../utils";
+import { RoleChip, TopbarUserButton } from "./index";
 
 export default function Topbar({ open, onMenuClick, sx }: { open: boolean, onMenuClick: () => void; sx?: any }) {
   const navigate = useNavigate();
@@ -28,8 +27,8 @@ export default function Topbar({ open, onMenuClick, sx }: { open: boolean, onMen
   const role: string = authUser()?.user_role?.name;
   const isLoggedIn = !!authUser();
   const avatar = useMemo(() => {
-    return createAvatar(identicon, {
-      size: 128,
+    return createAvatar(initials, {
+      size: 64,
       seed: authUser()?.full_name
     }).toDataUri();
   }, []);
@@ -47,6 +46,7 @@ export default function Topbar({ open, onMenuClick, sx }: { open: boolean, onMen
   const fullSignOut = () => {
     navigate("/");
     signOut();
+    localStorage.removeItem("loggedIn");
   };
 
   return (
@@ -92,28 +92,12 @@ export default function Topbar({ open, onMenuClick, sx }: { open: boolean, onMen
 
         {isLoggedIn ? (
           <Box>
-            <Button
-              color={getRoleColor(role)}
-              variant="contained"
+            <TopbarUserButton
+              src={avatar}
+              role={role}
+              display_name={authUser()?.username ?? "Username"}
               onClick={handleMenuOpen}
-              sx={{
-                textTransform: "uppercase",
-                fontFamily: "monospace",
-                fontWeight: "bolder",
-                color: "white",
-              }}
-            >
-              {authUser()?.username ?? "Username"}
-              <Avatar
-                sx={{
-                  width: 32,
-                  height: 32,
-                  ml: 1,
-                }}
-                src={avatar}
-              >
-              </Avatar>
-            </Button>
+            />
             <Menu
               anchorEl={anchorEl}
               open={Boolean(anchorEl)}
@@ -180,10 +164,11 @@ export default function Topbar({ open, onMenuClick, sx }: { open: boolean, onMen
               Login
               <Avatar
                 sx={{
-                  width: 32,
-                  height: 32,
+                  width: 36,
+                  height: 36,
                   ml: 1,
                   bgcolor: "rgb(89,90,182)",
+                  border: "2px solid #e0e0e0",
                 }}
               >
                 <Login fontSize="small" />

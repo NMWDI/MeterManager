@@ -23,13 +23,14 @@ type NavItem = {
 
 export const navConfig: NavItem[] = [
   { path: "/", label: "Home", icon: HomeIcon },
+  { path: "/chlorides", label: "Chlorides", icon: Science },
+  { path: "/monitoringwells", label: "Monitoring Wells", icon: MonitorHeart },
 
   // Technician
   { path: "/workorders", label: "Work Orders", icon: FormatListBulletedOutlined, role: "Technician" },
   { path: "/activities", label: "Activities", icon: Construction, role: "Technician" },
   { path: "/manage/meters", label: "Manage Meters", icon: ScreenshotMonitor, role: "Technician" },
   { path: "/manage/wells", label: "Manage Wells", icon: Plumbing, role: "Technician" },
-  { path: "/monitoringwells", label: "Monitoring Wells", icon: MonitorHeart, role: "Technician" },
 
   // Reports
   { path: "/reports/monitoringwells", label: "Monitoring Wells", icon: MonitorHeart, role: "Technician", parent: "reports" },
@@ -41,7 +42,6 @@ export const navConfig: NavItem[] = [
   // Admin
   { path: "/manage/parts", label: "Manage Parts", icon: Build, role: "Admin" },
   { path: "/manage/users", label: "Manage Users", icon: People, role: "Admin" },
-  { path: "/chlorides", label: "Chlorides", icon: Science, role: "Admin" },
 ];
 
 export const PM_COLORS: { [key: string]: string } = {

@@ -1,27 +1,78 @@
 import { useState, useEffect } from "react";
 import { Grid, Box, Card, CardActionArea, Button, Typography } from "@mui/material";
 import { createAvatar } from "@dicebear/core";
-import { identicon } from "@dicebear/collection";
+import { loreleiNeutral, initials } from "@dicebear/collection";
 
 type AvatarPickerProps = {
-  onSelect: (avatar: string) => void; // returns selected avatar as data URI
+  onSelect: (avatar: string) => void;
   initialSeed?: string;
+  display_name: string;
 };
 
-export default function AvatarPicker({ onSelect, initialSeed }: AvatarPickerProps) {
+export default function AvatarPicker({
+  onSelect,
+  initialSeed,
+  display_name,
+}: AvatarPickerProps) {
   const [avatars, setAvatars] = useState<string[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
 
   const generateAvatars = () => {
-    const batch = Array.from({ length: 12 }, () => {
-      const seed = Math.random().toString(36).substring(2, 10); // random seed
-      return createAvatar(identicon, {
+    // Lorelei batch: random seed
+    const batchLorelei = Array.from({ length: 10 }, () => {
+      const seed = Math.random().toString(36).substring(2, 10);
+      return createAvatar(loreleiNeutral, {
         size: 64,
         seed,
       }).toDataUri();
     });
-    setAvatars(batch);
-    setSelected(null); // reset selection when new batch generated
+
+    // Initials batch: always use display_name, but vary style
+    const batchInitials = Array.from({ length: 2 }, () => {
+      const size = 64 + Math.floor(Math.random() * 20) - 10; // vary ±10
+      const bgColors = [
+        // Greys (dark enough for white contrast)
+        "424242", "616161", "757575", "546e7a", "455a64",
+
+        // Blues (pair with pink secondary)
+        "1565c0", "1976d2", "1e88e5", "283593", "303f9f",
+
+        // Teals & Cyans
+        "00838f", "0097a7", "00695c", "00796b",
+
+        // Greens
+        "2e7d32", "388e3c", "43a047", "1b5e20",
+
+        // Yellows & Ambers (pick deeper tones so white is readable)
+        "f57f17", "f9a825", "ff8f00", "ff6f00",
+
+        // Oranges
+        "e65100", "ef6c00", "f4511e", "d84315",
+
+        // Reds / Pinks (echo secondary)
+        "ad1457", "c2185b", "d81b60", "b71c1c", "c62828",
+
+        // Purples (complement to indigo)
+        "6a1b9a", "7b1fa2", "8e24aa", "512da8", "5e35b1",
+
+        // Indigo (close to primary but a bit varied)
+        "283593", "3949ab", "303f9f"
+      ];
+      const backgroundColor =
+        bgColors[Math.floor(Math.random() * bgColors.length)];
+
+      return createAvatar(initials, {
+        size,
+        seed: display_name, // 👈 initials come from display_name
+        backgroundColor: [backgroundColor],
+      }).toDataUri();
+    });
+
+    // Shuffle them together for variety
+    const mixed = [...batchLorelei, ...batchInitials].sort(() => Math.random() - 0.5);
+
+    setAvatars(mixed);
+    setSelected(null);
   };
 
   // Generate initial batch on mount
@@ -32,7 +83,7 @@ export default function AvatarPicker({ onSelect, initialSeed }: AvatarPickerProp
   // If initialSeed provided, generate that avatar as the selected one
   useEffect(() => {
     if (initialSeed) {
-      const avatar = createAvatar(identicon, {
+      const avatar = createAvatar(loreleiNeutral, {
         size: 64,
         seed: initialSeed,
       }).toDataUri();
@@ -55,7 +106,8 @@ export default function AvatarPicker({ onSelect, initialSeed }: AvatarPickerProp
           <Grid item xs={6} sm={3} md={2} key={i}>
             <Card
               sx={{
-                outline: selected === avatar ? "3px solid blue" : "1px solid #ddd",
+                outline:
+                  selected === avatar ? "3px solid blue" : "1px solid #ddd",
                 borderRadius: 2,
               }}
             >
@@ -67,7 +119,8 @@ export default function AvatarPicker({ onSelect, initialSeed }: AvatarPickerProp
                   sx={{
                     width: "100%",
                     height: 64,
-                    objectFit: "scale-down",
+                    objectFit: "contain",
+                    bgcolor: "white", // ensures background is filled
                     pt: 1,
                     pb: 0.625,
                   }}

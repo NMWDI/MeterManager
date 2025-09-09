@@ -5,6 +5,7 @@ import { Box } from "@mui/material";
 import { SecurityScope } from "./interfaces";
 import Topbar from "./components/Topbar";
 import Sidenav from "./sidenav";
+import { navConfig } from "./constants";
 
 const drawerWidth = 250;
 
@@ -34,10 +35,10 @@ export const AppLayout = ({
 
   useEffect(() => {
     const currentPath = location.pathname;
+    const allowedRoutes = navConfig.filter(item => !item.role)?.map(item => item.path);
 
     // Case 1: Not logged in
     if (!isLoggedIn) {
-      const allowedRoutes = ["/", "/login"];
       if (!allowedRoutes.includes(currentPath)) {
         if (setErrorMessage)
           setErrorMessage("You must login to view pages.");
@@ -48,7 +49,6 @@ export const AppLayout = ({
 
     // Case 2: Logged in but no scopes at all
     if (userScopes.length === 0) {
-      const allowedRoutes = ["/", "/login"];
       if (!allowedRoutes.includes(currentPath)) {
         if (setErrorMessage)
           setErrorMessage(

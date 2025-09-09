@@ -69,6 +69,26 @@ export const App = () => {
                   }
                 />
                 <Route
+                  path="/monitoringwells"
+                  element={
+                    <AppLayout
+                      pageComponent={<MonitoringWellsView />}
+                      requiredScopes={[]}
+                      setErrorMessage={setErrorMessage}
+                    />
+                  }
+                />
+                <Route
+                  path="/chlorides"
+                  element={
+                    <AppLayout
+                      pageComponent={<ChloridesView />}
+                      requiredScopes={[]}
+                      setErrorMessage={setErrorMessage}
+                    />
+                  }
+                />
+                <Route
                   path="/login"
                   element={
                     <AppLayout
@@ -104,16 +124,6 @@ export const App = () => {
                     <AppLayout
                       pageComponent={<ActivitiesView />}
                       requiredScopes={["activities:write"]}
-                      setErrorMessage={setErrorMessage}
-                    />
-                  }
-                />
-                <Route
-                  path="/monitoringwells"
-                  element={
-                    <AppLayout
-                      pageComponent={<MonitoringWellsView />}
-                      requiredScopes={["read"]}
                       setErrorMessage={setErrorMessage}
                     />
                   }
@@ -204,16 +214,6 @@ export const App = () => {
                     <AppLayout
                       pageComponent={<ChloridesReportView />}
                       requiredScopes={["read"]}
-                      setErrorMessage={setErrorMessage}
-                    />
-                  }
-                />
-                <Route
-                  path="/chlorides"
-                  element={
-                    <AppLayout
-                      pageComponent={<ChloridesView />}
-                      requiredScopes={["admin"]}
                       setErrorMessage={setErrorMessage}
                     />
                   }

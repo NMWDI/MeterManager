@@ -17,7 +17,6 @@ import {
   AccordionSummary,
   AccordionDetails,
   Button,
-  Avatar,
 } from "@mui/material";
 import SettingsIcon from "@mui/icons-material/Settings";
 import { useAuthUser } from "react-auth-kit";
@@ -26,11 +25,10 @@ import {
   ExpandMore
 } from '@mui/icons-material';
 import { createAvatar } from '@dicebear/core';
-import { identicon } from '@dicebear/collection';
-import { BackgroundBox, CustomCardHeader, IsTrueChip, RoleChip } from "../components";
+import { loreleiNeutral } from '@dicebear/collection';
+import { BackgroundBox, CustomCardHeader, IsTrueChip, RoleChip, TopbarUserButton } from "../components";
 import AvatarPicker from '../components/AvatarPicker';
 import { navConfig } from '../constants';
-import { getRoleColor } from '../utils';
 
 const redirectOptions = navConfig.filter(item => item.role !== "Admin");
 
@@ -51,7 +49,7 @@ export const Settings = () => {
   const [savedMessage, setSavedMessage] = useState<string>("");
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
   const avatar = useMemo(() => {
-    return createAvatar(identicon, {
+    return createAvatar(loreleiNeutral, {
       size: 128,
       seed: authUser()?.full_name
     }).toDataUri();
@@ -139,7 +137,8 @@ export const Settings = () => {
             </Typography>
             <Grid container spacing={2}>
               <Grid item xs={12}>
-                <Accordion>
+                {/* 
+                <Accordion disabled>
                   <AccordionSummary expandIcon={<ExpandMore />}>
                     <Typography component="span">Update Avatar</Typography>
                   </AccordionSummary>
@@ -171,31 +170,17 @@ export const Settings = () => {
                         <Typography variant="body1" textAlign="center">
                           Preview
                         </Typography>
-                        {userAvatar && (<Button
-                          color={getRoleColor(role)}
-                          variant="contained"
-                          sx={{
-                            textTransform: "uppercase",
-                            fontFamily: "monospace",
-                            fontWeight: "bolder",
-                            color: "white",
-                          }}
-                        >
-                          {authUser()?.username ?? "Username"}
-                          <Avatar
-                            sx={{
-                              width: 32,
-                              height: 32,
-                              ml: 1,
-                            }}
+                        {userAvatar && (
+                          <TopbarUserButton
                             src={userAvatar}
-                          >
-                          </Avatar>
-                        </Button>
+                            role={role}
+                            display_name={authUser()?.username ?? "Username"}
+                          />
                         )}
                       </Grid>
                       <Grid item xs={12}>
                         <AvatarPicker
+                          display_name={authUser()?.full_name}
                           onSelect={(avatar) => setUserAvatar(avatar)}
                           initialSeed={authUser()?.full_name}
                         />
@@ -208,13 +193,14 @@ export const Settings = () => {
                     </Grid>
                   </AccordionDetails>
                 </Accordion>
+                */}
                 <Accordion>
                   <AccordionSummary expandIcon={<ExpandMore />}>
                     <Typography component="span">Redirect Page After Login</Typography>
                   </AccordionSummary>
                   <AccordionDetails>
                     <Grid container spacing={2}>
-                      <Grid item xs={12}>
+                      <Grid item xs={12} p={2}>
                         <Controller
                           name="redirectPage"
                           control={control}
@@ -244,14 +230,10 @@ export const Settings = () => {
                           )}
                         />
                       </Grid>
-                      <Grid item xs sx={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center' }}>
-                        <Button variant="contained" sx={{ py: 1, px: 4 }}>
-                          Save
-                        </Button>
-                      </Grid>
                     </Grid>
                   </AccordionDetails>
                 </Accordion>
+                {/*
                 <Accordion disabled>
                   <AccordionSummary expandIcon={<ExpandMore />}>
                     <Typography component="span">Password Resetting</Typography>
@@ -264,6 +246,7 @@ export const Settings = () => {
                     </Grid>
                   </AccordionDetails>
                 </Accordion>
+                */}
               </Grid>
             </Grid>
             {/*

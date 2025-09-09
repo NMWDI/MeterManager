@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSignIn } from "react-auth-kit";
+import { useIsAuthenticated, useSignIn } from "react-auth-kit";
 import {
   Box,
   TextField,
@@ -23,7 +23,11 @@ export const Login = () => {
   const [error, setError] = useState("");
 
   const signIn = useSignIn();
+  const isAuthenticated = useIsAuthenticated();
   const navigate = useNavigate();
+
+  // handle redirect after refresh
+  const savedRedirect = localStorage.getItem("redirectPage") ?? "/";
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -40,6 +44,13 @@ export const Login = () => {
         );
       });
   };
+
+  useEffect(() => {
+    if (isAuthenticated()) {
+      navigate(savedRedirect);
+      localStorage.removeItem("redirectPage");
+    }
+  }, [isAuthenticated, navigate]);
 
   function handleLogin(res: Response) {
     if (res.status === 200) {
@@ -65,7 +76,6 @@ export const Login = () => {
         ) {
           localStorage.setItem("_auth", data.access_token);
           localStorage.setItem("loggedIn", "true");
-          const savedRedirect = localStorage.getItem("redirectPage") ?? "/";
           navigate(savedRedirect);
         } else {
           setError("Invalid username or password. Please try again.");

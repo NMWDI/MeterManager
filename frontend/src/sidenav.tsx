@@ -12,18 +12,7 @@ import {
   Typography
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import {
-  Build,
-  ChevronLeft,
-  Construction,
-  FormatListBulletedOutlined,
-  Home,
-  MonitorHeart,
-  People,
-  Plumbing,
-  Science,
-  ScreenshotMonitor,
-} from "@mui/icons-material";
+import { ChevronLeft } from "@mui/icons-material";
 import {
   NavLink,
   ReportsNavItem,

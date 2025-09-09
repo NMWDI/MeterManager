@@ -1,5 +1,6 @@
 export * from './BackgroundBox'
 export * from './TristateToggle'
+export * from './TopbarUserButton'
 export * from './ChipSelect'
 export * from './MergeWellModal'
 export * from './RegionMeasurementModals'

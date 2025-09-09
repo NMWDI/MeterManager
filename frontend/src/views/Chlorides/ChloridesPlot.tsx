@@ -56,7 +56,10 @@ export const ChloridesPlot = ({
           data={data}
           layout={{
             autosize: true,
+            title: "Chlorides Over Time",
+            titlefont: { size: 18 },
             legend: {
+              title: { text: "Wells", font: { size: 14 } },
               x: 1,
               y: 1,
               xanchor: "right",
