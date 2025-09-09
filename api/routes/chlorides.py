@@ -59,7 +59,6 @@ def read_chlorides(
 
 @chlorides_router.get(
     "/chloride_groups",
-    dependencies=[Depends(ScopedUser.Read)],
     response_model=List[well_schemas.ChlorideGroupResponse],
     tags=["Chlorides"],
 )

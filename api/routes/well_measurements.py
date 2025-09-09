@@ -32,10 +32,11 @@ templates = Environment(
     autoescape=select_autoescape(["html", "xml"])
 )
 
-well_measurement_router = APIRouter()
+authenticated_well_measurement_router = APIRouter()
+public_well_measurement_router = APIRouter()
 
 
-@well_measurement_router.post(
+@authenticated_well_measurement_router.post(
     "/waterlevels",
     dependencies=[Depends(ScopedUser.WellMeasurementWrite)],
     response_model=well_schemas.WellMeasurement,
@@ -66,9 +67,8 @@ def add_waterlevel(
     return well_measurement
 
 
-@well_measurement_router.get(
+@public_well_measurement_router.get(
     "/waterlevels",
-    dependencies=[Depends(ScopedUser.Read)],
     response_model=List[well_schemas.WellMeasurementDTO],
     tags=["WaterLevels"],
 )
@@ -201,7 +201,7 @@ def read_waterlevels(
     return response_data
 
 
-@well_measurement_router.get(
+@authenticated_well_measurement_router.get(
     "/waterlevels/pdf",
     dependencies=[Depends(ScopedUser.Read)],
     tags=["WaterLevels"],
@@ -430,7 +430,7 @@ def download_waterlevels_pdf(
     )
 
 
-@well_measurement_router.patch(
+@authenticated_well_measurement_router.patch(
     "/waterlevels",
     dependencies=[Depends(ScopedUser.Admin)],
     response_model=well_schemas.WellMeasurement,
@@ -451,7 +451,7 @@ def patch_waterlevel(waterlevel_patch: well_schemas.PatchWaterLevel, db: Session
 
     return well_measurement
 
-@well_measurement_router.delete(
+@authenticated_well_measurement_router.delete(
     "/waterlevels",
     dependencies=[Depends(ScopedUser.Admin)],
     tags=["WaterLevels"],
