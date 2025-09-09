@@ -16,7 +16,6 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  Button,
 } from "@mui/material";
 import SettingsIcon from "@mui/icons-material/Settings";
 import { useAuthUser } from "react-auth-kit";
@@ -24,10 +23,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ExpandMore
 } from '@mui/icons-material';
-import { createAvatar } from '@dicebear/core';
-import { loreleiNeutral } from '@dicebear/collection';
-import { BackgroundBox, CustomCardHeader, IsTrueChip, RoleChip, TopbarUserButton } from "../components";
-import AvatarPicker from '../components/AvatarPicker';
+import { BackgroundBox, CustomCardHeader, IsTrueChip, RoleChip } from "../components";
 import { navConfig } from '../constants';
 
 const redirectOptions = navConfig.filter(item => item.role !== "Admin");
@@ -45,15 +41,14 @@ const FALLBACK_REDIRECT = "/";
 
 export const Settings = () => {
   const authUser = useAuthUser();
-  const role: string = authUser()?.user_role?.name;
   const [savedMessage, setSavedMessage] = useState<string>("");
-  const [userAvatar, setUserAvatar] = useState<string | null>(null);
-  const avatar = useMemo(() => {
-    return createAvatar(loreleiNeutral, {
-      size: 128,
-      seed: authUser()?.full_name
-    }).toDataUri();
-  }, []);
+  // const [userAvatar, setUserAvatar] = useState<string | null>(null);
+  // const avatar = useMemo(() => {
+  //   return createAvatar(loreleiNeutral, {
+  //     size: 128,
+  //     seed: authUser()?.full_name
+  //   }).toDataUri();
+  // }, []);
 
   // always read the latest from localStorage
   const defaultValues = useMemo(() => {
