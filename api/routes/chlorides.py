@@ -27,11 +27,11 @@ templates = Environment(
     autoescape=select_autoescape(["html", "xml"])
 )
 
-chlorides_router = APIRouter()
+authenticated_chlorides_router = APIRouter()
+public_chlorides_router = APIRouter()
 
-@chlorides_router.get(
+@public_chlorides_router.get(
     "/chlorides",
-    dependencies=[Depends(ScopedUser.Read)],
     response_model=List[well_schemas.WellMeasurementDTO],
     tags=["Chlorides"],
 )
@@ -57,7 +57,7 @@ def read_chlorides(
     ).all()
 
 
-@chlorides_router.get(
+@public_chlorides_router.get(
     "/chloride_groups",
     response_model=List[well_schemas.ChlorideGroupResponse],
     tags=["Chlorides"],
@@ -107,7 +107,7 @@ class ChlorideReportNums(BaseModel):
     west: MinMaxAvg
 
 
-@chlorides_router.get(
+@authenticated_chlorides_router.get(
     "/chlorides/report",
     dependencies=[Depends(ScopedUser.Read)],
     response_model=ChlorideReportNums,
@@ -202,7 +202,7 @@ def get_chlorides_report(
     )
 
 
-@chlorides_router.get(
+@authenticated_chlorides_router.get(
     "/chlorides/report/pdf",
     dependencies=[Depends(ScopedUser.Read)],
     tags=["Chlorides"],
@@ -248,7 +248,7 @@ def download_chlorides_report_pdf(
         },
     )
 
-@chlorides_router.post(
+@authenticated_chlorides_router.post(
     "/chlorides",
     dependencies=[Depends(ScopedUser.WellMeasurementWrite)],
     response_model=well_schemas.ChlorideMeasurement,
@@ -273,7 +273,7 @@ def add_chloride_measurement(
 
     return well_measurement
 
-@chlorides_router.patch(
+@authenticated_chlorides_router.patch(
     "/chlorides",
     dependencies=[Depends(ScopedUser.WellMeasurementWrite)],
     response_model=well_schemas.WellMeasurement,
@@ -299,7 +299,7 @@ def patch_chloride_measurement(
 
     return well_measurement
 
-@chlorides_router.delete(
+@authenticated_chlorides_router.delete(
     "/chlorides",
     dependencies=[Depends(ScopedUser.Admin)],
     tags=["Chlorides"],

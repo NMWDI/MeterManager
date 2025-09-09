@@ -48,7 +48,6 @@ export const Login = () => {
   useEffect(() => {
     if (isAuthenticated()) {
       navigate(savedRedirect);
-      localStorage.removeItem("redirectPage");
     }
   }, [isAuthenticated, navigate]);
 

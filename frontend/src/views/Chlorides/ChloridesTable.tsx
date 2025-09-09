@@ -106,10 +106,11 @@ const Footer = ({
   onOpenModal?: () => void;
   isRegionSelected?: boolean;
 }) => {
+  const isAuthenticated = useIsAuthenticated();
   return (
     <Box sx={{ display: "flex", justifyContent: "space-between" }}>
       <Box sx={{ my: "auto" }}>
-        {isRegionSelected ? (
+        {isRegionSelected && isAuthenticated() ? (
           <Button
             variant="contained"
             size="small"

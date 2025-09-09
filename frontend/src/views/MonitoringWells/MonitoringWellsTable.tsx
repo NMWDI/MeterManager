@@ -105,33 +105,32 @@ const Footer = ({
 
   return (
     <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-      {isAuthenticated() ? (
-        <Box sx={{ my: "auto" }}>
-          {isWellSelected ? (
-            <Tooltip
-              title={
-                isPlugged
-                  ? "This well is plugged and no longer accepting new measurements."
-                  : ""
-              }
-              placement="top"
-              arrow
-            >
-              <span>
-                <Button
-                  variant="contained"
-                  size="small"
-                  onClick={onOpenModal}
-                  disabled={isPlugged}
-                  sx={{ flexShrink: 0, width: { xs: "100%", sm: "auto" }, ml: 1.5 }}
-                >
-                  <AddIcon fontSize="small" sx={{ mr: 0.5 }} />
-                  Create
-                </Button>
-              </span>
-            </Tooltip>
-          ) : null}
-        </Box>) : null}
+      <Box sx={{ my: "auto" }}>
+        {isWellSelected && isAuthenticated() ? (
+          <Tooltip
+            title={
+              isPlugged
+                ? "This well is plugged and no longer accepting new measurements."
+                : ""
+            }
+            placement="top"
+            arrow
+          >
+            <span>
+              <Button
+                variant="contained"
+                size="small"
+                onClick={onOpenModal}
+                disabled={isPlugged}
+                sx={{ flexShrink: 0, width: { xs: "100%", sm: "auto" }, ml: 1.5 }}
+              >
+                <AddIcon fontSize="small" sx={{ mr: 0.5 }} />
+                Create
+              </Button>
+            </span>
+          </Tooltip>
+        ) : null}
+      </Box>
       <GridPagination />
     </Box>
   );

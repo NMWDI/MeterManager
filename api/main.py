@@ -25,7 +25,7 @@ from api.models.main_models import Users
 
 from api.routes.activities import activity_router
 from api.routes.admin import admin_router
-from api.routes.chlorides import chlorides_router
+from api.routes.chlorides import authenticated_chlorides_router, public_chlorides_router
 from api.routes.maintenance import maintenance_router
 from api.routes.meters import meter_router
 from api.routes.OSE import ose_router
@@ -130,7 +130,7 @@ def login_for_access_token(
 
 authenticated_router.include_router(activity_router)
 authenticated_router.include_router(admin_router)
-authenticated_router.include_router(chlorides_router)
+authenticated_router.include_router(authenticated_chlorides_router)
 authenticated_router.include_router(maintenance_router)
 authenticated_router.include_router(meter_router)
 authenticated_router.include_router(part_router)
@@ -141,5 +141,6 @@ add_pagination(app)
 
 app.include_router(ose_router)
 app.include_router(public_well_router)
+app.include_router(public_chlorides_router)
 app.include_router(public_well_measurement_router)
 app.include_router(authenticated_router)
