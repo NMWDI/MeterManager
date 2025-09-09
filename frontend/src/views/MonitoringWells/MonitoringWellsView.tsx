@@ -287,21 +287,25 @@ export const MonitoringWellsView = () => {
               />
             </Grid>
           </Grid>
-          <NewMeasurementModal
-            isNewMeasurementModalOpen={isNewModalOpen}
-            handleCloseNewMeasurementModal={() => setIsNewModalOpen(false)}
-            handleSubmitNewMeasurement={handleSubmitNewMeasurement}
-          />
-          <UpdateMeasurementModal
-            isMeasurementModalOpen={isUpdateModalOpen}
-            handleCloseMeasurementModal={() => setIsUpdateModalOpen(false)}
-            measurement={selectedMeasurement}
-            onUpdateMeasurement={(update) =>
-              setSelectedMeasurement({ ...selectedMeasurement, ...update })
-            }
-            onSubmitUpdate={handleSubmitMeasurementUpdate}
-            onDeleteMeasurement={handleDeleteMeasurement}
-          />
+          {authUser() && (
+            <>
+              <NewMeasurementModal
+                isNewMeasurementModalOpen={isNewModalOpen}
+                handleCloseNewMeasurementModal={() => setIsNewModalOpen(false)}
+                handleSubmitNewMeasurement={handleSubmitNewMeasurement}
+              />
+              <UpdateMeasurementModal
+                isMeasurementModalOpen={isUpdateModalOpen}
+                handleCloseMeasurementModal={() => setIsUpdateModalOpen(false)}
+                measurement={selectedMeasurement}
+                onUpdateMeasurement={(update) =>
+                  setSelectedMeasurement({ ...selectedMeasurement, ...update })
+                }
+                onSubmitUpdate={handleSubmitMeasurementUpdate}
+                onDeleteMeasurement={handleDeleteMeasurement}
+              />
+            </>
+          )}
         </CardContent>
       </Card>
     </BackgroundBox>
