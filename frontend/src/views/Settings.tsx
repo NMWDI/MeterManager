@@ -1,4 +1,5 @@
 import * as yup from 'yup';
+import { enqueueSnackbar } from "notistack";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useForm, Controller } from "react-hook-form";
 import {
@@ -10,86 +11,121 @@ import {
   MenuItem,
   TextField,
   Grid,
-  Alert,
   ListItemIcon,
   Chip,
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  Button,
 } from "@mui/material";
 import SettingsIcon from "@mui/icons-material/Settings";
 import { useAuthUser } from "react-auth-kit";
-import { useEffect, useMemo, useState } from "react";
 import {
   ExpandMore
 } from '@mui/icons-material';
 import { BackgroundBox, CustomCardHeader, IsTrueChip, RoleChip } from "../components";
 import { navConfig } from '../constants';
+import { useFetchWithAuth } from '../hooks';
+import { useMutation, useQuery } from 'react-query';
 
 const redirectOptions = navConfig.filter(item => item.role !== "Admin");
 
-const schema = yup.object().shape({
-  redirectPage: yup.string().optional(),
-  currentPassword: yup.string().optional(),
-  newPassword: yup.string().optional(),
-  confirmPassword: yup
-    .string()
-    .oneOf([yup.ref("newPassword"), ""], "Passwords must match"),
+
+const redirectSchema = yup.object().shape({
+  redirect_page: yup.string().required("Please select a redirect page"),
 });
 
-const FALLBACK_REDIRECT = "/";
+const passwordSchema = yup.object().shape({
+  currentPassword: yup.string().required("Current password is required"),
+  newPassword: yup.string().required("New password is required"),
+  confirmPassword: yup
+    .string()
+    .oneOf([yup.ref("newPassword")], "Passwords must match")
+    .required("Please confirm new password"),
+});
 
 export const Settings = () => {
   const authUser = useAuthUser();
-  const [savedMessage, setSavedMessage] = useState<string>("");
-  // const [userAvatar, setUserAvatar] = useState<string | null>(null);
-  // const avatar = useMemo(() => {
-  //   return createAvatar(loreleiNeutral, {
-  //     size: 128,
-  //     seed: authUser()?.full_name
-  //   }).toDataUri();
-  // }, []);
+  const user = authUser();
+  const fetchWithAuth = useFetchWithAuth();
 
-  // always read the latest from localStorage
-  const defaultValues = useMemo(() => {
-    const stored = localStorage.getItem("redirectPage");
-    return {
-      redirectPage: stored ?? FALLBACK_REDIRECT,
+  const getRedirectPageQuery = useQuery({
+    queryKey: ["redirectPage"],
+    queryFn: async () => fetchWithAuth({
+      method: "GET",
+      route: "/settings/redirect_page",
+    }),
+  });
+
+  const redirectMutation = useMutation({
+    mutationFn: async (data: { redirect_page: string }) => {
+      await fetchWithAuth({
+        method: "POST",
+        route: "/settings/redirect_page",
+        body: data,
+      })
+    },
+    onSuccess: () => {
+      enqueueSnackbar("Redirect page updated successfully.", { variant: "success" });
+    },
+    onError: () => {
+      enqueueSnackbar("Failed to update redirect page.", { variant: "error" });
+    },
+  });
+
+  const {
+    control: redirectControl,
+    handleSubmit: handleRedirectSubmit,
+  } = useForm({
+    resolver: yupResolver(redirectSchema),
+    defaultValues: { redirect_page: getRedirectPageQuery?.data?.redirect_page ?? "/" },
+    values: { redirect_page: getRedirectPageQuery?.data?.redirect_page ?? "/" }, // react-hook-form v7 pattern for sync
+  });
+
+  const onRedirectSubmit = (data: any) => {
+    redirectMutation.mutate(data);
+  };
+
+  const passwordMutation = useMutation({
+    mutationFn: async (data: {
+      currentPassword: string;
+      newPassword: string;
+    }) => {
+      const res = await fetch("/settings/password_reset", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("_auth")}`,
+        },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Password reset failed");
+      return res.json();
+    },
+    onSuccess: () => {
+      enqueueSnackbar("Password reset request submitted.", { variant: "success" });
+    },
+  });
+
+  const {
+    control: passwordControl,
+    handleSubmit: handlePasswordSubmit,
+    formState: { errors: passwordErrors },
+  } = useForm({
+    resolver: yupResolver(passwordSchema),
+    defaultValues: {
       currentPassword: "",
       newPassword: "",
       confirmPassword: "",
-    };
-  }, []);
-
-  const {
-    control,
-    handleSubmit,
-    watch,
-    // formState: { errors, isValid },
-  } = useForm({
-    resolver: yupResolver(schema),
-    mode: "onChange",
-    defaultValues,
+    },
   });
 
-  // Auto-save redirectPage when it changes
-  const redirectPage = watch("redirectPage");
-  useEffect(() => {
-    if (redirectPage) {
-      localStorage.setItem("redirectPage", redirectPage);
-      setSavedMessage("Redirect preference saved locally (not synced across devices).");
-    }
-  }, [redirectPage]);
-
-  const onSubmit = (data: any) => {
-    if (data.newPassword && data.currentPassword) {
-      // password reset API call would go here
-      console.log("Password reset request:", data);
-      setSavedMessage("Password reset request submitted.");
-    }
+  const onPasswordSubmit = (data: any) => {
+    passwordMutation.mutate({
+      currentPassword: data.currentPassword,
+      newPassword: data.newPassword,
+    });
   };
-
-  const user = authUser();
 
   return (
     <BackgroundBox>
@@ -126,202 +162,147 @@ export const Settings = () => {
             </Grid>
           </Box>
           <Divider sx={{ my: 2 }} />
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <Typography variant="h5" gutterBottom py={2}>
-              Preferences
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                {/* 
-                <Accordion disabled>
-                  <AccordionSummary expandIcon={<ExpandMore />}>
-                    <Typography component="span">Update Avatar</Typography>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <Grid container spacing={2}>
-                      <Grid item xs="auto" p={2}>
-                        <Typography variant="body1" textAlign="center">
-                          Current Avatar
-                        </Typography>
-                        <Box
-                          component="img"
-                          src={avatar}
-                          sx={{ width: 150, height: 150, borderRadius: "50%", mt: 1 }}
-                        />
-                      </Grid>
-                      <Grid item xs="auto" p={2}>
-                        <Typography variant="body1" textAlign="center">
-                          Selected Avatar
-                        </Typography>
-                        {userAvatar && (
-                          <Box
-                            component="img"
-                            src={userAvatar}
-                            sx={{ width: 150, height: 150, borderRadius: "50%", mt: 1 }}
-                          />
-                        )}
-                      </Grid>
-                      <Grid item xs="auto" p={2}>
-                        <Typography variant="body1" textAlign="center">
-                          Preview
-                        </Typography>
-                        {userAvatar && (
-                          <TopbarUserButton
-                            src={userAvatar}
-                            role={role}
-                            display_name={authUser()?.username ?? "Username"}
-                          />
-                        )}
-                      </Grid>
-                      <Grid item xs={12}>
-                        <AvatarPicker
-                          display_name={authUser()?.full_name}
-                          onSelect={(avatar) => setUserAvatar(avatar)}
-                          initialSeed={authUser()?.full_name}
-                        />
-                      </Grid>
-                      <Grid item xs sx={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center' }}>
-                        <Button variant="contained" sx={{ py: 1, px: 4 }}>
-                          Save
-                        </Button>
-                      </Grid>
+          <Typography variant="h5" gutterBottom py={2}>
+            Preferences
+          </Typography>
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <Accordion>
+                <AccordionSummary expandIcon={<ExpandMore />}>
+                  <Typography component="span">Redirect Page After Login</Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} p={2}>
+                      <form onSubmit={handleRedirectSubmit(onRedirectSubmit)}>
+                        <Grid container spacing={2} alignItems="center">
+                          <Grid item xs={12} sm={6}>
+                            <Controller
+                              name="redirect_page"
+                              control={redirectControl}
+                              render={({ field }) => (
+                                <TextField
+                                  {...field}
+                                  select
+                                  fullWidth
+                                  size='small'
+                                  label="Page to redirect after login"
+                                  disabled={getRedirectPageQuery?.isFetching || redirectMutation.isLoading}
+                                >
+                                  {redirectOptions.map((option) => {
+                                    const Icon = option.icon;
+                                    return (
+                                      <MenuItem key={option.path} value={option.path}>
+                                        <Box
+                                          sx={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: 1,
+                                          }}
+                                        >
+                                          <ListItemIcon sx={{ minWidth: 0 }}>
+                                            <Icon fontSize="small" />
+                                          </ListItemIcon>
+                                          {option.label}
+                                        </Box>
+                                      </MenuItem>
+                                    );
+                                  })}
+                                </TextField>
+                              )}
+                            />
+                          </Grid>
+                          <Grid item xs={12}>
+                            <Button type="submit" variant="contained">
+                              Save
+                            </Button>
+                          </Grid>
+                        </Grid>
+                      </form>
                     </Grid>
-                  </AccordionDetails>
-                </Accordion>
-                */}
-                <Accordion>
-                  <AccordionSummary expandIcon={<ExpandMore />}>
-                    <Typography component="span">Redirect Page After Login</Typography>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <Grid container spacing={2}>
-                      <Grid item xs={12} p={2}>
-                        <Controller
-                          name="redirectPage"
-                          control={control}
-                          render={({ field }) => (
-                            <TextField
-                              {...field}
-                              size='small'
-                              select
-                              fullWidth
-                              label="Page to redirect after login"
-                              sx={{ maxWidth: 600 }}
-                            >
-                              {redirectOptions.map((option) => {
-                                const Icon = option.icon;
-                                return (
-                                  <MenuItem key={option.path} value={option.path}>
-                                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                      <ListItemIcon sx={{ minWidth: 0 }}>
-                                        <Icon fontSize="small" />
-                                      </ListItemIcon>
-                                      <Typography variant="body2">{option.label}{option?.parent ? " Report" : null}</Typography>
-                                    </Box>
-                                  </MenuItem>
-                                );
-                              })}
-                            </TextField>
-                          )}
-                        />
-                      </Grid>
+                  </Grid>
+                </AccordionDetails>
+              </Accordion>
+              <Accordion disabled>
+                <AccordionSummary expandIcon={<ExpandMore />}>
+                  <Typography component="span">Password Reset</Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12}>
+                      <form onSubmit={handlePasswordSubmit(onPasswordSubmit)}>
+                        <Grid container spacing={2}>
+                          <Grid item xs={12} sm={4}>
+                            <Controller
+                              name="currentPassword"
+                              control={passwordControl}
+                              render={({ field }) => (
+                                <TextField
+                                  {...field}
+                                  type="password"
+                                  fullWidth
+                                  size='small'
+                                  label="Current Password"
+                                  error={!!passwordErrors.currentPassword}
+                                  helperText={passwordErrors.currentPassword?.message}
+                                />
+                              )}
+                            />
+                          </Grid>
+                          <Grid item xs={12} sm={4}>
+                            <Controller
+                              name="newPassword"
+                              control={passwordControl}
+                              render={({ field }) => (
+                                <TextField
+                                  {...field}
+                                  type="password"
+                                  fullWidth
+                                  size='small'
+                                  label="New Password"
+                                  error={!!passwordErrors.newPassword}
+                                  helperText={passwordErrors.newPassword?.message}
+                                />
+                              )}
+                            />
+                          </Grid>
+                          <Grid item xs={12} sm={4}>
+                            <Controller
+                              name="confirmPassword"
+                              control={passwordControl}
+                              render={({ field }) => (
+                                <TextField
+                                  {...field}
+                                  type="password"
+                                  fullWidth
+                                  size='small'
+                                  label="Confirm Password"
+                                  error={!!passwordErrors.confirmPassword}
+                                  helperText={passwordErrors.confirmPassword?.message}
+                                />
+                              )}
+                            />
+                          </Grid>
+                        </Grid>
+                        <Box sx={{ mt: 2 }}>
+                          <Button
+                            type="submit"
+                            variant="contained"
+                            disabled={passwordMutation.isLoading}
+                          >
+                            Reset Password
+                          </Button>
+                        </Box>
+                      </form>
                     </Grid>
-                  </AccordionDetails>
-                </Accordion>
-                {/*
-                <Accordion disabled>
-                  <AccordionSummary expandIcon={<ExpandMore />}>
-                    <Typography component="span">Password Resetting</Typography>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <Grid container spacing={2}>
-                      <Grid item xs={12}>
-
-                      </Grid>
-                    </Grid>
-                  </AccordionDetails>
-                </Accordion>
-                */}
-              </Grid>
+                  </Grid>
+                </AccordionDetails>
+              </Accordion>
             </Grid>
-            {/*
-            <Divider sx={{ my: 2 }} />
-            <Typography variant="h5" gutterBottom py={2}>
-              Password Reset
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6} lg={4}>
-                <Controller
-                  name="currentPassword"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      label="Current Password"
-                      type="password"
-                      fullWidth
-                      error={!!errors.currentPassword}
-                      helperText={errors.currentPassword?.message}
-                    />
-                  )}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} lg={4}>
-                <Controller
-                  name="newPassword"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      label="New Password"
-                      type="password"
-                      fullWidth
-                      error={!!errors.newPassword}
-                      helperText={errors.newPassword?.message}
-                    />
-                  )}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} lg={4}>
-                <Controller
-                  name="confirmPassword"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      label="Confirm New Password"
-                      type="password"
-                      fullWidth
-                      error={!!errors.confirmPassword}
-                      helperText={errors.confirmPassword?.message}
-                    />
-                  )}
-                />
-              </Grid>
-            </Grid>
-            <Box sx={{ mt: 3 }}>
-              <Button
-                type="submit"
-                variant="contained"
-                disabled={!isValid}
-                sx={{
-                  backgroundColor: "darkblue",
-                  "&:hover": { backgroundColor: "#00008b" },
-                }}
-              >
-                Save
-              </Button>
-            </Box>
-          */}
-          </form>
-          {savedMessage && (
-            <Alert severity="info" sx={{ mt: 2 }}>
-              {savedMessage}
-            </Alert>
-          )}
+          </Grid>
         </CardContent>
       </Card>
-    </BackgroundBox>
+    </BackgroundBox >
   );
 };
 

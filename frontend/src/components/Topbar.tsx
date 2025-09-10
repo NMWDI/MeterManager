@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import {
   AppBar,
   Toolbar,
@@ -15,8 +15,6 @@ import {
 import MenuIcon from "@mui/icons-material/Menu";
 import { useNavigate } from "react-router-dom";
 import { useAuthUser, useSignOut } from "react-auth-kit";
-import { createAvatar } from '@dicebear/core';
-import { initials } from '@dicebear/collection';
 import { Login, Logout, Settings } from "@mui/icons-material";
 import { RoleChip, TopbarUserButton } from "./index";
 
@@ -24,16 +22,11 @@ export default function Topbar({ open, onMenuClick, sx }: { open: boolean, onMen
   const navigate = useNavigate();
   const signOut = useSignOut();
   const authUser = useAuthUser();
-  const role: string = authUser()?.user_role?.name;
-  const isLoggedIn = !!authUser();
-  const avatar = useMemo(() => {
-    return createAvatar(initials, {
-      size: 64,
-      seed: authUser()?.full_name
-    }).toDataUri();
-  }, []);
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+  const role: string = authUser()?.user_role?.name;
+  const isLoggedIn = !!authUser();
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -45,8 +38,8 @@ export default function Topbar({ open, onMenuClick, sx }: { open: boolean, onMen
 
   const fullSignOut = () => {
     navigate("/");
-    signOut();
     localStorage.removeItem("loggedIn");
+    signOut();
   };
 
   return (
@@ -93,7 +86,6 @@ export default function Topbar({ open, onMenuClick, sx }: { open: boolean, onMen
         {isLoggedIn ? (
           <Box>
             <TopbarUserButton
-              src={avatar}
               role={role}
               display_name={authUser()?.username ?? "Username"}
               onClick={handleMenuOpen}

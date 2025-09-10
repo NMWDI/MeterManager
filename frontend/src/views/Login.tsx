@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useIsAuthenticated, useSignIn } from "react-auth-kit";
+import { useAuthUser, useIsAuthenticated, useSignIn } from "react-auth-kit";
 import {
   Box,
   TextField,
@@ -24,10 +24,8 @@ export const Login = () => {
 
   const signIn = useSignIn();
   const isAuthenticated = useIsAuthenticated();
+  const authUser = useAuthUser();
   const navigate = useNavigate();
-
-  // handle redirect after refresh
-  const savedRedirect = localStorage.getItem("redirectPage") ?? "/";
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -47,7 +45,7 @@ export const Login = () => {
 
   useEffect(() => {
     if (isAuthenticated()) {
-      navigate(savedRedirect);
+      navigate(authUser()?.redirect_page ?? "/");
     }
   }, [isAuthenticated, navigate]);
 
@@ -75,7 +73,7 @@ export const Login = () => {
         ) {
           localStorage.setItem("_auth", data.access_token);
           localStorage.setItem("loggedIn", "true");
-          navigate(savedRedirect);
+          navigate(data.user.redirect_page ?? "/");
         } else {
           setError("Invalid username or password. Please try again.");
         }

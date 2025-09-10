@@ -30,6 +30,7 @@ from api.routes.maintenance import maintenance_router
 from api.routes.meters import meter_router
 from api.routes.OSE import ose_router
 from api.routes.parts import part_router
+from api.routes.settings import settings_router
 from api.routes.well_measurements import authenticated_well_measurement_router, public_well_measurement_router
 from api.routes.wells import authenticated_well_router, public_well_router
 
@@ -136,6 +137,7 @@ authenticated_router.include_router(meter_router)
 authenticated_router.include_router(part_router)
 authenticated_router.include_router(authenticated_well_measurement_router)
 authenticated_router.include_router(authenticated_well_router)
+authenticated_router.include_router(settings_router)
 
 add_pagination(app)
 

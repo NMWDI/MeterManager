@@ -5,12 +5,10 @@ import { useTheme } from "@mui/material/styles";
 
 
 export const TopbarUserButton = ({
-  src,
   display_name,
   role,
   ...buttonProps
 }: {
-  src: string,
   display_name: string,
   role: string,
 } & ButtonProps) => {

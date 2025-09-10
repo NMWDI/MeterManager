@@ -45,6 +45,10 @@ class User(ORMBase):
 
     user_role: UserRole | None = None
 
+    display_name: str | None = None
+    redirect_page: str | None = None
+    avatar_img: str | None = None
+
 
 class Token(BaseModel):
     access_token: str

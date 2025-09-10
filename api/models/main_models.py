@@ -421,6 +421,9 @@ class Users(Base):
     )
 
     user_role: Mapped["UserRoles"] = relationship("UserRoles")
+    display_name: Mapped[str] = mapped_column(String, nullable=True)
+    redirect_page: Mapped[str] = mapped_column(String, nullable=True, default="/")
+    avatar_img: Mapped[str] = mapped_column(String, nullable=True)
 
 
 # Association table that links roles and their associated scopes
