@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Box, Grid } from "@mui/material";
+import { Box, Card, CardContent, Grid } from "@mui/material";
 import { MeterHistoryTable } from "./MeterHistoryTable";
 import { SelectedActivityDetails } from "./SelectedActivityDetails";
 import { SelectedObservationDetails } from "./SelectedObservationDetails";
@@ -15,7 +15,8 @@ import { MeterHistoryType } from "../../../enums";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
-import { ImagePreviewGrid } from "../../../components";
+import { CustomCardHeader, ImagePreviewGrid } from "../../../components";
+import { ImageOutlined } from "@mui/icons-material";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
@@ -129,14 +130,25 @@ export const MeterHistory = ({
       const photos = historyItem.history_item.photos?.map((p: any) => p.url) ?? [];
 
       return (
-        <>
-          <SelectedActivityDetails
-            onDeletion={handleDeleteItem}
-            selectedActivity={convertHistoryActivity(historyItem)}
-            afterSave={handleSaveItem}
-          />
-          <ImagePreviewGrid previews={photos} />
-        </>
+        <Grid container spacing={2}>
+          <Grid item xs={12}>
+            <SelectedActivityDetails
+              onDeletion={handleDeleteItem}
+              selectedActivity={convertHistoryActivity(historyItem)}
+              afterSave={handleSaveItem}
+            />
+          </Grid>
+          {photos && photos?.length > 0 ? (
+            <Grid item xs={12}>
+              <Card>
+                <CustomCardHeader title="Image Previews" icon={ImageOutlined} />
+                <CardContent>
+                  <ImagePreviewGrid previews={photos} />
+                </CardContent>
+              </Card>
+            </Grid>
+          ) : null}
+        </Grid>
       );
     }
 

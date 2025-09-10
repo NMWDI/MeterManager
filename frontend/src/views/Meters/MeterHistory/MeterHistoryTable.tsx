@@ -68,7 +68,7 @@ export const MeterHistoryTable = ({
   ];
 
   return (
-    <Card sx={{ height: "100%" }}>
+    <Card>
       <CustomCardHeader title="Meter History" icon={HistoryIcon} />
       <CardContent sx={{ height: "550px" }}>
         <DataGrid
