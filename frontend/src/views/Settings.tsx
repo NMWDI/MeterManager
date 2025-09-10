@@ -17,19 +17,26 @@ import {
   AccordionSummary,
   AccordionDetails,
   Button,
+  ListSubheader,
+  Skeleton,
 } from "@mui/material";
 import SettingsIcon from "@mui/icons-material/Settings";
-import { useAuthUser } from "react-auth-kit";
+import { useAuthUser, useSignIn } from "react-auth-kit";
 import {
   ExpandMore
 } from '@mui/icons-material';
 import { BackgroundBox, CustomCardHeader, IsTrueChip, RoleChip } from "../components";
 import { navConfig } from '../constants';
 import { useFetchWithAuth } from '../hooks';
-import { useMutation, useQuery } from 'react-query';
+import { useMutation, useQuery, useQueryClient } from 'react-query';
+import { SecurityScope } from '../interfaces';
+import { useEffect } from 'react';
 
-const redirectOptions = navConfig.filter(item => item.role !== "Admin");
-
+const redirectOptions = {
+  public: navConfig.filter(item => !item.role),
+  technician: navConfig.filter(item => item.role === "Technician"),
+  admin: navConfig.filter(item => item.role === "Admin"),
+};
 
 const redirectSchema = yup.object().shape({
   redirect_page: yup.string().required("Please select a redirect page"),
@@ -47,8 +54,18 @@ const passwordSchema = yup.object().shape({
 export const Settings = () => {
   const authUser = useAuthUser();
   const user = authUser();
+  const signIn = useSignIn();
   const fetchWithAuth = useFetchWithAuth();
+  const scopes: Set<string> = new Set(
+    authUser()?.user_role?.security_scopes?.map(
+      (scope: SecurityScope) => scope.scope_string
+    ) ?? []
+  );
 
+  const hasReadScope = scopes.has("read");
+  const hasAdminScope = scopes.has("admin");
+
+  const queryClient = useQueryClient();
   const getRedirectPageQuery = useQuery({
     queryKey: ["redirectPage"],
     queryFn: async () => fetchWithAuth({
@@ -59,14 +76,28 @@ export const Settings = () => {
 
   const redirectMutation = useMutation({
     mutationFn: async (data: { redirect_page: string }) => {
-      await fetchWithAuth({
+      return await fetchWithAuth({
         method: "POST",
         route: "/settings/redirect_page",
         body: data,
-      })
+      });
     },
-    onSuccess: () => {
+    onSuccess: (responseJson: { message: string, redirect_page: string }) => {
       enqueueSnackbar("Redirect page updated successfully.", { variant: "success" });
+      queryClient.invalidateQueries(["redirectPage"]);
+
+      // Grab the current auth state & update it
+      if (user) {
+        signIn({
+          token: localStorage.getItem("_auth")!, // reuse current token
+          expiresIn: 300,                        // reuse the expiry window you want
+          tokenType: "bearer",
+          authState: {
+            ...user,
+            redirect_page: responseJson.redirect_page,     // overwrite just this field
+          },
+        });
+      }
     },
     onError: () => {
       enqueueSnackbar("Failed to update redirect page.", { variant: "error" });
@@ -76,11 +107,18 @@ export const Settings = () => {
   const {
     control: redirectControl,
     handleSubmit: handleRedirectSubmit,
+    reset: redirectReset
   } = useForm({
     resolver: yupResolver(redirectSchema),
     defaultValues: { redirect_page: getRedirectPageQuery?.data?.redirect_page ?? "/" },
     values: { redirect_page: getRedirectPageQuery?.data?.redirect_page ?? "/" }, // react-hook-form v7 pattern for sync
   });
+
+  useEffect(() => {
+    if (getRedirectPageQuery.data?.redirect_page) {
+      redirectReset({ redirect_page: getRedirectPageQuery.data.redirect_page });
+    }
+  }, [getRedirectPageQuery.data, redirectReset]);
 
   const onRedirectSubmit = (data: any) => {
     redirectMutation.mutate(data);
@@ -100,7 +138,7 @@ export const Settings = () => {
         body: JSON.stringify(data),
       });
       if (!res.ok) throw new Error("Password reset failed");
-      return res.json();
+      return await res.json();
     },
     onSuccess: () => {
       enqueueSnackbar("Password reset request submitted.", { variant: "success" });
@@ -180,36 +218,98 @@ export const Settings = () => {
                             <Controller
                               name="redirect_page"
                               control={redirectControl}
-                              render={({ field }) => (
-                                <TextField
-                                  {...field}
-                                  select
-                                  fullWidth
-                                  size='small'
-                                  label="Page to redirect after login"
-                                  disabled={getRedirectPageQuery?.isFetching || redirectMutation.isLoading}
-                                >
-                                  {redirectOptions.map((option) => {
-                                    const Icon = option.icon;
-                                    return (
-                                      <MenuItem key={option.path} value={option.path}>
-                                        <Box
-                                          sx={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: 1,
-                                          }}
-                                        >
-                                          <ListItemIcon sx={{ minWidth: 0 }}>
-                                            <Icon fontSize="small" />
-                                          </ListItemIcon>
-                                          {option.label}
-                                        </Box>
-                                      </MenuItem>
-                                    );
-                                  })}
-                                </TextField>
-                              )}
+                              render={({ field }) => {
+                                // flatten all available paths
+                                const availablePaths = [
+                                  ...redirectOptions.public.map(o => o.path),
+                                  ...(hasReadScope ? redirectOptions.technician.map(o => o.path) : []),
+                                  ...(hasAdminScope ? redirectOptions.admin.map(o => o.path) : []),
+                                ];
+
+                                // guard: if no options available yet, render empty select
+                                if (getRedirectPageQuery.isFetching && availablePaths.length === 0) {
+                                  return (
+                                    <Skeleton
+                                      variant="rectangular"
+                                      width="100%"
+                                      height={40}
+                                      sx={{ borderRadius: 1 }}
+                                    />
+                                  );
+                                }
+
+                                const safeValue = availablePaths.includes(field.value)
+                                  ? field.value
+                                  : "/";
+
+                                return (
+                                  <TextField
+                                    {...field}
+                                    select
+                                    fullWidth
+                                    size='small'
+                                    label="Page to redirect after login"
+                                    disabled={getRedirectPageQuery?.isFetching || redirectMutation.isLoading}
+                                    value={safeValue}
+                                    onChange={(e) => field.onChange(e)}
+                                  >
+                                    {redirectOptions.public.length > 0 && [
+                                      <ListSubheader key="public-header" component="div">
+                                        Pages
+                                      </ListSubheader>,
+                                      ...redirectOptions.public.map((option) => {
+                                        const Icon = option.icon;
+                                        return (
+                                          <MenuItem key={option.path} value={option.path}>
+                                            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                              <ListItemIcon sx={{ minWidth: 0 }}>
+                                                <Icon fontSize="small" />
+                                              </ListItemIcon>
+                                              {option.label}
+                                            </Box>
+                                          </MenuItem>
+                                        );
+                                      }),
+                                    ]}
+                                    {hasReadScope && redirectOptions.technician.length > 0 && [
+                                      <ListSubheader key="tech-header" component="div">
+                                        <RoleChip role="Technician" /> Pages
+                                      </ListSubheader>,
+                                      ...redirectOptions.technician.map((option) => {
+                                        const Icon = option.icon;
+                                        return (
+                                          <MenuItem key={option.path} value={option.path}>
+                                            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                              <ListItemIcon sx={{ minWidth: 0 }}>
+                                                <Icon fontSize="small" />
+                                              </ListItemIcon>
+                                              {option.label}{option.parent === "reports" ? " Report" : null}
+                                            </Box>
+                                          </MenuItem>
+                                        );
+                                      }),
+                                    ]}
+                                    {hasAdminScope && redirectOptions.admin.length > 0 && [
+                                      <ListSubheader key="admin-header" component="div">
+                                        <RoleChip role="Admin" /> Pages
+                                      </ListSubheader>,
+                                      ...redirectOptions.admin.map((option) => {
+                                        const Icon = option.icon;
+                                        return (
+                                          <MenuItem key={option.path} value={option.path}>
+                                            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                              <ListItemIcon sx={{ minWidth: 0 }}>
+                                                <Icon fontSize="small" />
+                                              </ListItemIcon>
+                                              {option.label}
+                                            </Box>
+                                          </MenuItem>
+                                        );
+                                      }),
+                                    ]}
+                                  </TextField>
+                                );
+                              }}
                             />
                           </Grid>
                           <Grid item xs={12}>
