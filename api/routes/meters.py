@@ -25,9 +25,14 @@ from api.models.main_models import (
 from api.route_util import _patch, _get
 from api.session import get_db
 from api.enums import ScopedUser, MeterSortByField, MeterStatus, SortDirection
+from google.cloud import storage
+from datetime import timedelta
+
+import os
 
 meter_router = APIRouter()
 
+BUCKET_NAME = os.getenv("GCP_BUCKET_NAME", "")
 
 # Get paginated, sorted list of meters, filtered by a search string if applicable
 @meter_router.get(
@@ -448,8 +453,28 @@ def patch_meter(
     ).first()
 
 
-# Build a list of a meter's history (activities and observations)
-# There's no real defined structure/schema to this on the front or backend
+def generate_signed_url(bucket_name: str, blob_path: str, expires_minutes: int = 60) -> str:
+    """
+    Try to generate a signed URL for a blob. If it fails (e.g., wrong creds), 
+    return the raw gs:// path instead.
+    """
+    try:
+        client = storage.Client()
+        bucket = client.bucket(bucket_name)
+        blob = bucket.blob(blob_path)
+
+        url = blob.generate_signed_url(
+            version="v4",
+            expiration=timedelta(minutes=expires_minutes),
+            method="GET",
+        )
+        return url
+    except Exception as e:
+        # Print and fallback
+        print(f"⚠️ Could not generate signed URL for {blob_path}: {e}")
+        return f"gs://{bucket_name}/{blob_path}"
+
+
 @meter_router.get(
     "/meter_history", dependencies=[Depends(ScopedUser.Read)], tags=["Meters"]
 )
@@ -507,7 +532,7 @@ def get_meter_history(meter_id: int, db: Session = Depends(get_db)):
             {
                 "id": photo.id,
                 "file_name": photo.file_name,
-                "gcs_path": photo.gcs_path,
+                "url": generate_signed_url(BUCKET_NAME, photo.gcs_path),
                 "uploaded_at": photo.uploaded_at,
             }
             for photo in activity.photos

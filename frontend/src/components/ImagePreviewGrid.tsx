@@ -4,7 +4,7 @@ import CloseIcon from "@mui/icons-material/Close";
 
 export const ImagePreviewGrid = ({ previews, onRemove }: {
   previews: string[];
-  onRemove: (index: number) => void;
+  onRemove?: (index: number) => void;
 }) => {
   const [open, setOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -55,23 +55,25 @@ export const ImagePreviewGrid = ({ previews, onRemove }: {
                   objectFit: "cover",
                 }}
               />
-              <IconButton
-                size="small"
-                onClick={() => onRemove(i)}
-                sx={{
-                  position: "absolute",
-                  top: 0,
-                  right: 0,
-                  backgroundColor: "rgba(255,255,255,0.7)",
-                  border: "1px solid black",
-                  "&:hover": {
-                    backgroundColor: "rgba(255,0,0,0.8)",
-                    color: "white",
-                  },
-                }}
-              >
-                <CloseIcon fontSize="small" />
-              </IconButton>
+              {onRemove && (
+                <IconButton
+                  size="small"
+                  onClick={() => onRemove(i)}
+                  sx={{
+                    position: "absolute",
+                    top: 0,
+                    right: 0,
+                    backgroundColor: "rgba(255,255,255,0.7)",
+                    border: "1px solid black",
+                    "&:hover": {
+                      backgroundColor: "rgba(255,0,0,0.8)",
+                      color: "white",
+                    },
+                  }}
+                >
+                  <CloseIcon fontSize="small" />
+                </IconButton>
+              )}
             </Box>
           ))}
         </Box>

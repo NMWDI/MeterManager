@@ -15,6 +15,7 @@ import { MeterHistoryType } from "../../../enums";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
+import { ImagePreviewGrid } from "../../../components";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
@@ -125,12 +126,17 @@ export const MeterHistory = ({
     if (!historyItem) return <SelectedBlankCard />;
 
     if (historyItem.history_type === MeterHistoryType.Activity) {
+      const photos = historyItem.history_item.photos?.map((p: any) => p.url) ?? [];
+
       return (
-        <SelectedActivityDetails
-          onDeletion={handleDeleteItem}
-          selectedActivity={convertHistoryActivity(historyItem)}
-          afterSave={handleSaveItem}
-        />
+        <>
+          <SelectedActivityDetails
+            onDeletion={handleDeleteItem}
+            selectedActivity={convertHistoryActivity(historyItem)}
+            afterSave={handleSaveItem}
+          />
+          <ImagePreviewGrid previews={photos} />
+        </>
       );
     }
 
