@@ -10,8 +10,9 @@ const VisuallyHiddenInput = (props: any) => (
   />
 );
 
-export const ImageUploadWithPreview = () => {
+export const ImageUploadWithPreview = ({ onFilesChange }: { onFilesChange?: (files: File[]) => void }) => {
   const [previews, setPreviews] = useState<string[]>([]);
+  const [files, setFiles] = useState<File[]>([]);
   const [open, setOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
@@ -33,6 +34,12 @@ export const ImageUploadWithPreview = () => {
       file.type.startsWith("image/")
     );
 
+    setFiles((prev) => {
+      const updated = [...prev, ...imageFiles];
+      onFilesChange?.(updated); // bubble up to parent form
+      return updated;
+    });
+
     const urls = imageFiles.map((file) => URL.createObjectURL(file));
     setPreviews((prev) => [...prev, ...urls]); // append instead of replace
 
@@ -40,6 +47,13 @@ export const ImageUploadWithPreview = () => {
   };
 
   const handleRemove = (index: number) => {
+    setFiles((prev) => {
+      const updated = [...prev];
+      updated.splice(index, 1);
+      onFilesChange?.(updated);
+      return updated;
+    });
+
     setPreviews((prev) => {
       const updated = [...prev];
       const [removed] = updated.splice(index, 1);

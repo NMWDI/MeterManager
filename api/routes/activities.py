@@ -1,11 +1,11 @@
-from fastapi import Depends, APIRouter, Query
+from fastapi import Depends, APIRouter, Query, File, UploadFile, Form
 from fastapi.exceptions import HTTPException
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select, text
 from datetime import datetime
 from typing import List
-
+import json
 from api import security
 from api.schemas import meter_schemas
 from api.models.main_models import (
@@ -32,21 +32,27 @@ from api.enums import ScopedUser, WorkOrderStatus
 activity_router = APIRouter()
 
 
-# Process a submitted activity
-# Returns 422 when one or more required fields of ActivityForm are not present
-# Returns the new MeterActivity on success
 @activity_router.post(
     "/activities",
     response_model=meter_schemas.MeterActivity,
     dependencies=[Depends(ScopedUser.ActivityWrite)],
     tags=["Activities"],
 )
-def post_activity(
-    activity_form: meter_schemas.ActivityForm, db: Session = Depends(get_db), user: Users = Depends(get_current_user)
+async def post_activity(
+    activity: str = Form(...),  # JSON string from FormData
+    files: list[UploadFile] = File(None),  # optional uploaded images
+    db: Session = Depends(get_db),
+    user: Users = Depends(get_current_user),
 ):
     """
-    Handles submission of an activity.
+    Handles submission of an activity (with optional file uploads).
     """
+
+    try:
+        activity_form = meter_schemas.ActivityForm.parse_obj(json.loads(activity))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid activity payload: {e}")
+
     # Set some variables that will be used to determine how the meter is updated
     update_meter_state = True
     user_level = user.user_role.name

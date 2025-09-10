@@ -73,6 +73,7 @@ export interface ActivityFormControl {
     working_on_arrival_slug: string,
     selected_note_ids: number[] | null
   },
+  photos?: File[],
   part_used_ids?: []
 }
 

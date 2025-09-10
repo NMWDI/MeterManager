@@ -876,43 +876,6 @@ export function useUpdateUserPassword(onSuccess: Function) {
   });
 }
 
-export function useCreateActivity(onSuccess: Function) {
-  const { enqueueSnackbar } = useSnackbar();
-  const route = "activities";
-  const authHeader = useAuthHeader();
-
-  return useMutation({
-    mutationFn: async (activityForm: ActivityForm) => {
-      const response = await POSTFetch(route, activityForm, authHeader());
-
-      // This responsibility will eventually move to callsite when special error codes arent relied on
-      if (!response.ok) {
-        if (response.status == 422) {
-          enqueueSnackbar("One or More Required Fields Not Entered!", {
-            variant: "error",
-          });
-          throw Error("Incomplete form, check network logs for details");
-        }
-        if (response.status == 409) {
-          //There could be a couple reasons for this... out of order activity or duplicate activity
-          let errorText = await response.text();
-          enqueueSnackbar(JSON.parse(errorText).detail, { variant: "error" });
-          throw Error(errorText);
-        } else {
-          enqueueSnackbar("Unknown Error Occurred!", { variant: "error" });
-          throw Error("Unknown Error: " + response.status);
-        }
-      } else {
-        onSuccess();
-
-        const responseJson = await response.json();
-        return responseJson;
-      }
-    },
-    retry: 0,
-  });
-}
-
 export function useUpdateMeterType(onSuccess: Function) {
   const { enqueueSnackbar } = useSnackbar();
   const route = "meter_types";

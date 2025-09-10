@@ -130,7 +130,13 @@ export default function NotesSelection({ control, watch }: any) {
           </FormControl>
         </Grid>
         <Grid item xs={12} sx={{ mt: 2 }}>
-          <ImageUploadWithPreview />
+          <Controller
+            name="photos"
+            control={control}
+            render={({ field }) => (
+              <ImageUploadWithPreview onFilesChange={(files) => field.onChange(files)} />
+            )}
+          />
         </Grid>
       </Grid>
     </Box>

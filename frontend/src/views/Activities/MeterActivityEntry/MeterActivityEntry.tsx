@@ -14,7 +14,6 @@ import PartsSelection from "./PartsSelection";
 import { ActivityFormControl, MeterListDTO } from "../../../interfaces.d";
 import { ActivityType } from "../../../enums";
 import {
-  useCreateActivity,
   useGetMeter,
   useGetWell,
 } from "../../../service/ApiServiceNew";
@@ -23,9 +22,13 @@ import {
   getDefaultForm,
   toSubmissionForm,
 } from "./ActivityFormConfig";
+import { useMutation } from "react-query";
+import { useAuthHeader } from "react-auth-kit";
+import { API_URL } from "../../../config";
 
 export default function MeterActivityEntry() {
   const navigate = useNavigate();
+  const authHeader = useAuthHeader();
   const [searchParams] = useSearchParams();
   const { enqueueSnackbar } = useSnackbar();
   const [meterID, setMeterID] = useState<number>();
@@ -37,12 +40,50 @@ export default function MeterActivityEntry() {
   const [isMeterAndActivitySelected, setIsMeterAndActivitySelected] =
     useState<boolean>(false);
 
-  function onSuccessfulSubmit() {
+  function onSuccessfulSubmit(activity_id: number, meter_id: number) {
     enqueueSnackbar("Successfully Submitted Activity!", { variant: "success" });
-    navigate("/manage/meters");
+    navigate({
+      pathname: "/manage/meters",
+      search: `?meter_id=${meter_id}&activity_id=${activity_id}`,
+    });
   }
 
-  const createActivity = useCreateActivity(onSuccessfulSubmit);
+  const createActivity = useMutation({
+    mutationFn: async (activityForm: FormData) => {
+      const response = await fetch(`${API_URL}/activities`, {
+        method: "POST",
+        headers: {
+          Authorization: authHeader(),
+        },
+        body: activityForm,
+      });
+
+      if (!response.ok) {
+        if (response.status == 422) {
+          enqueueSnackbar("One or More Required Fields Not Entered!", {
+            variant: "error",
+          });
+          throw Error("Incomplete form, check network logs for details");
+        }
+        if (response.status == 409) {
+          let errorText = await response.text();
+          enqueueSnackbar(JSON.parse(errorText).detail, { variant: "error" });
+          throw Error(errorText);
+        } else {
+          enqueueSnackbar("Unknown Error Occurred!", { variant: "error" });
+          throw Error("Unknown Error: " + response.status);
+        }
+      }
+      return response.json();
+    },
+    retry: 0,
+    onSuccess: (responseJson) => {
+      const activity_id = responseJson.id;
+      const meter_id = responseJson.meter_id;
+
+      onSuccessfulSubmit(activity_id, meter_id);
+    }
+  });
 
   let initialMeter: Partial<MeterListDTO> | null = null;
   const qpMeterID = searchParams.get("meter_id");
