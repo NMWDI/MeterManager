@@ -5,7 +5,6 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select, text
 from datetime import datetime
 from typing import List
-import json
 from api import security
 from api.schemas import meter_schemas
 from api.models.main_models import (
@@ -15,6 +14,7 @@ from api.models.main_models import (
     ActivityTypeLU,
     Units,
     MeterActivities,
+    MeterActivityPhoto,
     MeterObservations,
     ServiceTypeLU,
     NoteTypeLU,
@@ -28,9 +28,17 @@ from api.models.main_models import (
 from api.session import get_db
 from api.security import get_current_user
 from api.enums import ScopedUser, WorkOrderStatus
+from pathlib import Path
+from google.cloud import storage
+
+import uuid
+import json
+import os
 
 activity_router = APIRouter()
 
+BUCKET_NAME = os.getenv("GCP_BUCKET_NAME", "")
+PHOTO_PREFIX = os.getenv("GCP_PHOTO_PREFIX", "")
 
 @activity_router.post(
     "/activities",
@@ -40,7 +48,7 @@ activity_router = APIRouter()
 )
 async def post_activity(
     activity: str = Form(...),  # JSON string from FormData
-    files: list[UploadFile] = File(None),  # optional uploaded images
+    photos: list[UploadFile] = File(None),  # optional uploaded images
     db: Session = Depends(get_db),
     user: Users = Depends(get_current_user),
 ):
@@ -128,6 +136,7 @@ async def post_activity(
     try:
         db.add(meter_activity)
         db.commit()
+        db.refresh(meter_activity)  # make sure meter_activity.id is available
     except IntegrityError as _e:
         raise HTTPException(
             status_code=409, detail="Activity overlaps with existing activity."
@@ -240,6 +249,42 @@ async def post_activity(
             activity_meter.notes = activity_form.current_installation.notes
 
     db.commit()
+
+
+    # ---- Handle photo file uploads ----
+    if photos:
+        print(f"Received {len(photos)} photos")
+        print(f"Uploading to bucket={BUCKET_NAME}, prefix={PHOTO_PREFIX}")
+        client = storage.Client()
+        bucket = client.bucket(BUCKET_NAME)
+
+        for file in photos:
+            ext = Path(file.filename).suffix or ".jpg"
+            unique_name = f"{uuid.uuid4()}{ext}"
+            blob_path = f"{PHOTO_PREFIX}/{meter_activity.id}/{unique_name}"
+            blob = bucket.blob(blob_path)
+
+            # Upload file content directly
+            try:
+                contents = await file.read()
+                print(f"Uploading {file.filename}, size={len(contents)} bytes")
+
+                blob.upload_from_string(contents, content_type=file.content_type)
+                print(f"Uploaded to gs://{BUCKET_NAME}/{blob_path}")
+            except Exception as e:
+                print(f"ERROR uploading {file.filename}: {e}")
+                raise
+
+            photo = MeterActivityPhoto(
+                meter_activity_id=meter_activity.id,
+                file_name=file.filename,
+                gcs_path=blob_path,
+            )
+            db.add(photo)
+
+        db.commit()
+        print(f"Saved {len(photos)} photos for activity {meter_activity.id}")
+        db.refresh(meter_activity)
 
     return meter_activity
 

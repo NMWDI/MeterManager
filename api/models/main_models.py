@@ -17,7 +17,6 @@ from sqlalchemy.orm import (
     Mapped,
     deferred,
 )
-from geoalchemy2 import Geometry
 from geoalchemy2.shape import to_shape
 from typing import Optional, List
 
@@ -238,6 +237,25 @@ class MeterActivities(Base):
     notes: Mapped[List["NoteTypeLU"]] = relationship("NoteTypeLU", secondary=Notes)
     work_order: Mapped["workOrders"] = relationship()
     well: Mapped["Wells"] = relationship("Wells", primaryjoin='MeterActivities.location_id == Wells.location_id', foreign_keys='MeterActivities.location_id', viewonly=True)
+    photos: Mapped[List["MeterActivityPhoto"]]  = relationship("MeterActivityPhoto", back_populates="meter_activity", cascade="all, delete")
+
+
+class MeterActivityPhoto(Base):
+    __tablename__ = "MeterActivityPhotos"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True, autoincrement=True)
+    meter_activity_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("MeterActivities.id", ondelete="CASCADE"), nullable=False
+    )
+    file_name: Mapped[str] = mapped_column(String, nullable=False)
+    gcs_path: Mapped[str] = mapped_column(String, nullable=False)
+    uploaded_at: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+    meter_activity: Mapped["MeterActivities"] = relationship(
+        "MeterActivities", back_populates="photos"
+    )
 
 
 class ActivityTypeLU(Base):

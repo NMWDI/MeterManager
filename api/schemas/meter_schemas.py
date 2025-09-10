@@ -203,11 +203,16 @@ class ActivityForm(ORMBase):
     part_used_ids: list[int] | None = None
 
 
-
 class ActivityTypeLU(ORMBase):
     name: str | None = None
     description: str | None = None
 
+
+class MeterActivityPhoto(ORMBase):
+    id: int
+    file_name: str
+    gcs_path: str
+    uploaded_at: datetime
 
 class MeterActivity(ORMBase):
     timestamp_start: datetime
@@ -220,6 +225,8 @@ class MeterActivity(ORMBase):
     location_id: int
     ose_share: bool
     water_users: str | None = None
+
+    photos: list[MeterActivityPhoto] = []
 
 
 class PatchActivity(ORMBase):
