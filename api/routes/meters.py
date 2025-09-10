@@ -473,7 +473,8 @@ def get_meter_history(meter_id: int, db: Session = Depends(get_db)):
                 joinedload(MeterActivities.activity_type),
                 joinedload(MeterActivities.parts_used).joinedload(Parts.part_type),
                 joinedload(MeterActivities.notes),
-                joinedload(MeterActivities.services_performed)
+                joinedload(MeterActivities.services_performed),
+                joinedload(MeterActivities.photos),
             )
             .filter(MeterActivities.meter_id == meter_id)
         )
@@ -502,6 +503,16 @@ def get_meter_history(meter_id: int, db: Session = Depends(get_db)):
         #Find if there is a well associated with the location
         activity_well = db.scalars(select(Wells).where(Wells.location_id == activity.location_id)).first()
 
+        photos = [
+            {
+                "id": photo.id,
+                "file_name": photo.file_name,
+                "gcs_path": photo.gcs_path,
+                "uploaded_at": photo.uploaded_at,
+            }
+            for photo in activity.photos
+        ]
+
         formattedHistoryItems.append(
             {
                 "id": itemID,
@@ -511,6 +522,7 @@ def get_meter_history(meter_id: int, db: Session = Depends(get_db)):
                 "activity_type": activity.activity_type_id,
                 "date": activity.timestamp_start,
                 "history_item": activity,
+                "photos": photos,
             }
         )
         itemID += 1
