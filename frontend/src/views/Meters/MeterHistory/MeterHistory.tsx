@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Box, Card, CardContent, Grid } from "@mui/material";
 import { MeterHistoryTable } from "./MeterHistoryTable";
 import { SelectedActivityDetails } from "./SelectedActivityDetails";
@@ -15,8 +15,9 @@ import { MeterHistoryType } from "../../../enums";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
-import { CustomCardHeader, ImagePreviewGrid } from "../../../components";
+import { CustomCardHeader, ImageDialog, ImagePreviewGrid } from "../../../components";
 import { ImageOutlined } from "@mui/icons-material";
+import { API_URL } from "../../../config";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
@@ -29,6 +30,17 @@ export const MeterHistory = ({
   const [selectedHistoryItem, setSelectedHistoryItem] = useState<any>();
   const meterHistory = useGetMeterHistory({ meter_id: selectedMeterID });
   const [searchParams, setSearchParams] = useSearchParams();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+  const photos = useMemo(() => {
+    if (selectedHistoryItem?.history_type === MeterHistoryType.Activity) {
+      return (
+        selectedHistoryItem.photos?.map((p: any) => `${API_URL}${p.url}`) ?? []
+      );
+    }
+    return [];
+  }, [selectedHistoryItem]);
 
   // If there is an activity_id in the URL, set the selectedHistoryItem to the corresponding item and scroll to it
   useEffect(() => {
@@ -127,8 +139,6 @@ export const MeterHistory = ({
     if (!historyItem) return <SelectedBlankCard />;
 
     if (historyItem.history_type === MeterHistoryType.Activity) {
-      const photos = historyItem.history_item.photos?.map((p: any) => p.url) ?? [];
-
       return (
         <Grid container spacing={2}>
           <Grid item xs={12}>
@@ -143,7 +153,18 @@ export const MeterHistory = ({
               <Card>
                 <CustomCardHeader title="Image Previews" icon={ImageOutlined} />
                 <CardContent>
-                  <ImagePreviewGrid previews={photos} />
+                  <ImagePreviewGrid
+                    previews={photos}
+                    onOpen={(src) => {
+                      setSelectedImage(src);
+                      setDialogOpen(true);
+                    }}
+                  />
+                  <ImageDialog
+                    open={dialogOpen}
+                    src={selectedImage}
+                    onClose={() => setDialogOpen(false)}
+                  />
                 </CardContent>
               </Card>
             </Grid>

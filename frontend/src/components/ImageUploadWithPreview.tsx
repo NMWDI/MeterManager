@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Grid, Button } from "@mui/material";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
-import { ImagePreviewGrid } from "./";
+import { ImageDialog, ImagePreviewGrid } from "./";
 
 const VisuallyHiddenInput = (props: any) => (
   <input
@@ -12,6 +12,8 @@ const VisuallyHiddenInput = (props: any) => (
 
 export const ImageUploadWithPreview = ({ onFilesChange }: { onFilesChange?: (files: File[]) => void }) => {
   const [previews, setPreviews] = useState<string[]>([]);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [, setFiles] = useState<File[]>([]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -66,10 +68,21 @@ export const ImageUploadWithPreview = ({ onFilesChange }: { onFilesChange?: (fil
         />
       </Button>
       {previews.length > 0 && (
-        <ImagePreviewGrid
-          previews={previews}
-          onRemove={handleRemove}
-        />
+        <>
+          <ImagePreviewGrid
+            previews={previews}
+            onRemove={handleRemove}
+            onOpen={(src) => {
+              setSelectedImage(src);
+              setDialogOpen(true);
+            }}
+          />
+          <ImageDialog
+            open={dialogOpen}
+            src={selectedImage}
+            onClose={() => setDialogOpen(false)}
+          />
+        </>
       )}
     </Grid>
   );

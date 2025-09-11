@@ -355,6 +355,7 @@ export interface MeterHistoryDTO {
   history_item: any
   location: Location
   well: Well | null
+  photos: any
 }
 
 export interface MeterType {
