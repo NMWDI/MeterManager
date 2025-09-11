@@ -2,6 +2,9 @@ import { useState } from "react";
 import { Grid, Button } from "@mui/material";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { ImageDialog, ImagePreviewGrid } from "./";
+import { enqueueSnackbar } from "notistack";
+
+const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2 MB
 
 const VisuallyHiddenInput = (props: any) => (
   <input
@@ -23,6 +26,17 @@ export const ImageUploadWithPreview = ({ onFilesChange }: { onFilesChange?: (fil
     const imageFiles = Array.from(files).filter((file) =>
       file.type.startsWith("image/")
     );
+
+    const tooBig = imageFiles.filter((f) => f.size > MAX_FILE_SIZE);
+    if (tooBig.length > 0) {
+      enqueueSnackbar(
+        `Some files are too large. Max allowed size is ${MAX_FILE_SIZE / 1024 / 1024
+        } MB`,
+        { variant: "error" }
+      );
+      event.target.value = "";
+      return;
+    }
 
     setFiles((prev) => {
       const updated = [...prev, ...imageFiles];
