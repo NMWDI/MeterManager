@@ -8,8 +8,8 @@ from sqlalchemy import (
     func,
     Boolean,
     Table,
+    Numeric,
 )
-
 from sqlalchemy.orm import (
     relationship,
     DeclarativeBase,
@@ -148,6 +148,7 @@ class Meters(Base):
     contact_name: Mapped[Optional[str]] = mapped_column(String)
     contact_phone: Mapped[Optional[str]] = mapped_column(String)
     notes: Mapped[Optional[str]] = mapped_column(String)
+    price: Mapped[Optional[float]] = mapped_column(Numeric(10, 2))
 
     meter_type_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("MeterTypeLU.id"), nullable=False
@@ -171,6 +172,7 @@ class Meters(Base):
     status: Mapped["MeterStatusLU"] = relationship()
     well: Mapped["Wells"] = relationship("Wells", back_populates="meters")
     location: Mapped["Locations"] = relationship()
+
 
 
 class MeterTypeLU(Base):

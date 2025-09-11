@@ -3,6 +3,7 @@ from api.schemas.base import ORMBase
 from api.schemas.well_schemas import Well, Location
 from api.schemas.security_schemas import User
 from pydantic import BaseModel
+from decimal import Decimal
 
 class Unit(ORMBase):
     name: str | None = None
@@ -52,6 +53,7 @@ class MeterListDTO(ORMBase):
     id: int
     serial_number: str
     water_users: str | None = None
+    price: Decimal | None = None
     well: WellDTO | None = None
     location: LocationDTO | None = None
     status: StatusDTO | None = None
@@ -93,6 +95,7 @@ class SubmitNewMeter(ORMBase):
     contact_name: str | None = None
     contact_phone: str | None = None
     notes: str | None = None
+    price: Decimal | None = None
     well: Well | None = None
     meter_register: MeterRegister | None = None
 
@@ -102,6 +105,7 @@ class SubmitMeterUpdate(ORMBase):
     contact_name: str | None = None
     contact_phone: str | None = None
     notes: str | None = None
+    price: Decimal | None = None
     meter_type: MeterTypeLU
     status: MeterStatusLU | None = None
     meter_register: MeterRegister | None = None

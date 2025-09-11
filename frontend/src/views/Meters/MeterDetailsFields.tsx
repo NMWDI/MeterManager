@@ -7,7 +7,7 @@ import GradingIcon from "@mui/icons-material/Grading";
 import AddIcon from "@mui/icons-material/Add";
 import SaveIcon from "@mui/icons-material/Save";
 import SaveAsIcon from "@mui/icons-material/SaveAs";
-import { Button, Grid, Card, CardContent } from "@mui/material";
+import { Button, Grid, Card, CardContent, InputAdornment } from "@mui/material";
 import {
   Table,
   TableBody,
@@ -34,6 +34,9 @@ import { CustomCardHeader } from "../../components/CustomCardHeader";
 
 const MeterResolverSchema: Yup.ObjectSchema<any> = Yup.object().shape({
   serial_number: Yup.string().required("Please enter a serial number."),
+  price: Yup.number()
+    .nullable()
+    .min(0, "Price cannot be negative"),
   meter_type: Yup.object().required("Please select a meter type."),
   meter_register: Yup.object().required("Please select a meter register."),
 });
@@ -127,58 +130,63 @@ export const MeterDetailsFields = ({
       />
       <CardContent>
         <Grid container spacing={2}>
-          <Grid container item xs={12}>
-            <Grid item xs={12} lg={5}>
-              <ControlledTextbox
-                name="serial_number"
-                control={control}
-                label="Serial Number"
-                error={errors?.serial_number?.message != undefined}
-                helperText={errors?.serial_number?.message}
-                disabled={!hasAdminScope || isInitialLoad}
-              />
-            </Grid>
+          <Grid item xs={12} lg={6}>
+            <ControlledTextbox
+              name="serial_number"
+              control={control}
+              label="Serial Number"
+              error={errors?.serial_number?.message != undefined}
+              helperText={errors?.serial_number?.message}
+              disabled={!hasAdminScope || isInitialLoad}
+            />
           </Grid>
-          <Grid container item xs={12}>
-            <Grid item xs={12} lg={5}>
-              <ControlledMeterTypeSelect
-                name="meter_type"
-                control={control}
-                errors={errors?.meter_type?.message}
-                disabled={!hasAdminScope || isInitialLoad}
-              />
-            </Grid>
+          <Grid item xs={12} lg={6}>
+            <ControlledMeterTypeSelect
+              name="meter_type"
+              control={control}
+              errors={errors?.meter_type?.message}
+              disabled={!hasAdminScope || isInitialLoad}
+            />
           </Grid>
-          <Grid container item xs={12}>
-            <Grid item xs={12} lg={5}>
-              <ControlledMeterRegisterSelect
-                name="meter_register"
-                control={control}
-                meterType={watch("meter_type")}
-                disabled={!hasAdminScope || isInitialLoad}
-                error={errors?.meter_register != undefined}
-                helperText={errors?.meter_register?.message}
-              />
-            </Grid>
+          <Grid item xs={12} lg={6}>
+            <ControlledMeterRegisterSelect
+              name="meter_register"
+              control={control}
+              meterType={watch("meter_type")}
+              disabled={!hasAdminScope || isInitialLoad}
+              error={errors?.meter_register != undefined}
+              helperText={errors?.meter_register?.message}
+            />
           </Grid>
-          <Grid container item xs={12}>
-            <Grid item xs={12} lg={5}>
-              <ControlledMeterStatusTypeSelect
-                name="status"
-                control={control}
-                disabled={!hasAdminScope || isInitialLoad}
-              />
-            </Grid>
+          <Grid item xs={12} lg={6}>
+            <ControlledMeterStatusTypeSelect
+              name="status"
+              control={control}
+              disabled={!hasAdminScope || isInitialLoad}
+            />
           </Grid>
-          <Grid container item xs={12}>
-            <Grid item xs={12} lg={5}>
-              <ControlledWellSelection
-                name="well"
-                control={control}
-                errors={errors?.meter_type?.message}
-                disabled={!hasAdminScope || isInitialLoad}
-              />
-            </Grid>
+          <Grid item xs={12} lg={6}>
+            <ControlledWellSelection
+              name="well"
+              control={control}
+              errors={errors?.meter_type?.message}
+              disabled={!hasAdminScope || isInitialLoad}
+            />
+          </Grid>
+          <Grid item xs={12} lg={6}>
+            <ControlledTextbox
+              name="price"
+              control={control}
+              label="Meter Price"
+              error={errors?.price?.message != undefined}
+              helperText={errors?.price?.message}
+              disabled={!hasAdminScope || isInitialLoad}
+              type="number"
+              inputProps={{ step: "0.01" }}
+              InputProps={{
+                startAdornment: <InputAdornment position="start">$</InputAdornment>,
+              }}
+            />
           </Grid>
           <Grid item xs={12}>
             <TableContainer sx={{ mb: 3, mt: 2 }}>
@@ -213,9 +221,9 @@ export const MeterDetailsFields = ({
                       {watch("well")?.location?.latitude == null
                         ? "--"
                         : formatLatLong(
-                            watch("well")?.location?.latitude,
-                            watch("well")?.location?.longitude,
-                          )}
+                          watch("well")?.location?.latitude,
+                          watch("well")?.location?.longitude,
+                        )}
                     </TableCell>
                     <TableCell sx={{ fontSize: "1rem" }}>
                       {watch("well")?.osetag == null
@@ -227,7 +235,7 @@ export const MeterDetailsFields = ({
               </Table>
             </TableContainer>
           </Grid>
-          <Grid item xs={4}>
+          <Grid item xs={12} lg={6}>
             <ControlledTextbox
               name="water_users"
               control={control}
@@ -235,7 +243,7 @@ export const MeterDetailsFields = ({
               disabled={!hasAdminScope || isInitialLoad}
             />
           </Grid>
-          <Grid item xs={4}>
+          <Grid item xs={12} lg={6}>
             <ControlledTextbox
               name="meter_owner"
               control={control}
@@ -243,8 +251,7 @@ export const MeterDetailsFields = ({
               disabled={!hasAdminScope || isInitialLoad}
             />
           </Grid>
-          <Grid item xs={4}></Grid>
-          <Grid item xs={4}>
+          <Grid item xs={12} lg={6}>
             <ControlledTextbox
               name="contact_name"
               control={control}
@@ -254,7 +261,7 @@ export const MeterDetailsFields = ({
               disabled={!hasAdminScope || isInitialLoad}
             />
           </Grid>
-          <Grid item xs={4}>
+          <Grid item xs={12} lg={6}>
             <ControlledTextbox
               name="contact_phone"
               control={control}

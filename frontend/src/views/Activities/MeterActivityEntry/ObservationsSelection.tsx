@@ -120,7 +120,7 @@ export default function ObservationSelection({
       <Typography variant="h6" fontWeight="bold">
         Observations
       </Typography>
-      <Grid container item xs={12} sx={{ mt: 3 }}>
+      <Grid container sx={{ mt: 3 }}>
         {fields.map((field, index) => {
           return (
             <ObservationRow
@@ -135,7 +135,6 @@ export default function ObservationSelection({
             />
           );
         })}
-
         <Button variant="contained" onClick={addObservation}>
           {fields.length < 1
             ? "+ Add An Observation"

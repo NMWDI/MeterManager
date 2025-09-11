@@ -142,6 +142,7 @@ def create_meter(
         contact_name=new_meter.contact_name,
         contact_phone=new_meter.contact_phone,
         meter_type_id=new_meter.meter_type.id,
+        price=new_meter.price,
         status_id=warehouse_status_id,
         location_id=warehouse_location_id,
         meter_owner="PVACD",
@@ -164,7 +165,7 @@ def create_meter(
     try:
         db.add(new_meter_model)
         db.commit()
-    except IntegrityError as e:
+    except IntegrityError:
         raise HTTPException(status_code=409, detail="Meter already exists")
 
     db.refresh(new_meter_model)
@@ -411,21 +412,15 @@ def patch_meter(
     """
     meter_db = _get(db, Meters, updated_meter.id)
 
-    # Update the meter
     meter_db.serial_number = updated_meter.serial_number
     meter_db.contact_name = updated_meter.contact_name
     meter_db.contact_phone = updated_meter.contact_phone
     meter_db.notes = updated_meter.notes
+    meter_db.price = updated_meter.price
     meter_db.meter_type_id = updated_meter.meter_type.id
     meter_db.water_users = updated_meter.water_users
     meter_db.meter_owner = updated_meter.meter_owner
     meter_db.register_id = updated_meter.meter_register.id
-    # for k, v in updated_meter.model_dump(exclude_unset=True).items():
-    #     try:
-    #         setattr(meter_db, k, v)
-    #     except AttributeError as e:
-    #         print(e)
-    #         continue
 
     # If there is a well set, update status, well and location
     if updated_meter.well:
@@ -447,7 +442,7 @@ def patch_meter(
     try:
         db.add(meter_db)
         db.commit()
-    except IntegrityError as _e:
+    except IntegrityError:
         raise HTTPException(status_code=409, detail="Meter already exists")
 
     return db.scalars(

@@ -470,6 +470,7 @@ export interface Meter {
   contact_name?: string
   contact_phone?: string
   notes?: string
+  price?: number
 
   meter_type_id: number
   status_id?: number

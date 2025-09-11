@@ -143,7 +143,6 @@ export const MeterSelection = ({
             setMeterAddMode={setMeterAddMode}
           />
         </TabPanel>
-
         <TabPanel currentTabIndex={currentTabIndex} tabIndex={1}>
           <Grid container sx={{ mt: 1, height: 550 }}>
             <Grid item xs={12} sx={{ height: '100%' }}>
