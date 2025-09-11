@@ -237,10 +237,10 @@ class MeterActivities(Base):
     notes: Mapped[List["NoteTypeLU"]] = relationship("NoteTypeLU", secondary=Notes)
     work_order: Mapped["workOrders"] = relationship()
     well: Mapped["Wells"] = relationship("Wells", primaryjoin='MeterActivities.location_id == Wells.location_id', foreign_keys='MeterActivities.location_id', viewonly=True)
-    photos: Mapped[List["MeterActivityPhoto"]]  = relationship("MeterActivityPhoto", back_populates="meter_activity", cascade="all, delete")
+    photos: Mapped[List["MeterActivityPhotos"]]  = relationship("MeterActivityPhotos", back_populates="meter_activity", cascade="all, delete")
 
 
-class MeterActivityPhoto(Base):
+class MeterActivityPhotos(Base):
     __tablename__ = "MeterActivityPhotos"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True, autoincrement=True)

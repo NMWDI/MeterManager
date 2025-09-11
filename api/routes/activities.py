@@ -14,7 +14,7 @@ from api.models.main_models import (
     ActivityTypeLU,
     Units,
     MeterActivities,
-    MeterActivityPhoto,
+    MeterActivityPhotos,
     MeterObservations,
     ServiceTypeLU,
     NoteTypeLU,
@@ -275,7 +275,7 @@ async def post_activity(
                 print(f"ERROR uploading {file.filename}: {e}")
                 raise
 
-            photo = MeterActivityPhoto(
+            photo = MeterActivityPhotos(
                 meter_activity_id=meter_activity.id,
                 file_name=file.filename,
                 gcs_path=blob_path,
@@ -359,6 +359,24 @@ def delete_activity(activity_id: int, db: Session = Depends(get_db)):
     '''
     # Get the activity
     activity = db.scalars(select(MeterActivities).where(MeterActivities.id == activity_id)).first()
+
+    if not activity:
+        raise HTTPException(status_code=404, detail="Activity not found.")
+
+    photos = db.scalars(
+        select(MeterActivityPhotos).where(MeterActivityPhotos.meter_activity_id == activity_id)
+    ).all()
+
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(BUCKET_NAME)
+
+    for photo in photos:
+        try:
+            blob = bucket.blob(photo.gcs_path)
+            blob.delete()
+            print(f"Deleted GCS object: {photo.gcs_path}")
+        except Exception as e:
+            print(f"Failed to delete {photo.gcs_path} from bucket: {e}")
 
     # Delete any notes associated with the activity
     sql = text('DELETE FROM "Notes" WHERE meter_activity_id = :activity_id')
