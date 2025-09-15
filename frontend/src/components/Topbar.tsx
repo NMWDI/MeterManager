@@ -87,7 +87,7 @@ export default function Topbar({ open, onMenuClick, sx }: { open: boolean, onMen
           <Box>
             <TopbarUserButton
               role={role}
-              display_name={authUser()?.username ?? "Username"}
+              display_name={authUser()?.display_name ?? "Unknown"}
               onClick={handleMenuOpen}
             />
             <Menu

@@ -19,10 +19,15 @@ import {
   Button,
   ListSubheader,
   Skeleton,
+  IconButton,
+  Stack,
 } from "@mui/material";
 import SettingsIcon from "@mui/icons-material/Settings";
 import { useAuthUser, useSignIn } from "react-auth-kit";
 import {
+  Check,
+  Close,
+  Edit,
   ExpandMore
 } from '@mui/icons-material';
 import { BackgroundBox, CustomCardHeader, IsTrueChip, RoleChip } from "../components";
@@ -30,7 +35,7 @@ import { navConfig } from '../constants';
 import { useFetchWithAuth } from '../hooks';
 import { useMutation, useQuery, useQueryClient } from 'react-query';
 import { SecurityScope } from '../interfaces';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 const redirectOptions = {
   public: navConfig.filter(item => !item.role),
@@ -64,6 +69,49 @@ export const Settings = () => {
 
   const hasReadScope = scopes.has("read");
   const hasAdminScope = scopes.has("admin");
+
+  const [isEditing, setIsEditing] = useState(false);
+
+  const {
+    control: displayNameControl,
+    handleSubmit: displayNameHandleSubmit,
+    reset: displayNameReset,
+  } = useForm<{ display_name: string }>({
+    defaultValues: { display_name: user?.display_name ?? "" },
+  });
+
+  const displayNameMutation = useMutation({
+    mutationFn: async (data: { display_name: string }) => {
+      return await fetchWithAuth({
+        method: "POST",
+        route: "/settings/display_name",
+        body: data,
+      });
+    },
+    onSuccess: (responseJson: any) => {
+      enqueueSnackbar("Display name updated successfully.", { variant: "success" });
+
+      // Grab the current auth state & update it
+      if (user) {
+        signIn({
+          token: localStorage.getItem("_auth")!, // reuse current token
+          expiresIn: 300,                        // reuse the expiry window you want
+          tokenType: "bearer",
+          authState: {
+            ...user,
+            display_name: responseJson.display_name,     // overwrite just this field
+          },
+        });
+      }
+    },
+    onError: () => {
+      enqueueSnackbar("Failed to update display name.", { variant: "error" });
+    },
+  });
+
+  const onDisplayNameSubmit = ({ display_name }: { display_name: string }) => {
+    displayNameMutation.mutate({ display_name })
+  }
 
   const queryClient = useQueryClient();
   const getRedirectPageQuery = useQuery({
@@ -188,6 +236,51 @@ export const Settings = () => {
               <Grid item xs={12} sm={6} lg={4} sx={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                 <Typography fontWeight="bold">Username:</Typography>
                 <Chip sx={{ fontFamily: "monospace" }} label={user?.username ?? "N/A"} variant='outlined' />
+              </Grid>
+              <Grid item xs={12} sm={6} lg={4} sx={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                {!isEditing ? (
+                  <>
+                    <Typography fontWeight="bold">Display Name:</Typography>
+                    <Chip
+                      sx={{ fontFamily: "monospace" }}
+                      label={user?.display_name ?? "N/A"}
+                      variant="outlined"
+                    />
+                    <IconButton aria-label="edit display name" onClick={() => setIsEditing(true)}>
+                      <Edit />
+                    </IconButton>
+                  </>
+                ) : (
+                  <>
+                    <Controller
+                      name="display_name"
+                      control={displayNameControl}
+                      render={({ field }) => (
+                        <TextField
+                          {...field}
+                          size="small"
+                          fullWidth
+                          autoFocus
+                          label="New Display Name"
+                        />
+                      )}
+                    />
+                    <Stack direction="row" spacing={1}>
+                      <IconButton
+                        color="error"
+                        onClick={() => {
+                          displayNameReset({ display_name: user?.display_name ?? "" });
+                          setIsEditing(false);
+                        }}
+                      >
+                        <Close />
+                      </IconButton>
+                      <IconButton color="primary" onClick={displayNameHandleSubmit(onDisplayNameSubmit)}>
+                        <Check />
+                      </IconButton>
+                    </Stack>
+                  </>
+                )}
               </Grid>
               <Grid item xs={12} sm={6} lg={4} sx={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                 <Typography fontWeight="bold">Role:</Typography>

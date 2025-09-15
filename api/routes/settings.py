@@ -46,3 +46,27 @@ def post_redirect_page(
     db.refresh(db_user)
 
     return {"message": "Redirect page updated", "redirect_page": db_user.redirect_page}
+
+
+class DisplayNameUpdate(ORMBase):
+    display_name: str
+
+
+@settings_router.post(
+    "/settings/display_name",
+    tags=["settings"],
+)
+def post_redirect_page(
+    update: DisplayNameUpdate,
+    db: Session = Depends(get_db),
+    user: Users = Depends(get_current_user),
+):
+    db_user = db.query(Users).filter(Users.id == user.id).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    db_user.display_name = update.display_name
+    db.commit()
+    db.refresh(db_user)
+
+    return {"message": "Display name updated", "display_name": db_user.display_name}
