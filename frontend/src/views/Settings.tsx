@@ -30,7 +30,7 @@ import {
   Edit,
   ExpandMore
 } from '@mui/icons-material';
-import { BackgroundBox, CustomCardHeader, IsTrueChip, RoleChip } from "../components";
+import { BackgroundBox, CustomCardHeader, ImageUploadWithPreview, IsTrueChip, RoleChip } from "../components";
 import { navConfig } from '../constants';
 import { useFetchWithAuth } from '../hooks';
 import { useMutation, useQuery, useQueryClient } from 'react-query';
@@ -298,6 +298,18 @@ export const Settings = () => {
           </Typography>
           <Grid container spacing={2}>
             <Grid item xs={12}>
+              <Accordion disabled>
+                <AccordionSummary expandIcon={<ExpandMore />}>
+                  <Typography component="span">Avatar Configuration</Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} p={2}>
+                      <ImageUploadWithPreview />
+                    </Grid>
+                  </Grid>
+                </AccordionDetails>
+              </Accordion>
               <Accordion>
                 <AccordionSummary expandIcon={<ExpandMore />}>
                   <Typography component="span">Redirect Page After Login</Typography>

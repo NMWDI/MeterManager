@@ -89,6 +89,7 @@ export default function Topbar({ open, onMenuClick, sx }: { open: boolean, onMen
               role={role}
               display_name={authUser()?.display_name ?? "Unknown"}
               onClick={handleMenuOpen}
+              src={authUser()?.avatar_img}
             />
             <Menu
               anchorEl={anchorEl}

@@ -7,10 +7,12 @@ import { useTheme } from "@mui/material/styles";
 export const TopbarUserButton = ({
   display_name,
   role,
+  src,
   ...buttonProps
 }: {
   display_name: string,
   role: string,
+  src?: string
 } & ButtonProps) => {
   const theme = useTheme();
   const buttonColor = getRoleColor(role);
@@ -62,8 +64,9 @@ export const TopbarUserButton = ({
           borderStyle: 'solid',
           borderWidth: "2px",
         }}
+        src={src}
       >
-        {renderRoleIcon()}
+        {src ? null : renderRoleIcon()}
       </Avatar>
     </Button>
   );
