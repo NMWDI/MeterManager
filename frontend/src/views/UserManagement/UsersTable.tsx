@@ -35,6 +35,7 @@ export const UsersTable = ({
     { field: "full_name", headerName: "Full Name", width: 200 },
     { field: "email", headerName: "Email", width: 250 },
     { field: "username", headerName: "Username", width: 150 },
+    { field: "display_name", headerName: "Display Name", width: 150 },
     {
       field: "user_role",
       headerName: "Role",
@@ -49,7 +50,6 @@ export const UsersTable = ({
     },
   ];
 
-  // Filter rows based on search. Cant use multiple filters w/o pro datagrid
   useEffect(() => {
     const psq = userSearchQuery.toLowerCase();
     let filtered = (usersList.data ?? []).filter(
