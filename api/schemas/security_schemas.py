@@ -30,6 +30,7 @@ class NewUser(ORMBase):
     username: str
     email: str
     full_name: str
+    display_name: str
     disabled: bool
     user_role_id: int
     password: str

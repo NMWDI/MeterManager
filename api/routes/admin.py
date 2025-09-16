@@ -86,6 +86,7 @@ def create_user(user: security_schemas.NewUser, db: Session = Depends(get_db)):
         username=user.username,
         email=user.email,
         full_name=user.full_name,
+        display_name=user.display_name,
         user_role_id=user.user_role_id,
         disabled=user.disabled,
         hashed_password=pwd_context.hash(user.password),
