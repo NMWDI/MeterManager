@@ -33,21 +33,23 @@ export const UsersTable = ({
 
   const cols: GridColDef[] = [
     { field: "full_name", headerName: "Full Name", width: 200 },
-    { field: "email", headerName: "Email", width: 250 },
-    { field: "username", headerName: "Username", width: 150 },
-    { field: "display_name", headerName: "Display Name", width: 150 },
     {
       field: "user_role",
       headerName: "Role",
-      width: 200,
+      width: 125,
       valueGetter: (_, row) => row.user_role.name,
       renderCell: (params: any) => <RoleChip role={params.value} />
     },
+    { field: "email", headerName: "Email", width: 250 },
+    { field: "username", headerName: "Username", width: 150 },
     {
       field: "disabled",
       headerName: "Active",
+      width: 80,
       renderCell: (params: any) => <IsTrueChip assert={params.value != true} />
     },
+    { field: "display_name", headerName: "Display Name", width: 150 },
+    { field: "redirect_page", headerName: "Redirect Page", width: 200 },
   ];
 
   useEffect(() => {
