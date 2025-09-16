@@ -1,6 +1,7 @@
 from typing import Optional, List
 from datetime import datetime
 import calendar
+import statistics
 from fastapi.responses import StreamingResponse
 from weasyprint import HTML
 from io import BytesIO
@@ -94,17 +95,19 @@ def get_chloride_groups(
         for group_id, names in groups.items()
     ]
 
-class MinMaxAvg(BaseModel):
+class MinMaxAvgMedCount(BaseModel):
     min: Optional[float] = None
     max: Optional[float] = None
     avg: Optional[float] = None
+    median: Optional[float] = None
+    count: int = 0
 
 
 class ChlorideReportNums(BaseModel):
-    north: MinMaxAvg
-    south: MinMaxAvg
-    east: MinMaxAvg
-    west: MinMaxAvg
+    north: MinMaxAvgMedCount
+    south: MinMaxAvgMedCount
+    east: MinMaxAvgMedCount
+    west: MinMaxAvgMedCount
 
 
 @authenticated_chlorides_router.get(
@@ -336,13 +339,17 @@ def _month_end(dt: datetime) -> datetime:
     last_day = calendar.monthrange(dt.year, dt.month)[1]
     return dt.replace(day=last_day, hour=23, minute=59, second=59, microsecond=999999)
 
-def _stats(values: List[float]) -> MinMaxAvg:
-    if not values:
-        return MinMaxAvg()
-    return MinMaxAvg(
-        min=min(values),
-        max=max(values),
-        avg=(sum(values) / len(values))
+def _stats(values: List[Optional[float]]) -> MinMaxAvgMedCount:
+    clean = [v for v in values if v is not None]
+    if not clean:
+        return MinMaxAvgMedCount()
+    
+    return MinMaxAvgMedCount(
+        min=min(clean),
+        max=max(clean),
+        avg=sum(clean) / len(clean),
+        median=statistics.median(clean),
+        count=len(clean),
     )
 
 # Approx NM bounding box (degrees)

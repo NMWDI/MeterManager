@@ -1,36 +1,15 @@
 import { useEffect } from "react";
 import { useDebounce } from "use-debounce";
-
 import { LayersControl, MapContainer, Marker, Tooltip } from "react-leaflet";
-
-import L from "leaflet";
-import iconBlue from "leaflet/dist/images/marker-icon.png";
-import iconRed from "../../assets/leaflet/marker-icon-red.png";
-import iconShadow from "leaflet/dist/images/marker-shadow.png";
-
-const blueIcon = L.icon({
-  iconUrl: iconBlue,
-  shadowUrl: iconShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
-
-const redIcon = L.icon({
-  iconUrl: iconRed,
-  shadowUrl: iconShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
-
-import "leaflet/dist/leaflet.css";
+import { Box, Typography } from "@mui/material";
 import { useGetWellLocations } from "../../service/ApiServiceNew";
 import { Well } from "../../interfaces";
-import { Box, Typography } from "@mui/material";
 import { OpenStreetMapLayer, SatelliteLayer, SoutheastGuideLayer, WellMapLegend } from "../../components";
+import { BlueMapIcon, RedMapIcon, BlackMapIcon } from "../../components/MapIcons";
+import { WellStatus } from "../../enums";
+
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 
 // @ts-ignore
 import MarkerClusterGroup from "@changey/react-leaflet-markercluster";
@@ -114,7 +93,13 @@ export default function WellSelectionMap({
                       eventHandlers={{
                         click: () => setSelectedWell(well),
                       }}
-                      icon={well.chloride_group_id != null ? redIcon : blueIcon}
+                      icon={
+                        well.well_status_id === WellStatus.PLUGGED
+                          ? BlueMapIcon
+                          : well.chloride_group_id != null
+                            ? RedMapIcon
+                            : BlackMapIcon
+                      }
                     >
                       <Tooltip>
                         {well.name || well.ra_number || well.id}

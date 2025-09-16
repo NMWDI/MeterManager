@@ -5,6 +5,7 @@ export * from "./MeterHistoryType";
 export * from "./MeterSortByField";
 export * from "./MeterStatusNames";
 export * from "./SortDirection";
+export * from "./WellStatus";
 export * from "./WellSortByField";
 export * from "./WorkingOnArrivalValue";
 export * from "./WorkOrderStatus";

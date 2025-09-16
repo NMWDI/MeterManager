@@ -1,26 +1,10 @@
 import React from "react";
-import L from "leaflet";
-import iconBlue from "leaflet/dist/images/marker-icon.png";
-import iconRed from "../assets/leaflet/marker-icon-red.png";
-import iconShadow from "leaflet/dist/images/marker-shadow.png";
+import {
+  BlackMapIcon,
+  BlueMapIcon,
+  RedMapIcon,
+} from './MapIcons';
 
-const blueIcon = L.icon({
-  iconUrl: iconBlue,
-  shadowUrl: iconShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
-
-const redIcon = L.icon({
-  iconUrl: iconRed,
-  shadowUrl: iconShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
 
 export const WellMapLegend: React.FC = () => {
   return (
@@ -39,19 +23,27 @@ export const WellMapLegend: React.FC = () => {
     >
       <div style={{ display: "flex", alignItems: "center", marginBottom: "6px" }}>
         <img
-          src={blueIcon.options.iconUrl as string}
+          src={BlueMapIcon.options.iconUrl as string}
           alt="Well"
           style={{ width: "12.5px", height: "20.1px", marginRight: "8px" }}
         />
         <span>Well</span>
       </div>
-      <div style={{ display: "flex", alignItems: "center" }}>
+      <div style={{ display: "flex", alignItems: "center", marginBottom: "6px" }}>
         <img
-          src={redIcon.options.iconUrl as string}
+          src={RedMapIcon.options.iconUrl as string}
           alt="Chloride Monitored Well"
           style={{ width: "12.5px", height: "20.1px", marginRight: "8px" }}
         />
         <span>Chloride Monitored Well</span>
+      </div>
+      <div style={{ display: "flex", alignItems: "center" }}>
+        <img
+          src={BlackMapIcon.options.iconUrl as string}
+          alt="Chloride Monitored Well"
+          style={{ width: "12.5px", height: "20.1px", marginRight: "8px" }}
+        />
+        <span>Plugged Well</span>
       </div>
     </div>
   );

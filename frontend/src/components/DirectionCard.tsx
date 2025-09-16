@@ -6,11 +6,15 @@ export const DirectionCard = ({
   min,
   avg,
   max,
+  median,
+  count,
 }: {
   title: string;
   min?: number;
   avg?: number;
   max?: number;
+  median?: number;
+  count?: number;
 }) => {
   return (
     <Card variant="outlined" sx={{ height: "100%", borderRadius: 2 }}>
@@ -21,8 +25,10 @@ export const DirectionCard = ({
         <Divider sx={{ mb: 2 }} />
         <Stack direction="row" spacing={2} justifyContent="space-between">
           <StatCell label="Min" value={min} />
-          <StatCell label="Avg" value={avg} />
           <StatCell label="Max" value={max} />
+          <StatCell label="Avg" value={avg} />
+          <StatCell label="Median" value={median} />
+          <StatCell isCount label="Count" value={count} />
         </Stack>
       </CardContent>
     </Card>
