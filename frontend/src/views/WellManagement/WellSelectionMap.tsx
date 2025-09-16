@@ -93,13 +93,7 @@ export default function WellSelectionMap({
                       eventHandlers={{
                         click: () => setSelectedWell(well),
                       }}
-                      icon={
-                        well.well_status_id === WellStatus.PLUGGED
-                          ? BlueMapIcon
-                          : well.chloride_group_id != null
-                            ? RedMapIcon
-                            : BlackMapIcon
-                      }
+                      icon={getWellIcon(well)}
                     >
                       <Tooltip>
                         {well.name || well.ra_number || well.id}
@@ -154,3 +148,14 @@ export default function WellSelectionMap({
     </>
   );
 }
+
+const getWellIcon = (well: Well) => {
+  if (well.well_status_id === WellStatus.PLUGGED) {
+    return BlackMapIcon;
+  }
+  if (well.chloride_group_id != null) {
+    return RedMapIcon;
+  }
+  return BlueMapIcon;
+}
+
