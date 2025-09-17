@@ -134,7 +134,7 @@ export default function NotesSelection({ control, watch }: any) {
             name="photos"
             control={control}
             render={({ field }) => (
-              <ImageUploadWithPreview onFilesChange={(files) => field.onChange(files)} />
+              <ImageUploadWithPreview fileLimit={2} onFilesChange={(files) => field.onChange(files)} />
             )}
           />
         </Grid>

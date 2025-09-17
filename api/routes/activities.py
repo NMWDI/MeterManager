@@ -40,6 +40,9 @@ activity_router = APIRouter()
 BUCKET_NAME = os.getenv("GCP_BUCKET_NAME", "")
 PHOTO_PREFIX = os.getenv("GCP_PHOTO_PREFIX", "")
 
+MAX_PHOTOS_PER_REQUEST = 2
+MAX_PHOTOS_PER_METER = 6
+
 @activity_router.post(
     "/activities",
     response_model=meter_schemas.MeterActivity,
@@ -48,13 +51,21 @@ PHOTO_PREFIX = os.getenv("GCP_PHOTO_PREFIX", "")
 )
 async def post_activity(
     activity: str = Form(...),  # JSON string from FormData
-    photos: list[UploadFile] = File(None),  # optional uploaded images
+    photos: list[UploadFile] = File(None),
     db: Session = Depends(get_db),
     user: Users = Depends(get_current_user),
 ):
     """
     Handles submission of an activity (with optional file uploads).
     """
+
+    if photos:
+        if len(photos) > MAX_PHOTOS_PER_REQUEST:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Too many photos uploaded. "
+                       f"Max {MAX_PHOTOS_PER_REQUEST} allowed per request, got {len(photos)}.",
+            )
 
     try:
         activity_form = meter_schemas.ActivityForm.parse_obj(json.loads(activity))
@@ -285,6 +296,27 @@ async def post_activity(
         db.commit()
         print(f"Saved {len(photos)} photos for activity {meter_activity.id}")
         db.refresh(meter_activity)
+
+        # ---- Enforce per-meter retention ----
+        all_photos = (
+            db.query(MeterActivityPhotos)
+            .join(MeterActivities)
+            .filter(MeterActivities.meter_id == meter_activity.meter_id)
+            .order_by(MeterActivityPhotos.uploaded_at.desc())
+            .all()
+        )
+
+        if len(all_photos) > MAX_PHOTOS_PER_METER:
+            # keep newest MAX_PHOTOS_PER_METER, delete the rest
+            to_delete = all_photos[MAX_PHOTOS_PER_METER:]
+            for old_photo in to_delete:
+                try:
+                    bucket.blob(old_photo.gcs_path).delete()
+                except Exception as e:
+                    print(f"Warning: failed to delete {old_photo.gcs_path} from GCS: {e}")
+                db.delete(old_photo)
+
+            db.commit()
 
     return meter_activity
 
