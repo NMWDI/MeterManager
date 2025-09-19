@@ -64,6 +64,12 @@ export const MonitoringWellsPlot = ({
             titlefont: { size: 18 },
             legend: {
               title: { text: "Datastreams", font: { size: 14 } },
+              x: 1,
+              y: 1,
+              xanchor: "right",
+              yanchor: "top",
+              bordercolor: "grey", // Add border color
+              borderwidth: 1, // Add border width
             },
             xaxis: { title: { text: "Date", font: { size: 16 } } },
             yaxis: {

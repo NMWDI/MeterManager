@@ -119,78 +119,69 @@ export const SelectedObservationDetails = ({
         icon={InfoOutlinedIcon}
       />
       <CardContent>
-        <Grid container item xs={10}>
-          <Grid container item xs={12} spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={4}>
-              <ControlledDatepicker
-                label="Date"
-                name="observation_date"
-                control={control}
-                error={""}
-                sx={{ width: "100%" }}
-              />
-            </Grid>
-            <Grid item xs={4}>
-              <ControlledTimepicker
-                label="Time"
-                name="observation_time"
-                control={control}
-                error={""}
-                sx={{ width: "100%" }}
-              />
-            </Grid>
+        <Grid container spacing={2}>
+          <Grid item xs={12} lg={6}>
+            <ControlledDatepicker
+              label="Date"
+              name="observation_date"
+              control={control}
+              error={""}
+              sx={{ width: "100%" }}
+            />
           </Grid>
-
-          <Grid container item xs={12} spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={4}>
-              <ControlledSelect
-                name={"property_type"}
-                control={control}
-                label={"Reading Type"}
-                options={propertyTypes.data ?? []}
-                getOptionLabel={(p: ObservedPropertyTypeLU) => p.name}
-              />
-            </Grid>
-            <Grid item xs={4}>
-              <ControlledTextbox
-                name={"value"}
-                control={control}
-                label={"Value"}
-              />
-            </Grid>
-            <Grid item xs={4}>
-              <ControlledSelect
-                name={"unit"}
-                control={control}
-                label={"Unit"}
-                options={
-                  propertyTypes.isLoading
-                    ? []
-                    : getUnitsFromPropertyType(watch(`property_type`).id)
-                }
-                getOptionLabel={(p: ObservedPropertyTypeLU) => p.name}
-              />
-            </Grid>
+          <Grid item xs={12} lg={6}>
+            <ControlledTimepicker
+              label="Time"
+              name="observation_time"
+              control={control}
+              error={""}
+              sx={{ width: "100%" }}
+            />
           </Grid>
-
-          <Grid container item xs={12} spacing={2} sx={{ mt: 2 }}>
-            <Grid item xs={4}>
-              <ControlledUserSelect
-                name="submitting_user"
-                control={control}
-                errors={""}
-              />
-            </Grid>
-            <Grid item xs={4}>
-              <ControlledWellSelection
-                name="well"
-                control={control}
-                errors={""}
-              />
-            </Grid>
+          <Grid item xs={12} lg={6}>
+            <ControlledSelect
+              name={"property_type"}
+              control={control}
+              label={"Reading Type"}
+              options={propertyTypes.data ?? []}
+              getOptionLabel={(p: ObservedPropertyTypeLU) => p.name}
+            />
           </Grid>
-
-          <Grid container item xs={12} sx={{ mt: 2 }}>
+          <Grid item xs={12} lg={6}>
+            <ControlledTextbox
+              name={"value"}
+              control={control}
+              label={"Value"}
+            />
+          </Grid>
+          <Grid item xs={12} lg={6}>
+            <ControlledSelect
+              name={"unit"}
+              control={control}
+              label={"Unit"}
+              options={
+                propertyTypes.isLoading
+                  ? []
+                  : getUnitsFromPropertyType(watch(`property_type`).id)
+              }
+              getOptionLabel={(p: ObservedPropertyTypeLU) => p.name}
+            />
+          </Grid>
+          <Grid item xs={12} lg={6}>
+            <ControlledUserSelect
+              name="submitting_user"
+              control={control}
+              errors={""}
+            />
+          </Grid>
+          <Grid item xs={12} lg={6}>
+            <ControlledWellSelection
+              name="well"
+              control={control}
+              errors={""}
+            />
+          </Grid>
+          <Grid item xs={12}>
             <ControlledTextbox
               name="notes"
               control={control}
@@ -199,8 +190,7 @@ export const SelectedObservationDetails = ({
               multiline
             />
           </Grid>
-
-          <Grid item xs={5}>
+          <Grid item xs={12}>
             <ControlledCheckbox
               name="ose_share"
               control={control}
@@ -208,8 +198,7 @@ export const SelectedObservationDetails = ({
               labelPlacement="start"
             />
           </Grid>
-
-          <Grid container item xs={12} sx={{ mt: 2 }}>
+          <Grid item xs={12}>
             <Stack direction="row" spacing={2}>
               <Button
                 color="success"
@@ -230,7 +219,7 @@ export const SelectedObservationDetails = ({
             </Stack>
           </Grid>
         </Grid>
-      </CardContent>
-    </Card>
+      </CardContent >
+    </Card >
   );
 };

@@ -9,6 +9,7 @@ import {
   Chip,
   FormControl,
   Grid,
+  InputAdornment,
   InputLabel,
   MenuItem,
   OutlinedInput,
@@ -185,6 +186,9 @@ export const PartDetailsCard = ({
                 label="Price"
                 type="number"
                 inputProps={{ step: "0.01" }}
+                InputProps={{
+                  startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                }}
               />
             </Grid>
           </Grid>

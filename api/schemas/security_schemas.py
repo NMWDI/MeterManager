@@ -30,6 +30,7 @@ class NewUser(ORMBase):
     username: str
     email: str
     full_name: str
+    display_name: str
     disabled: bool
     user_role_id: int
     password: str
@@ -44,6 +45,10 @@ class User(ORMBase):
     user_role_id: int
 
     user_role: UserRole | None = None
+
+    display_name: str | None = None
+    redirect_page: str | None = None
+    avatar_img: str | None = None
 
 
 class Token(BaseModel):

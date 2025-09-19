@@ -1,24 +1,27 @@
 import { useEffect, useState } from "react";
 import { useAuthUser } from "react-auth-kit";
-import { Box, Drawer, Grid, IconButton, Toolbar, Typography } from "@mui/material";
+import {
+  Box,
+  Collapse,
+  Drawer,
+  Grid,
+  IconButton,
+  List,
+  ListSubheader,
+  Toolbar,
+  Typography
+} from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { ChevronLeft } from "@mui/icons-material";
+import {
+  NavLink,
+  ReportsNavItem,
+  RoleChip
+} from "./components";
 import { useGetWorkOrders } from "./service/ApiServiceNew";
 import { WorkOrderStatus } from "./enums";
 import { SecurityScope, WorkOrder } from "./interfaces";
-import {
-  Assessment,
-  Build,
-  ChevronLeft,
-  Construction,
-  FormatListBulletedOutlined,
-  Home,
-  MonitorHeart,
-  People,
-  Plumbing,
-  Science,
-  ScreenshotMonitor,
-} from "@mui/icons-material";
-import { NavLink } from "./components/NavLink";
+import { navConfig } from "./constants";
 
 export default function Sidenav({
   open,
@@ -29,6 +32,7 @@ export default function Sidenav({
   drawerWidth: number;
   onClose: () => void;
 }) {
+  const [openReportsMenu, setOpenReportsMenu] = useState(true);
   const navigate = useNavigate();
   const authUser = useAuthUser();
 
@@ -41,27 +45,21 @@ export default function Sidenav({
 
   const hasReadScope = scopes.has("read");
   const hasAdminScope = scopes.has("admin");
-  const userID = authUser()?.id;
-
-  const [workOrderLabel, setWorkOrderLabel] = useState("Work Orders");
-  const workOrderList = useGetWorkOrders([WorkOrderStatus.Open], {
+  const userId = authUser()?.id;
+  const [workOrderCount, setWorkOrderCount] = useState(0);
+  const openWorkOrdersQuery = useGetWorkOrders([WorkOrderStatus.Open], {
     refetchInterval: 45_000,
     refetchIntervalInBackground: true,
     enabled: hasReadScope && !!authUser()
   });
 
   useEffect(() => {
-    if (workOrderList.data && userID) {
-      const userWorkOrders = workOrderList.data.filter(
-        (workOrder: WorkOrder) => workOrder.assigned_user_id === userID
-      );
-      setWorkOrderLabel(
-        userWorkOrders.length > 0
-          ? `Work Orders (${userWorkOrders.length})`
-          : "Work Orders"
-      );
+    if (openWorkOrdersQuery.data && userId) {
+      setWorkOrderCount(openWorkOrdersQuery.data.filter(
+        (workOrder: WorkOrder) => workOrder.assigned_user_id === userId
+      )?.length ?? 0);
     }
-  }, [workOrderList.data, userID]);
+  }, [openWorkOrdersQuery.data, userId]);
 
   return (
     <Drawer
@@ -133,41 +131,64 @@ export default function Sidenav({
           px: "1rem",
         }}
       >
-        <Grid item sx={{ mt: 2, mb: 1 }}>
-          <h5 style={{ margin: 0, color: "#555555" }}>Pages</h5>
-        </Grid>
-
-        <NavLink route="/" label="Home" Icon={Home} />
-
-        {hasReadScope && (
-          <>
-            <NavLink
-              route="/workorders"
-              label={workOrderLabel}
-              Icon={FormatListBulletedOutlined}
-            />
-            <NavLink
-              route="/meters"
-              label="Meters Information"
-              Icon={ScreenshotMonitor}
-            />
-            <NavLink route="/activities" label="Activities" Icon={Construction} />
-            <NavLink route="/wells" label="Monitoring Wells" Icon={MonitorHeart} />
-            <NavLink route="/wellmanagement" label="Manage Wells" Icon={Plumbing} />
-            <NavLink route="/reports" label="Reports" Icon={Assessment} />
-          </>
-        )}
-
-        {hasAdminScope && (
-          <>
-            <Grid item sx={{ mt: 3, mb: 1 }}>
-              <h5 style={{ margin: 0, color: "#555555" }}>Admin Management</h5>
-            </Grid>
-            <NavLink route="/parts" label="Manage Parts" Icon={Build} />
-            <NavLink route="/usermanagement" label="Manage Users" Icon={People} />
-            <NavLink route="/chlorides" label="Chlorides" Icon={Science} />
-          </>
-        )}
+        <List
+          subheader={
+            <ListSubheader component="div">
+              Pages
+            </ListSubheader>
+          }>
+          {navConfig
+            .filter(item => !item.role)
+            .map(item => (
+              <NavLink key={item.path} route={item.path} label={item.label} icon={item.icon} />
+            ))}
+          {hasReadScope && (
+            <>
+              <ListSubheader component="div">
+                <RoleChip role="Technician" /> Pages
+              </ListSubheader>
+              {navConfig
+                .filter(item => item.role === "Technician" && !item.parent)
+                .map(item => (
+                  <NavLink
+                    key={item.path}
+                    route={item.path}
+                    label={item.label}
+                    icon={item.icon}
+                    badgeContent={item.path === "/workorders" ? workOrderCount : undefined}
+                  />
+                ))}
+              <ReportsNavItem open={openReportsMenu} setOpen={setOpenReportsMenu} />
+              <Collapse in={openReportsMenu} timeout="auto" unmountOnExit>
+                <List disablePadding dense>
+                  {navConfig
+                    .filter(item => item.parent === "reports")
+                    .map(item => (
+                      <NavLink
+                        key={item.path}
+                        subItem
+                        route={item.path}
+                        label={item.label}
+                        icon={item.icon}
+                      />
+                    ))}
+                </List>
+              </Collapse>
+            </>
+          )}
+          {hasAdminScope && (
+            <>
+              <ListSubheader component="div">
+                <RoleChip role="Admin" /> Pages
+              </ListSubheader>
+              {navConfig
+                .filter(item => item.role === "Admin")
+                .map(item => (
+                  <NavLink key={item.path} route={item.path} label={item.label} icon={item.icon} />
+                ))}
+            </>
+          )}
+        </List>
       </Grid>
     </Drawer>
   );

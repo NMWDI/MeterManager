@@ -258,23 +258,27 @@ export const ChloridesView = () => {
               />
             </Grid>
           </Grid>
-          <NewMeasurementModal
-            region_id={regionId ?? 0}
-            isNewMeasurementModalOpen={isNewModalOpen}
-            handleCloseNewMeasurementModal={() => setIsNewModalOpen(false)}
-            handleSubmitNewMeasurement={handleSubmitNewMeasurement}
-          />
-          <UpdateMeasurementModal
-            region_id={regionId ?? 0}
-            isMeasurementModalOpen={isUpdateModalOpen}
-            handleCloseMeasurementModal={() => setIsUpdateModalOpen(false)}
-            measurement={selectedMeasurement}
-            onUpdateMeasurement={(update) =>
-              setSelectedMeasurement({ ...selectedMeasurement, ...update })
-            }
-            onSubmitUpdate={handleSubmitMeasurementUpdate}
-            onDeleteMeasurement={handleDeleteMeasurement}
-          />
+          {authUser() && (
+            <>
+              <NewMeasurementModal
+                region_id={regionId ?? 0}
+                isNewMeasurementModalOpen={isNewModalOpen}
+                handleCloseNewMeasurementModal={() => setIsNewModalOpen(false)}
+                handleSubmitNewMeasurement={handleSubmitNewMeasurement}
+              />
+              <UpdateMeasurementModal
+                region_id={regionId ?? 0}
+                isMeasurementModalOpen={isUpdateModalOpen}
+                handleCloseMeasurementModal={() => setIsUpdateModalOpen(false)}
+                measurement={selectedMeasurement}
+                onUpdateMeasurement={(update) =>
+                  setSelectedMeasurement({ ...selectedMeasurement, ...update })
+                }
+                onSubmitUpdate={handleSubmitMeasurementUpdate}
+                onDeleteMeasurement={handleDeleteMeasurement}
+              />
+            </>
+          )}
         </CardContent>
       </Card>
     </BackgroundBox>

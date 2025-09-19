@@ -8,8 +8,8 @@ from sqlalchemy import (
     func,
     Boolean,
     Table,
+    Numeric,
 )
-
 from sqlalchemy.orm import (
     relationship,
     DeclarativeBase,
@@ -17,7 +17,6 @@ from sqlalchemy.orm import (
     Mapped,
     deferred,
 )
-from geoalchemy2 import Geometry
 from geoalchemy2.shape import to_shape
 from typing import Optional, List
 
@@ -149,6 +148,7 @@ class Meters(Base):
     contact_name: Mapped[Optional[str]] = mapped_column(String)
     contact_phone: Mapped[Optional[str]] = mapped_column(String)
     notes: Mapped[Optional[str]] = mapped_column(String)
+    price: Mapped[Optional[float]] = mapped_column(Numeric(10, 2))
 
     meter_type_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("MeterTypeLU.id"), nullable=False
@@ -172,6 +172,7 @@ class Meters(Base):
     status: Mapped["MeterStatusLU"] = relationship()
     well: Mapped["Wells"] = relationship("Wells", back_populates="meters")
     location: Mapped["Locations"] = relationship()
+
 
 
 class MeterTypeLU(Base):
@@ -238,6 +239,25 @@ class MeterActivities(Base):
     notes: Mapped[List["NoteTypeLU"]] = relationship("NoteTypeLU", secondary=Notes)
     work_order: Mapped["workOrders"] = relationship()
     well: Mapped["Wells"] = relationship("Wells", primaryjoin='MeterActivities.location_id == Wells.location_id', foreign_keys='MeterActivities.location_id', viewonly=True)
+    photos: Mapped[List["MeterActivityPhotos"]]  = relationship("MeterActivityPhotos", back_populates="meter_activity", cascade="all, delete")
+
+
+class MeterActivityPhotos(Base):
+    __tablename__ = "MeterActivityPhotos"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True, autoincrement=True)
+    meter_activity_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("MeterActivities.id", ondelete="CASCADE"), nullable=False
+    )
+    file_name: Mapped[str] = mapped_column(String, nullable=False)
+    gcs_path: Mapped[str] = mapped_column(String, nullable=False)
+    uploaded_at: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+    meter_activity: Mapped["MeterActivities"] = relationship(
+        "MeterActivities", back_populates="photos"
+    )
 
 
 class ActivityTypeLU(Base):
@@ -421,6 +441,9 @@ class Users(Base):
     )
 
     user_role: Mapped["UserRoles"] = relationship("UserRoles")
+    display_name: Mapped[str] = mapped_column(String, nullable=True)
+    redirect_page: Mapped[str] = mapped_column(String, nullable=True, default="/")
+    avatar_img: Mapped[str] = mapped_column(String, nullable=True)
 
 
 # Association table that links roles and their associated scopes

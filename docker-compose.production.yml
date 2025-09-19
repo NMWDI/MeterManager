@@ -33,6 +33,7 @@ services:
     environment:
     - GCP_BUCKET_NAME=pvacd
     - GCP_BACKUP_PREFIX=prod-db-backups
+    - GCP_PHOTO_PREFIX=prod-meter-activities-photos
     - BACKUP_RETENTION_DAYS=90
     - APPDB_ENV=.env_production  
     command: >

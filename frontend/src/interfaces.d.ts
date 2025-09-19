@@ -73,6 +73,7 @@ export interface ActivityFormControl {
     working_on_arrival_slug: string,
     selected_note_ids: number[] | null
   },
+  photos?: File[],
   part_used_ids?: []
 }
 
@@ -354,6 +355,7 @@ export interface MeterHistoryDTO {
   history_item: any
   location: Location
   well: Well | null
+  photos: any
 }
 
 export interface MeterType {
@@ -468,6 +470,7 @@ export interface Meter {
   contact_name?: string
   contact_phone?: string
   notes?: string
+  price?: number
 
   meter_type_id: number
   status_id?: number
@@ -601,11 +604,11 @@ export interface User {
   id: number
   username?: string
   full_name: string
+  display_name?: string
   email?: scope_string
   disabled: boolean
   user_role_id?: number
   user_role?: UserRole
-
   password?: string
 }
 

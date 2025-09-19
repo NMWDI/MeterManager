@@ -1,58 +1,63 @@
-import { Grid, SvgIconProps, Box, Typography } from "@mui/material";
+import { SvgIconProps, Badge, ListItem, ListItemButton, ListItemIcon, ListItemText } from "@mui/material";
 import TableViewIcon from "@mui/icons-material/TableView";
-import { Link, useLocation } from "react-router-dom";
+import { Link, type LinkProps } from "react-router-dom";
+import { useIsActiveRoute } from "../hooks";
 
 export const NavLink = ({
   disabled = false,
   route,
   label,
-  Icon,
+  icon: Icon,
+  badgeContent,
+  subItem = false,
 }: {
   disabled?: boolean;
-  route: string;
+  route: LinkProps["to"];
   label: string;
-  Icon?: React.ComponentType<SvgIconProps>;
+  icon?: React.ComponentType<SvgIconProps>;
+  badgeContent?: number;
+  subItem?: boolean;
 }) => {
-  const location = useLocation();
-  const isActive = location.pathname === route;
-
-  const content = (
-    <Box
-      sx={{
-        px: 1,
-        py: 0.5,
-        borderRadius: "10px",
-        ml: 0.5,
-        display: "flex",
-        alignItems: "center",
-        color: disabled ? "#aaa" : "#555",
-        fontSize: "16px",
-        textDecoration: "none",
-        cursor: disabled ? "not-allowed" : "pointer",
-        backgroundColor: isActive ? "rgb(240,240,255)" : "transparent",
-        "&:hover": {
-          backgroundColor: !disabled ? "rgb(240,240,255)" : undefined,
-        },
-      }}
-    >
-      {Icon ? (
-        <Icon sx={{ fontSize: 20, mr: 1 }} />
-      ) : (
-        <TableViewIcon sx={{ fontSize: 20, mr: 1 }} />
-      )}
-      <Typography variant="body2">{label}</Typography>
-    </Box>
-  );
+  const isActive = useIsActiveRoute(route);
 
   return (
-    <Grid item>
-      {disabled ? (
-        content
-      ) : (
-        <Link to={route} style={{ textDecoration: "none" }}>
-          {content}
-        </Link>
-      )}
-    </Grid>
+    <ListItem disablePadding dense>
+      <ListItemButton
+        selected={isActive}
+        component={Link}
+        to={route}
+        disabled={disabled}
+        sx={{
+          ml: subItem ? 2 : 0,
+          borderRadius: "10px",
+          "&.Mui-selected": {
+            backgroundColor: "rgb(240,240,255)",
+            fontWeight: "bold",
+          },
+        }}
+      >
+        <ListItemIcon sx={{ minWidth: 36 }}>
+          {Icon ? (
+            <Badge
+              badgeContent={badgeContent}
+              color="primary"
+              invisible={!badgeContent || badgeContent === 0}
+            >
+              <Icon fontSize="small" />
+            </Badge>
+          ) : (
+            <TableViewIcon fontSize="small" />
+          )}
+        </ListItemIcon>
+        <ListItemText
+          primary={label}
+          primaryTypographyProps={{
+            fontSize: 14,
+            fontWeight: isActive ? "bold" : "normal",
+            color: disabled ? "text.disabled" : "text.primary",
+          }}
+        />
+      </ListItemButton>
+    </ListItem>
   );
 };

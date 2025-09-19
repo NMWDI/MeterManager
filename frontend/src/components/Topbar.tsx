@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   AppBar,
   Toolbar,
@@ -9,21 +10,23 @@ import {
   Button,
   Box,
   Divider,
+  ListItemIcon,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import { useNavigate } from "react-router-dom";
 import { useAuthUser, useSignOut } from "react-auth-kit";
-import { useState } from "react";
-import { Badge, Engineering, Face, Login } from "@mui/icons-material";
+import { Login, Logout, Settings } from "@mui/icons-material";
+import { RoleChip, TopbarUserButton } from "./index";
 
 export default function Topbar({ open, onMenuClick, sx }: { open: boolean, onMenuClick: () => void; sx?: any }) {
   const navigate = useNavigate();
   const signOut = useSignOut();
   const authUser = useAuthUser();
-  const role = authUser()?.user_role?.name;
-  const isLoggedIn = !!authUser();
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+  const role: string = authUser()?.user_role?.name;
+  const isLoggedIn = !!authUser();
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -35,18 +38,8 @@ export default function Topbar({ open, onMenuClick, sx }: { open: boolean, onMen
 
   const fullSignOut = () => {
     navigate("/");
+    localStorage.removeItem("loggedIn");
     signOut();
-  };
-
-  const renderRoleIcon = () => {
-    switch (role) {
-      case "Admin":
-        return <Badge fontSize="small" />;
-      case "Technician":
-        return <Engineering fontSize="small" />;
-      default:
-        return <Face fontSize="small" />;
-    }
   };
 
   return (
@@ -92,54 +85,34 @@ export default function Topbar({ open, onMenuClick, sx }: { open: boolean, onMen
 
         {isLoggedIn ? (
           <Box>
-            <Button
-              color="inherit"
+            <TopbarUserButton
+              role={role}
+              display_name={authUser()?.display_name ?? "Unknown"}
               onClick={handleMenuOpen}
-              sx={{
-                textTransform: "uppercase",
-                fontWeight: "bolder",
-                backgroundColor: "darkblue",
-                color: "white",
-                "&:hover": {
-                  backgroundColor: "#00008b",
-                },
-              }}
-            >
-              {authUser()?.username ?? "Username"}
-              <Avatar
-                sx={{
-                  width: 32,
-                  height: 32,
-                  ml: 1,
-                  bgcolor: "rgb(89,90,182)",
-                }}
-              >
-                {renderRoleIcon()}
-              </Avatar>
-            </Button>
+              src={authUser()?.avatar_img}
+            />
             <Menu
-              id="profile-menu"
               anchorEl={anchorEl}
               open={Boolean(anchorEl)}
               onClose={handleMenuClose}
-              anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
-              transformOrigin={{ horizontal: "right", vertical: "top" }}
+              transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+              anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
             >
-              <MenuItem
-                disabled
+              <Box
                 sx={{
-                  opacity: 1,
-                  fontWeight: "bold",
-                  color: "darkblue",
-                  "&.Mui-disabled": { opacity: 1 },
+                  px: 2,
+                  pt: 0.5,
+                  pb: 1.5,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
                 }}
               >
-                <Box sx={{ display: "flex", alignItems: "center", gap: "0.5rem", textTransform: 'uppercase' }}>
-                  <Typography variant="body2" fontWeight="bold" color="darkblue">
-                    Role: {role ?? "Unknown"}
-                  </Typography>
-                </Box>
-              </MenuItem>
+                <Typography variant="body2" fontWeight="bold" color="text.secondary">
+                  Role:
+                </Typography>
+                <RoleChip role={role ?? "Unknown"} />
+              </Box>
               <Divider />
               <MenuItem
                 onClick={() => {
@@ -147,12 +120,23 @@ export default function Topbar({ open, onMenuClick, sx }: { open: boolean, onMen
                   handleMenuClose()
                 }}
               >
-                Settings
+                <ListItemIcon>
+                  <Settings fontSize="small" />
+                </ListItemIcon>
+                <Typography variant="body1">Account Settings</Typography>
               </MenuItem>
-              <MenuItem onClick={() => {
-                fullSignOut()
-                handleMenuClose()
-              }}>Logout</MenuItem>
+
+              <MenuItem
+                onClick={() => {
+                  fullSignOut()
+                  handleMenuClose()
+                }}
+              >
+                <ListItemIcon>
+                  <Logout fontSize="small" />
+                </ListItemIcon>
+                <Typography variant="body1">Logout</Typography>
+              </MenuItem>
             </Menu>
           </Box>
         )
@@ -161,6 +145,7 @@ export default function Topbar({ open, onMenuClick, sx }: { open: boolean, onMen
               onClick={() => navigate("/login")}
               sx={{
                 textTransform: "uppercase",
+                fontFamily: "monospace",
                 fontWeight: "bolder",
                 backgroundColor: "darkblue",
                 color: "white",
@@ -172,10 +157,11 @@ export default function Topbar({ open, onMenuClick, sx }: { open: boolean, onMen
               Login
               <Avatar
                 sx={{
-                  width: 32,
-                  height: 32,
+                  width: 36,
+                  height: 36,
                   ml: 1,
                   bgcolor: "rgb(89,90,182)",
+                  border: "2px solid #e0e0e0",
                 }}
               >
                 <Login fontSize="small" />

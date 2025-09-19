@@ -6,6 +6,7 @@ import { MonitoredWell, WellMeasurementDTO } from "../../interfaces";
 import dayjs, { Dayjs } from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
+import { useIsAuthenticated } from "react-auth-kit";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -40,30 +41,34 @@ export const MonitoringWellsTable = ({
     };
   }) => void;
 }) => {
-  const columns: GridColDef[] = useMemo(
-    () => [
+  const isAuthenticated = useIsAuthenticated();
+  const columns: GridColDef[] = useMemo(() => {
+    const baseCols: GridColDef[] = [
       {
         field: "timestamp",
         headerName: "Date/Time",
-        flex: 1,
-        minWidth: 150,
+        width: 175,
         valueGetter: (value) => dayjs.utc(value).tz("America/Denver"),
         valueFormatter: (value) =>
           dayjs.utc(value).tz("America/Denver").format("MM/DD/YYYY hh:mm A"),
         type: "dateTime",
       },
       { field: "value", headerName: "Depth to Water (ft)", flex: 1, minWidth: 100 },
-      {
+    ];
+
+    // Add user column only if logged in
+    if (isAuthenticated()) {
+      baseCols.push({
         field: "submitting_user",
         headerName: "User",
-        flex: 1,
-        minWidth: 150,
+        width: 200,
         valueGetter: (value: WellMeasurementDTO["submitting_user"]) =>
           value.full_name,
-      },
-    ],
-    [],
-  );
+      });
+    }
+
+    return baseCols;
+  }, [isAuthenticated]);
 
   return (
     <Box sx={{ width: "100%", height: "100%", maxHeight: 600 }}>
@@ -95,12 +100,13 @@ const Footer = ({
   isWellSelected: boolean;
   selectedWell?: MonitoredWell;
 }) => {
+  const isAuthenticated = useIsAuthenticated();
   const isPlugged = selectedWell?.well_status.status === "plugged";
 
   return (
     <Box sx={{ display: "flex", justifyContent: "space-between" }}>
       <Box sx={{ my: "auto" }}>
-        {isWellSelected ? (
+        {isWellSelected && isAuthenticated() ? (
           <Tooltip
             title={
               isPlugged

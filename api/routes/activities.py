@@ -1,11 +1,10 @@
-from fastapi import Depends, APIRouter, Query
+from fastapi import Depends, APIRouter, Query, File, UploadFile, Form
 from fastapi.exceptions import HTTPException
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select, text
 from datetime import datetime
 from typing import List
-
 from api import security
 from api.schemas import meter_schemas
 from api.models.main_models import (
@@ -15,6 +14,7 @@ from api.models.main_models import (
     ActivityTypeLU,
     Units,
     MeterActivities,
+    MeterActivityPhotos,
     MeterObservations,
     ServiceTypeLU,
     NoteTypeLU,
@@ -28,25 +28,50 @@ from api.models.main_models import (
 from api.session import get_db
 from api.security import get_current_user
 from api.enums import ScopedUser, WorkOrderStatus
+from pathlib import Path
+from google.cloud import storage
+
+import uuid
+import json
+import os
 
 activity_router = APIRouter()
 
+BUCKET_NAME = os.getenv("GCP_BUCKET_NAME", "")
+PHOTO_PREFIX = os.getenv("GCP_PHOTO_PREFIX", "")
 
-# Process a submitted activity
-# Returns 422 when one or more required fields of ActivityForm are not present
-# Returns the new MeterActivity on success
+MAX_PHOTOS_PER_REQUEST = 2
+MAX_PHOTOS_PER_METER = 6
+
 @activity_router.post(
     "/activities",
     response_model=meter_schemas.MeterActivity,
     dependencies=[Depends(ScopedUser.ActivityWrite)],
     tags=["Activities"],
 )
-def post_activity(
-    activity_form: meter_schemas.ActivityForm, db: Session = Depends(get_db), user: Users = Depends(get_current_user)
+async def post_activity(
+    activity: str = Form(...),  # JSON string from FormData
+    photos: list[UploadFile] = File(None),
+    db: Session = Depends(get_db),
+    user: Users = Depends(get_current_user),
 ):
     """
-    Handles submission of an activity.
+    Handles submission of an activity (with optional file uploads).
     """
+
+    if photos:
+        if len(photos) > MAX_PHOTOS_PER_REQUEST:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Too many photos uploaded. "
+                       f"Max {MAX_PHOTOS_PER_REQUEST} allowed per request, got {len(photos)}.",
+            )
+
+    try:
+        activity_form = meter_schemas.ActivityForm.parse_obj(json.loads(activity))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid activity payload: {e}")
+
     # Set some variables that will be used to determine how the meter is updated
     update_meter_state = True
     user_level = user.user_role.name
@@ -122,6 +147,7 @@ def post_activity(
     try:
         db.add(meter_activity)
         db.commit()
+        db.refresh(meter_activity)  # make sure meter_activity.id is available
     except IntegrityError as _e:
         raise HTTPException(
             status_code=409, detail="Activity overlaps with existing activity."
@@ -235,6 +261,63 @@ def post_activity(
 
     db.commit()
 
+
+    # ---- Handle photo file uploads ----
+    if photos:
+        print(f"Received {len(photos)} photos")
+        print(f"Uploading to bucket={BUCKET_NAME}, prefix={PHOTO_PREFIX}")
+        client = storage.Client()
+        bucket = client.bucket(BUCKET_NAME)
+
+        for file in photos:
+            ext = Path(file.filename).suffix or ".jpg"
+            unique_name = f"{uuid.uuid4()}{ext}"
+            blob_path = f"{PHOTO_PREFIX}/{meter_activity.id}/{unique_name}"
+            blob = bucket.blob(blob_path)
+
+            # Upload file content directly
+            try:
+                contents = await file.read()
+                print(f"Uploading {file.filename}, size={len(contents)} bytes")
+
+                blob.upload_from_string(contents, content_type=file.content_type)
+                print(f"Uploaded to gs://{BUCKET_NAME}/{blob_path}")
+            except Exception as e:
+                print(f"ERROR uploading {file.filename}: {e}")
+                raise
+
+            photo = MeterActivityPhotos(
+                meter_activity_id=meter_activity.id,
+                file_name=file.filename,
+                gcs_path=blob_path,
+            )
+            db.add(photo)
+
+        db.commit()
+        print(f"Saved {len(photos)} photos for activity {meter_activity.id}")
+        db.refresh(meter_activity)
+
+        # ---- Enforce per-meter retention ----
+        all_photos = (
+            db.query(MeterActivityPhotos)
+            .join(MeterActivities)
+            .filter(MeterActivities.meter_id == meter_activity.meter_id)
+            .order_by(MeterActivityPhotos.uploaded_at.desc())
+            .all()
+        )
+
+        if len(all_photos) > MAX_PHOTOS_PER_METER:
+            # keep newest MAX_PHOTOS_PER_METER, delete the rest
+            to_delete = all_photos[MAX_PHOTOS_PER_METER:]
+            for old_photo in to_delete:
+                try:
+                    bucket.blob(old_photo.gcs_path).delete()
+                except Exception as e:
+                    print(f"Warning: failed to delete {old_photo.gcs_path} from GCS: {e}")
+                db.delete(old_photo)
+
+            db.commit()
+
     return meter_activity
 
 @activity_router.patch(
@@ -308,6 +391,24 @@ def delete_activity(activity_id: int, db: Session = Depends(get_db)):
     '''
     # Get the activity
     activity = db.scalars(select(MeterActivities).where(MeterActivities.id == activity_id)).first()
+
+    if not activity:
+        raise HTTPException(status_code=404, detail="Activity not found.")
+
+    photos = db.scalars(
+        select(MeterActivityPhotos).where(MeterActivityPhotos.meter_activity_id == activity_id)
+    ).all()
+
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(BUCKET_NAME)
+
+    for photo in photos:
+        try:
+            blob = bucket.blob(photo.gcs_path)
+            blob.delete()
+            print(f"Deleted GCS object: {photo.gcs_path}")
+        except Exception as e:
+            print(f"Failed to delete {photo.gcs_path} from bucket: {e}")
 
     # Delete any notes associated with the activity
     sql = text('DELETE FROM "Notes" WHERE meter_activity_id = :activity_id')

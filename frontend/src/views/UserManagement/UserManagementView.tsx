@@ -14,7 +14,6 @@ export const UserManagementView = () => {
   const [selectedRole, setSelectedRole] = useState<UserRole>();
   const [roleAddMode, setRoleAddMode] = useState<boolean>(true);
 
-  // Exit add mode when table row is selected
   useEffect(() => {
     if (selectedUser) setUserAddMode(false);
   }, [selectedUser]);

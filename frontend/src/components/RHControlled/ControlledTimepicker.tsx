@@ -14,7 +14,12 @@ export default function ControlledTimepicker({
         <TimePicker
           {...field}
           timezone="America/Denver"
-          slotProps={{ textField: { size: "small" } }}
+          slotProps={{
+            textField: {
+              size: "small",
+              fullWidth: true
+            }
+          }}
           {...childProps}
         />
       )}

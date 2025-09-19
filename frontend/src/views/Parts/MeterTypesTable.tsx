@@ -4,7 +4,6 @@ import {
   Button,
   Card,
   CardContent,
-  Chip,
   Grid,
   InputAdornment,
   Stack,
@@ -18,7 +17,7 @@ import FormatListBulletedOutlinedIcon from "@mui/icons-material/FormatListBullet
 import { MeterTypeLU } from "../../interfaces";
 import TristateToggle from "../../components/TristateToggle";
 import GridFooterWithButton from "../../components/GridFooterWithButton";
-import { CustomCardHeader } from "../../components/CustomCardHeader";
+import { IsTrueChip, CustomCardHeader } from "../../components";
 
 export const MeterTypesTable = ({
   setSelectedMeterType,
@@ -45,12 +44,7 @@ export const MeterTypesTable = ({
     {
       field: "in_use",
       headerName: "In Use",
-      renderCell: (params: any) =>
-        params.value == true ? (
-          <Chip variant="outlined" label="True" color="success" />
-        ) : (
-          <Chip variant="outlined" label="False" color="error" />
-        ),
+      renderCell: (params: any) => <IsTrueChip assert={params.value == true} />
     },
   ];
 

@@ -6,8 +6,10 @@ from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import IntegrityError
 from fastapi_pagination.ext.sqlalchemy import paginate
 from fastapi_pagination import LimitOffsetPage
+from fastapi.responses import StreamingResponse
 from enum import Enum
-
+from io import BytesIO
+from jose import jwt, JWTError, ExpiredSignatureError
 from api.schemas import meter_schemas
 from api.schemas import well_schemas
 from api.models.main_models import (
@@ -25,12 +27,23 @@ from api.models.main_models import (
 from api.route_util import _patch, _get
 from api.session import get_db
 from api.enums import ScopedUser, MeterSortByField, MeterStatus, SortDirection
+from google.cloud import storage
 
-meter_router = APIRouter()
+import time
+import mimetypes
+import os
 
+authenticated_meter_router = APIRouter()
+public_meter_router = APIRouter()
+
+# Generate random secret at startup
+PHOTO_JWT_SECRET = os.getenv("PHOTO_JWT_SECRET", "super-secret")
+PHOTO_JWT_ALGORITHM = "HS256"
+PHOTO_JWT_EXPIRE_SECONDS = 600  # 10 minutes
+BUCKET_NAME = os.getenv("GCP_BUCKET_NAME", "")
 
 # Get paginated, sorted list of meters, filtered by a search string if applicable
-@meter_router.get(
+@authenticated_meter_router.get(
     "/meters",
     dependencies=[Depends(ScopedUser.Read)],
     response_model=LimitOffsetPage[meter_schemas.MeterListDTO],
@@ -102,7 +115,7 @@ def get_meters(
     return paginate(db, query_statement)
 
 
-@meter_router.post(
+@authenticated_meter_router.post(
     "/meters",
     response_model=meter_schemas.Meter,
     dependencies=[Depends(ScopedUser.Admin)],
@@ -129,6 +142,7 @@ def create_meter(
         contact_name=new_meter.contact_name,
         contact_phone=new_meter.contact_phone,
         meter_type_id=new_meter.meter_type.id,
+        price=new_meter.price,
         status_id=warehouse_status_id,
         location_id=warehouse_location_id,
         meter_owner="PVACD",
@@ -151,7 +165,7 @@ def create_meter(
     try:
         db.add(new_meter_model)
         db.commit()
-    except IntegrityError as e:
+    except IntegrityError:
         raise HTTPException(status_code=409, detail="Meter already exists")
 
     db.refresh(new_meter_model)
@@ -162,7 +176,7 @@ def create_meter(
 # Get search for meters similar to /meters but no pagination and only for installed meters
 # Returns all installed meters with a location when search is None
 # Also returns year of last PM for color coding on the map
-@meter_router.get(
+@authenticated_meter_router.get(
     "/meters_locations",
     dependencies=[Depends(ScopedUser.Read)],
     response_model=List[meter_schemas.MeterMapDTO],
@@ -261,7 +275,7 @@ def require_meter_id_or_serial_number(meter_id: int = None, serial_number: str =
 
 # Get single, fully qualified meter
 # Can use either meter_id or serial_number
-@meter_router.get(
+@authenticated_meter_router.get(
     "/meter",
     tags=["Meters"],
 )
@@ -289,7 +303,7 @@ def get_meter(
     return db.scalars(query).first()
 
 
-@meter_router.get(
+@authenticated_meter_router.get(
     "/meter_types",
     response_model=List[meter_schemas.MeterTypeLU],
     dependencies=[Depends(ScopedUser.Read)],
@@ -300,7 +314,7 @@ def get_meter_types(db: Session = Depends(get_db)):
 
 
 # A route to return register types from meter_register table
-@meter_router.get(
+@authenticated_meter_router.get(
     "/meter_registers",
     response_model=List[meter_schemas.MeterRegister],
     dependencies=[Depends(ScopedUser.Read)],
@@ -317,7 +331,7 @@ def get_meter_registers(db: Session = Depends(get_db)):
 
 
 # A route to return status types from the MeterStatusLU table
-@meter_router.get(
+@authenticated_meter_router.get(
     "/meter_status_types",
     response_model=List[meter_schemas.MeterStatusLU],
     dependencies=[Depends(ScopedUser.Read)],
@@ -327,7 +341,7 @@ def get_meter_status(db: Session = Depends(get_db)):
     return db.scalars(select(MeterStatusLU)).all()
 
 
-@meter_router.patch(
+@authenticated_meter_router.patch(
     "/meter_types",
     response_model=meter_schemas.MeterTypeLU,
     dependencies=[Depends(ScopedUser.Admin)],
@@ -345,7 +359,7 @@ def update_meter_type(
     return meter_type
 
 
-@meter_router.post(
+@authenticated_meter_router.post(
     "/meter_types",
     response_model=meter_schemas.MeterTypeLU,
     dependencies=[Depends(ScopedUser.Admin)],
@@ -370,7 +384,7 @@ def create_meter_type(
     return new_type_model
 
 
-@meter_router.get(
+@authenticated_meter_router.get(
     "/land_owners",
     dependencies=[Depends(ScopedUser.Read)],
     response_model=List[well_schemas.LandOwner],
@@ -382,7 +396,7 @@ def get_land_owners(
     return db.scalars(select(LandOwners)).all()
 
 
-@meter_router.patch(
+@authenticated_meter_router.patch(
     "/meter",
     dependencies=[Depends(ScopedUser.Admin)],
     response_model=meter_schemas.Meter,
@@ -398,21 +412,15 @@ def patch_meter(
     """
     meter_db = _get(db, Meters, updated_meter.id)
 
-    # Update the meter
     meter_db.serial_number = updated_meter.serial_number
     meter_db.contact_name = updated_meter.contact_name
     meter_db.contact_phone = updated_meter.contact_phone
     meter_db.notes = updated_meter.notes
+    meter_db.price = updated_meter.price
     meter_db.meter_type_id = updated_meter.meter_type.id
     meter_db.water_users = updated_meter.water_users
     meter_db.meter_owner = updated_meter.meter_owner
     meter_db.register_id = updated_meter.meter_register.id
-    # for k, v in updated_meter.model_dump(exclude_unset=True).items():
-    #     try:
-    #         setattr(meter_db, k, v)
-    #     except AttributeError as e:
-    #         print(e)
-    #         continue
 
     # If there is a well set, update status, well and location
     if updated_meter.well:
@@ -434,7 +442,7 @@ def patch_meter(
     try:
         db.add(meter_db)
         db.commit()
-    except IntegrityError as e:
+    except IntegrityError:
         raise HTTPException(status_code=409, detail="Meter already exists")
 
     return db.scalars(
@@ -448,9 +456,38 @@ def patch_meter(
     ).first()
 
 
-# Build a list of a meter's history (activities and observations)
-# There's no real defined structure/schema to this on the front or backend
-@meter_router.get(
+@public_meter_router.get("/photos/{path:path}")
+def get_photo(path: str, token: str = Query(...)):
+    # raises 401 if invalid
+    blob_path = verify_photo_token(token)
+
+    # extra guard: token "sub" must match requested path
+    if blob_path != path:
+        raise HTTPException(status_code=403, detail="Token path mismatch")
+
+    client = storage.Client()
+    bucket = client.bucket(BUCKET_NAME)
+    blob = bucket.blob(path)
+
+    if not blob.exists():
+        raise HTTPException(status_code=404, detail="Photo not found")
+
+    content_type, _ = mimetypes.guess_type(path)
+    content_type = content_type or "application/octet-stream"
+
+    data = blob.download_as_bytes()
+
+    return StreamingResponse(
+        BytesIO(data),
+        media_type=content_type,
+        headers={
+            "Cache-Control": f"public, max-age={PHOTO_JWT_EXPIRE_SECONDS}",
+            "ETag": blob.etag or "",
+        },
+    )
+
+
+@authenticated_meter_router.get(
     "/meter_history", dependencies=[Depends(ScopedUser.Read)], tags=["Meters"]
 )
 def get_meter_history(meter_id: int, db: Session = Depends(get_db)):
@@ -473,7 +510,7 @@ def get_meter_history(meter_id: int, db: Session = Depends(get_db)):
                 joinedload(MeterActivities.activity_type),
                 joinedload(MeterActivities.parts_used).joinedload(Parts.part_type),
                 joinedload(MeterActivities.notes),
-                joinedload(MeterActivities.services_performed)
+                joinedload(MeterActivities.services_performed),
             )
             .filter(MeterActivities.meter_id == meter_id)
         )
@@ -502,6 +539,16 @@ def get_meter_history(meter_id: int, db: Session = Depends(get_db)):
         #Find if there is a well associated with the location
         activity_well = db.scalars(select(Wells).where(Wells.location_id == activity.location_id)).first()
 
+        photos = [
+            {
+                "id": photo.id,
+                "file_name": photo.file_name,
+                "url": f"/photos/{photo.gcs_path}?token={create_photo_token(photo.gcs_path)}",
+                "uploaded_at": photo.uploaded_at,
+            }
+            for photo in activity.photos
+        ]
+
         formattedHistoryItems.append(
             {
                 "id": itemID,
@@ -511,6 +558,7 @@ def get_meter_history(meter_id: int, db: Session = Depends(get_db)):
                 "activity_type": activity.activity_type_id,
                 "date": activity.timestamp_start,
                 "history_item": activity,
+                "photos": photos,
             }
         )
         itemID += 1
@@ -538,3 +586,25 @@ def get_meter_history(meter_id: int, db: Session = Depends(get_db)):
     formattedHistoryItems.sort(key=lambda x: x["date"], reverse=True)
 
     return formattedHistoryItems
+
+
+def create_photo_token(blob_path: str) -> str:
+    expire = int(time.time()) + PHOTO_JWT_EXPIRE_SECONDS
+    payload = {"sub": blob_path, "exp": expire}
+    token = jwt.encode(payload, PHOTO_JWT_SECRET, algorithm=PHOTO_JWT_ALGORITHM)
+    return token
+
+
+def verify_photo_token(token: str) -> str:
+    try:
+        payload = jwt.decode(
+            token,
+            PHOTO_JWT_SECRET,
+            algorithms=[PHOTO_JWT_ALGORITHM]
+        )
+        return payload["sub"]
+    except ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except JWTError as e:
+        print("Token verification failed:", str(e))
+        raise HTTPException(status_code=401, detail="Invalid token")

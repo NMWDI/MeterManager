@@ -123,67 +123,54 @@ export const SelectedActivityDetails = ({
         icon={InfoOutlinedIcon}
       />
       <CardContent>
-        <Grid container item xs={10}>
-          <Grid container item xs={12} spacing={2}>
-            <Grid item xs={4}>
-              <ControlledUserSelect
-                name="submitting_user"
-                control={control}
-                //errors={''}
-              />
-            </Grid>
+        <Grid container spacing={2}>
+          <Grid item xs={12} lg={6}>
+            <ControlledUserSelect
+              name="submitting_user"
+              control={control}
+            />
           </Grid>
-
-          <Grid container item xs={12} spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={4}>
-              <ControlledDatepicker
-                label="Date"
-                name="activity_date"
-                control={control}
-                //error={''}
-                sx={{ width: "100%" }}
-              />
-            </Grid>
-            <Grid item xs={4}>
-              <ControlledTimepicker
-                label="Start Time"
-                name="activity_start_time"
-                control={control}
-                //error={''}
-                sx={{ width: "100%" }}
-              />
-            </Grid>
-            <Grid item xs={4}>
-              <ControlledTimepicker
-                label="End Time"
-                name="activity_end_time"
-                control={control}
-                //error={''}
-                sx={{ width: "100%" }}
-              />
-            </Grid>
+          <Grid item xs={12} lg={6}>
+            <ControlledDatepicker
+              label="Date"
+              name="activity_date"
+              control={control}
+              sx={{ width: "100%" }}
+            />
           </Grid>
-
-          <Grid container item xs={12} spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={4}>
-              <ControlledActivitySelect
-                name="activity_type"
-                control={control}
-              />
-            </Grid>
-            <Grid item xs={4}>
-              <ControlledWellSelection name="well" control={control} />
-            </Grid>
-            <Grid item xs={4}>
-              <ControlledTextbox
-                name="water_users"
-                control={control}
-                label="Water Users"
-              />
-            </Grid>
+          <Grid item xs={12} lg={6}>
+            <ControlledTimepicker
+              label="Start Time"
+              name="activity_start_time"
+              control={control}
+              sx={{ width: "100%" }}
+            />
           </Grid>
-
-          <Grid container item xs={12} sx={{ mt: 2 }}>
+          <Grid item xs={12} lg={6}>
+            <ControlledTimepicker
+              label="End Time"
+              name="activity_end_time"
+              control={control}
+              sx={{ width: "100%" }}
+            />
+          </Grid>
+          <Grid item xs={12} lg={6}>
+            <ControlledActivitySelect
+              name="activity_type"
+              control={control}
+            />
+          </Grid>
+          <Grid item xs={12} lg={6}>
+            <ControlledWellSelection name="well" control={control} />
+          </Grid>
+          <Grid item xs={12} lg={6}>
+            <ControlledTextbox
+              name="water_users"
+              control={control}
+              label="Water Users"
+            />
+          </Grid>
+          <Grid item xs={12}>
             <ControlledTextbox
               name="description"
               control={control}
@@ -192,12 +179,10 @@ export const SelectedActivityDetails = ({
               multiline
             />
           </Grid>
-
-          <Grid container item xs={12} sx={{ mt: 2 }}>
+          <Grid item xs={12}>
             <ServicesChipSelect name="services" control={control} />
           </Grid>
-
-          <Grid container item xs={12} sx={{ mt: 2 }}>
+          <Grid item xs={12}>
             <NotesChipSelect
               name="notes"
               control={control}
@@ -206,16 +191,14 @@ export const SelectedActivityDetails = ({
               setValue={setValue}
             />
           </Grid>
-
-          <Grid container item xs={12} sx={{ mt: 2 }}>
+          <Grid item xs={12}>
             <PartsChipSelect
               name="parts_used"
               control={control}
               meterid={selectedActivity.meter_id}
             />
           </Grid>
-
-          <Grid item xs={5}>
+          <Grid item xs={12}>
             <ControlledCheckbox
               name="ose_share"
               control={control}
@@ -223,8 +206,7 @@ export const SelectedActivityDetails = ({
               labelPlacement="start"
             />
           </Grid>
-
-          <Grid container item xs={12} sx={{ mt: 2 }}>
+          <Grid item xs={12}>
             <Stack direction="row" spacing={2}>
               <Button
                 color="success"
@@ -245,7 +227,7 @@ export const SelectedActivityDetails = ({
             </Stack>
           </Grid>
         </Grid>
-      </CardContent>
-    </Card>
+      </CardContent >
+    </Card >
   );
 };

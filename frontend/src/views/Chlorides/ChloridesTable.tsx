@@ -6,6 +6,7 @@ import { RegionMeasurementDTO } from "../../interfaces";
 import dayjs, { Dayjs } from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
+import { useIsAuthenticated } from "react-auth-kit";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -43,8 +44,9 @@ export const ChloridesTable = ({
     };
   }) => void;
 }) => {
-  const columns: GridColDef[] = useMemo(
-    () => [
+  const isAuthenticated = useIsAuthenticated();
+  const columns: GridColDef[] = useMemo(() => {
+    const baseCols: GridColDef[] = [
       {
         field: "timestamp",
         headerName: "Date/Time",
@@ -56,21 +58,26 @@ export const ChloridesTable = ({
       },
       { field: "value", headerName: "Chlorides (ppm)", width: 175 },
       {
-        field: "submitting_user",
-        headerName: "User",
-        width: 200,
-        valueGetter: (value: RegionMeasurementDTO["submitting_user"]) =>
-          value.full_name,
-      },
-      {
         field: "well",
         headerName: "Well",
         width: 175,
         valueGetter: (value: RegionMeasurementDTO["well"]) => value.ra_number,
       },
-    ],
-    [],
-  );
+    ];
+
+    // Add user column only if logged in
+    if (isAuthenticated()) {
+      baseCols.push({
+        field: "submitting_user",
+        headerName: "User",
+        width: 200,
+        valueGetter: (value: RegionMeasurementDTO["submitting_user"]) =>
+          value.full_name,
+      });
+    }
+
+    return baseCols;
+  }, [isAuthenticated]);
 
   return (
     <Box sx={{ width: "100%", height: "100%", maxHeight: 600 }}>
@@ -99,10 +106,11 @@ const Footer = ({
   onOpenModal?: () => void;
   isRegionSelected?: boolean;
 }) => {
+  const isAuthenticated = useIsAuthenticated();
   return (
     <Box sx={{ display: "flex", justifyContent: "space-between" }}>
       <Box sx={{ my: "auto" }}>
-        {isRegionSelected ? (
+        {isRegionSelected && isAuthenticated() ? (
           <Button
             variant="contained"
             size="small"

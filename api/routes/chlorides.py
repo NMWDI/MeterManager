@@ -1,6 +1,7 @@
 from typing import Optional, List
 from datetime import datetime
 import calendar
+import statistics
 from fastapi.responses import StreamingResponse
 from weasyprint import HTML
 from io import BytesIO
@@ -27,11 +28,11 @@ templates = Environment(
     autoescape=select_autoescape(["html", "xml"])
 )
 
-chlorides_router = APIRouter()
+authenticated_chlorides_router = APIRouter()
+public_chlorides_router = APIRouter()
 
-@chlorides_router.get(
+@public_chlorides_router.get(
     "/chlorides",
-    dependencies=[Depends(ScopedUser.Read)],
     response_model=List[well_schemas.WellMeasurementDTO],
     tags=["Chlorides"],
 )
@@ -57,9 +58,8 @@ def read_chlorides(
     ).all()
 
 
-@chlorides_router.get(
+@public_chlorides_router.get(
     "/chloride_groups",
-    dependencies=[Depends(ScopedUser.Read)],
     response_model=List[well_schemas.ChlorideGroupResponse],
     tags=["Chlorides"],
 )
@@ -95,20 +95,22 @@ def get_chloride_groups(
         for group_id, names in groups.items()
     ]
 
-class MinMaxAvg(BaseModel):
+class MinMaxAvgMedCount(BaseModel):
     min: Optional[float] = None
     max: Optional[float] = None
     avg: Optional[float] = None
+    median: Optional[float] = None
+    count: int = 0
 
 
 class ChlorideReportNums(BaseModel):
-    north: MinMaxAvg
-    south: MinMaxAvg
-    east: MinMaxAvg
-    west: MinMaxAvg
+    north: MinMaxAvgMedCount
+    south: MinMaxAvgMedCount
+    east: MinMaxAvgMedCount
+    west: MinMaxAvgMedCount
 
 
-@chlorides_router.get(
+@authenticated_chlorides_router.get(
     "/chlorides/report",
     dependencies=[Depends(ScopedUser.Read)],
     response_model=ChlorideReportNums,
@@ -203,7 +205,7 @@ def get_chlorides_report(
     )
 
 
-@chlorides_router.get(
+@authenticated_chlorides_router.get(
     "/chlorides/report/pdf",
     dependencies=[Depends(ScopedUser.Read)],
     tags=["Chlorides"],
@@ -249,7 +251,7 @@ def download_chlorides_report_pdf(
         },
     )
 
-@chlorides_router.post(
+@authenticated_chlorides_router.post(
     "/chlorides",
     dependencies=[Depends(ScopedUser.WellMeasurementWrite)],
     response_model=well_schemas.ChlorideMeasurement,
@@ -274,7 +276,7 @@ def add_chloride_measurement(
 
     return well_measurement
 
-@chlorides_router.patch(
+@authenticated_chlorides_router.patch(
     "/chlorides",
     dependencies=[Depends(ScopedUser.WellMeasurementWrite)],
     response_model=well_schemas.WellMeasurement,
@@ -300,7 +302,7 @@ def patch_chloride_measurement(
 
     return well_measurement
 
-@chlorides_router.delete(
+@authenticated_chlorides_router.delete(
     "/chlorides",
     dependencies=[Depends(ScopedUser.Admin)],
     tags=["Chlorides"],
@@ -337,13 +339,17 @@ def _month_end(dt: datetime) -> datetime:
     last_day = calendar.monthrange(dt.year, dt.month)[1]
     return dt.replace(day=last_day, hour=23, minute=59, second=59, microsecond=999999)
 
-def _stats(values: List[float]) -> MinMaxAvg:
-    if not values:
-        return MinMaxAvg()
-    return MinMaxAvg(
-        min=min(values),
-        max=max(values),
-        avg=(sum(values) / len(values))
+def _stats(values: List[Optional[float]]) -> MinMaxAvgMedCount:
+    clean = [v for v in values if v is not None]
+    if not clean:
+        return MinMaxAvgMedCount()
+    
+    return MinMaxAvgMedCount(
+        min=min(clean),
+        max=max(clean),
+        avg=sum(clean) / len(clean),
+        median=statistics.median(clean),
+        count=len(clean),
     )
 
 # Approx NM bounding box (degrees)

@@ -4,11 +4,6 @@ import { Construction } from "@mui/icons-material";
 import { BackgroundBox } from "../../components/BackgroundBox";
 import { CustomCardHeader } from "../../components/CustomCardHeader";
 
-export const gridBreakpoints = { xs: 12 };
-export const toggleStyle = {
-  "&.Mui-selected": { borderColor: "blue", border: 1 },
-};
-
 export const ActivitiesView = () => {
   return (
     <BackgroundBox>

@@ -13,10 +13,11 @@ from api.route_util import _patch, _get
 from api.session import get_db
 from api.enums import ScopedUser, WellSortByField, SortDirection
 
-well_router = APIRouter()
+public_well_router = APIRouter()
+authenticated_well_router = APIRouter()
 
 
-@well_router.get(
+@authenticated_well_router.get(
     "/use_types",
     dependencies=[Depends(ScopedUser.Read)],
     response_model=List[well_schemas.WellUseLU],
@@ -28,7 +29,7 @@ def get_use_types(
     return db.scalars(select(WellUseLU)).all()
 
 # Get water sources
-@well_router.get(
+@authenticated_well_router.get(
     "/water_sources",
     dependencies=[Depends(ScopedUser.Read)],
     response_model=List[well_schemas.WaterSources],
@@ -40,7 +41,7 @@ def get_water_sources(
     return db.scalars(select(WaterSources)).all()
 
 # Get well status types
-@well_router.get(
+@authenticated_well_router.get(
     "/well_status_types",
     dependencies=[Depends(ScopedUser.Read)],
     response_model=List[well_schemas.WellStatus],
@@ -52,9 +53,8 @@ def get_well_status_types(
     return db.scalars(select(WellStatus)).all()
 
 
-@well_router.get(
+@public_well_router.get(
     "/wells",
-    dependencies=[Depends(ScopedUser.Read)],
     response_model=LimitOffsetPage[well_schemas.WellResponse],
     tags=["Wells"],
 )
@@ -124,7 +124,7 @@ def get_wells(
     return paginate(db, query_statement)
 
 
-@well_router.patch(
+@authenticated_well_router.patch(
     "/wells",
     dependencies=[Depends(ScopedUser.WellWrite)],
     response_model=well_schemas.WellResponse,
@@ -184,7 +184,7 @@ def update_well(
     return updated_well_model
 
 
-@well_router.post(
+@authenticated_well_router.post(
     "/wells",
     dependencies=[Depends(ScopedUser.Admin)],
     tags=["Wells"],
@@ -237,7 +237,7 @@ def create_well(new_well: well_schemas.SubmitWellCreate, db: Session = Depends(g
     return new_well_model
 
 
-@well_router.get(
+@authenticated_well_router.get(
     "/well_locations",
     dependencies=[Depends(ScopedUser.Read)],
     response_model=List[well_schemas.WellResponse],
@@ -277,7 +277,7 @@ def get_wells_locations(
     return db.scalars(query_statement.offset(offset).limit(limit)).all()
 
 
-@well_router.get(
+@authenticated_well_router.get(
     "/well",
     dependencies=[Depends(ScopedUser.Read)],
     response_model=well_schemas.Well,
@@ -292,7 +292,7 @@ def get_well(well_id: int, db: Session = Depends(get_db)):
         .filter(Wells.id == well_id)
     ).first()
 
-@well_router.post(
+@authenticated_well_router.post(
     "/merge_wells",
     dependencies=[Depends(ScopedUser.Admin)],
     tags=["Wells"],

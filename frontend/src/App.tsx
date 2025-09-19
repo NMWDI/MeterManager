@@ -30,6 +30,8 @@ import { PartsUsedReportView } from "./views/Reports/PartsUsed";
 import { BoardReportView } from "./views/Reports/Board";
 import { ChloridesReportView } from "./views/Reports/Chlorides";
 import { AppLayout } from "./AppLayout";
+import { NotFound } from "./views/NotFound";
+import { ProtectedRoute } from "./ProtectedRoute";
 
 export const App = () => {
   const queryClient = new QueryClient();
@@ -60,188 +62,181 @@ export const App = () => {
                 <Route
                   path="/"
                   element={
-                    <AppLayout
-                      pageComponent={<Home />}
-                      requiredScopes={[]}
-                      setErrorMessage={setErrorMessage}
-                    />
-                  }
-                />
-                <Route path="/login" element={
-                  <AppLayout
-                    pageComponent={<Login />}
-                    requiredScopes={[]}
-                    setErrorMessage={setErrorMessage}
-                  />
-                } />
-                <Route
-                  path="/settings"
-                  element={
-                    <AppLayout
-                      pageComponent={<Settings />}
-                      requiredScopes={["read"]}
-                      setErrorMessage={setErrorMessage}
-                    />
+                    <AppLayout>
+                      <Home />
+                    </AppLayout>
                   }
                 />
                 <Route
-                  path="/meters"
+                  path="/monitoringwells"
                   element={
-                    <AppLayout
-                      pageComponent={<MetersView />}
-                      requiredScopes={["read"]}
-                      setErrorMessage={setErrorMessage}
-                    />
-                  }
-                />
-                <Route
-                  path="/activities"
-                  element={
-                    <AppLayout
-                      pageComponent={<ActivitiesView />}
-                      requiredScopes={["activities:write"]}
-                      setErrorMessage={setErrorMessage}
-                    />
-                  }
-                />
-                <Route
-                  path="/wells"
-                  element={
-                    <AppLayout
-                      pageComponent={<MonitoringWellsView />}
-                      requiredScopes={["read"]}
-                      setErrorMessage={setErrorMessage}
-                    />
-                  }
-                />
-                <Route
-                  path="/reports"
-                  element={
-                    <AppLayout
-                      pageComponent={<ReportsView />}
-                      requiredScopes={["read"]}
-                      setErrorMessage={setErrorMessage}
-                    />
-                  }
-                />
-                <Route
-                  path="/reports/workorders"
-                  element={
-                    <AppLayout
-                      pageComponent={<WorkOrdersReportView />}
-                      requiredScopes={["read"]}
-                      setErrorMessage={setErrorMessage}
-                    />
-                  }
-                />
-                <Route
-                  path="/reports/wells"
-                  element={
-                    <AppLayout
-                      pageComponent={<MonitoringWellsReportView />}
-                      requiredScopes={["read"]}
-                      setErrorMessage={setErrorMessage}
-                    />
-                  }
-                />
-                <Route
-                  path="/reports/maintenance"
-                  element={
-                    <AppLayout
-                      pageComponent={<MaintenanceReportView />}
-                      requiredScopes={["read"]}
-                      setErrorMessage={setErrorMessage}
-                    />
-                  }
-                />
-                <Route
-                  path="/reports/partsused"
-                  element={
-                    <AppLayout
-                      pageComponent={<PartsUsedReportView />}
-                      requiredScopes={["read"]}
-                      setErrorMessage={setErrorMessage}
-                    />
-                  }
-                />
-                <Route
-                  path="/reports/board"
-                  element={
-                    <AppLayout
-                      pageComponent={<BoardReportView />}
-                      requiredScopes={["read"]}
-                      setErrorMessage={setErrorMessage}
-                    />
-                  }
-                />
-                <Route
-                  path="/reports/chlorides"
-                  element={
-                    <AppLayout
-                      pageComponent={<ChloridesReportView />}
-                      requiredScopes={["read"]}
-                      setErrorMessage={setErrorMessage}
-                    />
+                    <AppLayout>
+                      <MonitoringWellsView />
+                    </AppLayout>
                   }
                 />
                 <Route
                   path="/chlorides"
                   element={
-                    <AppLayout
-                      pageComponent={<ChloridesView />}
-                      requiredScopes={["admin"]}
-                      setErrorMessage={setErrorMessage}
-                    />
+                    <AppLayout>
+                      <ChloridesView />
+                    </AppLayout>
                   }
                 />
                 <Route
-                  path="/parts"
+                  path="/login"
                   element={
-                    <AppLayout
-                      pageComponent={<PartsView />}
-                      requiredScopes={["admin"]}
-                      setErrorMessage={setErrorMessage}
-                    />
+                    <AppLayout>
+                      <Login />
+                    </AppLayout>
                   }
                 />
                 <Route
-                  path="/usermanagement"
+                  path="/settings"
                   element={
-                    <AppLayout
-                      pageComponent={<UserManagementView />}
-                      requiredScopes={["admin"]}
-                      setErrorMessage={setErrorMessage}
-                    />
-                  }
-                />
-                <Route
-                  path="/wellmanagement"
-                  element={
-                    <AppLayout
-                      pageComponent={<WellManagementView />}
-                      requiredScopes={["read"]}
-                      setErrorMessage={setErrorMessage}
-                    />
+                    <ProtectedRoute requiredScopes={["read"]} setErrorMessage={setErrorMessage}>
+                      <AppLayout>
+                        <Settings />
+                      </AppLayout>
+                    </ProtectedRoute>
                   }
                 />
                 <Route
                   path="/workorders"
                   element={
-                    <AppLayout
-                      pageComponent={<WorkOrdersView />}
-                      requiredScopes={["read"]}
-                      setErrorMessage={setErrorMessage}
-                    />
+                    <ProtectedRoute requiredScopes={["read"]} setErrorMessage={setErrorMessage}>
+                      <AppLayout>
+                        <WorkOrdersView />
+                      </AppLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/activities"
+                  element={
+                    <ProtectedRoute requiredScopes={["activities:write"]} setErrorMessage={setErrorMessage}>
+                      <AppLayout>
+                        <ActivitiesView />
+                      </AppLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/manage/meters"
+                  element={
+                    <ProtectedRoute requiredScopes={["read"]} setErrorMessage={setErrorMessage}>
+                      <AppLayout>
+                        <MetersView />
+                      </AppLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/manage/wells"
+                  element={
+                    <ProtectedRoute requiredScopes={["read"]} setErrorMessage={setErrorMessage}>
+                      <AppLayout>
+                        <WellManagementView />
+                      </AppLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/reports"
+                  element={
+                    <ProtectedRoute requiredScopes={["read"]} setErrorMessage={setErrorMessage}>
+                      <AppLayout>
+                        <ReportsView />
+                      </AppLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/reports/workorders"
+                  element={
+                    <ProtectedRoute requiredScopes={["read"]} setErrorMessage={setErrorMessage}>
+                      <AppLayout>
+                        <WorkOrdersReportView />
+                      </AppLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/reports/monitoringwells"
+                  element={
+                    <ProtectedRoute requiredScopes={["read"]} setErrorMessage={setErrorMessage}>
+                      <AppLayout>
+                        <MonitoringWellsReportView />
+                      </AppLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/reports/maintenance"
+                  element={
+                    <ProtectedRoute requiredScopes={["read"]} setErrorMessage={setErrorMessage}>
+                      <AppLayout>
+                        <MaintenanceReportView />
+                      </AppLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/reports/partsused"
+                  element={
+                    <ProtectedRoute requiredScopes={["read"]} setErrorMessage={setErrorMessage}>
+                      <AppLayout>
+                        <PartsUsedReportView />
+                      </AppLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/reports/board"
+                  element={
+                    <ProtectedRoute requiredScopes={["read"]} setErrorMessage={setErrorMessage}>
+                      <AppLayout>
+                        <BoardReportView />
+                      </AppLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/reports/chlorides"
+                  element={
+                    <ProtectedRoute requiredScopes={["read"]} setErrorMessage={setErrorMessage}>
+                      <AppLayout>
+                        <ChloridesReportView />
+                      </AppLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/manage/parts"
+                  element={
+                    <ProtectedRoute requiredScopes={["admin"]} setErrorMessage={setErrorMessage}>
+                      <AppLayout>
+                        <PartsView />
+                      </AppLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/manage/users"
+                  element={
+                    <ProtectedRoute requiredScopes={["admin"]} setErrorMessage={setErrorMessage}>
+                      <AppLayout>
+                        <UserManagementView />
+                      </AppLayout>
+                    </ProtectedRoute>
                   }
                 />
                 <Route
                   path="*"
                   element={
-                    <AppLayout
-                      pageComponent={<Home />}
-                      requiredScopes={["read"]}
-                      setErrorMessage={setErrorMessage}
-                    />
+                    <AppLayout>
+                      <NotFound />
+                    </AppLayout>
                   }
                 />
               </Routes>

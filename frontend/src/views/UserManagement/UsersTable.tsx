@@ -4,7 +4,6 @@ import {
   Button,
   Card,
   CardContent,
-  Chip,
   Grid,
   InputAdornment,
   TextField,
@@ -17,7 +16,7 @@ import FormatListBulletedOutlinedIcon from "@mui/icons-material/FormatListBullet
 import { User } from "../../interfaces";
 import TristateToggle from "../../components/TristateToggle";
 import GridFooterWithButton from "../../components/GridFooterWithButton";
-import { CustomCardHeader } from "../../components/CustomCardHeader";
+import { RoleChip, CustomCardHeader, IsTrueChip } from "../../components";
 
 export const UsersTable = ({
   setSelectedUser,
@@ -34,40 +33,25 @@ export const UsersTable = ({
 
   const cols: GridColDef[] = [
     { field: "full_name", headerName: "Full Name", width: 200 },
-    { field: "email", headerName: "Email", width: 250 },
-    { field: "username", headerName: "Username", width: 150 },
     {
       field: "user_role",
       headerName: "Role",
-      width: 200,
+      width: 125,
       valueGetter: (_, row) => row.user_role.name,
-      renderCell: (params: any) => {
-        switch (params.value) {
-          case "Admin": {
-            return <Chip size="small" label="Admin" color="primary" />;
-          }
-          case "Technician": {
-            return <Chip size="small" label="Technician" color="secondary" />;
-          }
-          default: {
-            return <Chip size="small" label={params.value} color="warning" />;
-          }
-        }
-      },
+      renderCell: (params: any) => <RoleChip role={params.value} />
     },
+    { field: "email", headerName: "Email", width: 250 },
+    { field: "username", headerName: "Username", width: 150 },
     {
       field: "disabled",
       headerName: "Active",
-      renderCell: (params: any) =>
-        params.value != true ? (
-          <Chip variant="outlined" size="small" label="True" color="success" />
-        ) : (
-          <Chip variant="outlined" size="small" label="False" color="error" />
-        ),
+      width: 80,
+      renderCell: (params: any) => <IsTrueChip assert={params.value != true} />
     },
+    { field: "display_name", headerName: "Display Name", width: 150 },
+    { field: "redirect_page", headerName: "Redirect Page", width: 200 },
   ];
 
-  // Filter rows based on search. Cant use multiple filters w/o pro datagrid
   useEffect(() => {
     const psq = userSearchQuery.toLowerCase();
     let filtered = (usersList.data ?? []).filter(

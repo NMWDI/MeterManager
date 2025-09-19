@@ -13,19 +13,19 @@ import MaintenanceRepairSelection from "./MaintenanceRepairSelection";
 import PartsSelection from "./PartsSelection";
 import { ActivityFormControl, MeterListDTO } from "../../../interfaces.d";
 import { ActivityType } from "../../../enums";
-import {
-  useCreateActivity,
-  useGetMeter,
-  useGetWell,
-} from "../../../service/ApiServiceNew";
+import { useGetMeter, useGetWell } from "../../../service/ApiServiceNew";
 import {
   ActivityResolverSchema,
   getDefaultForm,
   toSubmissionForm,
 } from "./ActivityFormConfig";
+import { useMutation } from "react-query";
+import { useAuthHeader } from "react-auth-kit";
+import { API_URL } from "../../../config";
 
 export default function MeterActivityEntry() {
   const navigate = useNavigate();
+  const authHeader = useAuthHeader();
   const [searchParams] = useSearchParams();
   const { enqueueSnackbar } = useSnackbar();
   const [meterID, setMeterID] = useState<number>();
@@ -37,12 +37,58 @@ export default function MeterActivityEntry() {
   const [isMeterAndActivitySelected, setIsMeterAndActivitySelected] =
     useState<boolean>(false);
 
-  function onSuccessfulSubmit() {
+  function onSuccessfulSubmit(activity_id: number, meter_id: number) {
     enqueueSnackbar("Successfully Submitted Activity!", { variant: "success" });
-    navigate("/meters");
+    navigate({
+      pathname: "/manage/meters",
+      search: `?meter_id=${meter_id}&activity_id=${activity_id}`,
+    });
   }
 
-  const createActivity = useCreateActivity(onSuccessfulSubmit);
+  const createActivity = useMutation({
+    mutationFn: async (activityForm: FormData) => {
+      const response = await fetch(`${API_URL}/activities`, {
+        method: "POST",
+        headers: {
+          Authorization: authHeader(),
+        },
+        body: activityForm,
+      });
+
+      if (!response.ok) {
+        if (response.status == 422) {
+          enqueueSnackbar("One or More Required Fields Not Entered!", {
+            variant: "error",
+          });
+          throw Error("Incomplete form, check network logs for details");
+        }
+        if (response.status == 409) {
+          let errorText = await response.text();
+          enqueueSnackbar(JSON.parse(errorText).detail, { variant: "error" });
+          throw Error(errorText);
+        } else {
+          enqueueSnackbar("Unknown Error Occurred!", { variant: "error" });
+          throw Error("Unknown Error: " + response.status);
+        }
+      }
+      return response.json();
+    },
+    retry: 0,
+    onMutate: () => {
+      enqueueSnackbar("Submitting activity...", { variant: "info" });
+    },
+    onError: (error: any) => {
+      enqueueSnackbar(error.message || "Submission failed", {
+        variant: "error",
+      });
+    },
+    onSuccess: (responseJson) => {
+      const activity_id = responseJson.id;
+      const meter_id = responseJson.meter_id;
+      enqueueSnackbar("Successfully Submitted Activity!", { variant: "success" });
+      onSuccessfulSubmit(activity_id, meter_id);
+    },
+  });
 
   let initialMeter: Partial<MeterListDTO> | null = null;
   const qpMeterID = searchParams.get("meter_id");
@@ -74,15 +120,14 @@ export default function MeterActivityEntry() {
     createActivity.mutate(toSubmissionForm(data));
 
   useEffect(() => {
-    console.log(meterDetails.data);
-    console.log(watch("activity_details.activity_type")?.name);
     setHasMeterActivityConflict(
-      (meterDetails.data?.status.status_name == "Installed" &&
-        watch("activity_details.activity_type")?.name ==
-        ActivityType.Install) ||
-      (meterDetails.data?.status.status_name != "Installed" &&
-        watch("activity_details.activity_type")?.name ==
-        ActivityType.Uninstall),
+      (
+        meterDetails.data?.status.status_name == "Installed" &&
+        watch("activity_details.activity_type")?.name == ActivityType.Install
+      ) || (
+        meterDetails.data?.status.status_name != "Installed" &&
+        watch("activity_details.activity_type")?.name == ActivityType.Uninstall
+      ),
     );
   }, [meterDetails.data, watch("activity_details.activity_type")?.name]);
 
@@ -117,7 +162,6 @@ export default function MeterActivityEntry() {
   return (
     <Stack spacing={3}>
       <MeterActivitySelection control={control} errors={errors} watch={watch} setValue={setValue} />
-
       {!hasMeterActivityConflict && isMeterAndActivitySelected ? (
         <Stack spacing={3}>
           <MeterInstallation control={control} errors={errors} watch={watch} setValue={setValue} />
@@ -125,7 +169,6 @@ export default function MeterActivityEntry() {
           <MaintenanceRepairSelection control={control} errors={errors} watch={watch} setValue={setValue} />
           <NotesSelection control={control} errors={errors} watch={watch} setValue={setValue} />
           <PartsSelection control={control} errors={errors} watch={watch} setValue={setValue} />
-
           <Box sx={{ mt: 2, display: "flex", justifyContent: { xs: "center", sm: "flex-start" } }}>
             {hasErrors(errors) ? (
               <Alert severity="error" sx={{ width: { xs: "100%", sm: "auto" } }}>
@@ -133,6 +176,7 @@ export default function MeterActivityEntry() {
               </Alert>
             ) : (
               <Button
+                disabled={createActivity.isLoading}
                 variant="contained"
                 type="submit"
                 onClick={handleSubmit(onSubmit)}

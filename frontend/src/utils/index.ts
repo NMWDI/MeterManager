@@ -1,5 +1,6 @@
 export * from "./DateUtils"
 export * from "./HttpUtils"
 export * from "./GetMeterMarkerColor"
+export * from "./GetRoleColor"
 export * from "./MonitoredWellsUtils"
 export * from "./NumberDataFormatter"

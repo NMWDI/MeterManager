@@ -25,13 +25,14 @@ from api.models.main_models import Users
 
 from api.routes.activities import activity_router
 from api.routes.admin import admin_router
-from api.routes.chlorides import chlorides_router
+from api.routes.chlorides import authenticated_chlorides_router, public_chlorides_router
 from api.routes.maintenance import maintenance_router
-from api.routes.meters import meter_router
+from api.routes.meters import authenticated_meter_router, public_meter_router
 from api.routes.OSE import ose_router
 from api.routes.parts import part_router
-from api.routes.well_measurements import well_measurement_router
-from api.routes.wells import well_router
+from api.routes.settings import settings_router
+from api.routes.well_measurements import authenticated_well_measurement_router, public_well_measurement_router
+from api.routes.wells import authenticated_well_router, public_well_router
 
 from api.security import (
     authenticate_user,
@@ -130,14 +131,19 @@ def login_for_access_token(
 
 authenticated_router.include_router(activity_router)
 authenticated_router.include_router(admin_router)
-authenticated_router.include_router(chlorides_router)
+authenticated_router.include_router(authenticated_chlorides_router)
 authenticated_router.include_router(maintenance_router)
-authenticated_router.include_router(meter_router)
+authenticated_router.include_router(authenticated_meter_router)
 authenticated_router.include_router(part_router)
-authenticated_router.include_router(well_measurement_router)
-authenticated_router.include_router(well_router)
+authenticated_router.include_router(authenticated_well_measurement_router)
+authenticated_router.include_router(authenticated_well_router)
+authenticated_router.include_router(settings_router)
 
 add_pagination(app)
 
 app.include_router(ose_router)
+app.include_router(public_meter_router)
+app.include_router(public_well_router)
+app.include_router(public_chlorides_router)
+app.include_router(public_well_measurement_router)
 app.include_router(authenticated_router)
