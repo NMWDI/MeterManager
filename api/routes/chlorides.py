@@ -174,9 +174,13 @@ def get_chlorides_report(
     se_rows = [
         (val, lat, lon)
         for (val, lat, lon) in rows
-        if (lat is not None and lon is not None
+        if (
+            val is not None
+            and lat is not None
+            and lon is not None
             and SE_MIN_LAT <= float(lat) <= SE_MAX_LAT
-            and SE_MIN_LON <= float(lon) <= SE_MAX_LON)
+            and SE_MIN_LON <= float(lon) <= SE_MAX_LON
+        )
     ]
 
     north_vals: List[float] = []
@@ -185,6 +189,9 @@ def get_chlorides_report(
     west_vals:  List[float] = []
 
     for val, lat, lon in se_rows:
+        if val is None:
+            continue  # skip null chloride values
+
         # North vs South halves within the SE quadrant
         if float(lat) >= SE_MID_LAT:
             north_vals.append(float(val))
