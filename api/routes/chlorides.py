@@ -293,12 +293,13 @@ def patch_chloride_measurement(
     chloride_measurement_patch: well_schemas.PatchChlorideMeasurement,
     db: Session = Depends(get_db),
 ):
-    # Find the measurement
     well_measurement = (
-        db.scalars(select(WellMeasurements).where(WellMeasurements.id == chloride_measurement_patch.id)).first()
+        db.scalars(
+            select(WellMeasurements)
+            .where(WellMeasurements.id == chloride_measurement_patch.id)
+        ).first()
     )
 
-    # Update the fields, all are mandatory
     well_measurement.submitting_user_id = chloride_measurement_patch.submitting_user_id
     well_measurement.timestamp = chloride_measurement_patch.timestamp
     well_measurement.value = chloride_measurement_patch.value

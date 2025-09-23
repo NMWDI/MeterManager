@@ -56,7 +56,13 @@ export const ChloridesTable = ({
           dayjs.utc(value).tz("America/Denver").format("MM/DD/YYYY hh:mm A"),
         type: "dateTime",
       },
-      { field: "value", headerName: "Chlorides (ppm)", width: 175 },
+      {
+        field: "value",
+        headerName: "Chlorides (ppm)",
+        width: 175,
+        valueFormatter: (value) =>
+          value == null ? "NOT SAMPLED" : value,
+      },
       {
         field: "well",
         headerName: "Well",

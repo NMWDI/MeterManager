@@ -583,7 +583,7 @@ export interface PatchRegionMeasurement {
   submitting_user_id: number
   well_id: number
   timestamp: dayjs.Dayjs
-  value: number
+  value?: number
 }
 
 export interface CreateUser {
