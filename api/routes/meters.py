@@ -23,6 +23,7 @@ from api.models.main_models import (
 from api.route_util import _patch, _get
 from api.session import get_db
 from api.enums import ScopedUser, MeterSortByField, MeterStatus, SortDirection
+from google.auth import default, impersonated_credentials
 from google.cloud import storage
 from datetime import timedelta
 
@@ -552,7 +553,17 @@ def get_meter_history(meter_id: int, db: Session = Depends(get_db)):
 
 def create_signed_url(blob_path: str) -> str:
     """Create a v4 signed URL for a blob in GCS."""
-    storage_client = storage.Client()
+    source_creds, _ = default()
+    target_sa = "pvacd-meterapp@waterdatainitiative-271000.iam.gserviceaccount.com"
+
+    creds = impersonated_credentials.Credentials(
+        source_credentials=source_creds,
+        target_principal=target_sa,
+        target_scopes=['https://www.googleapis.com/auth/devstorage.read_only'],
+        lifetime=3600,
+    )
+
+    storage_client = storage.Client(credentials=creds)
     bucket = storage_client.bucket(BUCKET_NAME)
     blob = bucket.blob(blob_path)
     url = blob.generate_signed_url(
