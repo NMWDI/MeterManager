@@ -76,8 +76,8 @@ const schema = yup.object().shape({
 });
 
 const defaultSchema = {
-  from: dayjs(),
-  to: dayjs(),
+  from: dayjs().startOf('month'),
+  to: dayjs().endOf('month'),
   wells: [],
   isAveragingAllWells: false,
   isComparingTo1970Average: false,
@@ -384,9 +384,9 @@ export const MonitoringWellsReportView = () => {
                 control={control}
                 size="small"
                 name="from"
-                views={["year", "month"]}
+                views={["year", "month", "day"]}
                 openTo="year"
-                format="YYYY MMMM"
+                format="YYYY MMMM DD"
               />
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
@@ -396,9 +396,9 @@ export const MonitoringWellsReportView = () => {
                 control={control}
                 size="small"
                 name="to"
-                views={["year", "month"]}
+                views={["year", "month", "day"]}
                 openTo="year"
-                format="YYYY MMMM"
+                format="YYYY MMMM DD"
               />
             </Grid>
             <Grid item xs={12}>

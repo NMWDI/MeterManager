@@ -50,8 +50,8 @@ const schema = yup.object().shape({
 });
 
 const defaultSchema = {
-  from: dayjs(),
-  to: dayjs(),
+  from: dayjs().startOf('month'),
+  to: dayjs().endOf('month'),
 };
 
 interface iMinMaxAvgMedCount {
@@ -200,9 +200,9 @@ export const ChloridesReportView = () => {
                 label="From"
                 control={control}
                 name="from"
-                views={["year", "month"]}
+                views={["year", "month", "day"]}
                 openTo="year"
-                format="YYYY MMMM"
+                format="YYYY MMMM DD"
               />
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
@@ -212,9 +212,9 @@ export const ChloridesReportView = () => {
                 label="To"
                 control={control}
                 name="to"
-                views={["year", "month"]}
+                views={["year", "month", "day"]}
                 openTo="year"
-                format="YYYY MMMM"
+                format="YYYY MMMM DD"
               />
             </Grid>
           </Grid>
