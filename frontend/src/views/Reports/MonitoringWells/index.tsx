@@ -165,8 +165,8 @@ export const MonitoringWellsReportView = () => {
     ],
     queryFn: () => {
       const searchParams = new URLSearchParams({
-        from_month: from?.format("YYYY-MM"),
-        to_month: to?.format("YYYY-MM"),
+        from_date: from?.format("YYYY-MM-DD"),
+        to_date: to?.format("YYYY-MM-DD"),
         isAveragingAllWells: isAveragingAllWells.toString(),
         isComparingTo1970Average: isComparingTo1970Average.toString(),
         comparisonYear: comparisonYear ? comparisonYear.toString() : ""
@@ -294,8 +294,8 @@ export const MonitoringWellsReportView = () => {
       comparisonYear: string;
     }) => {
       const params = new URLSearchParams({
-        from_month: from.format("YYYY-MM"),
-        to_month: to.format("YYYY-MM"),
+        from_date: from?.format("YYYY-MM-DD"),
+        to_date: to?.format("YYYY-MM-DD"),
         isAveragingAllWells: isAveragingAllWells.toString(),
         isComparingTo1970Average: isComparingTo1970Average.toString(),
         comparisonYear
