@@ -1,6 +1,5 @@
 from typing import List, Optional
 from datetime import datetime, date
-import calendar
 import re
 
 from fastapi import Depends, APIRouter, Query, HTTPException
@@ -74,16 +73,20 @@ def add_waterlevel(
 )
 def read_waterlevels(
     well_ids: List[int] = Query(..., description="One or more well IDs"),
-    from_date: date = Query(..., description="Start date in ISO format, 'YYYY-MM-DD'"),
-    to_date: date = Query(..., description="End date in ISO format, 'YYYY-MM-DD'"),
+    from_date: Optional[date] = Query(
+        None, description="Start date in ISO format, 'YYYY-MM-DD' (optional)"
+    ),
+    to_date: Optional[date] = Query(
+        None, description="End date in ISO format, 'YYYY-MM-DD' (optional)"
+    ),
     isAveragingAllWells: bool = Query(False),
     isComparingTo1970Average: bool = Query(False),
     comparisonYear: Optional[str] = Query(None, pattern=r"^$|^\d{4}$"),
     db: Session = Depends(get_db),
 ):
     """
-    Return well measurements between from_date and to_date, optionally
-    averaging across wells and/or adding comparison-year averages.
+    Return well measurements, optionally filtered by from_date/to_date,
+    with optional averaging and historical comparison.
     """
     MONITORING_USE_TYPE_ID = 11
     synthetic_id_counter = -1
@@ -92,7 +95,9 @@ def read_waterlevels(
         from collections import defaultdict
         grouped = defaultdict(list)
         for m in measurements:
-            key = m.timestamp.strftime("%Y-%m" if group_by_label == "month" else "%Y-%m-%d")
+            key = m.timestamp.strftime(
+                "%Y-%m" if group_by_label == "month" else "%Y-%m-%d"
+            )
             grouped[key].append(m.value)
 
         result = []
@@ -115,26 +120,34 @@ def read_waterlevels(
             synthetic_id_counter -= 1
         return result
 
-    def get_measurements_by_ids(well_ids, start, end):
+    def get_measurements_by_ids(well_ids, start: Optional[date], end: Optional[date]):
+        filters = [
+            ObservedPropertyTypeLU.name == "Depth to water",
+            WellMeasurements.well_id.in_(well_ids),
+        ]
+        if start:
+            filters.append(WellMeasurements.timestamp >= start)
+        if end:
+            # include full day when end is provided
+            end_dt = datetime.combine(end, datetime.max.time())
+            filters.append(WellMeasurements.timestamp <= end_dt)
+
         stmt = (
             select(WellMeasurements)
-            .options(joinedload(WellMeasurements.submitting_user),
-                     joinedload(WellMeasurements.well))
-            .join(ObservedPropertyTypeLU)
-            .where(
-                and_(
-                    ObservedPropertyTypeLU.name == "Depth to water",
-                    WellMeasurements.well_id.in_(well_ids),
-                    WellMeasurements.timestamp >= start,
-                    WellMeasurements.timestamp <= end,
-                )
+            .options(
+                joinedload(WellMeasurements.submitting_user),
+                joinedload(WellMeasurements.well),
             )
+            .join(ObservedPropertyTypeLU)
+            .where(and_(*filters))
             .order_by(WellMeasurements.well_id, WellMeasurements.timestamp)
         )
         return db.scalars(stmt).all()
 
-    # Determine grouping granularity
-    group_by = "month" if (to_date - from_date).days >= 365 else "day"
+    # Decide grouping granularity only if both dates are given
+    group_by = None
+    if from_date and to_date:
+        group_by = "month" if (to_date - from_date).days >= 365 else "day"
 
     if not well_ids and not isComparingTo1970Average and not comparisonYear:
         return []
@@ -144,22 +157,29 @@ def read_waterlevels(
     # Averaged selection (if requested)
     if isAveragingAllWells and well_ids:
         current_measurements = get_measurements_by_ids(well_ids, from_date, to_date)
-        averaged = group_and_average(current_measurements, group_by)
+        averaged = group_and_average(current_measurements, group_by or "day")
         response_data.extend(averaged)
 
     # Raw per-well (if not averaging)
     if not isAveragingAllWells and well_ids:
         response_data.extend(get_measurements_by_ids(well_ids, from_date, to_date))
 
-    # Helper: add a comparison average for any given year (same rules as 1970)
+    # Helper: add a comparison average for any given year
     def add_year_average(year: int, label: str):
-        if (to_date - from_date).days >= 365:
+        # pick full year or same-month window depending on user’s range
+        if from_date and to_date and (to_date - from_date).days >= 365:
             start = datetime(year, 1, 1)
             end = datetime(year, 12, 31, 23, 59, 59)
         else:
-            start = datetime(year, from_date.month, 1)
-            last_day = calendar.monthrange(year, to_date.month)[1]
-            end = datetime(year, to_date.month, last_day, 23, 59, 59)
+            # fallback: use provided month(s) if available, otherwise full year
+            if from_date and to_date:
+                start = datetime(year, from_date.month, 1)
+                import calendar
+                last_day = calendar.monthrange(year, to_date.month)[1]
+                end = datetime(year, to_date.month, last_day, 23, 59, 59)
+            else:
+                start = datetime(year, 1, 1)
+                end = datetime(year, 12, 31, 23, 59, 59)
 
         monitoring_ids = [
             row[0]
@@ -168,16 +188,14 @@ def read_waterlevels(
             ).all()
         ]
         year_measurements = get_measurements_by_ids(monitoring_ids, start, end)
-        averaged = group_and_average(year_measurements, "month")  # Always monthly for comparison
+        averaged = group_and_average(year_measurements, "month")
         for dto in averaged:
             dto.well.ra_number = label
         response_data.extend(averaged)
 
-    # 1970 comparison (existing behavior)
     if isComparingTo1970Average:
         add_year_average(1970, "1970 Average")
 
-    # Dynamic comparison year
     if comparisonYear:
         try:
             year_int = int(comparisonYear)
@@ -186,10 +204,11 @@ def read_waterlevels(
 
         current_year = datetime.now().year
         if year_int < 1900 or year_int > current_year:
-            raise HTTPException(status_code=400,
-                                detail=f"comparisonYear must be between 1900 and {current_year}")
+            raise HTTPException(
+                status_code=400,
+                detail=f"comparisonYear must be between 1900 and {current_year}",
+            )
 
-        # Avoid duplicate if user asked for 1970 both ways
         if not (isComparingTo1970Average and year_int == 1970):
             add_year_average(year_int, f"{year_int} Average")
 
