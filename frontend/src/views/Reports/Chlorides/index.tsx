@@ -85,8 +85,8 @@ export const ChloridesReportView = () => {
     queryKey: ["Chlorides", "Reports", from, to],
     queryFn: async () => {
       const searchParams = new URLSearchParams({
-        from_month: from?.format("YYYY-MM"),
-        to_month: to?.format("YYYY-MM"),
+        from_date: from?.format("YYYY-MM-DD"),
+        to_date: to?.format("YYYY-MM-DD"),
       });
 
       return fetchWithAuth({
@@ -106,8 +106,8 @@ export const ChloridesReportView = () => {
       to: Dayjs;
     }) => {
       const params = new URLSearchParams({
-        from_month: from.format("YYYY-MM"),
-        to_month: to.format("YYYY-MM"),
+        from_date: from?.format("YYYY-MM-DD"),
+        to_date: to?.format("YYYY-MM-DD"),
       });
 
       const response = await fetch(

@@ -1,5 +1,5 @@
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, date
 import calendar
 import statistics
 from fastapi.responses import StreamingResponse
@@ -117,16 +117,8 @@ class ChlorideReportNums(BaseModel):
     tags=["Chlorides"],
 )
 def get_chlorides_report(
-    from_month: Optional[str] = Query(
-        None,
-        description="Month start, 'YYYY-MM'",
-        pattern=r"^$|^\d{4}-\d{2}$",
-    ),
-    to_month: Optional[str] = Query(
-        None,
-        description="Month end, 'YYYY-MM'",
-        pattern=r"^$|^\d{4}-\d{2}$",
-    ),
+    from_date: date = Query(..., description="Start date in ISO format, 'YYYY-MM-DD'"),
+    to_date: date = Query(..., description="End date in ISO format, 'YYYY-MM-DD'"),
     db: Session = Depends(get_db),
 ):
     """
@@ -136,13 +128,9 @@ def get_chlorides_report(
 
     CHLORIDE_OBSERVED_PROPERTY_ID = 5
 
-    # Parse months
-    start_dt = _parse_month(from_month) if from_month else None
-    end_dt = _parse_month(to_month) if to_month else None
-    if start_dt and not end_dt:
-        end_dt = start_dt
-    if end_dt:
-        end_dt = _month_end(end_dt)
+    # Convert to datetimes for inclusive range
+    start_dt = datetime.combine(from_date, datetime.min.time())
+    end_dt = datetime.combine(to_date, datetime.max.time())
 
     stmt = (
         select(
@@ -218,16 +206,8 @@ def get_chlorides_report(
     tags=["Chlorides"],
 )
 def download_chlorides_report_pdf(
-    from_month: Optional[str] = Query(
-        None,
-        description="Month start, 'YYYY-MM'",
-        pattern=r"^$|^\d{4}-\d{2}$",
-    ),
-    to_month: Optional[str] = Query(
-        None,
-        description="Month end, 'YYYY-MM'",
-        pattern=r"^$|^\d{4}-\d{2}$",
-    ),
+    from_date: date = Query(..., description="Start date in ISO format, 'YYYY-MM-DD'"),
+    to_date: date = Query(..., description="End date in ISO format, 'YYYY-MM-DD'"),
     db: Session = Depends(get_db),
 ):
     """
@@ -235,14 +215,14 @@ def download_chlorides_report_pdf(
     for the SE quadrant of New Mexico.
     """
     # Re-use your existing logic by calling the data endpoint’s function
-    report = get_chlorides_report(from_month=from_month, to_month=to_month, db=db)
+    report = get_chlorides_report(from_date=from_date, to_date=to_date, db=db)
 
     # Render HTML using a template
     template = templates.get_template("chlorides_report.html")
     html_content = template.render(
         report=report,
-        from_month=from_month,
-        to_month=to_month,
+        from_date=from_date,
+        to_date=to_date,
     )
 
     # Convert to PDF
