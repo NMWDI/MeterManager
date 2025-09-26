@@ -115,16 +115,16 @@ export const MaintenanceReportView = () => {
     queryKey: [
       "maintenance",
       {
-        from: from?.format("YYYY-MM"),
-        to: to?.format("YYYY-MM"),
+        from: from?.format("YYYY-MM-DD"),
+        to: to?.format("YYYY-MM-DD"),
         trss: trss ?? "",
         technicians: technicians?.map((t) => t.id) ?? [],
       },
     ],
     queryFn: async () => {
       const queryParams = new URLSearchParams();
-      queryParams.set("from_month", from?.format("YYYY-MM"));
-      queryParams.set("to_month", to?.format("YYYY-MM"));
+      queryParams.set("from_date", from?.format("YYYY-MM-DD"));
+      queryParams.set("to_date", to?.format("YYYY-MM-DD"));
       queryParams.set("trss", trss ?? "");
 
       technicians
@@ -229,9 +229,9 @@ export const MaintenanceReportView = () => {
       technicians: number[];
     }) => {
       const params = new URLSearchParams({
-        from_month: from.format("YYYY-MM"),
-        to_month: to.format("YYYY-MM"),
-        trss: "", // optional — if unused you can remove it on both ends
+        from_date: from.format("YYYY-MM-DD"),
+        to_date: to.format("YYYY-MM-DD"),
+        trss: trss ?? "",
       });
 
       technicians.forEach((id) => params.append("technicians", id.toString()));
