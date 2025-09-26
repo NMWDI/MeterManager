@@ -154,8 +154,8 @@ export const PartsUsedReportView = () => {
     queryKey: ["Inventory", "report", "partsused", from, to, selectedPartIds],
     queryFn: async () => {
       const searchParams = new URLSearchParams({
-        from_month: from?.format("YYYY-MM"),
-        to_month: to?.format("YYYY-MM"),
+        from_date: from?.format("YYYY-MM-DD"),
+        to_date: to?.format("YYYY-MM-DD"),
       });
 
       selectedPartIds.forEach((id: number) => {
@@ -231,8 +231,8 @@ export const PartsUsedReportView = () => {
       parts: number[];
     }) => {
       const params = new URLSearchParams({
-        from_month: from.format("YYYY-MM"),
-        to_month: to.format("YYYY-MM"),
+        from_date: from.format("YYYY-MM-DD"),
+        to_date: to.format("YYYY-MM-DD"),
       });
 
       parts.forEach((id) => params.append("parts", id.toString()));

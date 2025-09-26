@@ -1,56 +1,62 @@
 <html>
-  <head>
-    <style>
-      body {
-        font-family: sans-serif;
-      }
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 1em;
-      }
-      th,
-      td {
-        border: 1px solid #ccc;
-        padding: 6px;
-        text-align: left;
-      }
-      th {
-        background-color: #f5f5f5;
-      }
-    </style>
-  </head>
-  <body>
-    <h2>Parts Usage Report</h2>
-    <p>
-      <strong>From:</strong>
-      {{ from_month }} &nbsp;
-      <strong>To:</strong>
-      {{ to_month }}
-    </p>
-    <table>
-      <thead>
-        <tr>
-          <th>Part #</th>
-          <th>Description</th>
-          <th>Price</th>
-          <th>Quantity</th>
-          <th>Total</th>
-          <th>Running Total</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for row in rows %}
-        <tr>
-          <td>{{ row.part_number }}</td>
-          <td>{{ row.description }}</td>
-          <td>${{ "%.2f"|format(row.price) }}</td>
-          <td>{{ row.quantity }}</td>
-          <td>${{ "%.2f"|format(row.total) }}</td>
-          <td>${{ "%.2f"|format(row.running_total) }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </body>
+
+<head>
+  <style>
+    body {
+      font-family: sans-serif;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1em;
+    }
+
+    th,
+    td {
+      border: 1px solid #ccc;
+      padding: 6px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f5f5f5;
+    }
+  </style>
+</head>
+
+<body>
+  <h2>Parts Usage Report</h2>
+  <p>
+    <strong>From:</strong>
+    {{ from_date }} &nbsp;
+    <strong>To:</strong>
+    {{ to_date }}
+  </p>
+  <table>
+    <thead>
+      <tr>
+        <th>Part #</th>
+        <th>Description</th>
+        <th>Price</th>
+        <th>Quantity</th>
+        <th>Total</th>
+        <th>Running Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td>{{ row.part_number }}</td>
+        <td>{{ row.description }}</td>
+        <td>${{ "%.2f"|format(row.price) }}</td>
+        <td>{{ row.quantity }}</td>
+        <td>${{ "%.2f"|format(row.total) }}</td>
+        <td>${{ "%.2f"|format(row.running_total) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+
 </html>

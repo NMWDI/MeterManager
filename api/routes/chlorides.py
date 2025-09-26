@@ -1,11 +1,10 @@
 from typing import Optional, List
 from datetime import datetime, date
-import calendar
 import statistics
 from fastapi.responses import StreamingResponse
 from weasyprint import HTML
 from io import BytesIO
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 from sqlalchemy import and_, select
 from sqlalchemy.orm import Session, joinedload
@@ -214,7 +213,7 @@ def download_chlorides_report_pdf(
     Generate a PDF chloride report (north/south/east/west stats)
     for the SE quadrant of New Mexico.
     """
-    # Re-use your existing logic by calling the data endpoint’s function
+    # Re-use existing logic
     report = get_chlorides_report(from_date=from_date, to_date=to_date, db=db)
 
     # Render HTML using a template
@@ -306,26 +305,6 @@ def delete_chloride_measurement(chloride_measurement_id: int, db: Session = Depe
 
     return True
 
-
-def _parse_month(m: Optional[str]) -> Optional[datetime]:
-    """
-    Accepts 'YYYY-MM' or 'YYYY MM'. Returns the first day of month at 00:00:00.
-    """
-    if not m:
-        return None
-    m = m.strip()
-    # Try 'YYYY-MM'
-    for fmt in ("%Y-%m", "%Y %m"):
-        try:
-            dt = datetime.strptime(m, fmt)
-            return dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        except ValueError:
-            continue
-    raise HTTPException(status_code=400, detail="Invalid month format. Use 'YYYY-MM' or 'YYYY MM'.")
-
-def _month_end(dt: datetime) -> datetime:
-    last_day = calendar.monthrange(dt.year, dt.month)[1]
-    return dt.replace(day=last_day, hour=23, minute=59, second=59, microsecond=999999)
 
 def _stats(values: List[Optional[float]]) -> MinMaxAvgMedCount:
     clean = [v for v in values if v is not None]
