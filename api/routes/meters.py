@@ -101,10 +101,7 @@ def get_meters(
         else:
             query_statement = query_statement.order_by(
                 schema_field_name
-            )  # SQLAlchemy orders ascending by default
-
-    # Print the SQL query for debugging
-    #print(query_statement)
+            ) 
 
     return paginate(db, query_statement)
 

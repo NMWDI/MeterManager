@@ -50,8 +50,8 @@ const schema = yup.object().shape({
 });
 
 const defaultSchema = {
-  from: dayjs(),
-  to: dayjs(),
+  from: dayjs().startOf('month'),
+  to: dayjs().endOf('month'),
 };
 
 interface iMinMaxAvgMedCount {
@@ -85,8 +85,8 @@ export const ChloridesReportView = () => {
     queryKey: ["Chlorides", "Reports", from, to],
     queryFn: async () => {
       const searchParams = new URLSearchParams({
-        from_month: from?.format("YYYY-MM"),
-        to_month: to?.format("YYYY-MM"),
+        from_date: from?.format("YYYY-MM-DD"),
+        to_date: to?.format("YYYY-MM-DD"),
       });
 
       return fetchWithAuth({
@@ -106,8 +106,8 @@ export const ChloridesReportView = () => {
       to: Dayjs;
     }) => {
       const params = new URLSearchParams({
-        from_month: from.format("YYYY-MM"),
-        to_month: to.format("YYYY-MM"),
+        from_date: from?.format("YYYY-MM-DD"),
+        to_date: to?.format("YYYY-MM-DD"),
       });
 
       const response = await fetch(
@@ -200,9 +200,9 @@ export const ChloridesReportView = () => {
                 label="From"
                 control={control}
                 name="from"
-                views={["year", "month"]}
+                views={["year", "month", "day"]}
                 openTo="year"
-                format="YYYY MMMM"
+                format="YYYY MMMM DD"
               />
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
@@ -212,9 +212,9 @@ export const ChloridesReportView = () => {
                 label="To"
                 control={control}
                 name="to"
-                views={["year", "month"]}
+                views={["year", "month", "day"]}
                 openTo="year"
-                format="YYYY MMMM"
+                format="YYYY MMMM DD"
               />
             </Grid>
           </Grid>

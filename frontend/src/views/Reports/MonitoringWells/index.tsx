@@ -76,8 +76,8 @@ const schema = yup.object().shape({
 });
 
 const defaultSchema = {
-  from: dayjs(),
-  to: dayjs(),
+  from: dayjs().startOf('month'),
+  to: dayjs().endOf('month'),
   wells: [],
   isAveragingAllWells: false,
   isComparingTo1970Average: false,
@@ -165,8 +165,8 @@ export const MonitoringWellsReportView = () => {
     ],
     queryFn: () => {
       const searchParams = new URLSearchParams({
-        from_month: from?.format("YYYY-MM"),
-        to_month: to?.format("YYYY-MM"),
+        from_date: from?.format("YYYY-MM-DD"),
+        to_date: to?.format("YYYY-MM-DD"),
         isAveragingAllWells: isAveragingAllWells.toString(),
         isComparingTo1970Average: isComparingTo1970Average.toString(),
         comparisonYear: comparisonYear ? comparisonYear.toString() : ""
@@ -294,8 +294,8 @@ export const MonitoringWellsReportView = () => {
       comparisonYear: string;
     }) => {
       const params = new URLSearchParams({
-        from_month: from.format("YYYY-MM"),
-        to_month: to.format("YYYY-MM"),
+        from_date: from?.format("YYYY-MM-DD"),
+        to_date: to?.format("YYYY-MM-DD"),
         isAveragingAllWells: isAveragingAllWells.toString(),
         isComparingTo1970Average: isComparingTo1970Average.toString(),
         comparisonYear
@@ -384,9 +384,9 @@ export const MonitoringWellsReportView = () => {
                 control={control}
                 size="small"
                 name="from"
-                views={["year", "month"]}
+                views={["year", "month", "day"]}
                 openTo="year"
-                format="YYYY MMMM"
+                format="YYYY MMMM DD"
               />
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
@@ -396,9 +396,9 @@ export const MonitoringWellsReportView = () => {
                 control={control}
                 size="small"
                 name="to"
-                views={["year", "month"]}
+                views={["year", "month", "day"]}
                 openTo="year"
-                format="YYYY MMMM"
+                format="YYYY MMMM DD"
               />
             </Grid>
             <Grid item xs={12}>
