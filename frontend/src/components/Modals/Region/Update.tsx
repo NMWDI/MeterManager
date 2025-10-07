@@ -1,3 +1,5 @@
+
+import { useState } from "react";
 import {
   Modal,
   TextField,
@@ -8,6 +10,8 @@ import {
   InputLabel,
   Grid,
   Typography,
+  FormControlLabel,
+  Checkbox,
 } from "@mui/material";
 import {
   MonitoredWell,
@@ -19,6 +23,7 @@ import dayjs from "dayjs";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 import { DatePicker, TimePicker } from "@mui/x-date-pickers";
+import { RadioButtonUnchecked, TaskAlt } from "@mui/icons-material";
 import { useGetUserList } from "../../../service/ApiServiceNew";
 import { useQuery } from "react-query";
 import { useFetchWithAuth } from "../../../hooks/useFetchWithAuth.js";
@@ -44,6 +49,10 @@ export const UpdateModal = ({
 }) => {
   const userList = useGetUserList();
   const fetchWithAuth = useFetchWithAuth();
+
+  const [notSampled, setNotSampled] = useState<boolean>(false);
+  const [previousValue, setPreviousValue] = useState<number | null>(null);
+
   const { data: wells, isLoading: isLoadingWells } = useQuery<
     { items: MonitoredWell[] },
     Error,
@@ -65,6 +74,21 @@ export const UpdateModal = ({
     enabled: isMeasurementModalOpen,
     select: (res) => res.items,
   });
+
+  const handleToggleNotSampled = (checked: boolean) => {
+    setNotSampled(checked);
+
+    if (checked) {
+      // Store previous numeric value and clear backend value
+      setPreviousValue(measurement.value ?? null);
+      onUpdateMeasurement({ value: null });
+    } else {
+      // Restore previous numeric value when toggled back
+      if (previousValue !== null) {
+        onUpdateMeasurement({ value: previousValue });
+      }
+    }
+  };
 
   return (
     <Modal open={isMeasurementModalOpen} onClose={handleCloseMeasurementModal}>
@@ -128,15 +152,40 @@ export const UpdateModal = ({
             />
           </Grid>
           <Grid item xs={12}>
+            <FormControlLabel
+              value="bottom"
+              control={
+                <Checkbox
+                  size="large"
+                  icon={<RadioButtonUnchecked />}
+                  checkedIcon={<TaskAlt />}
+                  checked={notSampled}
+                  onChange={(e) => handleToggleNotSampled(e.target.checked)}
+                />
+              }
+              label="Well was visited but NOT SAMPLED"
+              labelPlacement="end"
+            />
+          </Grid>
+          <Grid item xs={12}>
             <TextField
+              required={!notSampled}
               fullWidth
               size={"small"}
               type="number"
-              value={measurement.value}
-              label="Value"
+              disabled={notSampled}
+              value={
+                notSampled
+                  ? "" // visually empty
+                  : measurement.value ?? ""
+              }
+              label={notSampled ? "NOT SAMPLED" : "Value"}
               onChange={(event) =>
                 onUpdateMeasurement({
-                  value: event.target.value as unknown as number,
+                  value:
+                    event.target.value === ""
+                      ? null
+                      : Number(event.target.value),
                 })
               }
             />
