@@ -17,12 +17,18 @@ from api.schemas import well_schemas
 from api.models.main_models import WellMeasurements, ObservedPropertyTypeLU, Units, Wells
 from api.session import get_db
 from api.enums import ScopedUser
+from google.cloud import storage
 
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
+import json
+import os
 import matplotlib
+
 matplotlib.use("Agg")  # Force non-GUI backend
+
+WOODPECKER_BUCKET_NAME = os.getenv("GCP_WOODPECKER_BUCKET_NAME", "")
 
 TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "templates"
 
@@ -64,6 +70,46 @@ def add_waterlevel(
     db.commit()
 
     return well_measurement
+
+
+@public_well_measurement_router.get(
+    "/waterlevels/woodpeckers",
+    response_model=List[well_schemas.WellMeasurementDTO],
+    tags=["WaterLevels"],
+)
+def read_woodpecker_waterlevels(
+    well_id: int = Query(..., description="At least one well ID is required"),
+):
+    SP_JOHNSON_WELL_ID = 2599
+
+    if well_id != SP_JOHNSON_WELL_ID:
+        raise HTTPException(status_code=400, detail="Invalid well ID")
+
+    client = storage.Client()
+    bucket = client.bucket(WOODPECKER_BUCKET_NAME)
+
+    blobs = bucket.list_blobs()
+
+    results = []
+    for blob in blobs:
+        if blob.name.endswith(".json"):
+            content = blob.download_as_text()
+            data = json.loads(content)
+
+            measurement = well_schemas.WellMeasurementDTO(
+                id=data["id"],
+                timestamp=datetime.fromisoformat(data["timestamp"]),
+                value=data.get("value"),
+                submitting_user=well_schemas.WellMeasurementDTO.UserDTO(
+                    full_name=data["submitting_user"]["full_name"]
+                ),
+                well=well_schemas.WellMeasurementDTO.WellDTO(
+                    ra_number=data["well"]["ra_number"]
+                ),
+            )
+            results.append(measurement)
+
+    return results
 
 
 @public_well_measurement_router.get(

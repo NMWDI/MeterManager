@@ -8,6 +8,8 @@ import {
   InputLabel,
   Grid,
   Typography,
+  FormControlLabel,
+  Checkbox,
 } from "@mui/material";
 import { useState } from "react";
 import { useAuthUser } from "react-auth-kit";
@@ -22,6 +24,7 @@ import timezone from "dayjs/plugin/timezone";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 import { DatePicker, TimePicker } from "@mui/x-date-pickers";
+import { RadioButtonUnchecked, TaskAlt } from "@mui/icons-material";
 import { useGetUserList } from "../../../service/ApiServiceNew";
 import { useQuery } from "react-query";
 import { useFetchWithAuth } from "../../../hooks/useFetchWithAuth.js";
@@ -70,6 +73,7 @@ export const CreateModal = ({
 
   const userList = useGetUserList();
   const [value, setValue] = useState<number | null>(null);
+  const [notSampled, setNotSampled] = useState<boolean>(false);
   const [selectedUserID, setSelectedUserID] = useState<number | string>("");
   const [selectedWellID, setSelectedWellID] = useState<number | string>("");
   const [date, setDate] = useState<Dayjs | null>(dayjs.utc());
@@ -185,16 +189,41 @@ export const CreateModal = ({
             />
           </Grid>
           <Grid item xs={12}>
+            <FormControlLabel
+              value="bottom"
+              control={
+                <Checkbox
+                  size="large"
+                  icon={<RadioButtonUnchecked />}
+                  checkedIcon={<TaskAlt />}
+                  checked={notSampled}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setNotSampled(checked)
+
+                    if (checked) {
+                      setValue(null);
+                    }
+                  }}
+                />
+              }
+              label="Well was visited but NOT SAMPLED"
+              labelPlacement="end"
+            />
+          </Grid>
+          <Grid item xs={12}>
             <TextField
-              required
+              required={!notSampled}
               fullWidth
               size={"small"}
               type="number"
-              value={value}
-              label="Value"
-              onChange={(event) =>
-                setValue(event.target.value as unknown as number)
-              }
+              disabled={notSampled}
+              value={notSampled ? "" : value ?? ""}
+              label={notSampled ? "NOT SAMPLED" : "Value"}
+              onChange={(event) => {
+                const newValue = event.target.value;
+                setValue(newValue === "" ? null : Number(newValue));
+              }}
             />
           </Grid>
           <Grid item xs={12}>

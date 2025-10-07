@@ -573,7 +573,7 @@ export interface PatchWellMeasurement {
 export interface NewRegionMeasurement {
   region_id: number
   timestamp: string
-  value: number
+  value?: number | null
   submitting_user_id: number
   well_id: number
 }
@@ -583,7 +583,7 @@ export interface PatchRegionMeasurement {
   submitting_user_id: number
   well_id: number
   timestamp: dayjs.Dayjs
-  value?: number
+  value?: number | null
 }
 
 export interface CreateUser {

@@ -32,6 +32,7 @@ services:
     working_dir: /app
     environment:
     - GCP_BUCKET_NAME=pvacd
+    - GCP_WOODPECKER_BUCKET_NAME=pvacd-woodpecker
     - GCP_BACKUP_PREFIX=prod-db-backups
     - GCP_PHOTO_PREFIX=prod-meter-activities-photos
     - BACKUP_RETENTION_DAYS=90
