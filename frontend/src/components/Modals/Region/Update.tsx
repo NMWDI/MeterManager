@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Modal,
   TextField,
@@ -50,7 +49,9 @@ export const UpdateModal = ({
   const userList = useGetUserList();
   const fetchWithAuth = useFetchWithAuth();
 
-  const [notSampled, setNotSampled] = useState<boolean>(false);
+  const [notSampled, setNotSampled] = useState<boolean>(
+    measurement.value === undefined || measurement.value === null
+  );
   const [previousValue, setPreviousValue] = useState<number | null>(null);
 
   const { data: wells, isLoading: isLoadingWells } = useQuery<
@@ -89,6 +90,10 @@ export const UpdateModal = ({
       }
     }
   };
+
+  useEffect(() => {
+    setNotSampled(measurement.value == null);
+  }, [measurement.value]);
 
   return (
     <Modal open={isMeasurementModalOpen} onClose={handleCloseMeasurementModal}>
