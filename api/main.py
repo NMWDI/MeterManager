@@ -1,28 +1,11 @@
-# ===============================================================================
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ===============================================================================
 from datetime import timedelta
-
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_pagination import add_pagination
-
 from fastapi.middleware.cors import CORSMiddleware
 from starlette import status
-
 from api.schemas import security_schemas
 from api.models.main_models import Users
-
 from api.routes.activities import activity_router
 from api.routes.admin import admin_router
 from api.routes.chlorides import authenticated_chlorides_router, public_chlorides_router
@@ -33,14 +16,12 @@ from api.routes.parts import part_router
 from api.routes.settings import settings_router
 from api.routes.well_measurements import authenticated_well_measurement_router, public_well_measurement_router
 from api.routes.wells import authenticated_well_router, public_well_router
-
 from api.security import (
     authenticate_user,
     create_access_token,
     ACCESS_TOKEN_EXPIRE_HOURS,
     authenticated_router,
 )
-
 from api.session import get_db
 from sqlalchemy.orm import Session
 

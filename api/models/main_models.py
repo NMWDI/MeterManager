@@ -546,13 +546,13 @@ class WellMeasurements(Base):
     timestamp: Mapped[DateTime] = mapped_column(
         DateTime, default=func.now(), nullable=False
     )
-    value: Mapped[float] = mapped_column(Float, nullable=False)
+    value: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
 
     observed_property_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("ObservedPropertyTypeLU.id"), nullable=False
     )
-    submitting_user_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("Users.id"), nullable=False
+    submitting_user_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("Users.id"), nullable=True
     )
     unit_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("Units.id"), nullable=False

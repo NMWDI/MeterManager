@@ -1,5 +1,4 @@
 import {
-  Box,
   Modal,
   TextField,
   Button,
@@ -8,19 +7,24 @@ import {
   FormControl,
   InputLabel,
   Grid,
+  Typography,
 } from "@mui/material";
 import { useState } from "react";
 import { useAuthUser } from "react-auth-kit";
-import { NewWellMeasurement, SecurityScope } from "../interfaces.js";
+import {
+  NewWellMeasurement,
+  SecurityScope,
+} from "../../../interfaces.js";
 import dayjs, { Dayjs } from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 import { DatePicker, TimePicker } from "@mui/x-date-pickers";
-import { useGetUserList } from "../service/ApiServiceNew";
+import { useGetUserList } from "../../../service/ApiServiceNew";
+import { ModalBackgroundBox } from "../../ModalBackgroundBox.js";
 
-export function NewMeasurementModal({
+export function CreateModal({
   isNewMeasurementModalOpen,
   handleCloseNewMeasurementModal,
   handleSubmitNewMeasurement,
@@ -97,26 +101,15 @@ export function NewMeasurementModal({
       open={isNewMeasurementModalOpen}
       onClose={handleCloseNewMeasurementModal}
     >
-      <Box
-        style={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          backgroundColor: "white",
-          paddingRight: 20,
-          paddingBottom: 20,
-          boxShadow: "24",
-          borderRadius: 15,
-          paddingLeft: 25,
-        }}
-      >
-        <Grid item xs={6}>
-          <h1>Record a New Measurement</h1>
-          <Grid container item xs={9} sx={{ mr: "auto", ml: "auto", mb: 2 }}>
+      <ModalBackgroundBox>
+        <Grid container spacing={2}>
+          <Grid item xs={12}>
+            <Typography variant="h4" fontWeight="bold" pb={2} textAlign="center">Create New Measurement</Typography>
+          </Grid>
+          <Grid item xs={12}>
             <UserSelection />
           </Grid>
-          <Grid container item xs={9} sx={{ mr: "auto", ml: "auto", mb: 2 }}>
+          <Grid item xs={12}>
             <DatePicker
               label="Date"
               value={date}
@@ -126,7 +119,7 @@ export function NewMeasurementModal({
               }}
             />
           </Grid>
-          <Grid container item xs={9} sx={{ mr: "auto", ml: "auto", mb: 2 }}>
+          <Grid item xs={12}>
             <TimePicker
               label="Time"
               timezone="America/Denver"
@@ -137,7 +130,7 @@ export function NewMeasurementModal({
               onChange={setTime}
             />
           </Grid>
-          <Grid container item xs={9} sx={{ mr: "auto", ml: "auto", mb: 2 }}>
+          <Grid item xs={12}>
             <TextField
               required
               fullWidth
@@ -150,7 +143,16 @@ export function NewMeasurementModal({
               }
             />
           </Grid>
-          <Grid container item xs={3} sx={{ mr: "auto", ml: "auto" }}>
+          <Grid
+            item
+            xs={12}
+            sx={{
+              mr: "auto",
+              ml: "auto",
+              display: "flex",
+              justifyContent: "right",
+            }}
+          >
             <Button
               type="submit"
               variant="contained"
@@ -160,7 +162,7 @@ export function NewMeasurementModal({
             </Button>
           </Grid>
         </Grid>
-      </Box>
+      </ModalBackgroundBox>
     </Modal>
   );
 }

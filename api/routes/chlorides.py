@@ -1,11 +1,10 @@
 from typing import Optional, List
-from datetime import datetime
-import calendar
+from datetime import datetime, date
 import statistics
 from fastapi.responses import StreamingResponse
 from weasyprint import HTML
 from io import BytesIO
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 from sqlalchemy import and_, select
 from sqlalchemy.orm import Session, joinedload
@@ -117,16 +116,8 @@ class ChlorideReportNums(BaseModel):
     tags=["Chlorides"],
 )
 def get_chlorides_report(
-    from_month: Optional[str] = Query(
-        None,
-        description="Month start, 'YYYY-MM'",
-        pattern=r"^$|^\d{4}-\d{2}$",
-    ),
-    to_month: Optional[str] = Query(
-        None,
-        description="Month end, 'YYYY-MM'",
-        pattern=r"^$|^\d{4}-\d{2}$",
-    ),
+    from_date: date = Query(..., description="Start date in ISO format, 'YYYY-MM-DD'"),
+    to_date: date = Query(..., description="End date in ISO format, 'YYYY-MM-DD'"),
     db: Session = Depends(get_db),
 ):
     """
@@ -136,13 +127,9 @@ def get_chlorides_report(
 
     CHLORIDE_OBSERVED_PROPERTY_ID = 5
 
-    # Parse months
-    start_dt = _parse_month(from_month) if from_month else None
-    end_dt = _parse_month(to_month) if to_month else None
-    if start_dt and not end_dt:
-        end_dt = start_dt
-    if end_dt:
-        end_dt = _month_end(end_dt)
+    # Convert to datetimes for inclusive range
+    start_dt = datetime.combine(from_date, datetime.min.time())
+    end_dt = datetime.combine(to_date, datetime.max.time())
 
     stmt = (
         select(
@@ -218,31 +205,23 @@ def get_chlorides_report(
     tags=["Chlorides"],
 )
 def download_chlorides_report_pdf(
-    from_month: Optional[str] = Query(
-        None,
-        description="Month start, 'YYYY-MM'",
-        pattern=r"^$|^\d{4}-\d{2}$",
-    ),
-    to_month: Optional[str] = Query(
-        None,
-        description="Month end, 'YYYY-MM'",
-        pattern=r"^$|^\d{4}-\d{2}$",
-    ),
+    from_date: date = Query(..., description="Start date in ISO format, 'YYYY-MM-DD'"),
+    to_date: date = Query(..., description="End date in ISO format, 'YYYY-MM-DD'"),
     db: Session = Depends(get_db),
 ):
     """
     Generate a PDF chloride report (north/south/east/west stats)
     for the SE quadrant of New Mexico.
     """
-    # Re-use your existing logic by calling the data endpoint’s function
-    report = get_chlorides_report(from_month=from_month, to_month=to_month, db=db)
+    # Re-use existing logic
+    report = get_chlorides_report(from_date=from_date, to_date=to_date, db=db)
 
     # Render HTML using a template
     template = templates.get_template("chlorides_report.html")
     html_content = template.render(
         report=report,
-        from_month=from_month,
-        to_month=to_month,
+        from_date=from_date,
+        to_date=to_date,
     )
 
     # Convert to PDF
@@ -293,12 +272,13 @@ def patch_chloride_measurement(
     chloride_measurement_patch: well_schemas.PatchChlorideMeasurement,
     db: Session = Depends(get_db),
 ):
-    # Find the measurement
     well_measurement = (
-        db.scalars(select(WellMeasurements).where(WellMeasurements.id == chloride_measurement_patch.id)).first()
+        db.scalars(
+            select(WellMeasurements)
+            .where(WellMeasurements.id == chloride_measurement_patch.id)
+        ).first()
     )
 
-    # Update the fields, all are mandatory
     well_measurement.submitting_user_id = chloride_measurement_patch.submitting_user_id
     well_measurement.timestamp = chloride_measurement_patch.timestamp
     well_measurement.value = chloride_measurement_patch.value
@@ -325,26 +305,6 @@ def delete_chloride_measurement(chloride_measurement_id: int, db: Session = Depe
 
     return True
 
-
-def _parse_month(m: Optional[str]) -> Optional[datetime]:
-    """
-    Accepts 'YYYY-MM' or 'YYYY MM'. Returns the first day of month at 00:00:00.
-    """
-    if not m:
-        return None
-    m = m.strip()
-    # Try 'YYYY-MM'
-    for fmt in ("%Y-%m", "%Y %m"):
-        try:
-            dt = datetime.strptime(m, fmt)
-            return dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        except ValueError:
-            continue
-    raise HTTPException(status_code=400, detail="Invalid month format. Use 'YYYY-MM' or 'YYYY MM'.")
-
-def _month_end(dt: datetime) -> datetime:
-    last_day = calendar.monthrange(dt.year, dt.month)[1]
-    return dt.replace(day=last_day, hour=23, minute=59, second=59, microsecond=999999)
 
 def _stats(values: List[Optional[float]]) -> MinMaxAvgMedCount:
     clean = [v for v in values if v is not None]

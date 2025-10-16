@@ -92,7 +92,7 @@ export default function WellSelectionTable({
         const meters = params.value as Well["meters"];
         const links = meters.map((meter, index) => (
           <span key={meter.id}>
-            <Link to={{ pathname: "/meters", search: `?meter_id=${meter.id}` }}>
+            <Link to={{ pathname: "/manage/meters", search: `?meter_id=${meter.id}` }}>
               {meter.serial_number}
             </Link>
             {index < params.value.length - 1 ? ", " : ""}

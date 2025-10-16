@@ -28,10 +28,11 @@
 <body>
   <h2>Chloride Report</h2>
   <p>
-    <strong>From:</strong> {{ from_month or "All Data" }}
+    <strong>From:</strong> {{ from_date or "All Data" }}
     &nbsp;&nbsp;
-    <strong>To:</strong> {{ to_month or "All Data" }}
+    <strong>To:</strong> {{ to_date or "All Data" }}
   </p>
+
   <table>
     <thead>
       <tr>

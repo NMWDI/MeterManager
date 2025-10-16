@@ -132,7 +132,7 @@ class LocationTypeLU(ORMBase):
 
 class WellMeasurement(BaseModel):
     timestamp: datetime
-    value: float
+    value: float | None = None
 
     submitting_user_id: int
     unit_id: int
@@ -168,7 +168,7 @@ class WellMeasurementDTO(ORMBase):
 
     id: int
     timestamp: datetime
-    value: float
+    value: float | None = None
     submitting_user: UserDTO
     well: WellDTO
 

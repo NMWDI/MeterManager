@@ -1,15 +1,11 @@
 from typing import List
-
 from fastapi import Depends, APIRouter, HTTPException, Query
 from sqlalchemy import or_, select, desc, and_, text
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import IntegrityError
 from fastapi_pagination.ext.sqlalchemy import paginate
 from fastapi_pagination import LimitOffsetPage
-from fastapi.responses import StreamingResponse
 from enum import Enum
-from io import BytesIO
-from jose import jwt, JWTError, ExpiredSignatureError
 from api.schemas import meter_schemas
 from api.schemas import well_schemas
 from api.models.main_models import (
@@ -27,18 +23,16 @@ from api.models.main_models import (
 from api.route_util import _patch, _get
 from api.session import get_db
 from api.enums import ScopedUser, MeterSortByField, MeterStatus, SortDirection
+from google.auth import default, impersonated_credentials
 from google.cloud import storage
+from datetime import timedelta
 
-import time
-import mimetypes
 import os
 
 authenticated_meter_router = APIRouter()
 public_meter_router = APIRouter()
 
 # Generate random secret at startup
-PHOTO_JWT_SECRET = os.getenv("PHOTO_JWT_SECRET", "super-secret")
-PHOTO_JWT_ALGORITHM = "HS256"
 PHOTO_JWT_EXPIRE_SECONDS = 600  # 10 minutes
 BUCKET_NAME = os.getenv("GCP_BUCKET_NAME", "")
 
@@ -107,10 +101,7 @@ def get_meters(
         else:
             query_statement = query_statement.order_by(
                 schema_field_name
-            )  # SQLAlchemy orders ascending by default
-
-    # Print the SQL query for debugging
-    #print(query_statement)
+            ) 
 
     return paginate(db, query_statement)
 
@@ -456,37 +447,6 @@ def patch_meter(
     ).first()
 
 
-@public_meter_router.get("/photos/{path:path}")
-def get_photo(path: str, token: str = Query(...)):
-    # raises 401 if invalid
-    blob_path = verify_photo_token(token)
-
-    # extra guard: token "sub" must match requested path
-    if blob_path != path:
-        raise HTTPException(status_code=403, detail="Token path mismatch")
-
-    client = storage.Client()
-    bucket = client.bucket(BUCKET_NAME)
-    blob = bucket.blob(path)
-
-    if not blob.exists():
-        raise HTTPException(status_code=404, detail="Photo not found")
-
-    content_type, _ = mimetypes.guess_type(path)
-    content_type = content_type or "application/octet-stream"
-
-    data = blob.download_as_bytes()
-
-    return StreamingResponse(
-        BytesIO(data),
-        media_type=content_type,
-        headers={
-            "Cache-Control": f"public, max-age={PHOTO_JWT_EXPIRE_SECONDS}",
-            "ETag": blob.etag or "",
-        },
-    )
-
-
 @authenticated_meter_router.get(
     "/meter_history", dependencies=[Depends(ScopedUser.Read)], tags=["Meters"]
 )
@@ -543,7 +503,7 @@ def get_meter_history(meter_id: int, db: Session = Depends(get_db)):
             {
                 "id": photo.id,
                 "file_name": photo.file_name,
-                "url": f"/photos/{photo.gcs_path}?token={create_photo_token(photo.gcs_path)}",
+                "url": create_signed_url(photo.gcs_path),
                 "uploaded_at": photo.uploaded_at,
             }
             for photo in activity.photos
@@ -588,23 +548,24 @@ def get_meter_history(meter_id: int, db: Session = Depends(get_db)):
     return formattedHistoryItems
 
 
-def create_photo_token(blob_path: str) -> str:
-    expire = int(time.time()) + PHOTO_JWT_EXPIRE_SECONDS
-    payload = {"sub": blob_path, "exp": expire}
-    token = jwt.encode(payload, PHOTO_JWT_SECRET, algorithm=PHOTO_JWT_ALGORITHM)
-    return token
+def create_signed_url(blob_path: str) -> str:
+    """Create a v4 signed URL for a blob in GCS."""
+    source_creds, _ = default()
+    target_sa = "pvacd-meterapp@waterdatainitiative-271000.iam.gserviceaccount.com"
 
+    creds = impersonated_credentials.Credentials(
+        source_credentials=source_creds,
+        target_principal=target_sa,
+        target_scopes=['https://www.googleapis.com/auth/devstorage.read_only'],
+        lifetime=3600,
+    )
 
-def verify_photo_token(token: str) -> str:
-    try:
-        payload = jwt.decode(
-            token,
-            PHOTO_JWT_SECRET,
-            algorithms=[PHOTO_JWT_ALGORITHM]
-        )
-        return payload["sub"]
-    except ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token expired")
-    except JWTError as e:
-        print("Token verification failed:", str(e))
-        raise HTTPException(status_code=401, detail="Invalid token")
+    storage_client = storage.Client(credentials=creds)
+    bucket = storage_client.bucket(BUCKET_NAME)
+    blob = bucket.blob(blob_path)
+    url = blob.generate_signed_url(
+        version="v4",
+        expiration=timedelta(seconds=PHOTO_JWT_EXPIRE_SECONDS),
+        method="GET",
+    )
+    return url

@@ -13,12 +13,13 @@ import {
 } from "@mui/material";
 import { useMutation, useQuery } from "react-query";
 import { useAuthUser } from "react-auth-kit";
+import { useSnackbar } from "notistack";
 import { ChloridesTable } from "./ChloridesTable";
 import { ChloridesPlot } from "./ChloridesPlot";
 import {
-  NewMeasurementModal,
-  UpdateMeasurementModal,
-} from "../../components/RegionMeasurementModals";
+  CreateModal,
+  UpdateModal,
+} from "../../components/Modals/Region";
 import {
   NewRegionMeasurement,
   PatchRegionMeasurement,
@@ -30,8 +31,10 @@ import { useFetchWithAuth } from "../../hooks";
 import { Science } from "@mui/icons-material";
 import { BackgroundBox } from "../../components/BackgroundBox";
 import { CustomCardHeader } from "../../components/CustomCardHeader";
+import { emptyToNull } from "../../utils";
 
 export const ChloridesView = () => {
+  const { enqueueSnackbar } = useSnackbar();
   const fetchWithAuth = useFetchWithAuth();
   const selectedRegionId = useId();
   const [regionId, setregionId] = useState<number>();
@@ -94,13 +97,21 @@ export const ChloridesView = () => {
         route: "/chlorides",
         body: {
           timestamp: body.timestamp,
-          value: body.value,
+          value: emptyToNull(body.value),
           submitting_user_id: body.submitting_user_id,
           chloride_group_id: body.region_id,
           unit_id: milligramPerLiterUnitId,
           well_id: body.well_id,
         },
       }),
+    onSuccess: () => {
+      enqueueSnackbar("Chloride measurement created successfully", { variant: "success" });
+    },
+    onError: (err: any) => {
+      enqueueSnackbar(`Failed to create chloride measurement: ${err.message ?? "Unknown error"}`, {
+        variant: "error",
+      });
+    },
   });
 
   const { mutateAsync: updateChlorideLevel } = useMutation({
@@ -112,13 +123,21 @@ export const ChloridesView = () => {
         body: {
           id: body.levelmeasurement_id,
           timestamp: body.timestamp,
-          value: body.value,
+          value: emptyToNull(body.value),
           submitting_user_id: body.submitting_user_id,
           chloride_group_id: regionId,
           unit_id: milligramPerLiterUnitId,
           well_id: body.well_id,
         },
       }),
+    onSuccess: () => {
+      enqueueSnackbar("Chloride measurement updated successfully", { variant: "success" });
+    },
+    onError: (err: any) => {
+      enqueueSnackbar(`Failed to update chloride measurement: ${err.message ?? "Unknown error"}`, {
+        variant: "error",
+      });
+    },
   });
 
   const { mutateAsync: deleteChlorideLevel } = useMutation({
@@ -129,6 +148,14 @@ export const ChloridesView = () => {
         route: "/chlorides",
         params: { chloride_measurement_id: levelmeasurement_id },
       }),
+    onSuccess: () => {
+      enqueueSnackbar("Chloride measurement deleted successfully", { variant: "success" });
+    },
+    onError: (err: any) => {
+      enqueueSnackbar(`Failed to delete chloride measurement: ${err.message ?? "Unknown error"}`, {
+        variant: "error",
+      });
+    },
   });
 
   const error = errorRegions || errorManual;
@@ -260,13 +287,13 @@ export const ChloridesView = () => {
           </Grid>
           {authUser() && (
             <>
-              <NewMeasurementModal
+              <CreateModal
                 region_id={regionId ?? 0}
                 isNewMeasurementModalOpen={isNewModalOpen}
                 handleCloseNewMeasurementModal={() => setIsNewModalOpen(false)}
                 handleSubmitNewMeasurement={handleSubmitNewMeasurement}
               />
-              <UpdateMeasurementModal
+              <UpdateModal
                 region_id={regionId ?? 0}
                 isMeasurementModalOpen={isUpdateModalOpen}
                 handleCloseMeasurementModal={() => setIsUpdateModalOpen(false)}

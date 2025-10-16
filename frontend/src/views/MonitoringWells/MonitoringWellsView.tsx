@@ -18,9 +18,9 @@ import { useAuthUser } from "react-auth-kit";
 import { MonitoringWellsTable } from "./MonitoringWellsTable";
 import { MonitoringWellsPlot } from "./MonitoringWellsPlot";
 import {
-  NewMeasurementModal,
-  UpdateMeasurementModal,
-} from "../../components/WellMeasurementModals";
+  CreateModal,
+  UpdateModal,
+} from "../../components/Modals/MonitoredWell";
 import {
   NewWellMeasurement,
   PatchWellMeasurement,
@@ -289,12 +289,12 @@ export const MonitoringWellsView = () => {
           </Grid>
           {authUser() && (
             <>
-              <NewMeasurementModal
+              <CreateModal
                 isNewMeasurementModalOpen={isNewModalOpen}
                 handleCloseNewMeasurementModal={() => setIsNewModalOpen(false)}
                 handleSubmitNewMeasurement={handleSubmitNewMeasurement}
               />
-              <UpdateMeasurementModal
+              <UpdateModal
                 isMeasurementModalOpen={isUpdateModalOpen}
                 handleCloseMeasurementModal={() => setIsUpdateModalOpen(false)}
                 measurement={selectedMeasurement}

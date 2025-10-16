@@ -2,8 +2,7 @@ from fastapi import Depends, APIRouter, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import select, func
 from typing import List, Union, Optional
-from datetime import datetime
-import calendar
+from datetime import datetime, date
 from fastapi.responses import StreamingResponse
 from weasyprint import HTML
 from io import BytesIO
@@ -62,35 +61,14 @@ def get_parts(
     dependencies=[Depends(ScopedUser.Read)],
 )
 def get_parts_used_summary(
-    from_month: str = Query(..., pattern=r"^\d{4}-\d{2}$"),
-    to_month: str = Query(..., pattern=r"^\d{4}-\d{2}$"),
+    from_date: date = Query(..., description="Start date YYYY-MM-DD"),
+    to_date: date = Query(..., description="End date YYYY-MM-DD"),
     parts: List[int] = Query(...),
     db: Session = Depends(get_db),
 ):
-    try:
-        # Parse and normalize start of "from" month
-        from_date = datetime.strptime(from_month, "%Y-%m").replace(day=1)
-
-        # Determine end of "to" month
-        to_dt = datetime.strptime(to_month, "%Y-%m")
-        year, month = to_dt.year, to_dt.month
-        today = datetime.now()
-
-        if year == today.year and month == today.month:
-            to_date = today
-        else:
-            last_day = calendar.monthrange(year, month)[1]
-            to_date = to_dt.replace(
-                day=last_day,
-                hour=23,
-                minute=59,
-                second=59
-            )
-    except ValueError:
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid date format. Use YYYY-MM."
-        )
+    # Convert to datetimes for inclusive range
+    start_dt = datetime.combine(from_date, datetime.min.time())
+    end_dt = datetime.combine(to_date, datetime.max.time())
 
     usage_subq = (
         db.query(
@@ -102,8 +80,8 @@ def get_parts_used_summary(
               MeterActivities.id == PartsUsed.c.meter_activity_id
         )
         .filter(
-            MeterActivities.timestamp_start >= from_date,
-            MeterActivities.timestamp_start <= to_date,
+            MeterActivities.timestamp_start >= start_dt,
+            MeterActivities.timestamp_start <= end_dt,
             PartsUsed.c.part_id.in_(parts),
         )
         .group_by(PartsUsed.c.part_id)
@@ -126,13 +104,14 @@ def get_parts_used_summary(
     results = []
     for row in query.all():
         price = row.price or 0
-        total = price * row.quantity
+        quantity = row.quantity or 0
+        total = price * quantity
         results.append({
             "id": row.id,
             "part_number": row.part_number,
             "description": row.description,
             "price": price,
-            "quantity": row.quantity,
+            "quantity": quantity,
             "total": total,
         })
 
@@ -145,85 +124,25 @@ def get_parts_used_summary(
     dependencies=[Depends(ScopedUser.Read)],
 )
 def download_parts_used_pdf(
-    from_month: str = Query(..., pattern=r"^\d{4}-\d{2}$"),
-    to_month: str = Query(..., pattern=r"^\d{4}-\d{2}$"),
+    from_date: date = Query(..., description="Start date YYYY-MM-DD"),
+    to_date: date = Query(..., description="End date YYYY-MM-DD"),
     parts: List[int] = Query(...),
     db: Session = Depends(get_db),
 ):
-    try:
-        from_date = datetime.strptime(from_month, "%Y-%m").replace(day=1)
-        to_dt = datetime.strptime(to_month, "%Y-%m")
-        year, month = to_dt.year, to_dt.month
-        today = datetime.now()
+    # Re-use your existing logic
+    results = get_parts_used_summary(from_date=from_date, to_date=to_date, parts=parts, db=db)
 
-        if year == today.year and month == today.month:
-            to_date = today
-        else:
-            last_day = calendar.monthrange(year, month)[1]
-            to_date = to_dt.replace(
-                day=last_day,
-                hour=23,
-                minute=59,
-                second=59
-            )
-    except ValueError:
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid date format. Use YYYY-MM."
-        )
-
-    usage_subq = (
-        db.query(
-            PartsUsed.c.part_id.label("used_part_id"),
-            func.count(PartsUsed.c.part_id).label("quantity")
-        )
-        .join(
-              MeterActivities,
-              MeterActivities.id == PartsUsed.c.meter_activity_id
-          )
-        .filter(
-            MeterActivities.timestamp_start >= from_date,
-            MeterActivities.timestamp_start <= to_date,
-            PartsUsed.c.part_id.in_(parts),
-        )
-        .group_by(PartsUsed.c.part_id)
-        .subquery()
-    )
-
-    query = (
-        db.query(
-            Parts.id.label("id"),
-            Parts.part_number,
-            Parts.description,
-            Parts.price,
-            func.coalesce(usage_subq.c.quantity, 0).label("quantity")
-        )
-        .outerjoin(usage_subq, Parts.id == usage_subq.c.used_part_id)
-        .filter(Parts.id.in_(parts))
-        .order_by(Parts.part_number)
-    )
-
-    results = []
+    # Add running total just for PDF
     running_total = 0.0
-    for row in query.all():
-        price = row.price or 0
-        quantity = row.quantity or 0
-        total = price * quantity
-        running_total += total
-        results.append({
-            "part_number": row.part_number,
-            "description": row.description,
-            "price": price,
-            "quantity": quantity,
-            "total": total,
-            "running_total": running_total,
-        })
+    for r in results:
+        running_total += r["total"]
+        r["running_total"] = running_total
 
     template = templates.get_template("parts_used_report.html")
     html_content = template.render(
         rows=results,
-        from_month=from_month,
-        to_month=to_month
+        from_date=from_date,
+        to_date=to_date,
     )
     pdf_io = BytesIO()
     HTML(string=html_content).write_pdf(pdf_io)
@@ -307,7 +226,7 @@ def update_part(updated_part: part_schemas.Part, db: Session = Depends(get_db)):
     try:
         db.add(part_db)
         db.commit()
-    except IntegrityError as e:
+    except IntegrityError:
         raise HTTPException(status_code=409, detail="Part SN already exists")
 
     # Load the updated part to get the relationships
@@ -353,7 +272,7 @@ def create_part(new_part: part_schemas.Part, db: Session = Depends(get_db)):
     try:
         db.add(new_part_model)
         db.commit()
-    except IntegrityError as e:
+    except IntegrityError:
         raise HTTPException(status_code=409, detail="Part SN already exists")
 
     # Associate with meter types

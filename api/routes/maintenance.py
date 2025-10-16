@@ -1,9 +1,8 @@
-from fastapi import Depends, APIRouter, HTTPException, Query
+from fastapi import Depends, APIRouter, Query
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import List
-from datetime import datetime
-import calendar
+from datetime import datetime, date
 from fastapi.responses import StreamingResponse
 from weasyprint import HTML
 from io import BytesIO
@@ -63,31 +62,20 @@ class MaintenanceSummaryResponse(BaseModel):
     dependencies=[Depends(ScopedUser.Read)],
 )
 def get_maintenance_summary(
-    from_month: str = Query(..., pattern=r"^\d{4}-\d{2}$"),
-    to_month: str = Query(..., pattern=r"^\d{4}-\d{2}$"),
+    from_date: date = Query(..., description="Start date YYYY-MM-DD"),
+    to_date:   date = Query(..., description="End date YYYY-MM-DD"),
     trss: str = Query(...),
     technicians: List[int] = Query(...),
     db: Session = Depends(get_db),
 ):
-    # Parse from/to month into datetime range
-    try:
-        from_date = datetime.strptime(from_month, "%Y-%m").replace(day=1)
-        to_dt = datetime.strptime(to_month, "%Y-%m")
-        year, month = to_dt.year, to_dt.month
-        today = datetime.now()
+    """
+    Returns min/max/avg for north/south/east/west halves **within the SE quadrant of New Mexico**,
+    over the specified [from_date, to_date] inclusive range.
+    """
+    # Convert to datetimes for inclusive range
+    start_dt = datetime.combine(from_date, datetime.min.time())
+    end_dt = datetime.combine(to_date, datetime.max.time())
 
-        if year == today.year and month == today.month:
-            to_date = today
-        else:
-            last_day = calendar.monthrange(year, month)[1]
-            to_date = to_dt.replace(day=last_day, hour=23, minute=59, second=59)
-    except ValueError:
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid date format. Use YYYY-MM."
-        )
-
-    # Filter by technicians if -1 is not present
     filter_techs = -1 not in technicians
 
     # Optional TRSS-based meter filtering
@@ -96,14 +84,11 @@ def get_maintenance_summary(
         try:
             # normalize input (strip spaces)
             trss_str = trss.strip()
-
-            location_ids = (
-                db.query(Locations.id)
+            location_ids = [
+                loc_id for (loc_id,) in db.query(Locations.id)
                 .filter(Locations.trss.like(f"{trss_str}%"))
                 .all()
-            )
-            location_ids = [loc_id for (loc_id,) in location_ids]
-
+            ]
             if location_ids:
                 meter_subq = (
                     db.query(Meters.id)
@@ -113,7 +98,6 @@ def get_maintenance_summary(
         except Exception:
             pass  # Ignore invalid TRSS input silently
 
-    # Base query
     query = (
         db.query(
             MeterActivities.timestamp_start.label("date_time"),
@@ -129,8 +113,8 @@ def get_maintenance_summary(
               ActivityTypeLU.id == MeterActivities.activity_type_id
         )
         .join(Locations, Locations.id == Meters.location_id, isouter=True)
-        .filter(MeterActivities.timestamp_start >= from_date)
-        .filter(MeterActivities.timestamp_start <= to_date)
+        .filter(MeterActivities.timestamp_start >= start_dt)
+        .filter(MeterActivities.timestamp_start <= end_dt)
     )
 
     if filter_techs:
@@ -140,7 +124,6 @@ def get_maintenance_summary(
 
     if matching_meter_ids is not None:
         if not matching_meter_ids:
-            # TRSS valid but no meters matched → return empty results
             return {
                 "repairs_by_meter": [],
                 "pms_by_meter": [],
@@ -150,7 +133,6 @@ def get_maintenance_summary(
 
     base_query = query.order_by(MeterActivities.timestamp_start).all()
 
-    # Aggregate repairs and PMs
     repairs_by_meter = defaultdict(int)
     pms_by_meter = defaultdict(int)
     grouped_rows = defaultdict(lambda: {"number_of_repairs": 0, "number_of_pms": 0})
@@ -164,16 +146,16 @@ def get_maintenance_summary(
             pms_by_meter[row.meter] += 1
             grouped_rows[key]["number_of_pms"] += 1
 
-    repairs_result = [{"meter": meter, "count": count} for meter, count in repairs_by_meter.items()]
-    pms_result = [{"meter": meter, "count": count} for meter, count in pms_by_meter.items()]
+    repairs_result = [{"meter": m, "count": c} for m, c in repairs_by_meter.items()]
+    pms_result     = [{"meter": m, "count": c} for m, c in pms_by_meter.items()]
 
     table_rows = []
-    for (date_time, technician, meter, trss), counts in grouped_rows.items():
+    for (date_time, technician, meter, trss_val), counts in grouped_rows.items():
         table_rows.append({
             "date_time": date_time,
             "technician": technician,
             "meter": meter,
-            "trss": trss or "",
+            "trss": trss_val or "",
             "number_of_repairs": counts["number_of_repairs"],
             "number_of_pms": counts["number_of_pms"],
         })
@@ -190,105 +172,27 @@ def get_maintenance_summary(
     tags=["Maintenance"],
     dependencies=[Depends(ScopedUser.Read)],
 )
-def download_parts_used_pdf(
-    from_month: str = Query(..., pattern=r"^\d{4}-\d{2}$"),
-    to_month: str = Query(..., pattern=r"^\d{4}-\d{2}$"),
+def download_maintenance_summary_pdf(
+    from_date: date = Query(..., description="Start date YYYY-MM-DD"),
+    to_date:   date = Query(..., description="End date YYYY-MM-DD"),
     trss: str = Query(...),
     technicians: List[int] = Query(...),
     db: Session = Depends(get_db),
 ):
-    try:
-        from_date = datetime.strptime(from_month, "%Y-%m").replace(day=1)
-        to_dt = datetime.strptime(to_month, "%Y-%m")
-        year, month = to_dt.year, to_dt.month
-        today = datetime.now()
-        if year == today.year and month == today.month:
-            to_date = today
-        else:
-            last_day = calendar.monthrange(year, month)[1]
-            to_date = to_dt.replace(day=last_day, hour=23, minute=59, second=59)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM.")
-
-    filter_techs = -1 not in technicians
-
-    # Optional TRSS filtering via Locations → Meters
-    matching_meter_ids = None
-    if trss:
-        try:
-            parts = list(map(int, trss.strip().split(".")))
-            if len(parts) >= 4:
-                township, range_, section, quarter = parts[:4]
-
-                location_ids = [
-                    loc_id for (loc_id,) in db.query(Locations.id).filter(
-                        Locations.township == township,
-                        Locations.range == range_,
-                        Locations.section == section,
-                        Locations.quarter == quarter,
-                    ).all()
-                ]
-
-                if location_ids:
-                    matching_meter_ids = [
-                        meter_id for (meter_id,) in db.query(Meters.id).filter(
-                            Meters.location_id.in_(location_ids)
-                        ).all()
-                    ]
-        except Exception:
-            pass  # Silently skip TRSS filtering if malformed
-
-    query = (
-        db.query(
-            MeterActivities.timestamp_start.label("date_time"),
-            Users.full_name.label("technician"),
-            Meters.serial_number.label("meter"),
-            ActivityTypeLU.name.label("activity_type")
-        )
-        .join(Users, Users.id == MeterActivities.submitting_user_id)
-        .join(Meters, Meters.id == MeterActivities.meter_id)
-        .join(
-              ActivityTypeLU,
-              ActivityTypeLU.id == MeterActivities.activity_type_id
-        )
-        .filter(MeterActivities.timestamp_start >= from_date)
-        .filter(MeterActivities.timestamp_start <= to_date)
+    """
+    Generate a PDF maintenance summary between two dates.
+    Reuses the JSON endpoint's logic to avoid duplication.
+    """
+    # Re-use the endpoint logic directly
+    summary = get_maintenance_summary(
+        from_date=from_date,
+        to_date=to_date,
+        trss=trss,
+        technicians=technicians,
+        db=db,
     )
 
-    if filter_techs:
-        query = query.filter(MeterActivities.submitting_user_id.in_(technicians))
-
-    if matching_meter_ids is not None:
-        if not matching_meter_ids:
-            return StreamingResponse(BytesIO(), media_type="application/pdf")  # Empty PDF
-        query = query.filter(MeterActivities.meter_id.in_(matching_meter_ids))
-
-    base_query = query.order_by(MeterActivities.timestamp_start).all()
-
-    repairs_by_meter = defaultdict(int)
-    pms_by_meter = defaultdict(int)
-    grouped_rows = defaultdict(lambda: {"number_of_repairs": 0, "number_of_pms": 0})
-
-    for row in base_query:
-        key = (row.date_time, row.technician, row.meter)
-        if row.activity_type == "Repair":
-            repairs_by_meter[row.meter] += 1
-            grouped_rows[key]["number_of_repairs"] += 1
-        elif row.activity_type == "Preventative Maintenance":
-            pms_by_meter[row.meter] += 1
-            grouped_rows[key]["number_of_pms"] += 1
-
-    table_rows = []
-    for (date_time, technician, meter), counts in grouped_rows.items():
-        table_rows.append({
-            "date_time": date_time.strftime("%Y-%m-%d %H:%M"),
-            "technician": technician,
-            "meter": meter,
-            "number_of_repairs": counts["number_of_repairs"],
-            "number_of_pms": counts["number_of_pms"],
-        })
-
-    # Generate pie charts as base64 PNGs
+    # Make pie charts as base64 PNGs
     def make_pie_chart(data: dict, title: str):
         if not data:
             return ""
@@ -306,16 +210,22 @@ def download_parts_used_pdf(
         close(fig)
         return b64encode(buf.getvalue()).decode("utf-8")
 
-    repair_chart_b64 = make_pie_chart(repairs_by_meter, "Repairs by Meter")
-    pm_chart_b64 = make_pie_chart(pms_by_meter, "Preventative Maintenances by Meter")
+    repair_chart_b64 = make_pie_chart(
+        {r["meter"]: r["count"] for r in summary["repairs_by_meter"]},
+        "Repairs by Meter"
+    )
+    pm_chart_b64 = make_pie_chart(
+        {p["meter"]: p["count"] for p in summary["pms_by_meter"]},
+        "Preventative Maintenances by Meter"
+    )
 
     template = templates.get_template("maintenance_summary.html")
     html = template.render(
-        from_month=from_month,
-        to_month=to_month,
+        from_date=from_date,
+        to_date=to_date,
         repair_chart=repair_chart_b64,
         pm_chart=pm_chart_b64,
-        table_rows=table_rows,
+        table_rows=summary["table_rows"],
     )
 
     pdf_io = BytesIO()
