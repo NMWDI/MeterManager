@@ -62,8 +62,8 @@ export interface ActivityFormControl {
   observations: Array<{
     time: Dayjs
     reading: '' | number
-    property_type: Partial<ObservedPropertyTypeLU> | null
-    unit: Partial<Units> | null
+    property_type_id: number | null
+    unit_id: number | null
   }>,
   maintenance_repair?: {
     service_type_ids: number[] | null,

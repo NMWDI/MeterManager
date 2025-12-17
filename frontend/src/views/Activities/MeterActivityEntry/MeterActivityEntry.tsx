@@ -37,13 +37,13 @@ export default function MeterActivityEntry() {
   const [isMeterAndActivitySelected, setIsMeterAndActivitySelected] =
     useState<boolean>(false);
 
-  function onSuccessfulSubmit(activity_id: number, meter_id: number) {
+  const onSuccessfulSubmit = (activity_id: number, meter_id: number) => {
     enqueueSnackbar("Successfully Submitted Activity!", { variant: "success" });
     navigate({
       pathname: "/manage/meters",
       search: `?meter_id=${meter_id}&activity_id=${activity_id}`,
     });
-  }
+  };
 
   const createActivity = useMutation({
     mutationFn: async (activityForm: FormData) => {
@@ -85,7 +85,9 @@ export default function MeterActivityEntry() {
     onSuccess: (responseJson) => {
       const activity_id = responseJson.id;
       const meter_id = responseJson.meter_id;
-      enqueueSnackbar("Successfully Submitted Activity!", { variant: "success" });
+      enqueueSnackbar("Successfully Submitted Activity!", {
+        variant: "success",
+      });
       onSuccessfulSubmit(activity_id, meter_id);
     },
   });
@@ -121,20 +123,19 @@ export default function MeterActivityEntry() {
 
   useEffect(() => {
     setHasMeterActivityConflict(
-      (
-        meterDetails.data?.status.status_name == "Installed" &&
-        watch("activity_details.activity_type")?.name == ActivityType.Install
-      ) || (
-        meterDetails.data?.status.status_name != "Installed" &&
-        watch("activity_details.activity_type")?.name == ActivityType.Uninstall
-      ),
+      (meterDetails.data?.status.status_name == "Installed" &&
+        watch("activity_details.activity_type")?.name ==
+          ActivityType.Install) ||
+        (meterDetails.data?.status.status_name != "Installed" &&
+          watch("activity_details.activity_type")?.name ==
+            ActivityType.Uninstall),
     );
   }, [meterDetails.data, watch("activity_details.activity_type")?.name]);
 
   useEffect(() => {
     setIsMeterAndActivitySelected(
       watch("activity_details.selected_meter") != null &&
-      watch("activity_details.activity_type") != null,
+        watch("activity_details.activity_type") != null,
     );
   }, [
     watch("activity_details.selected_meter"),
@@ -161,17 +162,56 @@ export default function MeterActivityEntry() {
 
   return (
     <Stack spacing={3}>
-      <MeterActivitySelection control={control} errors={errors} watch={watch} setValue={setValue} />
+      <MeterActivitySelection
+        control={control}
+        errors={errors}
+        watch={watch}
+        setValue={setValue}
+      />
       {!hasMeterActivityConflict && isMeterAndActivitySelected ? (
         <Stack spacing={3}>
-          <MeterInstallation control={control} errors={errors} watch={watch} setValue={setValue} />
-          <ObservationSelection control={control} errors={errors} watch={watch} setValue={setValue} />
-          <MaintenanceRepairSelection control={control} errors={errors} watch={watch} setValue={setValue} />
-          <NotesSelection control={control} errors={errors} watch={watch} setValue={setValue} />
-          <PartsSelection control={control} errors={errors} watch={watch} setValue={setValue} />
-          <Box sx={{ mt: 2, display: "flex", justifyContent: { xs: "center", sm: "flex-start" } }}>
+          <MeterInstallation
+            control={control}
+            errors={errors}
+            watch={watch}
+            setValue={setValue}
+          />
+          <ObservationSelection
+            control={control}
+            errors={errors}
+            watch={watch}
+            setValue={setValue}
+          />
+          <MaintenanceRepairSelection
+            control={control}
+            errors={errors}
+            watch={watch}
+            setValue={setValue}
+          />
+          <NotesSelection
+            control={control}
+            errors={errors}
+            watch={watch}
+            setValue={setValue}
+          />
+          <PartsSelection
+            control={control}
+            errors={errors}
+            watch={watch}
+            setValue={setValue}
+          />
+          <Box
+            sx={{
+              mt: 2,
+              display: "flex",
+              justifyContent: { xs: "center", sm: "flex-start" },
+            }}
+          >
             {hasErrors(errors) ? (
-              <Alert severity="error" sx={{ width: { xs: "100%", sm: "auto" } }}>
+              <Alert
+                severity="error"
+                sx={{ width: { xs: "100%", sm: "auto" } }}
+              >
                 Please correct any errors before submission.
               </Alert>
             ) : (
