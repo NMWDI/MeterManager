@@ -8,12 +8,16 @@ export const MonitoringWellsPlot = ({
   manual_vals,
   logger_dates,
   logger_vals,
+  sensor_dates,
+  sensor_vals,
   isLoading,
 }: {
   manual_dates: Date[];
   manual_vals: number[];
   logger_dates: Date[];
   logger_vals: number[];
+  sensor_dates?: Date[];
+  sensor_vals?: number[];
   isLoading: boolean;
 }) => {
   const data: Partial<Data>[] = useMemo(
@@ -33,13 +37,28 @@ export const MonitoringWellsPlot = ({
         marker: { color: "blue" },
         name: "Continuous",
       },
+      {
+        x: sensor_dates,
+        y: sensor_vals,
+        type: "scatter",
+        mode: "markers",
+        marker: { color: "purple" },
+        name: "Woodpecker Sensor",
+      },
     ],
-    [manual_dates, manual_vals, logger_dates, logger_vals],
+    [
+      manual_dates,
+      manual_vals,
+      logger_dates,
+      logger_vals,
+      sensor_dates,
+      sensor_vals,
+    ],
   );
 
   return (
-    <Box sx={{ height: 600, width: '100%' }}>
-      {isLoading ?
+    <Box sx={{ height: 600, width: "100%" }}>
+      {isLoading ? (
         <Box
           sx={{
             height: 600,
@@ -55,7 +74,7 @@ export const MonitoringWellsPlot = ({
             Loading plot data...
           </Typography>
         </Box>
-        :
+      ) : (
         <Plot
           data={data}
           layout={{
@@ -81,7 +100,7 @@ export const MonitoringWellsPlot = ({
           useResizeHandler
           style={{ width: "100%", height: "100%" }}
         />
-      }
+      )}
     </Box>
   );
 };

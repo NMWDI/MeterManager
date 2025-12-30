@@ -14,14 +14,21 @@ from matplotlib.pyplot import figure, close
 from base64 import b64encode
 
 from api.schemas import well_schemas
-from api.models.main_models import WellMeasurements, ObservedPropertyTypeLU, Units, Wells
+from api.models.main_models import (
+    WellMeasurements,
+    ObservedPropertyTypeLU,
+    Units,
+    Wells,
+)
 from api.session import get_db
 from api.enums import ScopedUser
 from google.cloud import storage
 
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader, select_autoescape
+from zoneinfo import ZoneInfo
 
+import zlib
 import json
 import os
 import matplotlib
@@ -34,7 +41,7 @@ TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "templates"
 
 templates = Environment(
     loader=FileSystemLoader(TEMPLATES_DIR),
-    autoescape=select_autoescape(["html", "xml"])
+    autoescape=select_autoescape(["html", "xml"]),
 )
 
 authenticated_well_measurement_router = APIRouter()
@@ -85,31 +92,95 @@ def read_woodpecker_waterlevels(
     if well_id != SP_JOHNSON_WELL_ID:
         raise HTTPException(status_code=400, detail="Invalid well ID")
 
+    DEPTH_TO_WATER_SENSOR_NAME = "Depth to Water"
+
+    results: List[well_schemas.WellMeasurementDTO] = []
+    seen_timestamps: set[str] = set()
+
     client = storage.Client()
     bucket = client.bucket(WOODPECKER_BUCKET_NAME)
 
-    blobs = bucket.list_blobs()
+    for blob in bucket.list_blobs():
+        if not blob.name.endswith(".json"):
+            continue
 
-    results = []
-    for blob in blobs:
-        if blob.name.endswith(".json"):
-            content = blob.download_as_text()
-            data = json.loads(content)
+        content = blob.download_as_text()
+        payload = json.loads(content)
 
-            measurement = well_schemas.WellMeasurementDTO(
-                id=data["id"],
-                timestamp=datetime.fromisoformat(data["timestamp"]),
-                value=data.get("value"),
-                submitting_user=well_schemas.WellMeasurementDTO.UserDTO(
-                    full_name=data["submitting_user"]["full_name"]
-                ),
-                well=well_schemas.WellMeasurementDTO.WellDTO(
-                    ra_number=data["well"]["ra_number"]
-                ),
+        device_attributes = payload.get("deviceAttributes") or {}
+        tz_name = device_attributes.get("timeZone") or "UTC"
+        ra_number = device_attributes.get("wellId") or ""  # e.g. "RA-3502"
+
+        sensor_data = payload.get("sensorData") or []
+        depth_sensor = next(
+            (
+                s
+                for s in sensor_data
+                if (s.get("sensorName") or "").strip() == DEPTH_TO_WATER_SENSOR_NAME
+            ),
+            None,
+        )
+        if not depth_sensor:
+            # No "Depth to Water" in this file; skip
+            continue
+
+        measurements = depth_sensor.get("measurements") or []
+        for m in measurements:
+            raw_ts = m.get("timestamp")
+            if not raw_ts:
+                continue
+
+            ts = _parse_woodpecker_timestamp(raw_ts, tz_name)
+
+            # Deduplicate by exact instant string (timezone-aware isoformat if tz parsed)
+            ts_key = ts.isoformat()
+            if ts_key in seen_timestamps:
+                continue
+            seen_timestamps.add(ts_key)
+
+            raw_value = m.get("data")
+            value = abs(raw_value) if raw_value is not None else None
+
+            measurement_id = _make_measurement_id(well_id, ts, value)
+
+            results.append(
+                well_schemas.WellMeasurementDTO(
+                    id=measurement_id,
+                    timestamp=ts,
+                    value=value,
+                    submitting_user=well_schemas.WellMeasurementDTO.UserDTO(
+                        full_name="Woodpeckers"
+                    ),
+                    well=well_schemas.WellMeasurementDTO.WellDTO(ra_number=ra_number),
+                )
             )
-            results.append(measurement)
 
+    # Sort combined results across all files
+    results.sort(key=lambda r: r.timestamp)
     return results
+
+
+def _parse_woodpecker_timestamp(ts: str, tz_name: str) -> datetime:
+    """
+    Payload timestamp format: "DD/MM/YYYY HH:mm:ss"
+    Example: "29/12/2025 00:20:40"
+    """
+    dt_naive = datetime.strptime(ts, "%d/%m/%Y %H:%M:%S")
+    try:
+        tz = ZoneInfo(tz_name)
+    except Exception:
+        # Fallback: keep naive if timezone is missing/invalid
+        return dt_naive
+    return dt_naive.replace(tzinfo=tz)
+
+
+def _make_measurement_id(well_id: int, ts: datetime, value: Optional[float]) -> int:
+    """
+    Since the incoming format doesn't provide an integer measurement id,
+    generate a deterministic-ish int id from well_id + timestamp + value.
+    """
+    key = f"{well_id}|{ts.isoformat()}|{value if value is not None else 'null'}"
+    return zlib.crc32(key.encode("utf-8"))
 
 
 @public_well_measurement_router.get(
@@ -139,6 +210,7 @@ def read_waterlevels(
 
     def group_and_average(measurements, group_by_label: str):
         from collections import defaultdict
+
         grouped = defaultdict(list)
         for m in measurements:
             key = m.timestamp.strftime(
@@ -221,6 +293,7 @@ def read_waterlevels(
             if from_date and to_date:
                 start = datetime(year, from_date.month, 1)
                 import calendar
+
                 last_day = calendar.monthrange(year, to_date.month)[1]
                 end = datetime(year, to_date.month, last_day, 23, 59, 59)
             else:
@@ -246,7 +319,9 @@ def read_waterlevels(
         try:
             year_int = int(comparisonYear)
         except ValueError:
-            raise HTTPException(status_code=400, detail="comparisonYear must be a 4-digit year")
+            raise HTTPException(
+                status_code=400, detail="comparisonYear must be a 4-digit year"
+            )
 
         current_year = datetime.now().year
         if year_int < 1900 or year_int > current_year:
@@ -307,6 +382,7 @@ def download_waterlevels_pdf(
     def shift_year_safe(dt, new_year: int):
         """Shift dt to new_year, handling Feb 29 / month-end safely."""
         import calendar
+
         try:
             return dt.replace(year=new_year)
         except ValueError:
@@ -323,11 +399,13 @@ def download_waterlevels_pdf(
         val = m.value
         ra = m.well["ra_number"] if isinstance(m.well, dict) else m.well.ra_number
 
-        rows.append({
-            "timestamp": ts.strftime("%Y-%m-%d %H:%M"),
-            "depth_to_water": val,
-            "well_ra_number": ra,
-        })
+        rows.append(
+            {
+                "timestamp": ts.strftime("%Y-%m-%d %H:%M"),
+                "depth_to_water": val,
+                "well_ra_number": ra,
+            }
+        )
 
         chart_ts = ts
         if from_year:
@@ -348,7 +426,7 @@ def download_waterlevels_pdf(
             sorted_m = sorted(measurements, key=lambda x: x[0])
             timestamps = [ts for ts, _ in sorted_m]
             values = [val for _, val in sorted_m]
-            ax.plot(timestamps, values, label=ra_label, marker='o')
+            ax.plot(timestamps, values, label=ra_label, marker="o")
         ax.set_title(title)
         ax.set_xlabel("Time")
         ax.set_ylabel("Depth to Water")
@@ -389,9 +467,7 @@ def download_waterlevels_pdf(
     return StreamingResponse(
         pdf_io,
         media_type="application/pdf",
-        headers={
-            "Content-Disposition": "attachment; filename=waterlevels_report.pdf"
-        },
+        headers={"Content-Disposition": "attachment; filename=waterlevels_report.pdf"},
     )
 
 
@@ -401,11 +477,15 @@ def download_waterlevels_pdf(
     response_model=well_schemas.WellMeasurement,
     tags=["WaterLevels"],
 )
-def patch_waterlevel(waterlevel_patch: well_schemas.PatchWaterLevel, db: Session = Depends(get_db)):
+def patch_waterlevel(
+    waterlevel_patch: well_schemas.PatchWaterLevel, db: Session = Depends(get_db)
+):
     # Find the measurement
-    well_measurement = (
-        db.scalars(select(WellMeasurements).where(WellMeasurements.id == waterlevel_patch.levelmeasurement_id)).first()
-    )
+    well_measurement = db.scalars(
+        select(WellMeasurements).where(
+            WellMeasurements.id == waterlevel_patch.levelmeasurement_id
+        )
+    ).first()
 
     # Update the fields, all are mandatory
     well_measurement.submitting_user_id = waterlevel_patch.submitting_user_id
@@ -416,6 +496,7 @@ def patch_waterlevel(waterlevel_patch: well_schemas.PatchWaterLevel, db: Session
 
     return well_measurement
 
+
 @authenticated_well_measurement_router.delete(
     "/waterlevels",
     dependencies=[Depends(ScopedUser.Admin)],
@@ -423,9 +504,9 @@ def patch_waterlevel(waterlevel_patch: well_schemas.PatchWaterLevel, db: Session
 )
 def delete_waterlevel(waterlevel_id: int, db: Session = Depends(get_db)):
     # Find the measurement
-    well_measurement = (
-        db.scalars(select(WellMeasurements).where(WellMeasurements.id == waterlevel_id)).first()
-    )
+    well_measurement = db.scalars(
+        select(WellMeasurements).where(WellMeasurements.id == waterlevel_id)
+    ).first()
 
     db.delete(well_measurement)
     db.commit()

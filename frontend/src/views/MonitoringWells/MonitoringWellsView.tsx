@@ -65,7 +65,11 @@ export const MonitoringWellsView = () => {
     (s: SecurityScope) => s.scope_string === "admin",
   );
 
-  const monitoredWellsQuery = useQuery<{ items: MonitoredWell[] }, Error, MonitoredWell[]>({
+  const monitoredWellsQuery = useQuery<
+    { items: MonitoredWell[] },
+    Error,
+    MonitoredWell[]
+  >({
     queryKey: ["wells"],
     queryFn: () =>
       fetchWithAuth({
@@ -112,11 +116,30 @@ export const MonitoringWellsView = () => {
     enabled: !!dataStreamId,
   });
 
+  const {
+    data: johnsonSensorDataMeasurements,
+    isLoading: isLoadingJohnsonSensorData,
+    error: errorJohnsonSensorData,
+  } = useQuery<WellMeasurementDTO[], Error>({
+    queryKey: ["woodpeckers", wellId],
+    queryFn: () =>
+      fetchWithAuth({
+        method: "GET",
+        route: "/waterlevels/woodpeckers",
+        params: { well_id: wellId },
+      }),
+    enabled: !!wellId && wellId === 2599,
+  });
+
   const createMeasurement = useCreateWaterLevel();
   const updateMeasurement = useUpdateWaterLevel(() => refetchManual());
   const deleteMeasurement = useDeleteWaterLevel();
 
-  const error = monitoredWellsQuery.isError || errorManual || errorSt2;
+  const error =
+    monitoredWellsQuery.isError ||
+    errorManual ||
+    errorSt2 ||
+    errorJohnsonSensorData;
 
   const handleSubmitNewMeasurement = (data: NewWellMeasurement) => {
     if (wellId) {
@@ -158,7 +181,9 @@ export const MonitoringWellsView = () => {
     setIsUpdateModalOpen(true);
   };
 
-  const [outsideRecorderWells, regularWells] = separateAndSortMonitoredWells(monitoredWellsQuery?.data);
+  const [outsideRecorderWells, regularWells] = separateAndSortMonitoredWells(
+    monitoredWellsQuery?.data,
+  );
 
   return (
     <BackgroundBox>
@@ -181,14 +206,16 @@ export const MonitoringWellsView = () => {
               }
             >
               <AlertTitle>Error Loading Data</AlertTitle>
-              We couldn’t load monitoring wells. Please check your connection or try
-              again.
+              We couldn’t load monitoring wells. Please check your connection or
+              try again.
             </Alert>
           )}
           <FormControl
             size="small"
             sx={{ minWidth: "100px", maxWidth: 600, width: "100%" }}
-            disabled={monitoredWellsQuery?.isFetching || !!monitoredWellsQuery?.isError}
+            disabled={
+              monitoredWellsQuery?.isFetching || !!monitoredWellsQuery?.isError
+            }
           >
             <InputLabel id={`${selectWellId}-label`}>Site</InputLabel>
             <Select
@@ -197,9 +224,13 @@ export const MonitoringWellsView = () => {
               value={wellId ?? ""}
               onChange={(e) => setWellId(Number(e.target.value))}
             >
-              {monitoredWellsQuery?.isFetching && <MenuItem disabled>Loading...</MenuItem>}
-              {monitoredWellsQuery?.isError && <MenuItem disabled>Error loading wells</MenuItem>}
-              {monitoredWellsQuery?.data?.length ?? 0 > 0 ? (
+              {monitoredWellsQuery?.isFetching && (
+                <MenuItem disabled>Loading...</MenuItem>
+              )}
+              {monitoredWellsQuery?.isError && (
+                <MenuItem disabled>Error loading wells</MenuItem>
+              )}
+              {(monitoredWellsQuery?.data?.length ?? 0 > 0) ? (
                 <ListSubheader
                   sx={{
                     color: theme.palette.primary.main,
@@ -263,24 +294,48 @@ export const MonitoringWellsView = () => {
               ))}
             </Select>
           </FormControl>
-          <Grid
-            container
-            spacing={2}
-            sx={{ mt: "1rem" }}
-          >
+          <Grid container spacing={2} sx={{ mt: "1rem" }}>
             <Grid item xs={12} lg={7}>
               <MonitoringWellsPlot
-                isLoading={isLoadingManual || isLoadingSt2}
-                manual_dates={(Array.isArray(manualMeasurements) ? manualMeasurements : []).map((m) => m.timestamp)}
-                manual_vals={(Array.isArray(manualMeasurements) ? manualMeasurements : []).map((m) => m.value)}
-                logger_dates={(Array.isArray(st2Measurements) ? st2Measurements : []).map((m) => m.resultTime)}
-                logger_vals={(Array.isArray(st2Measurements) ? st2Measurements : []).map((m) => m.result)}
+                isLoading={
+                  isLoadingManual || isLoadingSt2 || isLoadingJohnsonSensorData
+                }
+                manual_dates={(Array.isArray(manualMeasurements)
+                  ? manualMeasurements
+                  : []
+                ).map((m) => m.timestamp)}
+                manual_vals={(Array.isArray(manualMeasurements)
+                  ? manualMeasurements
+                  : []
+                ).map((m) => m.value)}
+                logger_dates={
+                  Array.isArray(st2Measurements)
+                    ? (st2Measurements ?? []).map((m) => m.resultTime)
+                    : []
+                }
+                logger_vals={
+                  Array.isArray(st2Measurements)
+                    ? st2Measurements.map((m) => m.result)
+                    : []
+                }
+                sensor_dates={
+                  Array.isArray(johnsonSensorDataMeasurements)
+                    ? johnsonSensorDataMeasurements?.map((m) => m.timestamp)
+                    : undefined
+                }
+                sensor_vals={
+                  Array.isArray(johnsonSensorDataMeasurements)
+                    ? johnsonSensorDataMeasurements?.map((m) => m.value)
+                    : undefined
+                }
               />
             </Grid>
             <Grid item xs={12} lg={5}>
               <MonitoringWellsTable
                 rows={manualMeasurements ?? []}
-                selectedWell={monitoredWellsQuery?.data?.find((well) => well.id == wellId)}
+                selectedWell={monitoredWellsQuery?.data?.find(
+                  (well) => well.id == wellId,
+                )}
                 isWellSelected={!!wellId}
                 onOpenModal={() => setIsNewModalOpen(true)}
                 onMeasurementSelect={handleMeasurementSelect}
