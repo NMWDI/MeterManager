@@ -431,7 +431,16 @@ def download_waterlevels_pdf(
         ax.set_xlabel("Time")
         ax.set_ylabel("Depth to Water")
         ax.invert_yaxis()
-        ax.legend()
+
+        # Reserve Space on the top right & move legend outside the plot area to that reserved area
+        fig.subplots_adjust(right=0.78)
+        ax.legend(
+            loc="center left",
+            bbox_to_anchor=(1.02, 0.5),
+            borderaxespad=0.0,
+            frameon=True,
+        )
+
         fig.autofmt_xdate()
         buf = BytesIO()
         fig.savefig(buf, format="png", bbox_inches="tight")
