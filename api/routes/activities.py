@@ -46,7 +46,7 @@ MAX_PHOTOS_PER_REQUEST = 2
 MAX_PHOTOS_PER_METER = 6
 
 
-@public_activity_router.get("/activities/{activity_id}/photo/{photo_file_name}")
+@public_activity_router.get("/activities/{activity_id}/photos/{photo_file_name}")
 async def get_activity_photo(
     activity_id: int,
     photo_file_name: str,

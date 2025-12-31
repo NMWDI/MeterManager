@@ -1,21 +1,14 @@
 import { useEffect, useState } from "react";
 import { AuthProvider } from "react-auth-kit";
-import {
-  Route,
-  BrowserRouter as Router,
-  Routes,
-} from "react-router-dom";
+import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "react-query";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { SnackbarProvider, enqueueSnackbar } from "notistack";
-import {
-  Home,
-  Login,
-  Settings,
-} from './views'
+import { Home, Login, Settings } from "./views";
 import { MonitoringWellsView } from "./views/MonitoringWells/MonitoringWellsView";
 import { ActivitiesView } from "./views/Activities/ActivitiesView";
+import { ActivityPhotoView } from "./views/Activities/ActivityPhotoView";
 import { MetersView } from "./views/Meters/MetersView";
 import { PartsView } from "./views/Parts/PartsView";
 import { UserManagementView } from "./views/UserManagement/UserManagementView";
@@ -94,7 +87,10 @@ export const App = () => {
                 <Route
                   path="/settings"
                   element={
-                    <ProtectedRoute requiredScopes={["read"]} setErrorMessage={setErrorMessage}>
+                    <ProtectedRoute
+                      requiredScopes={["read"]}
+                      setErrorMessage={setErrorMessage}
+                    >
                       <AppLayout>
                         <Settings />
                       </AppLayout>
@@ -104,7 +100,10 @@ export const App = () => {
                 <Route
                   path="/workorders"
                   element={
-                    <ProtectedRoute requiredScopes={["read"]} setErrorMessage={setErrorMessage}>
+                    <ProtectedRoute
+                      requiredScopes={["read"]}
+                      setErrorMessage={setErrorMessage}
+                    >
                       <AppLayout>
                         <WorkOrdersView />
                       </AppLayout>
@@ -114,7 +113,10 @@ export const App = () => {
                 <Route
                   path="/activities"
                   element={
-                    <ProtectedRoute requiredScopes={["activities:write"]} setErrorMessage={setErrorMessage}>
+                    <ProtectedRoute
+                      requiredScopes={["activities:write"]}
+                      setErrorMessage={setErrorMessage}
+                    >
                       <AppLayout>
                         <ActivitiesView />
                       </AppLayout>
@@ -122,9 +124,25 @@ export const App = () => {
                   }
                 />
                 <Route
+                  path="/activities/:activity_id/photos/:photo_file_name"
+                  element={
+                    <ProtectedRoute
+                      requiredScopes={["read"]}
+                      setErrorMessage={setErrorMessage}
+                    >
+                      <AppLayout>
+                        <ActivityPhotoView />
+                      </AppLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
                   path="/manage/meters"
                   element={
-                    <ProtectedRoute requiredScopes={["read"]} setErrorMessage={setErrorMessage}>
+                    <ProtectedRoute
+                      requiredScopes={["read"]}
+                      setErrorMessage={setErrorMessage}
+                    >
                       <AppLayout>
                         <MetersView />
                       </AppLayout>
@@ -134,7 +152,10 @@ export const App = () => {
                 <Route
                   path="/manage/wells"
                   element={
-                    <ProtectedRoute requiredScopes={["read"]} setErrorMessage={setErrorMessage}>
+                    <ProtectedRoute
+                      requiredScopes={["read"]}
+                      setErrorMessage={setErrorMessage}
+                    >
                       <AppLayout>
                         <WellManagementView />
                       </AppLayout>
@@ -144,7 +165,10 @@ export const App = () => {
                 <Route
                   path="/reports"
                   element={
-                    <ProtectedRoute requiredScopes={["read"]} setErrorMessage={setErrorMessage}>
+                    <ProtectedRoute
+                      requiredScopes={["read"]}
+                      setErrorMessage={setErrorMessage}
+                    >
                       <AppLayout>
                         <ReportsView />
                       </AppLayout>
@@ -154,7 +178,10 @@ export const App = () => {
                 <Route
                   path="/reports/workorders"
                   element={
-                    <ProtectedRoute requiredScopes={["read"]} setErrorMessage={setErrorMessage}>
+                    <ProtectedRoute
+                      requiredScopes={["read"]}
+                      setErrorMessage={setErrorMessage}
+                    >
                       <AppLayout>
                         <WorkOrdersReportView />
                       </AppLayout>
@@ -164,7 +191,10 @@ export const App = () => {
                 <Route
                   path="/reports/monitoringwells"
                   element={
-                    <ProtectedRoute requiredScopes={["read"]} setErrorMessage={setErrorMessage}>
+                    <ProtectedRoute
+                      requiredScopes={["read"]}
+                      setErrorMessage={setErrorMessage}
+                    >
                       <AppLayout>
                         <MonitoringWellsReportView />
                       </AppLayout>
@@ -174,7 +204,10 @@ export const App = () => {
                 <Route
                   path="/reports/maintenance"
                   element={
-                    <ProtectedRoute requiredScopes={["read"]} setErrorMessage={setErrorMessage}>
+                    <ProtectedRoute
+                      requiredScopes={["read"]}
+                      setErrorMessage={setErrorMessage}
+                    >
                       <AppLayout>
                         <MaintenanceReportView />
                       </AppLayout>
@@ -184,7 +217,10 @@ export const App = () => {
                 <Route
                   path="/reports/partsused"
                   element={
-                    <ProtectedRoute requiredScopes={["read"]} setErrorMessage={setErrorMessage}>
+                    <ProtectedRoute
+                      requiredScopes={["read"]}
+                      setErrorMessage={setErrorMessage}
+                    >
                       <AppLayout>
                         <PartsUsedReportView />
                       </AppLayout>
@@ -194,7 +230,10 @@ export const App = () => {
                 <Route
                   path="/reports/board"
                   element={
-                    <ProtectedRoute requiredScopes={["read"]} setErrorMessage={setErrorMessage}>
+                    <ProtectedRoute
+                      requiredScopes={["read"]}
+                      setErrorMessage={setErrorMessage}
+                    >
                       <AppLayout>
                         <BoardReportView />
                       </AppLayout>
@@ -204,7 +243,10 @@ export const App = () => {
                 <Route
                   path="/reports/chlorides"
                   element={
-                    <ProtectedRoute requiredScopes={["read"]} setErrorMessage={setErrorMessage}>
+                    <ProtectedRoute
+                      requiredScopes={["read"]}
+                      setErrorMessage={setErrorMessage}
+                    >
                       <AppLayout>
                         <ChloridesReportView />
                       </AppLayout>
@@ -214,7 +256,10 @@ export const App = () => {
                 <Route
                   path="/manage/parts"
                   element={
-                    <ProtectedRoute requiredScopes={["admin"]} setErrorMessage={setErrorMessage}>
+                    <ProtectedRoute
+                      requiredScopes={["admin"]}
+                      setErrorMessage={setErrorMessage}
+                    >
                       <AppLayout>
                         <PartsView />
                       </AppLayout>
@@ -224,7 +269,10 @@ export const App = () => {
                 <Route
                   path="/manage/users"
                   element={
-                    <ProtectedRoute requiredScopes={["admin"]} setErrorMessage={setErrorMessage}>
+                    <ProtectedRoute
+                      requiredScopes={["admin"]}
+                      setErrorMessage={setErrorMessage}
+                    >
                       <AppLayout>
                         <UserManagementView />
                       </AppLayout>
