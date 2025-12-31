@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette import status
 from api.schemas import security_schemas
 from api.models.main_models import Users
-from api.routes.activities import activity_router
+from api.routes.activities import activity_router, public_activity_router
 from api.routes.admin import admin_router
 from api.routes.chlorides import authenticated_chlorides_router, public_chlorides_router
 from api.routes.maintenance import maintenance_router
@@ -14,7 +14,10 @@ from api.routes.meters import authenticated_meter_router, public_meter_router
 from api.routes.OSE import ose_router
 from api.routes.parts import part_router
 from api.routes.settings import settings_router
-from api.routes.well_measurements import authenticated_well_measurement_router, public_well_measurement_router
+from api.routes.well_measurements import (
+    authenticated_well_measurement_router,
+    public_well_measurement_router,
+)
 from api.routes.wells import authenticated_well_router, public_well_router
 from api.security import (
     authenticate_user,
@@ -123,6 +126,7 @@ authenticated_router.include_router(settings_router)
 add_pagination(app)
 
 app.include_router(ose_router)
+app.include_router(public_activity_router)
 app.include_router(public_meter_router)
 app.include_router(public_well_router)
 app.include_router(public_chlorides_router)
