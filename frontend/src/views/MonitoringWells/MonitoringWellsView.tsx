@@ -13,7 +13,7 @@ import {
   Button,
   AlertTitle,
 } from "@mui/material";
-import { useQuery } from "react-query";
+import { useQuery, useQueryClient } from "react-query";
 import { useAuthUser } from "react-auth-kit";
 import { MonitoringWellsTable } from "./MonitoringWellsTable";
 import { MonitoringWellsPlot } from "./MonitoringWellsPlot";
@@ -45,6 +45,7 @@ import { separateAndSortMonitoredWells } from "../../utils";
 export const MonitoringWellsView = () => {
   const theme = useTheme();
 
+  const queryClient = useQueryClient();
   const fetchWithAuth = useFetchWithAuth();
   const fetchSt2 = useFetchST2();
   const selectWellId = useId();
@@ -144,20 +145,39 @@ export const MonitoringWellsView = () => {
   const handleSubmitNewMeasurement = (data: NewWellMeasurement) => {
     if (wellId) {
       data.well_id = wellId;
-      createMeasurement.mutate(data, { onSuccess: () => refetchManual() });
+      createMeasurement.mutate(data, {
+        onSuccess: () => {
+          queryClient.invalidateQueries({
+            queryKey: ["manualMeasurements", wellId],
+          });
+          refetchManual();
+        },
+      });
     }
     setIsNewModalOpen(false);
   };
 
   const handleSubmitMeasurementUpdate = () => {
-    updateMeasurement.mutate(selectedMeasurement);
+    updateMeasurement.mutate(selectedMeasurement, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: ["manualMeasurements", wellId],
+        });
+      },
+    });
     setIsUpdateModalOpen(false);
   };
 
   const handleDeleteMeasurement = () => {
     setIsUpdateModalOpen(false);
     if (window.confirm("Are you sure you want to delete this measurement?")) {
-      deleteMeasurement.mutate(selectedMeasurement.levelmeasurement_id);
+      deleteMeasurement.mutate(selectedMeasurement.levelmeasurement_id, {
+        onSuccess: () => {
+          queryClient.invalidateQueries({
+            queryKey: ["manualMeasurements", wellId],
+          });
+        },
+      });
     }
   };
 
