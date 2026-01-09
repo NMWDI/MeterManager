@@ -1,38 +1,72 @@
 import { useEffect } from "react";
-import { Box, Button, Grid, Typography } from "@mui/material";
-import DeleteIcon from "@mui/icons-material/Delete";
-import IconButton from "@mui/material/IconButton";
-import { useFieldArray } from "react-hook-form";
-import dayjs from "dayjs";
+import { Box, Button, Grid, Typography, IconButton } from "@mui/material";
+import { UseQueryResult } from "react-query";
+import { Delete } from "@mui/icons-material";
+import { useFieldArray, useWatch } from "react-hook-form";
 import { ObservedPropertyTypeLU } from "../../../interfaces";
 import { useGetPropertyTypes } from "../../../service/ApiServiceNew";
+import { ControlledSelectNonObject } from "../../../components/RHControlled/ControlledSelect";
 import ControlledTimepicker from "../../../components/RHControlled/ControlledTimepicker";
 import ControlledTextbox from "../../../components/RHControlled/ControlledTextbox";
-import { ControlledSelect } from "../../../components/RHControlled/ControlledSelect";
+import dayjs from "dayjs";
 
-function ObservationRow({
+const ObservationRow = ({
   control,
-  watch,
   errors,
   fieldID,
   index,
   propertyTypes,
   remove,
   setValue,
-}: any) {
+}: {
+  control: any;
+  setValue: any;
+  errors: any;
+
+  index: number;
+  fieldID: string;
+  remove: (index: number) => void;
+
+  propertyTypes: UseQueryResult<ObservedPropertyTypeLU[], Error>;
+}) => {
+  const propertyTypeId = useWatch({
+    control,
+    name: `observations.${index}.property_type_id`,
+  });
+
+  const unitId = useWatch({
+    control,
+    name: `observations.${index}.unit_id`,
+  });
+
+  const propertyType = propertyTypes.data?.find(
+    (pt) => pt.id === propertyTypeId,
+  );
+
   useEffect(() => {
-    setValue(
-      `observations.${index}.unit`,
-      watch(`observations.${index}.property_type`)?.units?.at(0),
-    );
-    setValue(
-      `observations.${index}.time`,
-      watch("activity_details.start_time"),
-    ); //Update the Match start time
-  }, [
-    watch(`observations.${index}.property_type`),
-    watch("activity_details.start_time"),
-  ]); // Update the selected unit to the first in the newly selected property type
+    if (
+      !propertyType ||
+      !propertyType?.units ||
+      propertyType?.units?.length === 0
+    )
+      return;
+    if (unitId != null) return;
+
+    setValue(`observations.${index}.unit_id`, propertyType?.units[0].id, {
+      shouldDirty: false,
+    });
+  }, [propertyType, unitId, index, setValue]);
+
+  const startTime = useWatch({
+    control,
+    name: "activity_details.start_time",
+  });
+
+  useEffect(() => {
+    if (!startTime) return;
+
+    setValue(`observations.${index}.time`, startTime, { shouldDirty: false });
+  }, [startTime, index, setValue]);
 
   return (
     <Grid container item xs={12} spacing={2} sx={{ mb: 2 }} key={fieldID}>
@@ -46,13 +80,15 @@ function ObservationRow({
             />
           </Grid>
           <Grid item xs={12} sm={3}>
-            <ControlledSelect
-              name={`observations.${index}.property_type`}
+            <ControlledSelectNonObject
+              name={`observations.${index}.property_type_id`}
               control={control}
-              label={"Reading Type"}
-              options={propertyTypes.data ?? []}
-              getOptionLabel={(p: ObservedPropertyTypeLU) => p.name}
-              error={errors?.observations?.at(index)?.property_type?.message}
+              label="Reading Type"
+              options={propertyTypes.data?.map((pt) => pt.id) ?? []}
+              getOptionLabel={(id: number) =>
+                propertyTypes.data?.find((pt) => pt.id === id)?.name ?? ""
+              }
+              error={errors?.observations?.[index]?.property_type_id?.message}
             />
           </Grid>
           <Grid item xs={12} sm={3}>
@@ -67,53 +103,47 @@ function ObservationRow({
             />
           </Grid>
           <Grid item xs={12} sm={3}>
-            <ControlledSelect
-              name={`observations.${index}.unit`}
+            <ControlledSelectNonObject
+              name={`observations.${index}.unit_id`}
               control={control}
-              label={"Unit"}
-              options={
-                watch(`observations.${index}.property_type`)?.units ?? []
+              label="Unit"
+              options={propertyType?.units?.map((u) => u.id) ?? []}
+              getOptionLabel={(id: number) =>
+                propertyType?.units?.find((u) => u.id === id)?.name ?? ""
               }
-              getOptionLabel={(p: ObservedPropertyTypeLU) => p.name}
-              error={errors?.observations?.at(index)?.unit?.message}
+              error={errors?.observations?.[index]?.unit_id?.message}
             />
           </Grid>
-          <Grid item xs="auto" sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <Grid
+            item
+            xs="auto"
+            sx={{ display: "flex", justifyContent: "flex-end" }}
+          >
             <IconButton
               sx={{ ":hover": { color: "red" } }}
               onClick={() => remove(index)}
             >
-              <DeleteIcon />
+              <Delete />
             </IconButton>
           </Grid>
         </>
       )}
     </Grid>
   );
-}
+};
 
 export default function ObservationSelection({
   control,
   errors,
-  watch,
   setValue,
 }: any) {
-  const propertyTypes: any = useGetPropertyTypes();
+  const propertyTypes: UseQueryResult<ObservedPropertyTypeLU[], Error> =
+    useGetPropertyTypes();
 
-  // React hook formarray
   const { fields, append, remove } = useFieldArray({
     control,
     name: "observations",
   });
-
-  function addObservation() {
-    append({
-      time: dayjs().utc(),
-      reading: "",
-      property_type: null,
-      unit: null,
-    });
-  }
 
   return (
     <Box sx={{ mt: 6 }}>
@@ -125,7 +155,6 @@ export default function ObservationSelection({
           return (
             <ObservationRow
               control={control}
-              watch={watch}
               errors={errors}
               remove={remove}
               fieldID={field.id}
@@ -135,7 +164,17 @@ export default function ObservationSelection({
             />
           );
         })}
-        <Button variant="contained" onClick={addObservation}>
+        <Button
+          variant="contained"
+          onClick={() => {
+            append({
+              time: dayjs().utc(),
+              reading: "",
+              property_type_id: null,
+              unit_id: null,
+            });
+          }}
+        >
           {fields.length < 1
             ? "+ Add An Observation"
             : "+ Add Another Observation"}

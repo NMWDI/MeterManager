@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
+import { useQueryClient } from "react-query";
 import {
   Alert,
   Button,
@@ -70,6 +71,8 @@ export const WellDetailsCard = ({
     defaultValues: { location: { latitude: 0, longitude: 0 } },
   });
 
+  const queryClient = useQueryClient();
+
   const authUser = useAuthUser();
   const hasAdminScope = authUser()
     ?.user_role.security_scopes.map(
@@ -81,17 +84,20 @@ export const WellDetailsCard = ({
   const waterSources = useGetWaterSources();
   const wellStatusTypes = useGetWellStatusTypes();
 
-  function onSuccessfulUpdate() {
+  const onSuccessfulUpdate = () => {
     enqueueSnackbar("Successfully Updated Well!", { variant: "success" });
-  }
-  function onSuccessfulCreate() {
+    queryClient.invalidateQueries({ queryKey: ["wells"] });
+  };
+  const onSuccessfulCreate = () => {
     enqueueSnackbar("Successfully Created Well!", { variant: "success" });
+    queryClient.invalidateQueries({ queryKey: ["wells"] });
     reset();
-  }
-  function onSuccessfulMerge() {
+  };
+  const onSuccessfulMerge = () => {
     enqueueSnackbar("Successfully Merged Well!", { variant: "success" });
+    queryClient.invalidateQueries({ queryKey: ["wells"] });
     reset();
-  }
+  };
   const createWell = useCreateWell(onSuccessfulCreate);
   const updateWell = useUpdateWell(onSuccessfulUpdate);
 

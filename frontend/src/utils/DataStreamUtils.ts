@@ -1,5 +1,3 @@
-// import { MonitoredWell } from "../interfaces";
-
 const monitoredWellDataStreamIds: Record<number, number> = {
   1515: 25089,
   1516: 25083,
@@ -24,13 +22,3 @@ export const getDataStreamId = (wellId: number): number | undefined => {
   const datastream_id = monitoredWellDataStreamIds[wellId];
   return datastream_id === -999 ? undefined : datastream_id;
 };
-
-// export const getDataStreamId = (
-//   wells: MonitoredWell[],
-//   wellId: number | undefined,
-// ): number | undefined => {
-//   const wellDetails = wells.find((x) => x.id === wellId);
-//   if (!wellDetails) return undefined;
-//   if (wellDetails.datastream_id === -999) return undefined;
-//   return wellDetails.datastream_id;
-// };

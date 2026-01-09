@@ -28,6 +28,7 @@ def get_use_types(
 ):
     return db.scalars(select(WellUseLU)).all()
 
+
 # Get water sources
 @authenticated_well_router.get(
     "/water_sources",
@@ -39,6 +40,7 @@ def get_water_sources(
     db: Session = Depends(get_db),
 ):
     return db.scalars(select(WaterSources)).all()
+
 
 # Get well status types
 @authenticated_well_router.get(
@@ -86,7 +88,12 @@ def get_wells(
 
     query_statement = (
         select(Wells)
-        .options(joinedload(Wells.location), joinedload(Wells.use_type), joinedload(Wells.meters), joinedload(Wells.well_status))
+        .options(
+            joinedload(Wells.location),
+            joinedload(Wells.use_type),
+            joinedload(Wells.meters),
+            joinedload(Wells.well_status),
+        )
         .join(Locations, isouter=True)
         .join(WellUseLU, isouter=True)
     )
@@ -110,7 +117,6 @@ def get_wells(
             Wells.chloride_group_id == int(chloride_group_id)
         )
 
-
     if sort_by:
         schema_field_name = sort_by_field_to_schema_field(sort_by)
 
@@ -130,9 +136,7 @@ def get_wells(
     response_model=well_schemas.WellResponse,
     tags=["Wells"],
 )
-def update_well(
-    updated_well: well_schemas.WellUpdate, db: Session = Depends(get_db)
-):
+def update_well(updated_well: well_schemas.WellUpdate, db: Session = Depends(get_db)):
     # If present, update location and remove from model
     if updated_well.location:
         _patch(db, Locations, updated_well.location.id, updated_well.location)
@@ -141,29 +145,26 @@ def update_well(
     if updated_well.use_type:
         updated_well.use_type_id = updated_well.use_type.id
 
-
     # If water_source is present, update the id and remove from model
     if updated_well.water_source:
         updated_well.water_source_id = updated_well.water_source.id
 
-
     # If well_status is present, update the id and remove from model
     if updated_well.well_status:
         updated_well.well_status_id = updated_well.well_status.id
-
 
     # Update well
     well_to_patch = _get(db, Wells, updated_well.id)
 
     for k, v in updated_well.model_dump(exclude_unset=True).items():
         # Skip updating relationships
-        if k in ['location', 'use_type', 'water_source', 'well_status']:
+        if k in ["location", "use_type", "water_source", "well_status"]:
             continue
 
         try:
             setattr(well_to_patch, k, v)
         except AttributeError as e:
-            print(f'Attribute: {k}')
+            print(f"Attribute: {k}")
             print(e)
             continue
 
@@ -177,7 +178,11 @@ def update_well(
     updated_well_model = db.scalars(
         select(Wells)
         .where(Wells.id == updated_well.id)
-        .options(joinedload(Wells.use_type), joinedload(Wells.location), joinedload(Wells.meters))
+        .options(
+            joinedload(Wells.use_type),
+            joinedload(Wells.location),
+            joinedload(Wells.meters),
+        )
     ).first()
 
     # Return qualified well model
@@ -192,7 +197,7 @@ def update_well(
 def create_well(new_well: well_schemas.SubmitWellCreate, db: Session = Depends(get_db)):
     # First, commit the new location that was added with the new well
     new_location_model = Locations(
-        #name=new_well.location.name,
+        name=new_well.location.name,
         type_id=2,
         trss=new_well.location.trss,
         latitude=new_well.location.latitude,
@@ -206,7 +211,7 @@ def create_well(new_well: well_schemas.SubmitWellCreate, db: Session = Depends(g
     # Then, commit the well using the location we just created
     try:
         new_well_model = Wells(
-            #name=new_well.name,
+            name=new_well.name,
             use_type_id=new_well.use_type.id,
             location_id=new_location_model.id,
             ra_number=new_well.ra_number,
@@ -256,9 +261,7 @@ def get_wells_locations(
             joinedload(Wells.location),
             joinedload(Wells.use_type),
         )
-        .where(
-            Wells.location_id.isnot(None)
-        )
+        .where(Wells.location_id.isnot(None))
     )
 
     if search_string:
@@ -267,7 +270,7 @@ def get_wells_locations(
                 Wells.name.ilike(f"%{search_string}%"),
                 Wells.ra_number.ilike(f"%{search_string}%"),
                 Wells.owners.ilike(f"%{search_string}%"),
-                Wells.osetag.ilike(f"%{search_string}%")
+                Wells.osetag.ilike(f"%{search_string}%"),
             )
         )
 
@@ -292,18 +295,25 @@ def get_well(well_id: int, db: Session = Depends(get_db)):
         .filter(Wells.id == well_id)
     ).first()
 
+
 @authenticated_well_router.post(
     "/merge_wells",
     dependencies=[Depends(ScopedUser.Admin)],
     tags=["Wells"],
 )
 def merge_well(well: well_schemas.SubmitWellMerge, db: Session = Depends(get_db)):
-    '''
+    """
     Transfers the history of merge well to target well then deletes the merge well
-    '''
-    merge_well = db.scalars(select(Wells).where(Wells.ra_number == well.merge_well)).first()
-    target_well = db.scalars(select(Wells).where(Wells.ra_number == well.target_well)).first()
-    merge_location = db.scalars(select(Locations).where(Locations.id == merge_well.location_id)).first()
+    """
+    merge_well = db.scalars(
+        select(Wells).where(Wells.ra_number == well.merge_well)
+    ).first()
+    target_well = db.scalars(
+        select(Wells).where(Wells.ra_number == well.target_well)
+    ).first()
+    merge_location = db.scalars(
+        select(Locations).where(Locations.id == merge_well.location_id)
+    ).first()
 
     # Transfer history of merge well to target well
     # Change well_id and location_id of Meters table to target well_id and location_id
@@ -313,33 +323,42 @@ def merge_well(well: well_schemas.SubmitWellMerge, db: Session = Depends(get_db)
         WHERE well_id = :merge_well_id
     """)
 
-    db.execute(meters_sql, {
-        'target_well_id': target_well.id,
-        'target_location_id': target_well.location_id,
-        'merge_well_id': merge_well.id
-    })
+    db.execute(
+        meters_sql,
+        {
+            "target_well_id": target_well.id,
+            "target_location_id": target_well.location_id,
+            "merge_well_id": merge_well.id,
+        },
+    )
     # Update meter activities table to target well_id and location_id
     meter_activities_sql = text("""
         UPDATE "MeterActivities"
         SET location_id = :target_location_id
         WHERE location_id = :merge_location_id
     """)
-    db.execute(meter_activities_sql, {
-        'target_well_id': target_well.id,
-        'target_location_id': target_well.location_id,
-        'merge_location_id': merge_well.location_id
-    })
+    db.execute(
+        meter_activities_sql,
+        {
+            "target_well_id": target_well.id,
+            "target_location_id": target_well.location_id,
+            "merge_location_id": merge_well.location_id,
+        },
+    )
     # Update meter observations table to target well_id and location_id
     meter_observations_sql = text("""
         UPDATE "MeterObservations"
         SET location_id = :target_location_id
         WHERE location_id = :merge_location_id
     """)
-    db.execute(meter_observations_sql, {
-        'target_well_id': target_well.id,
-        'target_location_id': target_well.location_id,
-        'merge_location_id': merge_well.location_id
-    })
+    db.execute(
+        meter_observations_sql,
+        {
+            "target_well_id": target_well.id,
+            "target_location_id": target_well.location_id,
+            "merge_location_id": merge_well.location_id,
+        },
+    )
 
     # Delete merge well and location
     db.delete(merge_well)
@@ -348,5 +367,3 @@ def merge_well(well: well_schemas.SubmitWellMerge, db: Session = Depends(get_db)
     db.commit()
 
     return True
-
-

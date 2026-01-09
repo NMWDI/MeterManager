@@ -30,9 +30,8 @@ import {
   DataGrid,
   GridColDef,
   GridValueGetter,
-  GridValueFormatter
+  GridValueFormatter,
 } from "@mui/x-data-grid";
-
 
 interface User {
   full_name: string;
@@ -52,7 +51,7 @@ const schema = yup.object().shape({
     .mixed<Dayjs>()
     .nullable()
     .required("To date is required")
-    .test("is-after", "'To' date must be after 'From'", function(value) {
+    .test("is-after", "'To' date must be after 'From'", function (value) {
       const { from } = this.parent;
       return !from || !value || dayjs(value).isAfter(dayjs(from));
     }),
@@ -69,8 +68,8 @@ const schema = yup.object().shape({
 });
 
 const defaultSchema = {
-  from: dayjs().startOf('month'),
-  to: dayjs().endOf('month'),
+  from: dayjs().startOf("month"),
+  to: dayjs().endOf("month"),
   techicians: [{ ...allTechniciansOption }],
   trss: "",
 };
@@ -166,6 +165,24 @@ export const MaintenanceReportView = () => {
         label: item.meter,
         value: item.count,
       })) ?? []
+    );
+  }, [dataQuery.data]);
+
+  const totalRepairs = useMemo(() => {
+    return (
+      dataQuery.data?.repairs_by_meter?.reduce(
+        (sum: number, item: any) => sum + (item.count ?? 0),
+        0,
+      ) ?? 0
+    );
+  }, [dataQuery.data]);
+
+  const totalPMs = useMemo(() => {
+    return (
+      dataQuery.data?.pms_by_meter?.reduce(
+        (sum: number, item: any) => sum + (item.count ?? 0),
+        0,
+      ) ?? 0
     );
   }, [dataQuery.data]);
 
@@ -297,11 +314,7 @@ export const MaintenanceReportView = () => {
               </Tooltip>
             </Grid>
           </Grid>
-          <Grid
-            container
-            spacing={2}
-            padding={2}
-          >
+          <Grid container spacing={2} padding={2}>
             <Grid item xs={12} sm={6} md={3}>
               <ControlledDatepicker
                 sx={{ width: "100%" }}
@@ -387,7 +400,12 @@ export const MaintenanceReportView = () => {
             </Grid>
           </Grid>
           <Grid container spacing={2} padding={2}>
-            <Grid item xs={12} md={6} sx={{ display: 'flex', justifyContent: 'center' }}>
+            <Grid
+              item
+              xs={12}
+              md={6}
+              sx={{ display: "flex", justifyContent: "center" }}
+            >
               <Box
                 sx={{
                   width: "100%",
@@ -399,16 +417,18 @@ export const MaintenanceReportView = () => {
                 }}
               >
                 <Typography variant="h5" align="center">
-                  Number of Repairs
-                  {numberOfRepairsPieChartData?.length ? `: ${numberOfRepairsPieChartData?.length}` : null}
+                  Number of Repairs{dataQuery.data ? `: ${totalRepairs}` : ""}
                 </Typography>
                 <PieChart
                   series={[
                     {
                       data: numberOfRepairsPieChartData,
-                      innerRadius: numberOfRepairsPieChartData?.length > 10 ? 0 : 10,
-                      paddingAngle: numberOfRepairsPieChartData?.length > 10 ? 0 : 1,
-                      cornerRadius: numberOfRepairsPieChartData?.length > 10 ? 0 : 10,
+                      innerRadius:
+                        numberOfRepairsPieChartData?.length > 10 ? 0 : 10,
+                      paddingAngle:
+                        numberOfRepairsPieChartData?.length > 10 ? 0 : 1,
+                      cornerRadius:
+                        numberOfRepairsPieChartData?.length > 10 ? 0 : 10,
                     },
                   ]}
                   hideLegend={true}
@@ -419,7 +439,12 @@ export const MaintenanceReportView = () => {
                 />
               </Box>
             </Grid>
-            <Grid item xs={12} md={6} sx={{ display: 'flex', justifyContent: 'center' }}>
+            <Grid
+              item
+              xs={12}
+              md={6}
+              sx={{ display: "flex", justifyContent: "center" }}
+            >
               <Box
                 sx={{
                   width: "100%",
@@ -434,15 +459,18 @@ export const MaintenanceReportView = () => {
 
                 <Typography variant="h5" align="center">
                   Number of Preventative Maintenances
-                  {numberOfPMsPieChartData?.length ? `: ${numberOfPMsPieChartData?.length}` : null}
+                  {dataQuery.data ? `: ${totalPMs}` : ""}
                 </Typography>
                 <PieChart
                   series={[
                     {
                       data: numberOfPMsPieChartData,
-                      innerRadius: numberOfPMsPieChartData?.length > 10 ? 0 : 10,
-                      paddingAngle: numberOfPMsPieChartData?.length > 10 ? 0 : 1,
-                      cornerRadius: numberOfPMsPieChartData?.length > 10 ? 0 : 10,
+                      innerRadius:
+                        numberOfPMsPieChartData?.length > 10 ? 0 : 10,
+                      paddingAngle:
+                        numberOfPMsPieChartData?.length > 10 ? 0 : 1,
+                      cornerRadius:
+                        numberOfPMsPieChartData?.length > 10 ? 0 : 10,
                     },
                   ]}
                   hideLegend={true}

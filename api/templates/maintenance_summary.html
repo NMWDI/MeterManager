@@ -1,84 +1,97 @@
 <html>
+  <head>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 1em;
+      }
 
-<head>
-  <style>
-    body {
-      font-family: sans-serif;
-      padding: 1em;
-    }
+      h2 {
+        margin-top: 2em;
+      }
 
-    h2 {
-      margin-top: 2em;
-    }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1em;
+      }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 1em;
-    }
+      th,
+      td {
+        border: 1px solid #ccc;
+        padding: 6px;
+        text-align: left;
+      }
 
-    th,
-    td {
-      border: 1px solid #ccc;
-      padding: 6px;
-      text-align: left;
-    }
+      th {
+        background-color: #f5f5f5;
+      }
 
-    th {
-      background-color: #f5f5f5;
-    }
+      .chart {
+        margin-top: 2em;
+        text-align: center;
+      }
+    </style>
+  </head>
 
-    .chart {
-      margin-top: 2em;
-      text-align: center;
-    }
-  </style>
-</head>
+  <body>
+    <h1>Maintenance Summary</h1>
+    <p>
+      <strong>From:</strong> {{ from_date }} &nbsp;&nbsp;
+      <strong>To:</strong> {{ to_date }}
+    </p>
 
-<body>
-  <h1>Maintenance Summary</h1>
-  <p>
-    <strong>From:</strong> {{ from_date }} &nbsp;&nbsp;
-    <strong>To:</strong> {{ to_date }}
-  </p>
+    <h2>Totals</h2>
+    <div style="display: flex; gap: 24px; margin-top: 12px">
+      <div
+        style="
+          flex: 1;
+          border: 1px solid #ddd;
+          padding: 12px;
+          border-radius: 6px;
+        "
+      >
+        <div style="font-size: 12px; color: #666">Total Repairs</div>
+        <div style="font-size: 28px; font-weight: 700">{{ total_repairs }}</div>
+      </div>
 
-  {% if repair_chart %}
-  <div class="chart">
-    <h2>Repairs by Meter</h2>
-    <img src="data:image/png;base64,{{ repair_chart }}" />
-  </div>
-  {% endif %}
+      <div
+        style="
+          flex: 1;
+          border: 1px solid #ddd;
+          padding: 12px;
+          border-radius: 6px;
+        "
+      >
+        <div style="font-size: 12px; color: #666">
+          Total Preventative Maintenances
+        </div>
+        <div style="font-size: 28px; font-weight: 700">{{ total_pms }}</div>
+      </div>
+    </div>
 
-  {% if pm_chart %}
-  <div class="chart">
-    <h2>Preventative Maintenance by Meter</h2>
-    <img src="data:image/png;base64,{{ pm_chart }}" />
-  </div>
-  {% endif %}
-
-  <h2>Detailed Activity Table</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>Date / Time</th>
-        <th>Technician</th>
-        <th>Meter</th>
-        <th>Number of Repairs</th>
-        <th>Number of Preventative Maintenances</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for row in table_rows %}
-      <tr>
-        <td>{{ row.date_time }}</td>
-        <td>{{ row.technician }}</td>
-        <td>{{ row.meter }}</td>
-        <td>{{ row.number_of_repairs }}</td>
-        <td>{{ row.number_of_pms }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</body>
-
+    <h2>Detailed Activity Table</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Date / Time</th>
+          <th>Technician</th>
+          <th>Meter</th>
+          <th>Number of Repairs</th>
+          <th>Number of Preventative Maintenances</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in table_rows %}
+        <tr>
+          <td>{{ row.date_time }}</td>
+          <td>{{ row.technician }}</td>
+          <td>{{ row.meter }}</td>
+          <td>{{ row.number_of_repairs }}</td>
+          <td>{{ row.number_of_pms }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </body>
 </html>

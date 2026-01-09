@@ -1,5 +1,6 @@
 from fastapi import Depends, APIRouter, Query, File, UploadFile, Form
 from fastapi.exceptions import HTTPException
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select, text
@@ -23,7 +24,7 @@ from api.models.main_models import (
     MeterStatusLU,
     Users,
     workOrders,
-    workOrderStatusLU
+    workOrderStatusLU,
 )
 from api.session import get_db
 from api.security import get_current_user
@@ -36,12 +37,61 @@ import json
 import os
 
 activity_router = APIRouter()
+public_activity_router = APIRouter()
 
 BUCKET_NAME = os.getenv("GCP_BUCKET_NAME", "")
 PHOTO_PREFIX = os.getenv("GCP_PHOTO_PREFIX", "")
 
 MAX_PHOTOS_PER_REQUEST = 2
 MAX_PHOTOS_PER_METER = 6
+
+
+@public_activity_router.get("/activities/{activity_id}/photos/{photo_file_name}")
+async def get_activity_photo(
+    activity_id: int,
+    photo_file_name: str,
+    db: Session = Depends(get_db),
+):
+    photo = (
+        db.query(MeterActivityPhotos)
+        .filter(
+            MeterActivityPhotos.meter_activity_id == activity_id,
+            MeterActivityPhotos.file_name == photo_file_name,
+        )
+        .first()
+    )
+
+    if not photo:
+        raise HTTPException(status_code=404, detail="Photo not found for this activity")
+
+    try:
+        client = storage.Client()
+        bucket = client.bucket(BUCKET_NAME)
+        blob = bucket.blob(photo.gcs_path)
+
+        # Optional: ensure blob exists (avoids returning empty/500)
+        if not blob.exists(client=client):
+            raise HTTPException(
+                status_code=404, detail="Photo file missing from storage"
+            )
+
+        # Pull content type from GCS metadata (fallback if absent)
+        blob.reload(client=client)
+        content_type = blob.content_type or "application/octet-stream"
+
+        # 3) Stream back to client
+        file_obj = blob.open("rb")  # streaming file-like object
+
+        # Inline display; if you want download behavior change to 'attachment'
+        headers = {"Content-Disposition": f'inline; filename="{photo.file_name}"'}
+
+        return StreamingResponse(file_obj, media_type=content_type, headers=headers)
+
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to retrieve photo")
+
 
 @activity_router.post(
     "/activities",
@@ -64,7 +114,7 @@ async def post_activity(
             raise HTTPException(
                 status_code=400,
                 detail=f"Too many photos uploaded. "
-                       f"Max {MAX_PHOTOS_PER_REQUEST} allowed per request, got {len(photos)}.",
+                f"Max {MAX_PHOTOS_PER_REQUEST} allowed per request, got {len(photos)}.",
             )
 
     try:
@@ -136,7 +186,7 @@ async def post_activity(
         activity_type_id=activity_form.activity_details.activity_type_id,
         location_id=activity_location,
         ose_share=activity_form.activity_details.share_ose,
-        water_users=activity_form.current_installation.water_users
+        water_users=activity_form.current_installation.water_users,
     )
 
     # If a work order is associated with the activity, add it to the activity
@@ -217,36 +267,37 @@ async def post_activity(
     meter_statuses = {status.status_name: status.id for status in meter_statuses}
 
     if update_meter_state:
-        if (activity_type.name == "Uninstall") or (activity_type.name == "Uninstall and Hold"):  # This needs to be a slug
-
+        if (activity_type.name == "Uninstall") or (
+            activity_type.name == "Uninstall and Hold"
+        ):  # This needs to be a slug
             activity_meter.location_id = hq_location.id
             activity_meter.well_id = None
             activity_meter.water_users = None
 
             if activity_type.name == "Uninstall and Hold":
                 # Set status as On Hold
-                activity_meter.status_id = meter_statuses['On Hold']
+                activity_meter.status_id = meter_statuses["On Hold"]
             else:
                 # Set status as Uninstalled
-                activity_meter.status_id = meter_statuses['Warehouse']
+                activity_meter.status_id = meter_statuses["Warehouse"]
 
         if activity_type.name == "Install":
             activity_meter.well_id = activity_well.id
             activity_meter.location_id = activity_location
-            activity_meter.status_id = meter_statuses['Installed']
+            activity_meter.status_id = meter_statuses["Installed"]
             activity_meter.water_users = activity_form.current_installation.water_users
 
         if activity_type.name == "Scrap":
             activity_meter.well_id = None
             activity_meter.location_id = None
-            activity_meter.status_id = meter_statuses['Scrapped']
+            activity_meter.status_id = meter_statuses["Scrapped"]
             activity_meter.water_users = None
             activity_meter.meter_owner = None
 
         if activity_type.name == "Sell":
             activity_meter.well_id = None
             activity_meter.location_id = None
-            activity_meter.status_id = meter_statuses['Sold']
+            activity_meter.status_id = meter_statuses["Sold"]
             activity_meter.water_users = None
             activity_meter.meter_owner = activity_form.current_installation.meter_owner
 
@@ -255,12 +306,15 @@ async def post_activity(
 
         # Make updates to the meter based on user's entry in the current installation section
         if activity_type.name != "Uninstall":
-            activity_meter.contact_name = activity_form.current_installation.contact_name
-            activity_meter.contact_phone = activity_form.current_installation.contact_phone
+            activity_meter.contact_name = (
+                activity_form.current_installation.contact_name
+            )
+            activity_meter.contact_phone = (
+                activity_form.current_installation.contact_phone
+            )
             activity_meter.notes = activity_form.current_installation.notes
 
     db.commit()
-
 
     # ---- Handle photo file uploads ----
     if photos:
@@ -288,7 +342,7 @@ async def post_activity(
 
             photo = MeterActivityPhotos(
                 meter_activity_id=meter_activity.id,
-                file_name=file.filename,
+                file_name=unique_name,
                 gcs_path=blob_path,
             )
             db.add(photo)
@@ -313,25 +367,34 @@ async def post_activity(
                 try:
                     bucket.blob(old_photo.gcs_path).delete()
                 except Exception as e:
-                    print(f"Warning: failed to delete {old_photo.gcs_path} from GCS: {e}")
+                    print(
+                        f"Warning: failed to delete {old_photo.gcs_path} from GCS: {e}"
+                    )
                 db.delete(old_photo)
 
             db.commit()
 
     return meter_activity
 
+
 @activity_router.patch(
-        "/activities",
-        dependencies=[Depends(ScopedUser.Admin)],
-        tags=["Activities"],
+    "/activities",
+    dependencies=[Depends(ScopedUser.Admin)],
+    tags=["Activities"],
 )
-def patch_activity(patch_activity_form: meter_schemas.PatchActivity, db: Session = Depends(get_db)):
-    '''
+def patch_activity(
+    patch_activity_form: meter_schemas.PatchActivity, db: Session = Depends(get_db)
+):
+    """
     Patch an activity.
     All input times should be UTC
-    '''
+    """
     # Get the activity
-    activity = db.scalars(select(MeterActivities).where(MeterActivities.id == patch_activity_form.activity_id)).first()
+    activity = db.scalars(
+        select(MeterActivities).where(
+            MeterActivities.id == patch_activity_form.activity_id
+        )
+    ).first()
 
     # Update the activity
     activity.timestamp_start = patch_activity_form.timestamp_start
@@ -342,7 +405,9 @@ def patch_activity(patch_activity_form: meter_schemas.PatchActivity, db: Session
 
     # When updating location, if location_id is null assume the activity took place at the "Warehouse"
     if patch_activity_form.location_id is None:
-        hq_location = db.scalars(select(Locations).where(Locations.type_id == 1)).first()
+        hq_location = db.scalars(
+            select(Locations).where(Locations.type_id == 1)
+        ).first()
         activity.location_id = hq_location.id
     else:
         activity.location_id = patch_activity_form.location_id
@@ -350,35 +415,56 @@ def patch_activity(patch_activity_form: meter_schemas.PatchActivity, db: Session
     # Update the notes
     # Easiest approach is to just delete existing and then re-add if there are any
     delete_sql = text('DELETE FROM "Notes" WHERE meter_activity_id = :activity_id')
-    db.execute(delete_sql, {'activity_id': patch_activity_form.activity_id})
+    db.execute(delete_sql, {"activity_id": patch_activity_form.activity_id})
 
     if patch_activity_form.note_ids:
-        insert_sql = text('INSERT INTO "Notes" (meter_activity_id, note_type_id) VALUES (:activity_id, :note_id)')
+        insert_sql = text(
+            'INSERT INTO "Notes" (meter_activity_id, note_type_id) VALUES (:activity_id, :note_id)'
+        )
         for note_id in patch_activity_form.note_ids:
-            db.execute(insert_sql, {'activity_id': patch_activity_form.activity_id, 'note_id': note_id})
+            db.execute(
+                insert_sql,
+                {"activity_id": patch_activity_form.activity_id, "note_id": note_id},
+            )
 
     # Update the parts used
     delete_sql = text('DELETE FROM "PartsUsed" WHERE meter_activity_id = :activity_id')
-    db.execute(delete_sql, {'activity_id': patch_activity_form.activity_id})
+    db.execute(delete_sql, {"activity_id": patch_activity_form.activity_id})
 
     if patch_activity_form.part_ids:
-        insert_sql = text('INSERT INTO "PartsUsed" (meter_activity_id, part_id) VALUES (:activity_id, :part_id)')
+        insert_sql = text(
+            'INSERT INTO "PartsUsed" (meter_activity_id, part_id) VALUES (:activity_id, :part_id)'
+        )
         for part_id in patch_activity_form.part_ids:
-            db.execute(insert_sql, {'activity_id': patch_activity_form.activity_id, 'part_id': part_id})
+            db.execute(
+                insert_sql,
+                {"activity_id": patch_activity_form.activity_id, "part_id": part_id},
+            )
 
     # Update the services performed
-    delete_sql = text('DELETE FROM "ServicesPerformed" WHERE meter_activity_id = :activity_id')
-    db.execute(delete_sql, {'activity_id': patch_activity_form.activity_id})
+    delete_sql = text(
+        'DELETE FROM "ServicesPerformed" WHERE meter_activity_id = :activity_id'
+    )
+    db.execute(delete_sql, {"activity_id": patch_activity_form.activity_id})
 
     if patch_activity_form.service_ids:
-        insert_sql = text('INSERT INTO "ServicesPerformed" (meter_activity_id, service_type_id) VALUES (:activity_id, :service_id)')
+        insert_sql = text(
+            'INSERT INTO "ServicesPerformed" (meter_activity_id, service_type_id) VALUES (:activity_id, :service_id)'
+        )
         for service_id in patch_activity_form.service_ids:
-            db.execute(insert_sql, {'activity_id': patch_activity_form.activity_id, 'service_id': service_id})
+            db.execute(
+                insert_sql,
+                {
+                    "activity_id": patch_activity_form.activity_id,
+                    "service_id": service_id,
+                },
+            )
 
     # Commit the changes
     db.commit()
 
-    return {'status': 'success'}
+    return {"status": "success"}
+
 
 @activity_router.delete(
     "/activities",
@@ -386,17 +472,21 @@ def patch_activity(patch_activity_form: meter_schemas.PatchActivity, db: Session
     tags=["Activities"],
 )
 def delete_activity(activity_id: int, db: Session = Depends(get_db)):
-    '''
+    """
     Deletes an activity.
-    '''
+    """
     # Get the activity
-    activity = db.scalars(select(MeterActivities).where(MeterActivities.id == activity_id)).first()
+    activity = db.scalars(
+        select(MeterActivities).where(MeterActivities.id == activity_id)
+    ).first()
 
     if not activity:
         raise HTTPException(status_code=404, detail="Activity not found.")
 
     photos = db.scalars(
-        select(MeterActivityPhotos).where(MeterActivityPhotos.meter_activity_id == activity_id)
+        select(MeterActivityPhotos).where(
+            MeterActivityPhotos.meter_activity_id == activity_id
+        )
     ).all()
 
     storage_client = storage.Client()
@@ -412,41 +502,50 @@ def delete_activity(activity_id: int, db: Session = Depends(get_db)):
 
     # Delete any notes associated with the activity
     sql = text('DELETE FROM "Notes" WHERE meter_activity_id = :activity_id')
-    db.execute(sql, {'activity_id': activity_id})
-            
+    db.execute(sql, {"activity_id": activity_id})
+
     # Delete any services performed associated with the activity
     sql = text('DELETE FROM "ServicesPerformed" WHERE meter_activity_id = :activity_id')
-    db.execute(sql, {'activity_id': activity_id})
+    db.execute(sql, {"activity_id": activity_id})
 
     # Delete any parts used associated with the activity
     sql = text('DELETE FROM "PartsUsed" WHERE meter_activity_id = :activity_id')
-    db.execute(sql, {'activity_id': activity_id})
+    db.execute(sql, {"activity_id": activity_id})
 
     # Delete the activity
     db.delete(activity)
     db.commit()
 
-    return {'status': 'success'}
+    return {"status": "success"}
 
 
 @activity_router.patch(
-        "/observations",
-        dependencies=[Depends(ScopedUser.Admin)],
-        tags=["Activities"],
+    "/observations",
+    dependencies=[Depends(ScopedUser.Admin)],
+    tags=["Activities"],
 )
-def patch_observation(patch_observation_form: meter_schemas.PatchObservation, db: Session = Depends(get_db)):
-    '''
+def patch_observation(
+    patch_observation_form: meter_schemas.PatchObservation,
+    db: Session = Depends(get_db),
+):
+    """
     Patch an observation.
     All input times should be UTC
-    '''
+    """
     # Get the observation
-    observation = db.scalars(select(MeterObservations).where(MeterObservations.id == patch_observation_form.observation_id)).first()
+    observation = db.scalars(
+        select(MeterObservations).where(
+            MeterObservations.id == patch_observation_form.observation_id
+        )
+    ).first()
 
     # Update the observation
     observation.timestamp = patch_observation_form.timestamp
     observation.value = patch_observation_form.value
     observation.notes = patch_observation_form.notes
-    observation.observed_property_type_id = patch_observation_form.observed_property_type_id
+    observation.observed_property_type_id = (
+        patch_observation_form.observed_property_type_id
+    )
     observation.unit_id = patch_observation_form.unit_id
     observation.meter_id = patch_observation_form.meter_id
     observation.submitting_user_id = patch_observation_form.submitting_user_id
@@ -454,14 +553,17 @@ def patch_observation(patch_observation_form: meter_schemas.PatchObservation, db
 
     # When updating location, if location_id is null assume the observation took place at the "Warehouse"
     if patch_observation_form.location_id is None:
-        hq_location = db.scalars(select(Locations).where(Locations.type_id == 1)).first()
+        hq_location = db.scalars(
+            select(Locations).where(Locations.type_id == 1)
+        ).first()
         observation.location_id = hq_location.id
     else:
         observation.location_id = patch_observation_form.location_id
 
     db.commit()
 
-    return {'status': 'success'}
+    return {"status": "success"}
+
 
 @activity_router.delete(
     "/observations",
@@ -469,11 +571,13 @@ def patch_observation(patch_observation_form: meter_schemas.PatchObservation, db
     tags=["Activities"],
 )
 def delete_observation(observation_id: int, db: Session = Depends(get_db)):
-    '''
+    """
     Deletes an observation.
-    '''
+    """
     # Get the observation
-    observation = db.scalars(select(MeterObservations).where(MeterObservations.id == observation_id)).first()
+    observation = db.scalars(
+        select(MeterObservations).where(MeterObservations.id == observation_id)
+    ).first()
 
     # Return error if the observation doesn't exist
     if not observation:
@@ -483,7 +587,8 @@ def delete_observation(observation_id: int, db: Session = Depends(get_db)):
     db.delete(observation)
     db.commit()
 
-    return {'status': 'success'}
+    return {"status": "success"}
+
 
 @activity_router.get(
     "/activity_types",
@@ -566,14 +671,15 @@ def get_service_types(db: Session = Depends(get_db)):
 def get_note_types(db: Session = Depends(get_db)):
     return db.scalars(select(NoteTypeLU)).all()
 
+
 @activity_router.get(
     "/work_orders",
     dependencies=[Depends(ScopedUser.Read)],
     tags=["Work Orders"],
 )
 def get_work_orders(
-    filter_by_status: list[WorkOrderStatus] = Query(['Open']),
-    start_date: datetime = Query(datetime.strptime('2024-06-01', '%Y-%m-%d')),
+    filter_by_status: list[WorkOrderStatus] = Query(["Open"]),
+    start_date: datetime = Query(datetime.strptime("2024-06-01", "%Y-%m-%d")),
     db: Session = Depends(get_db),
 ):
     query_stmt = (
@@ -599,40 +705,47 @@ def get_work_orders(
     # group activities by work_order_id
     activities_by_wo = {}
     for act in relevant_activities:
-        activities_by_wo.setdefault(act.work_order_id, []).append({
-            "id": act.id,
-            "timestamp_start": act.timestamp_start,
-            "timestamp_end": act.timestamp_end,
-            "description": act.description,
-            "submitting_user_id": act.submitting_user_id,
-            "meter_id": act.meter_id,
-            "activity_type_id": act.activity_type_id,
-            "location_id": act.location_id,
-            "location_name": act.location.name if act.location else None,
-            "ose_share": act.ose_share,
-            "water_users": act.water_users,
-        })
+        activities_by_wo.setdefault(act.work_order_id, []).append(
+            {
+                "id": act.id,
+                "timestamp_start": act.timestamp_start,
+                "timestamp_end": act.timestamp_end,
+                "description": act.description,
+                "submitting_user_id": act.submitting_user_id,
+                "meter_id": act.meter_id,
+                "activity_type_id": act.activity_type_id,
+                "location_id": act.location_id,
+                "location_name": act.location.name if act.location else None,
+                "ose_share": act.ose_share,
+                "water_users": act.water_users,
+            }
+        )
 
     # build output
     output = []
     for wo in work_orders:
-        output.append({
-            "work_order_id": wo.id,
-            "ose_request_id": wo.ose_request_id,
-            "date_created": wo.date_created,
-            "creator": wo.creator,
-            "meter_id": wo.meter.id,
-            "meter_serial": wo.meter.serial_number,
-            "title": wo.title,
-            "description": wo.description,
-            "status": wo.status.name,
-            "notes": wo.notes,
-            "assigned_user_id": wo.assigned_user_id,
-            "assigned_user": wo.assigned_user.username if wo.assigned_user else None,
-            "associated_activities": activities_by_wo.get(wo.id, []),
-        })
+        output.append(
+            {
+                "work_order_id": wo.id,
+                "ose_request_id": wo.ose_request_id,
+                "date_created": wo.date_created,
+                "creator": wo.creator,
+                "meter_id": wo.meter.id,
+                "meter_serial": wo.meter.serial_number,
+                "title": wo.title,
+                "description": wo.description,
+                "status": wo.status.name,
+                "notes": wo.notes,
+                "assigned_user_id": wo.assigned_user_id,
+                "assigned_user": wo.assigned_user.username
+                if wo.assigned_user
+                else None,
+                "associated_activities": activities_by_wo.get(wo.id, []),
+            }
+        )
 
     return output
+
 
 # Create work order endpoint
 @activity_router.post(
@@ -641,20 +754,24 @@ def get_work_orders(
     response_model=meter_schemas.WorkOrder,
     tags=["Work Orders"],
 )
-def create_work_order(new_work_order: meter_schemas.CreateWorkOrder, db: Session = Depends(get_db)):
-    '''
+def create_work_order(
+    new_work_order: meter_schemas.CreateWorkOrder, db: Session = Depends(get_db)
+):
+    """
     Create a new work order dated to the current time.
     The only mandatory inputs are the date, meter ID, and the title of the work order.
-    '''
+    """
     # Get status ID Open
-    open_status = db.scalars(select(workOrderStatusLU).where(workOrderStatusLU.name == 'Open')).first()
+    open_status = db.scalars(
+        select(workOrderStatusLU).where(workOrderStatusLU.name == "Open")
+    ).first()
 
     # Create a new work order
     work_order = workOrders(
-        date_created = new_work_order.date_created,
-        meter_id = new_work_order.meter_id,
-        title = new_work_order.title,
-        status_id = open_status.id
+        date_created=new_work_order.date_created,
+        meter_id=new_work_order.meter_id,
+        title=new_work_order.title,
+        status_id=open_status.id,
     )
 
     # Add optional fields if they exist
@@ -676,81 +793,87 @@ def create_work_order(new_work_order: meter_schemas.CreateWorkOrder, db: Session
         db.commit()
     except IntegrityError as _e:
         raise HTTPException(
-            status_code=409,
-            detail="Title empty or already exists for this meter."
+            status_code=409, detail="Title empty or already exists for this meter."
         )
-    
+
     # Create a WorkOrder schema for the updated work order
     work_order_schema = meter_schemas.WorkOrder(
-        work_order_id = work_order.id,
-        date_created = work_order.date_created,
-        creator = work_order.creator,
-        meter_id = work_order.meter.id,
-        meter_serial = work_order.meter.serial_number,
-        title = work_order.title,
-        description = work_order.description,
-        status = work_order.status.name,
-        notes = work_order.notes,
-        assigned_user_id = work_order.assigned_user_id,
-        assigned_user= work_order.assigned_user.username if work_order.assigned_user else None
+        work_order_id=work_order.id,
+        date_created=work_order.date_created,
+        creator=work_order.creator,
+        meter_id=work_order.meter.id,
+        meter_serial=work_order.meter.serial_number,
+        title=work_order.title,
+        description=work_order.description,
+        status=work_order.status.name,
+        notes=work_order.notes,
+        assigned_user_id=work_order.assigned_user_id,
+        assigned_user=work_order.assigned_user.username
+        if work_order.assigned_user
+        else None,
     )
 
     return work_order_schema
 
-    
+
 # Patch work order endpoint
 @activity_router.patch(
     "/work_orders",
     response_model=meter_schemas.WorkOrder,
     tags=["Work Orders"],
 )
-def patch_work_order(patch_work_order_form: meter_schemas.PatchWorkOrder, user: Users = Depends(security.get_current_user), db: Session = Depends(get_db)):
-    '''
+def patch_work_order(
+    patch_work_order_form: meter_schemas.PatchWorkOrder,
+    user: Users = Depends(security.get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
     Patch a work order.
     The input schema limits the fields that can be updated to the title, description, status, notes, and assigned user.
     This is to prevent confusion with other open work orders.
-    '''
+    """
     # Determine if update can be made by Tech
     comparison_work_order = meter_schemas.PatchWorkOrder(
-        work_order_id = patch_work_order_form.work_order_id,
+        work_order_id=patch_work_order_form.work_order_id,
         status=patch_work_order_form.status,
-        notes=patch_work_order_form.notes
+        notes=patch_work_order_form.notes,
     )
 
     if comparison_work_order == patch_work_order_form:
-        update_scope = 'Technician'
+        update_scope = "Technician"
     else:
-        update_scope = 'Admin'
+        update_scope = "Admin"
 
     # Check if the user has the correct permissions to update the work order
-    if user.user_role.name not in [update_scope, 'Admin']:
+    if user.user_role.name not in [update_scope, "Admin"]:
         raise HTTPException(
             status_code=403,
-            detail="User does not have permission to update this work order."
+            detail="User does not have permission to update this work order.",
         )
 
     # Get the work order
     work_order = db.scalars(
         select(workOrders)
-        .options(joinedload(workOrders.status), joinedload(workOrders.meter), joinedload(workOrders.assigned_user))
+        .options(
+            joinedload(workOrders.status),
+            joinedload(workOrders.meter),
+            joinedload(workOrders.assigned_user),
+        )
         .where(workOrders.id == patch_work_order_form.work_order_id)
-        ).first()
-    
+    ).first()
+
     # Ensure the current user is assigned the work order if they are a technician
-    if user.user_role.name == 'Technician':
+    if user.user_role.name == "Technician":
         if work_order.assigned_user_id != user.id:
             raise HTTPException(
                 status_code=403,
-                detail="User does not have permission to update this work order."
+                detail="User does not have permission to update this work order.",
             )
 
     # An empty string for a title will silently fail due to the if statement below. Detect here and return an error to the user.
     if patch_work_order_form.title == "":
-        raise HTTPException(
-            status_code=422,
-            detail="Title cannot be empty."
-        )
-    
+        raise HTTPException(status_code=422, detail="Title cannot be empty.")
+
     # Update the work order if the field exists
     if patch_work_order_form.title:
         work_order.title = patch_work_order_form.title
@@ -758,7 +881,11 @@ def patch_work_order(patch_work_order_form: meter_schemas.PatchWorkOrder, user: 
         work_order.description = patch_work_order_form.description
     if patch_work_order_form.status:
         # Get the status ID of the new status name
-        new_status = db.scalars(select(workOrderStatusLU).where(workOrderStatusLU.name == patch_work_order_form.status)).first()
+        new_status = db.scalars(
+            select(workOrderStatusLU).where(
+                workOrderStatusLU.name == patch_work_order_form.status
+            )
+        ).first()
         work_order.status_id = new_status.id
     if patch_work_order_form.notes:
         work_order.notes = patch_work_order_form.notes
@@ -773,36 +900,46 @@ def patch_work_order(patch_work_order_form: meter_schemas.PatchWorkOrder, user: 
         db.commit()
     except IntegrityError as _e:
         raise HTTPException(
-            status_code=409,
-            detail="Title already exists for this meter."
+            status_code=409, detail="Title already exists for this meter."
         )
-    
+
     # Get the updated work order (needed by the frontend)
     work_order = db.scalars(
         select(workOrders)
-        .options(joinedload(workOrders.status), joinedload(workOrders.meter), joinedload(workOrders.assigned_user))
-        .join(workOrderStatusLU).where(workOrders.id == patch_work_order_form.work_order_id)).first()
-    
+        .options(
+            joinedload(workOrders.status),
+            joinedload(workOrders.meter),
+            joinedload(workOrders.assigned_user),
+        )
+        .join(workOrderStatusLU)
+        .where(workOrders.id == patch_work_order_form.work_order_id)
+    ).first()
+
     # I was unable to get associated_activities to work with joinedload, so I'm doing it manually here
-    associated_activities = db.scalars(select(MeterActivities).where(MeterActivities.work_order_id == work_order.id)).all()
-    
+    associated_activities = db.scalars(
+        select(MeterActivities).where(MeterActivities.work_order_id == work_order.id)
+    ).all()
+
     # Create a WorkOrder schema for the updated work order
     work_order_schema = meter_schemas.WorkOrder(
-        work_order_id = work_order.id,
-        date_created = work_order.date_created,
-        creator = work_order.creator,
-        meter_id = work_order.meter.id,
-        meter_serial = work_order.meter.serial_number,
-        title = work_order.title,
-        description = work_order.description,
-        status = work_order.status.name,
-        notes = work_order.notes,
-        assigned_user_id = work_order.assigned_user_id,
-        assigned_user= work_order.assigned_user.username if work_order.assigned_user else None,
-        associated_activities=list(associated_activities)
+        work_order_id=work_order.id,
+        date_created=work_order.date_created,
+        creator=work_order.creator,
+        meter_id=work_order.meter.id,
+        meter_serial=work_order.meter.serial_number,
+        title=work_order.title,
+        description=work_order.description,
+        status=work_order.status.name,
+        notes=work_order.notes,
+        assigned_user_id=work_order.assigned_user_id,
+        assigned_user=work_order.assigned_user.username
+        if work_order.assigned_user
+        else None,
+        associated_activities=list(associated_activities),
     )
 
     return work_order_schema
+
 
 # Delete work order endpoint
 @activity_router.delete(
@@ -811,11 +948,13 @@ def patch_work_order(patch_work_order_form: meter_schemas.PatchWorkOrder, user: 
     tags=["Work Orders"],
 )
 def delete_work_order(work_order_id: int, db: Session = Depends(get_db)):
-    '''
+    """
     Deletes a work order.
-    '''
+    """
     # Get the work order
-    work_order = db.scalars(select(workOrders).where(workOrders.id == work_order_id)).first()
+    work_order = db.scalars(
+        select(workOrders).where(workOrders.id == work_order_id)
+    ).first()
 
     # Return error if the work order doesn't exist
     if not work_order:
@@ -825,4 +964,4 @@ def delete_work_order(work_order_id: int, db: Session = Depends(get_db)):
     db.delete(work_order)
     db.commit()
 
-    return {'status': 'success'}
+    return {"status": "success"}

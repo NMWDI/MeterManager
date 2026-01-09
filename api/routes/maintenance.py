@@ -8,7 +8,6 @@ from weasyprint import HTML
 from io import BytesIO
 from collections import defaultdict
 from matplotlib.pyplot import figure, close
-from base64 import b64encode
 from api.models.main_models import (
     Users,
     Meters,
@@ -22,6 +21,7 @@ from pathlib import Path
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 import matplotlib
+
 matplotlib.use("Agg")  # Force non-GUI backend
 
 
@@ -29,7 +29,7 @@ TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "templates"
 
 templates = Environment(
     loader=FileSystemLoader(TEMPLATES_DIR),
-    autoescape=select_autoescape(["html", "xml"])
+    autoescape=select_autoescape(["html", "xml"]),
 )
 
 maintenance_router = APIRouter()
@@ -63,7 +63,7 @@ class MaintenanceSummaryResponse(BaseModel):
 )
 def get_maintenance_summary(
     from_date: date = Query(..., description="Start date YYYY-MM-DD"),
-    to_date:   date = Query(..., description="End date YYYY-MM-DD"),
+    to_date: date = Query(..., description="End date YYYY-MM-DD"),
     trss: str = Query(...),
     technicians: List[int] = Query(...),
     db: Session = Depends(get_db),
@@ -85,14 +85,14 @@ def get_maintenance_summary(
             # normalize input (strip spaces)
             trss_str = trss.strip()
             location_ids = [
-                loc_id for (loc_id,) in db.query(Locations.id)
+                loc_id
+                for (loc_id,) in db.query(Locations.id)
                 .filter(Locations.trss.like(f"{trss_str}%"))
                 .all()
             ]
             if location_ids:
-                meter_subq = (
-                    db.query(Meters.id)
-                    .filter(Meters.location_id.in_(location_ids))
+                meter_subq = db.query(Meters.id).filter(
+                    Meters.location_id.in_(location_ids)
                 )
                 matching_meter_ids = [m_id for (m_id,) in meter_subq.all()]
         except Exception:
@@ -104,23 +104,18 @@ def get_maintenance_summary(
             Users.full_name.label("technician"),
             Meters.serial_number.label("meter"),
             ActivityTypeLU.name.label("activity_type"),
-            Locations.trss.label("trss")
+            Locations.trss.label("trss"),
         )
         .join(Users, Users.id == MeterActivities.submitting_user_id)
         .join(Meters, Meters.id == MeterActivities.meter_id)
-        .join(
-              ActivityTypeLU,
-              ActivityTypeLU.id == MeterActivities.activity_type_id
-        )
+        .join(ActivityTypeLU, ActivityTypeLU.id == MeterActivities.activity_type_id)
         .join(Locations, Locations.id == Meters.location_id, isouter=True)
         .filter(MeterActivities.timestamp_start >= start_dt)
         .filter(MeterActivities.timestamp_start <= end_dt)
     )
 
     if filter_techs:
-        query = query.filter(
-            MeterActivities.submitting_user_id.in_(technicians)
-        )
+        query = query.filter(MeterActivities.submitting_user_id.in_(technicians))
 
     if matching_meter_ids is not None:
         if not matching_meter_ids:
@@ -137,33 +132,42 @@ def get_maintenance_summary(
     pms_by_meter = defaultdict(int)
     grouped_rows = defaultdict(lambda: {"number_of_repairs": 0, "number_of_pms": 0})
 
+    total_repairs = 0
+    total_pms = 0
+
     for row in base_query:
         key = (row.date_time, row.technician, row.meter, row.trss)
         if row.activity_type == "Repair":
             repairs_by_meter[row.meter] += 1
             grouped_rows[key]["number_of_repairs"] += 1
+            total_repairs += 1
         elif row.activity_type == "Preventative Maintenance":
             pms_by_meter[row.meter] += 1
             grouped_rows[key]["number_of_pms"] += 1
+            total_pms += 1
 
     repairs_result = [{"meter": m, "count": c} for m, c in repairs_by_meter.items()]
-    pms_result     = [{"meter": m, "count": c} for m, c in pms_by_meter.items()]
+    pms_result = [{"meter": m, "count": c} for m, c in pms_by_meter.items()]
 
     table_rows = []
     for (date_time, technician, meter, trss_val), counts in grouped_rows.items():
-        table_rows.append({
-            "date_time": date_time,
-            "technician": technician,
-            "meter": meter,
-            "trss": trss_val or "",
-            "number_of_repairs": counts["number_of_repairs"],
-            "number_of_pms": counts["number_of_pms"],
-        })
+        table_rows.append(
+            {
+                "date_time": date_time,
+                "technician": technician,
+                "meter": meter,
+                "trss": trss_val or "",
+                "number_of_repairs": counts["number_of_repairs"],
+                "number_of_pms": counts["number_of_pms"],
+            }
+        )
 
     return {
         "repairs_by_meter": repairs_result,
         "pms_by_meter": pms_result,
         "table_rows": table_rows,
+        "total_repairs": total_repairs,
+        "total_pms": total_pms,
     }
 
 
@@ -174,7 +178,7 @@ def get_maintenance_summary(
 )
 def download_maintenance_summary_pdf(
     from_date: date = Query(..., description="Start date YYYY-MM-DD"),
-    to_date:   date = Query(..., description="End date YYYY-MM-DD"),
+    to_date: date = Query(..., description="End date YYYY-MM-DD"),
     trss: str = Query(...),
     technicians: List[int] = Query(...),
     db: Session = Depends(get_db),
@@ -192,39 +196,15 @@ def download_maintenance_summary_pdf(
         db=db,
     )
 
-    # Make pie charts as base64 PNGs
-    def make_pie_chart(data: dict, title: str):
-        if not data:
-            return ""
-        fig = figure(figsize=(5, 5))
-        ax = fig.add_subplot(111)
-        ax.pie(
-            data.values(),
-            labels=data.keys(),
-            autopct="%1.1f%%",
-            startangle=140,
-        )
-        ax.set_title(title)
-        buf = BytesIO()
-        fig.savefig(buf, format="png", bbox_inches="tight")
-        close(fig)
-        return b64encode(buf.getvalue()).decode("utf-8")
-
-    repair_chart_b64 = make_pie_chart(
-        {r["meter"]: r["count"] for r in summary["repairs_by_meter"]},
-        "Repairs by Meter"
-    )
-    pm_chart_b64 = make_pie_chart(
-        {p["meter"]: p["count"] for p in summary["pms_by_meter"]},
-        "Preventative Maintenances by Meter"
-    )
+    total_repairs = summary["total_repairs"]
+    total_pms = summary["total_pms"]
 
     template = templates.get_template("maintenance_summary.html")
     html = template.render(
         from_date=from_date,
         to_date=to_date,
-        repair_chart=repair_chart_b64,
-        pm_chart=pm_chart_b64,
+        total_repairs=total_repairs,
+        total_pms=total_pms,
         table_rows=summary["table_rows"],
     )
 
