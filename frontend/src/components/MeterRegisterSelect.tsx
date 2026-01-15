@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useGetMeterRegisterList } from "../service/ApiServiceNew";
 import {
   FormControl,
@@ -35,23 +35,17 @@ export default function MeterRegisterSelect({
   helperText?: string;
 }) {
   const meterRegisterList = useGetMeterRegisterList();
-  const [filteredRegisterList, setFilteredRegisterList] = useState<
-    MeterRegister[] | undefined
-  >([]);
 
   //Filter the register list based on the meter type
-  useEffect(() => {
-    if (meterType) {
-      setFilteredRegisterList(
-        meterRegisterList.data?.filter(
-          (register: MeterRegister) =>
-            register.meter_size == meterType.size &&
-            register.brand.toLowerCase() == meterType.brand?.toLowerCase(),
-        ),
-      );
-    } else {
-      setFilteredRegisterList(meterRegisterList.data);
-    }
+  const filteredRegisterList = useMemo<MeterRegister[]>(() => {
+    if (!meterType || meterTypeIsUnknown(meterType))
+      return meterRegisterList.data ?? [];
+
+    return (meterRegisterList.data ?? []).filter(
+      (r: MeterRegister) =>
+        r.meter_size == meterType.size &&
+        r.brand.toLowerCase() == meterType.brand?.toLowerCase(),
+    );
   }, [meterType, meterRegisterList.data]);
 
   //Check if the selected register is in the filtered list, if not, set it to null
@@ -103,3 +97,30 @@ export default function MeterRegisterSelect({
     </FormControl>
   );
 }
+
+const meterTypeLabel = (
+  meterType?: MeterType | string | null,
+): string | null => {
+  if (!meterType) return null;
+
+  // If some code path passes a raw string
+  if (typeof meterType === "string") {
+    const s = meterType.trim();
+    return s.length ? s : null;
+  }
+
+  // Prefer description (often includes "Unknown")
+  const desc = meterType.description?.trim();
+  if (desc) return desc;
+
+  // Fall back to the same style you show in the select
+  const brand = meterType.brand?.trim() ?? "";
+  const model = meterType.model?.trim() ?? "";
+  const series = meterType.series?.trim() ?? "";
+
+  const label = [brand, series, model].filter(Boolean).join(" - ").trim();
+  return label.length ? label : null;
+};
+
+const meterTypeIsUnknown = (meterType?: MeterType | string | null): boolean =>
+  (meterTypeLabel(meterType) ?? "").toLowerCase().includes("unknown");

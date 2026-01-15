@@ -34,9 +34,7 @@ import { CustomCardHeader } from "../../components/CustomCardHeader";
 
 const MeterResolverSchema: Yup.ObjectSchema<any> = Yup.object().shape({
   serial_number: Yup.string().required("Please enter a serial number."),
-  price: Yup.number()
-    .nullable()
-    .min(0, "Price cannot be negative"),
+  price: Yup.number().nullable().min(0, "Price cannot be negative"),
   meter_type: Yup.object().required("Please select a meter type."),
   meter_register: Yup.object().required("Please select a meter register."),
 });
@@ -184,7 +182,9 @@ export const MeterDetailsFields = ({
               type="number"
               inputProps={{ step: "0.01" }}
               InputProps={{
-                startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                startAdornment: (
+                  <InputAdornment position="start">$</InputAdornment>
+                ),
               }}
             />
           </Grid>
@@ -221,9 +221,9 @@ export const MeterDetailsFields = ({
                       {watch("well")?.location?.latitude == null
                         ? "--"
                         : formatLatLong(
-                          watch("well")?.location?.latitude,
-                          watch("well")?.location?.longitude,
-                        )}
+                            watch("well")?.location?.latitude,
+                            watch("well")?.location?.longitude,
+                          )}
                     </TableCell>
                     <TableCell sx={{ fontSize: "1rem" }}>
                       {watch("well")?.osetag == null
