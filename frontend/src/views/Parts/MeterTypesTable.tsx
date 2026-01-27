@@ -10,14 +10,15 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { Search } from "@mui/icons-material";
-import { useGetMeterTypeList } from "../../service/ApiServiceNew";
-import AddIcon from "@mui/icons-material/Add";
-import FormatListBulletedOutlinedIcon from "@mui/icons-material/FormatListBulletedOutlined";
-import { MeterTypeLU } from "../../interfaces";
-import TristateToggle from "../../components/TristateToggle";
-import GridFooterWithButton from "../../components/GridFooterWithButton";
-import { IsTrueChip, CustomCardHeader } from "../../components";
+import { Search, Add, FormatListBulletedOutlined } from "@mui/icons-material";
+import { useGetMeterTypeList } from "@/service/ApiServiceNew";
+import { MeterTypeLU } from "@/interfaces";
+import {
+  CustomCardHeader,
+  GridFooterWithButton,
+  IsTrueChip,
+  TristateToggle,
+} from "@/components";
 
 export const MeterTypesTable = ({
   setSelectedMeterType,
@@ -44,7 +45,7 @@ export const MeterTypesTable = ({
     {
       field: "in_use",
       headerName: "In Use",
-      renderCell: (params: any) => <IsTrueChip assert={params.value == true} />
+      renderCell: (params: any) => <IsTrueChip assert={params.value == true} />,
     },
   ];
 
@@ -69,18 +70,28 @@ export const MeterTypesTable = ({
     <Card>
       <CustomCardHeader
         title="All Meter Types"
-        icon={FormatListBulletedOutlinedIcon}
+        icon={FormatListBulletedOutlined}
       />
       <CardContent>
         <Grid container spacing={2}>
-          <Grid item xs={6} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
+          <Grid
+            item
+            xs={6}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "flex-start",
+            }}
+          >
             <TextField
-              sx={{ m: 0, width: '100%', maxWidth: '75rem' }}
+              sx={{ m: 0, width: "100%", maxWidth: "75rem" }}
               placeholder="Search Meter Types..."
               variant="outlined"
               size="small"
               value={meterTypeSearchQuery}
-              onChange={(event: any) => setMeterTypeSearchQuery(event.target.value)}
+              onChange={(event: any) =>
+                setMeterTypeSearchQuery(event.target.value)
+              }
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -90,8 +101,18 @@ export const MeterTypesTable = ({
               }}
             />
           </Grid>
-          <Grid item xs={6} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-            <Typography variant="body1" style={{ display: "inline" }}>Choose Filters: </Typography>
+          <Grid
+            item
+            xs={6}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "flex-end",
+            }}
+          >
+            <Typography variant="body1" style={{ display: "inline" }}>
+              Choose Filters:{" "}
+            </Typography>
             <TristateToggle
               label="In Use"
               onToggle={(state: boolean | undefined) => setInUseFilter(state)}
@@ -115,17 +136,20 @@ export const MeterTypesTable = ({
                   <Stack
                     direction={{ xs: "column", sm: "row" }}
                     spacing={1}
-                    sx={{ ml: { xs: 0, sm: 1 }, mt: { xs: 1, sm: 0 }, width: "100%" }}
+                    sx={{
+                      ml: { xs: 0, sm: 1 },
+                      mt: { xs: 1, sm: 0 },
+                      width: "100%",
+                    }}
                     alignItems={{ xs: "stretch", sm: "center" }}
                   >
                     <Button
                       variant="contained"
                       size="small"
-
                       onClick={() => setMeterTypeAddMode(true)}
                       sx={{ flexShrink: 0, width: { xs: "100%", sm: "auto" } }}
                     >
-                      <AddIcon fontSize="small" sx={{ mr: 0.5 }} />
+                      <Add fontSize="small" sx={{ mr: 0.5 }} />
                       Create
                     </Button>
                   </Stack>
@@ -136,6 +160,6 @@ export const MeterTypesTable = ({
           />
         </Grid>
       </CardContent>
-    </Card >
+    </Card>
   );
 };

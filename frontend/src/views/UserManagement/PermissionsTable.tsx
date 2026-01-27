@@ -1,13 +1,18 @@
 import { useEffect, useState } from "react";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
-import { Button, Card, CardContent, Grid, InputAdornment, TextField, Tooltip } from "@mui/material";
-import { useGetSecurityScopes } from "../../service/ApiServiceNew";
-import AddIcon from "@mui/icons-material/Add";
-import { Search } from "@mui/icons-material";
-import FormatListBulletedOutlinedIcon from "@mui/icons-material/FormatListBulletedOutlined";
-import { SecurityScope } from "../../interfaces";
-import GridFooterWithButton from "../../components/GridFooterWithButton";
-import { CustomCardHeader } from "../../components/CustomCardHeader";
+import {
+  Button,
+  Card,
+  CardContent,
+  Grid,
+  InputAdornment,
+  TextField,
+  Tooltip,
+} from "@mui/material";
+import { Search, Add, FormatListBulletedOutlined } from "@mui/icons-material";
+import { useGetSecurityScopes } from "@/service/ApiServiceNew";
+import { SecurityScope } from "@/interfaces";
+import { CustomCardHeader, GridFooterWithButton } from "@/components";
 
 export const PermissionsTable = () => {
   const securityScopesList = useGetSecurityScopes();
@@ -36,17 +41,27 @@ export const PermissionsTable = () => {
     <Card>
       <CustomCardHeader
         title="All Permissions"
-        icon={FormatListBulletedOutlinedIcon}
+        icon={FormatListBulletedOutlined}
       />
       <CardContent>
         <Grid container spacing={2}>
-          <Grid item xs={6} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
+          <Grid
+            item
+            xs={6}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "flex-start",
+            }}
+          >
             <TextField
-              sx={{ m: 0, width: '100%', maxWidth: '75rem' }}
+              sx={{ m: 0, width: "100%", maxWidth: "75rem" }}
               placeholder="Search Permissions..."
               variant="outlined"
               size="small"
-              onChange={(event: any) => setPermissionSearchQuery(event.target.value)}
+              onChange={(event: any) =>
+                setPermissionSearchQuery(event.target.value)
+              }
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -73,9 +88,12 @@ export const PermissionsTable = () => {
                           disabled
                           variant="contained"
                           size="small"
-                          sx={{ flexShrink: 0, width: { xs: "100%", sm: "auto" } }}
+                          sx={{
+                            flexShrink: 0,
+                            width: { xs: "100%", sm: "auto" },
+                          }}
                         >
-                          <AddIcon fontSize="small" sx={{ mr: 0.5 }} />
+                          <Add fontSize="small" sx={{ mr: 0.5 }} />
                           Create
                         </Button>
                       </span>

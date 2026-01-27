@@ -1,7 +1,7 @@
 import { Chip } from "@mui/material";
 import { useEffect, useState } from "react";
 
-export default function TristateToggle({ label, onToggle }: any) {
+export const TristateToggle = ({ label, onToggle }: any) => {
   const [toggleState, setToggleState] = useState<boolean>();
 
   useEffect(() => {
@@ -41,4 +41,4 @@ export default function TristateToggle({ label, onToggle }: any) {
       onClick={() => setToggleState(!toggleState)}
     />
   );
-}
+};

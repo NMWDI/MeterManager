@@ -10,28 +10,19 @@ import {
   GridRowId,
   GridFilterItem,
 } from "@mui/x-data-grid";
+import { useAuthUser } from "react-auth-kit";
+import { Link, createSearchParams } from "react-router-dom";
 import {
   useGetWorkOrders,
   useUpdateWorkOrder,
   useGetUserList,
   useDeleteWorkOrder,
   useCreateWorkOrder,
-} from "../../service/ApiServiceNew";
-import { WorkOrderStatus } from "../../enums";
-import {
-  Box,
-  Button,
-  IconButton,
-  Stack,
-} from "@mui/material";
-import GridFooterWithButton from "../../components/GridFooterWithButton";
-import {
-  MeterActivity,
-  NewWorkOrder,
-  SecurityScope,
-} from "../../interfaces";
-import { useAuthUser } from "react-auth-kit";
-import { Link, createSearchParams } from "react-router-dom";
+} from "@/service/ApiServiceNew";
+import { WorkOrderStatus } from "@/enums";
+import { Box, Button, IconButton, Stack } from "@mui/material";
+import { GridFooterWithButton } from "@/components";
+import { MeterActivity, NewWorkOrder, SecurityScope } from "@/interfaces";
 import { DeleteWorkOrder } from "./DeleteWorkOrder";
 import { NewWorkOrderModal } from "./NewWorkOrderModal";
 
@@ -148,7 +139,7 @@ export default function WorkOrdersTable() {
       field: "work_order_id",
       headerName: "ID",
       flex: 1,
-      minWidth: 50
+      minWidth: 50,
     },
     {
       field: "date_created",
@@ -314,7 +305,7 @@ export default function WorkOrdersTable() {
   ];
 
   return (
-    <Box sx={{ height: 700, width: "100%", overflowX: 'auto' }}>
+    <Box sx={{ height: 700, width: "100%", overflowX: "auto" }}>
       <DataGrid
         rows={workOrderList.data ?? []}
         getRowHeight={() => "auto"}
@@ -341,7 +332,11 @@ export default function WorkOrdersTable() {
               <Stack
                 direction={{ xs: "column", sm: "row" }}
                 spacing={1}
-                sx={{ ml: { xs: 0, sm: 1 }, mt: { xs: 1, sm: 0 }, width: "100%" }}
+                sx={{
+                  ml: { xs: 0, sm: 1 },
+                  mt: { xs: 1, sm: 0 },
+                  width: "100%",
+                }}
                 alignItems={{ xs: "stretch", sm: "center" }}
               >
                 <Button

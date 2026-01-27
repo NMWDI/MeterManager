@@ -2,16 +2,12 @@ import { useState, useEffect } from "react";
 import { useDebounce } from "use-debounce";
 import { Box, Button, Stack } from "@mui/material";
 import { DataGrid, GridSortModel, GridColDef } from "@mui/x-data-grid";
-import AddIcon from "@mui/icons-material/Add";
-import { MeterListQueryParams, SecurityScope } from "../../../interfaces";
-import {
-  SortDirection,
-  MeterSortByField,
-  MeterStatusNames,
-} from "../../../enums";
-import { useGetMeterList } from "../../../service/ApiServiceNew";
-import GridFooterWithButton from "../../../components/GridFooterWithButton";
+import { Add } from "@mui/icons-material";
 import { useAuthUser } from "react-auth-kit";
+import { MeterListQueryParams, SecurityScope } from "@/interfaces";
+import { SortDirection, MeterSortByField, MeterStatusNames } from "@/enums";
+import { useGetMeterList } from "@/service/ApiServiceNew";
+import { GridFooterWithButton } from "@/components";
 
 interface MeterSelectionTableProps {
   onMeterSelection: Function;
@@ -131,7 +127,11 @@ export const MeterSelectionTable = ({
               <Stack
                 direction={{ xs: "column", sm: "row" }}
                 spacing={1}
-                sx={{ ml: { xs: 0, sm: 1 }, mt: { xs: 1, sm: 0 }, width: "100%" }}
+                sx={{
+                  ml: { xs: 0, sm: 1 },
+                  mt: { xs: 1, sm: 0 },
+                  width: "100%",
+                }}
                 alignItems={{ xs: "stretch", sm: "center" }}
               >
                 <Button
@@ -140,7 +140,7 @@ export const MeterSelectionTable = ({
                   onClick={() => setMeterAddMode(true)}
                   sx={{ flexShrink: 0, width: { xs: "100%", sm: "auto" } }}
                 >
-                  <AddIcon fontSize="small" sx={{ mr: 0.5 }} />
+                  <Add fontSize="small" sx={{ mr: 0.5 }} />
                   Create
                 </Button>
               </Stack>

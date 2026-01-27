@@ -1,20 +1,19 @@
-import { Box, Button, Stack } from "@mui/material";
+import { useEffect, useState, ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { DataGrid, GridColDef, GridSortModel } from "@mui/x-data-grid";
-import React, { useEffect, useState } from "react";
 import { useDebounce } from "use-debounce";
-import { SecurityScope } from "../../interfaces";
-import { useGetWells } from "../../service/ApiServiceNew";
 import { useAuthUser } from "react-auth-kit";
-import { SortDirection, WellSortByField } from "../../enums";
-import { Well, WellListQueryParams } from "../../interfaces";
-import GridFooterWithButton from "../../components/GridFooterWithButton";
-import AddIcon from "@mui/icons-material/Add";
+import { Box, Button, Stack } from "@mui/material";
+import { Add } from "@mui/icons-material";
+import { SecurityScope, Well, WellListQueryParams } from "@/interfaces";
+import { useGetWells } from "@/service/ApiServiceNew";
+import { SortDirection, WellSortByField } from "@/enums";
+import { GridFooterWithButton } from "@/components";
 
 //This is needed for typescript to recognize the slotProps... see https://v6.mui.com/x/react-data-grid/components/#custom-slot-props-with-typescript
 declare module "@mui/x-data-grid" {
   interface FooterPropsOverrides {
-    button: React.ReactNode;
+    button: ReactNode;
   }
 }
 
@@ -92,7 +91,12 @@ export default function WellSelectionTable({
         const meters = params.value as Well["meters"];
         const links = meters.map((meter, index) => (
           <span key={meter.id}>
-            <Link to={{ pathname: "/manage/meters", search: `?meter_id=${meter.id}` }}>
+            <Link
+              to={{
+                pathname: "/manage/meters",
+                search: `?meter_id=${meter.id}`,
+              }}
+            >
               {meter.serial_number}
             </Link>
             {index < params.value.length - 1 ? ", " : ""}
@@ -152,7 +156,11 @@ export default function WellSelectionTable({
               <Stack
                 direction={{ xs: "column", sm: "row" }}
                 spacing={1}
-                sx={{ ml: { xs: 0, sm: 1 }, mt: { xs: 1, sm: 0 }, width: "100%" }}
+                sx={{
+                  ml: { xs: 0, sm: 1 },
+                  mt: { xs: 1, sm: 0 },
+                  width: "100%",
+                }}
                 alignItems={{ xs: "stretch", sm: "center" }}
               >
                 <Button
@@ -161,7 +169,7 @@ export default function WellSelectionTable({
                   onClick={() => setWellAddMode(true)}
                   sx={{ flexShrink: 0, width: { xs: "100%", sm: "auto" } }}
                 >
-                  <AddIcon fontSize="small" sx={{ mr: 0.5 }} />
+                  <Add fontSize="small" sx={{ mr: 0.5 }} />
                   Create
                 </Button>
               </Stack>

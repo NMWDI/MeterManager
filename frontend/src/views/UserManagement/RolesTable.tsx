@@ -9,13 +9,10 @@ import {
   InputAdornment,
   TextField,
 } from "@mui/material";
-import { Search } from "@mui/icons-material";
-import { useGetRoles } from "../../service/ApiServiceNew";
-import AddIcon from "@mui/icons-material/Add";
-import FormatListBulletedOutlinedIcon from "@mui/icons-material/FormatListBulletedOutlined";
-import { UserRole } from "../../interfaces";
-import GridFooterWithButton from "../../components/GridFooterWithButton";
-import { CustomCardHeader } from "../../components/CustomCardHeader";
+import { Search, Add, FormatListBulletedOutlined } from "@mui/icons-material";
+import { useGetRoles } from "@/service/ApiServiceNew";
+import { UserRole } from "@/interfaces";
+import { CustomCardHeader, GridFooterWithButton } from "@/components";
 
 export const RolesTable = ({
   setSelectedRole,
@@ -67,15 +64,20 @@ export const RolesTable = ({
 
   return (
     <Card>
-      <CustomCardHeader
-        title="All Roles"
-        icon={FormatListBulletedOutlinedIcon}
-      />
+      <CustomCardHeader title="All Roles" icon={FormatListBulletedOutlined} />
       <CardContent>
         <Grid container spacing={2}>
-          <Grid item xs={6} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
+          <Grid
+            item
+            xs={6}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "flex-start",
+            }}
+          >
             <TextField
-              sx={{ m: 0, width: '100%', maxWidth: '75rem' }}
+              sx={{ m: 0, width: "100%", maxWidth: "75rem" }}
               placeholder="Search Roles..."
               variant="outlined"
               size="small"
@@ -114,7 +116,7 @@ export const RolesTable = ({
                       onClick={() => setRoleAddMode(true)}
                       sx={{ flexShrink: 0, width: { xs: "100%", sm: "auto" } }}
                     >
-                      <AddIcon fontSize="small" sx={{ mr: 0.5 }} />
+                      <Add fontSize="small" sx={{ mr: 0.5 }} />
                       Create
                     </Button>
                   ),

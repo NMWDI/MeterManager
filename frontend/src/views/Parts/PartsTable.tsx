@@ -10,15 +10,20 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { Search } from "@mui/icons-material";
-import FormatListBulletedOutlinedIcon from "@mui/icons-material/FormatListBulletedOutlined";
-import { useGetParts } from "../../service/ApiServiceNew";
-import AddIcon from "@mui/icons-material/Add";
-import { Part } from "../../interfaces";
-import TristateToggle from "../../components/TristateToggle";
-import GridFooterWithButton from "../../components/GridFooterWithButton";
-import { CustomCardHeader } from "../../components/CustomCardHeader";
-import { IsTrueChip } from "../../components";
+import {
+  PlusOne,
+  Search,
+  Add,
+  FormatListBulletedOutlined,
+} from "@mui/icons-material";
+import { useGetParts } from "@/service/ApiServiceNew";
+import { Part } from "@/interfaces";
+import {
+  CustomCardHeader,
+  GridFooterWithButton,
+  IsTrueChip,
+  TristateToggle,
+} from "@/components";
 
 export const PartsTable = ({
   setSelectedPartID,
@@ -46,12 +51,12 @@ export const PartsTable = ({
     {
       field: "in_use",
       headerName: "In Use",
-      renderCell: (params: any) => <IsTrueChip assert={params.value == true} />
+      renderCell: (params: any) => <IsTrueChip assert={params.value == true} />,
     },
     {
       field: "commonly_used",
       headerName: "Commonly Used",
-      renderCell: (params: any) => <IsTrueChip assert={params.value == true} />
+      renderCell: (params: any) => <IsTrueChip assert={params.value == true} />,
     },
   ];
 
@@ -76,15 +81,20 @@ export const PartsTable = ({
 
   return (
     <Card>
-      <CustomCardHeader
-        title="All Parts"
-        icon={FormatListBulletedOutlinedIcon}
-      />
+      <CustomCardHeader title="All Parts" icon={FormatListBulletedOutlined} />
       <CardContent>
         <Grid container spacing={2}>
-          <Grid item xs={6} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
+          <Grid
+            item
+            xs={6}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "flex-start",
+            }}
+          >
             <TextField
-              sx={{ m: 0, width: '100%', maxWidth: '75rem' }}
+              sx={{ m: 0, width: "100%", maxWidth: "75rem" }}
               placeholder="Search Parts..."
               variant="outlined"
               size="small"
@@ -99,8 +109,18 @@ export const PartsTable = ({
               }}
             />
           </Grid>
-          <Grid item xs={6} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-            <Typography variant="body1" style={{ display: "inline" }}>Choose Filters: </Typography>
+          <Grid
+            item
+            xs={6}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "flex-end",
+            }}
+          >
+            <Typography variant="body1" style={{ display: "inline" }}>
+              Choose Filters:{" "}
+            </Typography>
             <TristateToggle
               label="In Use"
               onToggle={(state: boolean | undefined) => setInUseFilter(state)}
@@ -129,17 +149,37 @@ export const PartsTable = ({
                     <Stack
                       direction={{ xs: "column", sm: "row" }}
                       spacing={1}
-                      sx={{ ml: { xs: 0, sm: 1 }, mt: { xs: 1, sm: 0 }, width: "100%" }}
+                      sx={{
+                        ml: { xs: 0, sm: 1 },
+                        mt: { xs: 1, sm: 0 },
+                        width: "100%",
+                      }}
                       alignItems={{ xs: "stretch", sm: "center" }}
                     >
                       <Button
                         variant="contained"
                         size="small"
                         onClick={() => setPartAddMode(true)}
-                        sx={{ flexShrink: 0, width: { xs: "100%", sm: "auto" } }}
+                        sx={{
+                          flexShrink: 0,
+                          width: { xs: "100%", sm: "auto" },
+                        }}
                       >
-                        <AddIcon fontSize="small" sx={{ mr: 0.5 }} />
+                        <Add fontSize="small" sx={{ mr: 0.5 }} />
                         Create
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        color="secondary"
+                        size="small"
+                        onClick={() => setPartAddMode(true)}
+                        sx={{
+                          flexShrink: 0,
+                          width: { xs: "100%", sm: "auto" },
+                        }}
+                      >
+                        <PlusOne fontSize="small" sx={{ mr: 0.5 }} />
+                        Increase Quantity
                       </Button>
                     </Stack>
                   ),

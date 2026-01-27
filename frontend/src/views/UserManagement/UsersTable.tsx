@@ -9,14 +9,16 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { Search } from "@mui/icons-material";
-import { useGetUserAdminList } from "../../service/ApiServiceNew";
-import AddIcon from "@mui/icons-material/Add";
-import FormatListBulletedOutlinedIcon from "@mui/icons-material/FormatListBulletedOutlined";
-import { User } from "../../interfaces";
-import TristateToggle from "../../components/TristateToggle";
-import GridFooterWithButton from "../../components/GridFooterWithButton";
-import { RoleChip, CustomCardHeader, IsTrueChip } from "../../components";
+import { Search, Add, FormatListBulletedOutlined } from "@mui/icons-material";
+import { useGetUserAdminList } from "@/service/ApiServiceNew";
+import { User } from "@/interfaces";
+import {
+  CustomCardHeader,
+  GridFooterWithButton,
+  IsTrueChip,
+  RoleChip,
+  TristateToggle,
+} from "@/components";
 
 export const UsersTable = ({
   setSelectedUser,
@@ -38,7 +40,7 @@ export const UsersTable = ({
       headerName: "Role",
       width: 125,
       valueGetter: (_, row) => row.user_role.name,
-      renderCell: (params: any) => <RoleChip role={params.value} />
+      renderCell: (params: any) => <RoleChip role={params.value} />,
     },
     { field: "email", headerName: "Email", width: 250 },
     { field: "username", headerName: "Username", width: 150 },
@@ -46,7 +48,7 @@ export const UsersTable = ({
       field: "disabled",
       headerName: "Active",
       width: 80,
-      renderCell: (params: any) => <IsTrueChip assert={params.value != true} />
+      renderCell: (params: any) => <IsTrueChip assert={params.value != true} />,
     },
     { field: "display_name", headerName: "Display Name", width: 150 },
     { field: "redirect_page", headerName: "Redirect Page", width: 200 },
@@ -72,15 +74,20 @@ export const UsersTable = ({
 
   return (
     <Card>
-      <CustomCardHeader
-        title="All Users"
-        icon={FormatListBulletedOutlinedIcon}
-      />
+      <CustomCardHeader title="All Users" icon={FormatListBulletedOutlined} />
       <CardContent>
         <Grid container spacing={2}>
-          <Grid item xs={6} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
+          <Grid
+            item
+            xs={6}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "flex-start",
+            }}
+          >
             <TextField
-              sx={{ m: 0, width: '100%', maxWidth: '75rem' }}
+              sx={{ m: 0, width: "100%", maxWidth: "75rem" }}
               placeholder="Search Users..."
               variant="outlined"
               size="small"
@@ -95,8 +102,18 @@ export const UsersTable = ({
               }}
             />
           </Grid>
-          <Grid item xs={6} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-            <Typography variant="body1" style={{ display: "inline" }}>Choose Filters: </Typography>
+          <Grid
+            item
+            xs={6}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "flex-end",
+            }}
+          >
+            <Typography variant="body1" style={{ display: "inline" }}>
+              Choose Filters:{" "}
+            </Typography>
             <TristateToggle
               label="Active"
               onToggle={(state: boolean | undefined) =>
@@ -135,7 +152,7 @@ export const UsersTable = ({
                     onClick={() => setUserAddMode(true)}
                     sx={{ flexShrink: 0, width: { xs: "100%", sm: "auto" } }}
                   >
-                    <AddIcon fontSize="small" sx={{ mr: 0.5 }} />
+                    <Add fontSize="small" sx={{ mr: 0.5 }} />
                     Create
                   </Button>
                 ),
@@ -145,6 +162,6 @@ export const UsersTable = ({
           />
         </Grid>
       </CardContent>
-    </Card >
+    </Card>
   );
 };
