@@ -189,7 +189,8 @@ export interface Part {
   vendor?: string
   note?: string
   description?: string
-  count?: number
+  initial_count?: number
+  current_count?: number
   in_use: boolean
   commonly_used: boolean
 

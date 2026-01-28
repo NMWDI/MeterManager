@@ -44,8 +44,8 @@ def get_parts(
     db: Session = Depends(get_db),
     in_use: Optional[bool] = Query(None, description="Filter by in_use status"),
 ):
-    used_sum = func.coalesce(func.sum(func.coalesce(PartsUsed.count, 1)), 0)
-    current_count = (Parts.count - used_sum).label("current_count")
+    used_sum = func.coalesce(func.sum(PartsUsed.count), 0)
+    current_count = (Parts.initial_count - used_sum).label("current_count")
 
     stmt = (
         select(Parts, current_count)
@@ -84,16 +84,16 @@ def get_parts_used_summary(
 
     usage_subq = (
         db.query(
-            PartsUsed.c.part_id.label("used_part_id"),
-            func.count(PartsUsed.c.part_id).label("quantity"),
+            PartsUsed.part_id.label("used_part_id"),
+            func.coalesce(func.sum(PartsUsed.count), 0).label("quantity"),
         )
-        .join(MeterActivities, MeterActivities.id == PartsUsed.c.meter_activity_id)
+        .join(MeterActivities, MeterActivities.id == PartsUsed.meter_activity_id)
         .filter(
             MeterActivities.timestamp_start >= start_dt,
             MeterActivities.timestamp_start <= end_dt,
-            PartsUsed.c.part_id.in_(parts),
+            PartsUsed.part_id.in_(parts),
         )
-        .group_by(PartsUsed.c.part_id)
+        .group_by(PartsUsed.part_id)
         .subquery()
     )
 
@@ -112,8 +112,8 @@ def get_parts_used_summary(
 
     results = []
     for row in query.all():
-        price = row.price or 0
-        quantity = row.quantity or 0
+        price = float(row.price or 0)
+        quantity = int(row.quantity or 0)
         total = price * quantity
         results.append(
             {
@@ -185,8 +185,8 @@ def get_part_types(db: Session = Depends(get_db)):
     tags=["Parts"],
 )
 def get_part(part_id: int, db: Session = Depends(get_db)):
-    used_sum = func.coalesce(func.sum(func.coalesce(PartsUsed.count, 1)), 0)
-    current_count = (Parts.count - used_sum).label("current_count")
+    used_sum = func.coalesce(func.sum(PartsUsed.count), 0)
+    current_count = (Parts.initial_count - used_sum).label("current_count")
 
     row = db.execute(
         select(Parts, current_count)
@@ -236,8 +236,9 @@ def get_part(part_id: int, db: Session = Depends(get_db)):
 def update_part(updated_part: part_schemas.Part, db: Session = Depends(get_db)):
     # Update the part (this won't include secondary attributes like associations)
     part_db = _get(db, Parts, updated_part.id)
+
     for k, v in updated_part.model_dump(exclude_unset=True).items():
-        if k in ["part_type", "meter_types"]:
+        if k in ["part_type", "meter_types", "current_count"]:
             continue
         try:
             setattr(part_db, k, v)
@@ -284,7 +285,7 @@ def create_part(new_part: part_schemas.Part, db: Session = Depends(get_db)):
         part_type_id=new_part.part_type_id,
         description=new_part.description,
         vendor=new_part.vendor,
-        count=new_part.count,
+        initial_count=new_part.initial_count,
         note=new_part.note,
         in_use=new_part.in_use,
         commonly_used=new_part.commonly_used,

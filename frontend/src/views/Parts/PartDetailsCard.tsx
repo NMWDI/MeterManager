@@ -15,11 +15,7 @@ import {
   OutlinedInput,
   Select,
 } from "@mui/material";
-import AddIcon from "@mui/icons-material/Add";
-import EditIcon from "@mui/icons-material/Edit";
-import SaveIcon from "@mui/icons-material/Save";
-import SaveAsIcon from "@mui/icons-material/SaveAs";
-import CancelIcon from "@mui/icons-material/Cancel";
+import { Add, Cancel, Edit, Save, SaveAs } from "@mui/icons-material";
 import * as Yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { enqueueSnackbar } from "notistack";
@@ -30,16 +26,16 @@ import {
   useGetMeterTypeList,
   useGetPart,
   useUpdatePart,
-} from "../../service/ApiServiceNew";
-import ControlledTextbox from "../../components/RHControlled/ControlledTextbox";
-import ControlledPartTypeSelect from "../../components/RHControlled/ControlledPartTypeSelect";
-import { MeterTypeLU, Part } from "../../interfaces";
-import { ControlledSelectNonObject } from "../../components/RHControlled/ControlledSelect";
-import { CustomCardHeader } from "../../components/CustomCardHeader";
+} from "@/service/ApiServiceNew";
+import ControlledTextbox from "@/components/RHControlled/ControlledTextbox";
+import ControlledPartTypeSelect from "@/components/RHControlled/ControlledPartTypeSelect";
+import { ControlledSelectNonObject } from "@/components/RHControlled/ControlledSelect";
+import { CustomCardHeader } from "@/components";
+import { MeterTypeLU, Part } from "@/interfaces";
 
 const PartResolverSchema: Yup.ObjectSchema<any> = Yup.object().shape({
   part_number: Yup.string().required("Please enter a part number."),
-  count: Yup.number()
+  initial_count: Yup.number()
     .typeError("Please enter a number.")
     .required("Please enter a count."),
   part_type: Yup.mixed().required("Please select a part type."),
@@ -129,7 +125,7 @@ export const PartDetailsCard = ({
     <Card>
       <CustomCardHeader
         title={partAddMode ? "Create Part" : "Edit Part"}
-        icon={partAddMode ? AddIcon : EditIcon}
+        icon={partAddMode ? Add : Edit}
       />
       <CardContent>
         <Grid container>
@@ -172,11 +168,11 @@ export const PartDetailsCard = ({
             </Grid>
             <Grid item xs={12} xl={6}>
               <ControlledTextbox
-                name="count"
+                name="initial_count"
                 control={control}
                 label="Initial Count"
-                error={errors?.count?.message != undefined}
-                helperText={errors?.count?.message}
+                error={errors?.initial_count?.message != undefined}
+                helperText={errors?.initial_count?.message}
               />
             </Grid>
             <Grid item xs={12} xl={6}>
@@ -231,7 +227,7 @@ export const PartDetailsCard = ({
                           label={`${value.brand} - ${value.model}`}
                           clickable
                           deleteIcon={
-                            <CancelIcon
+                            <Cancel
                               onMouseDown={(event: any) =>
                                 event.stopPropagation()
                               }
@@ -273,7 +269,7 @@ export const PartDetailsCard = ({
               variant="contained"
               onClick={handleSubmit(onAddPart, onErr)}
             >
-              <SaveIcon sx={{ fontSize: "1.2rem" }} />
+              <Save sx={{ fontSize: "1.2rem" }} />
               &nbsp; Save New Part
             </Button>
           ) : (
@@ -282,7 +278,7 @@ export const PartDetailsCard = ({
               variant="contained"
               onClick={handleSubmit(onSaveChanges, onErr)}
             >
-              <SaveAsIcon sx={{ fontSize: "1.2rem" }} />
+              <SaveAs sx={{ fontSize: "1.2rem" }} />
               &nbsp; Save Changes
             </Button>
           )}

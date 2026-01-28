@@ -64,7 +64,7 @@ class Parts(Base):
     part_number: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     description: Mapped[Optional[str]]
     vendor: Mapped[Optional[str]]
-    count: Mapped[int] = mapped_column(Integer, default=0)
+    initial_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     note: Mapped[Optional[str]]
     in_use: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     commonly_used: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
@@ -86,7 +86,6 @@ class Parts(Base):
     )
 
 
-# Association table that links parts and the meter activity they were used on
 class PartsUsed(Base):
     __tablename__ = "PartsUsed"
 
@@ -96,8 +95,7 @@ class PartsUsed(Base):
     )
     part_id: Mapped[int] = mapped_column(ForeignKey("Parts.id"), nullable=False)
 
-    # nullable in DB; treat null as 1 in queries
-    count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    count: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
 
     part: Mapped["Parts"] = relationship(back_populates="parts_used_links")
     meter_activity: Mapped["MeterActivities"] = relationship(

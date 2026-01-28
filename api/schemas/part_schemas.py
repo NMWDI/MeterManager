@@ -12,8 +12,10 @@ class Part(ORMBase):
     part_number: str
     description: str | None = None
     vendor: str | None = None
-    count: int
+
+    initial_count: int
     current_count: Optional[int] = None
+
     note: str | None = None
     in_use: bool
     commonly_used: bool
