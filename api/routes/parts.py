@@ -1,5 +1,5 @@
 from fastapi import Depends, APIRouter, HTTPException, Query
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import select, func
 from typing import List, Union, Optional
 from datetime import datetime, date
@@ -28,7 +28,7 @@ TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "templates"
 
 templates = Environment(
     loader=FileSystemLoader(TEMPLATES_DIR),
-    autoescape=select_autoescape(["html", "xml"])
+    autoescape=select_autoescape(["html", "xml"]),
 )
 
 part_router = APIRouter()
@@ -42,17 +42,29 @@ part_router = APIRouter()
 )
 def get_parts(
     db: Session = Depends(get_db),
-    in_use: Optional[bool] = Query(
-        None,
-        description="Filter by in_use status"
-    ),
+    in_use: Optional[bool] = Query(None, description="Filter by in_use status"),
 ):
-    stmt = select(Parts).options(joinedload(Parts.part_type))
+    used_sum = func.coalesce(func.sum(func.coalesce(PartsUsed.count, 1)), 0)
+    current_count = (Parts.count - used_sum).label("current_count")
+
+    stmt = (
+        select(Parts, current_count)
+        .outerjoin(PartsUsed, PartsUsed.part_id == Parts.id)
+        .options(selectinload(Parts.part_type))
+        .group_by(Parts.id)  # important for aggregates
+    )
 
     if in_use is not None:
         stmt = stmt.where(Parts.in_use == in_use)
 
-    return db.scalars(stmt).all()
+    rows = db.execute(stmt).all()
+
+    results = []
+    for part, curr in rows:
+        part.current_count = curr
+        results.append(part)
+
+    return results
 
 
 @part_router.get(
@@ -73,12 +85,9 @@ def get_parts_used_summary(
     usage_subq = (
         db.query(
             PartsUsed.c.part_id.label("used_part_id"),
-            func.count(PartsUsed.c.part_id).label("quantity")
+            func.count(PartsUsed.c.part_id).label("quantity"),
         )
-        .join(
-              MeterActivities,
-              MeterActivities.id == PartsUsed.c.meter_activity_id
-        )
+        .join(MeterActivities, MeterActivities.id == PartsUsed.c.meter_activity_id)
         .filter(
             MeterActivities.timestamp_start >= start_dt,
             MeterActivities.timestamp_start <= end_dt,
@@ -94,7 +103,7 @@ def get_parts_used_summary(
             Parts.part_number,
             Parts.description,
             Parts.price,
-            func.coalesce(usage_subq.c.quantity, 0).label("quantity")
+            func.coalesce(usage_subq.c.quantity, 0).label("quantity"),
         )
         .outerjoin(usage_subq, Parts.id == usage_subq.c.used_part_id)
         .filter(Parts.id.in_(parts))
@@ -106,14 +115,16 @@ def get_parts_used_summary(
         price = row.price or 0
         quantity = row.quantity or 0
         total = price * quantity
-        results.append({
-            "id": row.id,
-            "part_number": row.part_number,
-            "description": row.description,
-            "price": price,
-            "quantity": quantity,
-            "total": total,
-        })
+        results.append(
+            {
+                "id": row.id,
+                "part_number": row.part_number,
+                "description": row.description,
+                "price": price,
+                "quantity": quantity,
+                "total": total,
+            }
+        )
 
     return results
 
@@ -130,7 +141,9 @@ def download_parts_used_pdf(
     db: Session = Depends(get_db),
 ):
     # Re-use your existing logic
-    results = get_parts_used_summary(from_date=from_date, to_date=to_date, parts=parts, db=db)
+    results = get_parts_used_summary(
+        from_date=from_date, to_date=to_date, parts=parts, db=db
+    )
 
     # Add running total just for PDF
     running_total = 0.0
@@ -151,9 +164,7 @@ def download_parts_used_pdf(
     return StreamingResponse(
         pdf_io,
         media_type="application/pdf",
-        headers={
-            "Content-Disposition": "attachment; filename=parts_used_report.pdf"
-        },
+        headers={"Content-Disposition": "attachment; filename=parts_used_report.pdf"},
     )
 
 
@@ -174,14 +185,25 @@ def get_part_types(db: Session = Depends(get_db)):
     tags=["Parts"],
 )
 def get_part(part_id: int, db: Session = Depends(get_db)):
-    selected_part = db.scalars(
-        select(Parts)
+    used_sum = func.coalesce(func.sum(func.coalesce(PartsUsed.count, 1)), 0)
+    current_count = (Parts.count - used_sum).label("current_count")
+
+    row = db.execute(
+        select(Parts, current_count)
+        .outerjoin(PartsUsed, PartsUsed.part_id == Parts.id)
         .where(Parts.id == part_id)
         .options(
-            joinedload(Parts.part_type),
-            joinedload(Parts.meter_types),
+            selectinload(Parts.part_type),
+            selectinload(Parts.meter_types),
         )
+        .group_by(Parts.id)
     ).first()
+
+    if not row:
+        return None
+
+    selected_part, curr = row
+    selected_part.current_count = curr
 
     # Create the part_schemas.Part instance
     returned_part = part_schemas.Part.model_validate(selected_part)
@@ -189,18 +211,18 @@ def get_part(part_id: int, db: Session = Depends(get_db)):
     # If part_type is a Register, we need to load the register details
     if selected_part and selected_part.part_type.name == "Register":
         register_details = db.scalars(
-            select(meterRegisters).where(
-                meterRegisters.part_id == selected_part.id
-            )
+            select(meterRegisters).where(meterRegisters.part_id == selected_part.id)
         ).first()
 
-        register_details = part_schemas.Register.register_details.model_validate(register_details)
+        register_details = part_schemas.Register.register_details.model_validate(
+            register_details
+        )
 
         # Update the returned_part to include register details
         returned_part = part_schemas.Register(
             **returned_part.model_dump(exclude_unset=True),
-            register_settings=register_details
-            )
+            register_settings=register_details,
+        )
 
     return returned_part
 

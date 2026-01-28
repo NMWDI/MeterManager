@@ -80,14 +80,29 @@ class Parts(Base):
         secondary=PartAssociation
     )
 
+    parts_used_links: Mapped[list["PartsUsed"]] = relationship(
+        back_populates="part",
+        cascade="all, delete-orphan",
+    )
+
 
 # Association table that links parts and the meter activity they were used on
-PartsUsed = Table(
-    "PartsUsed",
-    Base.metadata,
-    Column("meter_activity_id", ForeignKey("MeterActivities.id"), nullable=False),
-    Column("part_id", ForeignKey("Parts.id"), nullable=False),
-)
+class PartsUsed(Base):
+    __tablename__ = "PartsUsed"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    meter_activity_id: Mapped[int] = mapped_column(
+        ForeignKey("MeterActivities.id"), nullable=False
+    )
+    part_id: Mapped[int] = mapped_column(ForeignKey("Parts.id"), nullable=False)
+
+    # nullable in DB; treat null as 1 in queries
+    count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    part: Mapped["Parts"] = relationship(back_populates="parts_used_links")
+    meter_activity: Mapped["MeterActivities"] = relationship(
+        back_populates="parts_used_links"
+    )
 
 
 class ServiceTypeLU(Base):
@@ -233,7 +248,6 @@ class MeterActivities(Base):
     activity_type: Mapped["ActivityTypeLU"] = relationship()
     location: Mapped["Locations"] = relationship()
 
-    parts_used: Mapped[List["Parts"]] = relationship("Parts", secondary=PartsUsed)
     services_performed: Mapped[List["ServiceTypeLU"]] = relationship(
         "ServiceTypeLU", secondary=ServicesPerformed
     )
@@ -247,6 +261,11 @@ class MeterActivities(Base):
     )
     photos: Mapped[List["MeterActivityPhotos"]] = relationship(
         "MeterActivityPhotos", back_populates="meter_activity", cascade="all, delete"
+    )
+
+    parts_used_links: Mapped[list["PartsUsed"]] = relationship(
+        back_populates="meter_activity",
+        cascade="all, delete-orphan",
     )
 
 

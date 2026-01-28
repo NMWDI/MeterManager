@@ -49,7 +49,7 @@ export const PartsTable = ({
       width: 200,
       valueGetter: (params: any) => params?.name,
     },
-    { field: "count", headerName: "Count" },
+    { field: "current_count", headerName: "Current Count", width: 150 },
     {
       field: "in_use",
       headerName: "In Use",

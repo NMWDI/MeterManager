@@ -174,7 +174,7 @@ export const PartDetailsCard = ({
               <ControlledTextbox
                 name="count"
                 control={control}
-                label="Count"
+                label="Initial Count"
                 error={errors?.count?.message != undefined}
                 helperText={errors?.count?.message}
               />
@@ -187,7 +187,9 @@ export const PartDetailsCard = ({
                 type="number"
                 inputProps={{ step: "0.01" }}
                 InputProps={{
-                  startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                  startAdornment: (
+                    <InputAdornment position="start">$</InputAdornment>
+                  ),
                 }}
               />
             </Grid>
