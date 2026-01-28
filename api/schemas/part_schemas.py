@@ -43,7 +43,7 @@ class Register(Part):
         number_of_digits: int | None = None
         multiplier: float | None = None
 
-    register_settings: register_details
+    register_settings: register_details | None = None
 
 
 class PartUsed(ORMBase):

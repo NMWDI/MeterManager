@@ -257,14 +257,16 @@ def get_part(part_id: int, db: Session = Depends(get_db)):
             select(meterRegisters).where(meterRegisters.part_id == selected_part.id)
         ).first()
 
-        register_details = part_schemas.Register.register_details.model_validate(
-            register_details
-        )
+        register_details_obj = None
+        if register_details is not None:
+            register_details_obj = (
+                part_schemas.Register.register_details.model_validate(register_details)
+            )
 
         # Update the returned_part to include register details
         returned_part = part_schemas.Register(
             **returned_part.model_dump(exclude_unset=True),
-            register_settings=register_details,
+            register_settings=register_details_obj,
         )
 
     return returned_part
