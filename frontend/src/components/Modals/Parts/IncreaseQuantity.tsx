@@ -23,6 +23,7 @@ export const IncreaseQuantityModal = ({
   defaultPartId,
   onSubmit,
   title = "Increase Part Quantity",
+  loading,
 }: {
   open: boolean;
   onClose: () => void;
@@ -30,6 +31,7 @@ export const IncreaseQuantityModal = ({
   defaultPartId?: number | string;
   onSubmit: (payload: IncreaseQuantityPayload) => void;
   title?: string;
+  loading?: boolean;
 }) => {
   const partsById = useMemo(() => {
     const map = new Map<number | string, Part>();
@@ -40,6 +42,7 @@ export const IncreaseQuantityModal = ({
   const [selectedPart, setSelectedPart] = useState<Part | null>(null);
   const [increaseBy, setIncreaseBy] = useState<string>("1");
   const [date, setDate] = useState<Dayjs | null>(dayjs());
+  const [note, setNote] = useState<string>("");
 
   const increaseByNum = Number(increaseBy);
 
@@ -56,6 +59,7 @@ export const IncreaseQuantityModal = ({
 
     setDate(dayjs());
     setIncreaseBy("1");
+    setNote("");
 
     if (defaultPartId !== undefined) {
       const p = partsById.get(defaultPartId) ?? null;
@@ -69,19 +73,21 @@ export const IncreaseQuantityModal = ({
     if (!selectedPart || qtyError) return;
 
     onSubmit({
-      partId: selectedPart.id,
-      increaseBy: Math.trunc(increaseByNum),
+      part_id: selectedPart.id,
+      count: Math.trunc(increaseByNum),
       date: date?.format("YYYY-MM-DD"),
+      note: note.trim().length ? note.trim() : undefined,
     });
   };
 
   return (
     <Dialog
       open={open}
-      onClose={onClose}
+      onClose={loading ? undefined : onClose}
       fullWidth
       maxWidth="sm"
       aria-labelledby="increase-qty-title"
+      PaperProps={{ sx: { overflowX: "hidden" } }}
     >
       <DialogTitle id="increase-qty-title">{title}</DialogTitle>
 
@@ -137,6 +143,17 @@ export const IncreaseQuantityModal = ({
               },
             }}
           />
+
+          <TextField
+            label="Note"
+            size="small"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Optional note (e.g., received shipment, inventory correction)"
+            multiline
+            minRows={2}
+            maxRows={4}
+          />
         </Stack>
       </DialogContent>
 
@@ -149,21 +166,21 @@ export const IncreaseQuantityModal = ({
           py: 2,
         }}
       >
-        <Button onClick={onClose} variant="text">
+        <Button onClick={onClose} disabled={loading} variant="text">
           Cancel
         </Button>
         <Button
           onClick={handleSubmit}
           variant="contained"
           color="success"
-          disabled={!selectedPart || qtyError}
+          disabled={!selectedPart || qtyError || loading}
           sx={{
             flexShrink: 0,
             width: { xs: "100%", sm: "auto" },
           }}
           startIcon={<Save fontSize="small" />}
         >
-          Save
+          {loading ? "Saving..." : "Save"}
         </Button>
       </DialogActions>
     </Dialog>

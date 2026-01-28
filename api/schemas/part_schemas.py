@@ -1,4 +1,5 @@
 from typing import Optional
+from datetime import date
 from api.schemas.base import ORMBase
 from api.schemas.meter_schemas import MeterTypeLU
 
@@ -48,3 +49,10 @@ class Register(Part):
 class PartUsed(ORMBase):
     part_id: int
     meter_id: int
+
+
+class PartsAddRequest(ORMBase):
+    part_id: int
+    count: int
+    date: date
+    note: Optional[str] = None

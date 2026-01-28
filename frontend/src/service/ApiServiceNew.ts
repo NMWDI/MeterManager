@@ -1,4 +1,10 @@
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient, UseQueryOptions } from "react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+  UseQueryOptions,
+} from "react-query";
 import { useAuthHeader, useSignOut } from "react-auth-kit";
 import { enqueueSnackbar, useSnackbar } from "notistack";
 import {
@@ -44,10 +50,11 @@ import {
   MeterRegister,
   WaterSource,
   WellStatus,
-} from "../interfaces.js";
-import { WorkOrderStatus } from "../enums";
+} from "@/interfaces";
+import { IncreaseQuantityPayload } from "@/interfaces/IncreaseQuantityPayload";
+import { WorkOrderStatus } from "@/enums";
+import { API_URL } from "@/config";
 import { useNavigate } from "react-router-dom";
-import { API_URL } from "../config";
 
 // Date display util
 export function toGMT6String(date: Date) {
@@ -106,9 +113,12 @@ async function GETFetch(
   navigate: Function,
 ) {
   const headers = { Authorization: authHeader };
-  const response = await fetch(`${API_URL}/${route}` + formattedQueryParams(params), {
-    headers: headers,
-  });
+  const response = await fetch(
+    `${API_URL}/${route}` + formattedQueryParams(params),
+    {
+      headers: headers,
+    },
+  );
 
   if (!response.ok) {
     // If backend indicates that user's token is expired, log them out and notify
@@ -238,13 +248,14 @@ export function useGetMeterLocations(searchstring: string | undefined) {
 
   return useQuery<MeterMapDTO[], Error>({
     queryKey: [route, searchstring],
-    queryFn: () => GETFetch(
-      route,
-      { search_string: searchstring },
-      authHeader(),
-      signOut,
-      navigate,
-    ),
+    queryFn: () =>
+      GETFetch(
+        route,
+        { search_string: searchstring },
+        authHeader(),
+        signOut,
+        navigate,
+      ),
     staleTime: 1000 * 60 * 60 * 24, // 24 hours
     cacheTime: 1000 * 60 * 60 * 24, // keep in memory for 24 hours
     refetchOnWindowFocus: false,
@@ -422,7 +433,10 @@ export function useGetWells(params: WellListQueryParams | undefined) {
   );
 }
 
-export function useGetWellLocations(searchstring: string | undefined, has_chloride_group: boolean | null = null) {
+export function useGetWellLocations(
+  searchstring: string | undefined,
+  has_chloride_group: boolean | null = null,
+) {
   const route = "well_locations";
   const authHeader = useAuthHeader();
   const navigate = useNavigate();
@@ -434,10 +448,15 @@ export function useGetWellLocations(searchstring: string | undefined, has_chlori
     queryFn: async ({ pageParam = 0 }) => {
       return GETFetch(
         route,
-        { search_string: searchstring, offset: pageParam, limit: PAGE_SIZE, has_chloride_group },
+        {
+          search_string: searchstring,
+          offset: pageParam,
+          limit: PAGE_SIZE,
+          has_chloride_group,
+        },
         authHeader(),
         signOut,
-        navigate
+        navigate,
       );
     },
     getNextPageParam: (lastPage, allPages) => {
@@ -452,7 +471,6 @@ export function useGetWellLocations(searchstring: string | undefined, has_chlori
     refetchOnReconnect: false,
   });
 }
-
 
 export function useGetWell(params: WellDetailsQueryParams | undefined) {
   const route = "well";
@@ -559,7 +577,7 @@ export function useGetST2WaterLevels(datastreamID: number | undefined) {
 
 export function useGetWorkOrders(
   status_filter: WorkOrderStatus[],
-  options?: UseQueryOptions<WorkOrder[], Error>
+  options?: UseQueryOptions<WorkOrder[], Error>,
 ) {
   const route = "work_orders";
   const authHeader = useAuthHeader();
@@ -568,14 +586,15 @@ export function useGetWorkOrders(
 
   return useQuery<WorkOrder[], Error>({
     queryKey: [route, { status_filter: status_filter.sort() }],
-    queryFn: () => GETFetch(
-      route,
-      { filter_by_status: status_filter },
-      authHeader(),
-      signOut,
-      navigate,
-    ),
-    ...options
+    queryFn: () =>
+      GETFetch(
+        route,
+        { filter_by_status: status_filter },
+        authHeader(),
+        signOut,
+        navigate,
+      ),
+    ...options,
   });
 }
 
@@ -1586,6 +1605,59 @@ export function useCreateWorkOrder() {
         const responseJson = await response.json();
         return responseJson;
       }
+    },
+    retry: 0,
+  });
+}
+
+export function useAddParts(onSuccess?: () => void) {
+  const { enqueueSnackbar } = useSnackbar();
+  const queryClient = useQueryClient();
+  const authHeader = useAuthHeader();
+
+  const route = "parts/add";
+
+  return useMutation({
+    mutationFn: async (payload: IncreaseQuantityPayload) => {
+      const response = await POSTFetch(route, payload, authHeader());
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          enqueueSnackbar("Part not found.", { variant: "error" });
+          throw new Error("Part not found (404)");
+        }
+
+        if (response.status === 422) {
+          enqueueSnackbar("Missing or invalid fields.", { variant: "error" });
+          throw new Error("Validation error (422)");
+        }
+
+        // Optional: read backend detail if present
+        let detail = "";
+        try {
+          const j = await response.json();
+          detail = j?.detail ? ` (${j.detail})` : "";
+        } catch {}
+
+        enqueueSnackbar(
+          `Unknown error occurred! (${response.status})${detail}`,
+          {
+            variant: "error",
+          },
+        );
+        throw new Error(`Unknown Error: ${response.status}${detail}`);
+      }
+
+      const updatedPart: Part = await response.json();
+
+      // update any cached parts lists you have
+      queryClient.setQueryData<Part[]>(["parts"], (old) => {
+        const safeOld = old ?? [];
+        return safeOld.map((p) => (p.id === updatedPart.id ? updatedPart : p));
+      });
+
+      onSuccess?.();
+      return updatedPart;
     },
     retry: 0,
   });

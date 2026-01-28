@@ -16,7 +16,7 @@ import {
   Add,
   FormatListBulletedOutlined,
 } from "@mui/icons-material";
-import { useGetParts } from "@/service/ApiServiceNew";
+import { useGetParts, useAddParts } from "@/service/ApiServiceNew";
 import { Part } from "@/interfaces";
 import {
   CustomCardHeader,
@@ -34,6 +34,7 @@ export const PartsTable = ({
   setPartAddMode: Function;
 }) => {
   const partsList = useGetParts();
+  const addParts = useAddParts();
   const [partSearchQuery, setPartSearchQuery] = useState<string>("");
   const [filteredRows, setFilteredRows] = useState<Part[]>();
   const [inUseFilter, setInUseFilter] = useState<boolean>();
@@ -201,10 +202,21 @@ export const PartsTable = ({
         open={increaseOpen}
         onClose={() => setIncreaseOpen(false)}
         parts={partsList.data ?? []}
+        loading={addParts.isLoading}
         onSubmit={(payload) => {
-          console.log("submit", payload);
-          // call your mutation here
-          setIncreaseOpen(false);
+          addParts.mutate(
+            {
+              part_id: payload.part_id,
+              count: payload.count,
+              date: payload.date,
+              note: payload.note,
+            },
+            {
+              onSuccess: () => {
+                setIncreaseOpen(false);
+              },
+            },
+          );
         }}
       />
     </Card>

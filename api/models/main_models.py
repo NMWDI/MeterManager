@@ -9,6 +9,7 @@ from sqlalchemy import (
     Boolean,
     Table,
     Numeric,
+    Date,
 )
 from sqlalchemy.orm import (
     relationship,
@@ -18,6 +19,7 @@ from sqlalchemy.orm import (
     deferred,
 )
 from geoalchemy2.shape import to_shape
+from datetime import date
 from typing import Optional, List
 
 
@@ -101,6 +103,19 @@ class PartsUsed(Base):
     meter_activity: Mapped["MeterActivities"] = relationship(
         back_populates="parts_used_links"
     )
+
+
+class PartsAdded(Base):
+    __tablename__ = "PartsAdded"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    part_id: Mapped[int] = mapped_column(ForeignKey("Parts.id"), nullable=False)
+
+    count: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    date: Mapped[date] = mapped_column(Date, nullable=False)  # default handled by DB
+    note: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    part: Mapped["Parts"] = relationship
 
 
 class ServiceTypeLU(Base):

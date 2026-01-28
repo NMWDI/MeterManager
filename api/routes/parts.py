@@ -9,6 +9,7 @@ from io import BytesIO
 from api.models.main_models import (
     Parts,
     PartsUsed,
+    PartsAdded,
     PartAssociation,
     PartTypeLU,
     Meters,
@@ -44,14 +45,35 @@ def get_parts(
     db: Session = Depends(get_db),
     in_use: Optional[bool] = Query(None, description="Filter by in_use status"),
 ):
-    used_sum = func.coalesce(func.sum(PartsUsed.count), 0)
-    current_count = (Parts.initial_count - used_sum).label("current_count")
+    used_subq = (
+        select(
+            PartsUsed.part_id.label("part_id"),
+            func.coalesce(func.sum(PartsUsed.count), 0).label("used_sum"),
+        )
+        .group_by(PartsUsed.part_id)
+        .subquery()
+    )
+
+    added_subq = (
+        select(
+            PartsAdded.part_id.label("part_id"),
+            func.coalesce(func.sum(PartsAdded.count), 0).label("added_sum"),
+        )
+        .group_by(PartsAdded.part_id)
+        .subquery()
+    )
+
+    current_count = (
+        Parts.initial_count
+        + func.coalesce(added_subq.c.added_sum, 0)
+        - func.coalesce(used_subq.c.used_sum, 0)
+    ).label("current_count")
 
     stmt = (
         select(Parts, current_count)
-        .outerjoin(PartsUsed, PartsUsed.part_id == Parts.id)
+        .outerjoin(used_subq, used_subq.c.part_id == Parts.id)
+        .outerjoin(added_subq, added_subq.c.part_id == Parts.id)
         .options(selectinload(Parts.part_type))
-        .group_by(Parts.id)  # important for aggregates
     )
 
     if in_use is not None:
@@ -185,18 +207,39 @@ def get_part_types(db: Session = Depends(get_db)):
     tags=["Parts"],
 )
 def get_part(part_id: int, db: Session = Depends(get_db)):
-    used_sum = func.coalesce(func.sum(PartsUsed.count), 0)
-    current_count = (Parts.initial_count - used_sum).label("current_count")
+    used_subq = (
+        select(
+            PartsUsed.part_id.label("part_id"),
+            func.coalesce(func.sum(PartsUsed.count), 0).label("used_sum"),
+        )
+        .group_by(PartsUsed.part_id)
+        .subquery()
+    )
+
+    added_subq = (
+        select(
+            PartsAdded.part_id.label("part_id"),
+            func.coalesce(func.sum(PartsAdded.count), 0).label("added_sum"),
+        )
+        .group_by(PartsAdded.part_id)
+        .subquery()
+    )
+
+    current_count = (
+        Parts.initial_count
+        + func.coalesce(added_subq.c.added_sum, 0)
+        - func.coalesce(used_subq.c.used_sum, 0)
+    ).label("current_count")
 
     row = db.execute(
         select(Parts, current_count)
-        .outerjoin(PartsUsed, PartsUsed.part_id == Parts.id)
+        .outerjoin(used_subq, used_subq.c.part_id == Parts.id)
+        .outerjoin(added_subq, added_subq.c.part_id == Parts.id)
         .where(Parts.id == part_id)
         .options(
             selectinload(Parts.part_type),
             selectinload(Parts.meter_types),
         )
-        .group_by(Parts.id)
     ).first()
 
     if not row:
@@ -339,3 +382,66 @@ def get_meter_parts(meter_id: int, db: Session = Depends(get_db)):
     ).all()
 
     return meter_parts
+
+
+@part_router.post(
+    "/parts/add",
+    response_model=part_schemas.Part,
+    dependencies=[Depends(ScopedUser.Admin)],
+    tags=["Parts"],
+)
+def add_parts(payload: part_schemas.PartsAddRequest, db: Session = Depends(get_db)):
+    # Ensure part exists
+    part = db.scalars(select(Parts).where(Parts.id == payload.part_id)).first()
+    if not part:
+        raise HTTPException(status_code=404, detail="Part not found")
+
+    # Insert PartsAdded row (do NOT mutate Parts.initial_count)
+    added = PartsAdded(
+        part_id=payload.part_id,
+        count=payload.count,
+        date=payload.date,
+        note=payload.note,
+    )
+    db.add(added)
+    db.commit()
+
+    # Return updated part with current_count computed (same formula)
+    used_subq = (
+        select(
+            PartsUsed.part_id.label("part_id"),
+            func.coalesce(func.sum(PartsUsed.count), 0).label("used_sum"),
+        )
+        .group_by(PartsUsed.part_id)
+        .subquery()
+    )
+
+    added_subq = (
+        select(
+            PartsAdded.part_id.label("part_id"),
+            func.coalesce(func.sum(PartsAdded.count), 0).label("added_sum"),
+        )
+        .group_by(PartsAdded.part_id)
+        .subquery()
+    )
+
+    current_count = (
+        Parts.initial_count
+        + func.coalesce(added_subq.c.added_sum, 0)
+        - func.coalesce(used_subq.c.used_sum, 0)
+    ).label("current_count")
+
+    row = db.execute(
+        select(Parts, current_count)
+        .outerjoin(used_subq, used_subq.c.part_id == Parts.id)
+        .outerjoin(added_subq, added_subq.c.part_id == Parts.id)
+        .where(Parts.id == payload.part_id)
+        .options(selectinload(Parts.part_type), selectinload(Parts.meter_types))
+    ).first()
+
+    if not row:
+        raise HTTPException(status_code=404, detail="Part not found")
+
+    part_obj, curr = row
+    part_obj.current_count = curr
+    return part_obj
