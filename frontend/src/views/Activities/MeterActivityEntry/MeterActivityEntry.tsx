@@ -1,27 +1,26 @@
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useState } from "react";
 import { Alert, Box, Button, Stack, Typography } from "@mui/material";
 import { useSnackbar } from "notistack";
 import { useForm, SubmitHandler } from "react-hook-form";
+import { useMutation } from "react-query";
+import { useAuthHeader } from "react-auth-kit";
 import { yupResolver } from "@hookform/resolvers/yup";
+import { ActivityFormControl, MeterListDTO } from "@/interfaces";
+import { ActivityType } from "@/enums";
+import { useGetMeter, useGetWell } from "@/service/ApiServiceNew";
+import { API_URL } from "@/config";
 import { MeterActivitySelection } from "./MeterActivitySelection";
 import ObservationSelection from "./ObservationsSelection";
 import NotesSelection from "./NotesSelection";
 import MeterInstallation from "./MeterInstallation";
 import MaintenanceRepairSelection from "./MaintenanceRepairSelection";
 import PartsSelection from "./PartsSelection";
-import { ActivityFormControl, MeterListDTO } from "../../../interfaces.d";
-import { ActivityType } from "../../../enums";
-import { useGetMeter, useGetWell } from "../../../service/ApiServiceNew";
 import {
   ActivityResolverSchema,
   getDefaultForm,
   toSubmissionForm,
 } from "./ActivityFormConfig";
-import { useMutation } from "react-query";
-import { useAuthHeader } from "react-auth-kit";
-import { API_URL } from "../../../config";
 
 export default function MeterActivityEntry() {
   const navigate = useNavigate();

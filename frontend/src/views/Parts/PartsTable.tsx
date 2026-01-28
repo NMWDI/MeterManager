@@ -16,6 +16,7 @@ import {
   Add,
   FormatListBulletedOutlined,
 } from "@mui/icons-material";
+import { useSnackbar } from "notistack";
 import { useGetParts, useAddParts } from "@/service/ApiServiceNew";
 import { Part } from "@/interfaces";
 import {
@@ -25,7 +26,6 @@ import {
   IsTrueChip,
   TristateToggle,
 } from "@/components";
-import { enqueueSnackbar } from "notistack";
 
 export const PartsTable = ({
   setSelectedPartID,
@@ -41,6 +41,7 @@ export const PartsTable = ({
   const [inUseFilter, setInUseFilter] = useState<boolean>();
   const [commonlyUsedFilter, setCommonlyUsedFilter] = useState<boolean>();
   const [increaseOpen, setIncreaseOpen] = useState(false);
+  const { enqueueSnackbar } = useSnackbar();
 
   const cols: GridColDef[] = [
     { field: "part_number", headerName: "Part Number", width: 150 },
@@ -214,8 +215,19 @@ export const PartsTable = ({
             },
             {
               onSuccess: () => {
+                enqueueSnackbar("Quantity increase submitted successfully.", {
+                  variant: "success",
+                });
                 setIncreaseOpen(false);
                 partsList.refetch();
+              },
+              onError: () => {
+                enqueueSnackbar(
+                  "Failed to submit quantity increase. Please try again.",
+                  {
+                    variant: "error",
+                  },
+                );
               },
             },
           );
