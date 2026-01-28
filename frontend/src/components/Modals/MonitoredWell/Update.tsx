@@ -13,7 +13,7 @@ import {
   Stack,
 } from "@mui/material";
 import { Save, Delete } from "@mui/icons-material";
-import dayjs, { Dayjs } from "dayjs";
+import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 dayjs.extend(utc);

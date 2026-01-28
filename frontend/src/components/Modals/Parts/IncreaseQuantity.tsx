@@ -12,7 +12,8 @@ import {
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers";
 import dayjs, { Dayjs } from "dayjs";
-import { Part, IncreaseQuantityPayload } from "@/interfaces";
+import { Part } from "@/interfaces";
+import { IncreaseQuantityPayload } from "@/interfaces/IncreaseQuantityPayload";
 import { Save } from "@mui/icons-material";
 
 export const IncreaseQuantityModal = ({
