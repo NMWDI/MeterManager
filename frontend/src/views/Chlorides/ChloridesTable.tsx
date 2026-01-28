@@ -1,18 +1,18 @@
 import { useMemo } from "react";
 import { Box, Button } from "@mui/material";
 import { DataGrid, GridPagination, GridColDef } from "@mui/x-data-grid";
-import AddIcon from "@mui/icons-material/Add";
-import { RegionMeasurementDTO } from "../../interfaces";
+import { Add } from "@mui/icons-material";
 import dayjs, { Dayjs } from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import { useIsAuthenticated } from "react-auth-kit";
+import { RegionMeasurementDTO } from "@/interfaces";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
 declare module "@mui/x-data-grid" {
-  interface FooterPropsOverrides extends Partial<FooterExtraProps> { }
+  interface FooterPropsOverrides extends Partial<FooterExtraProps> {}
 }
 
 interface FooterExtraProps {
@@ -60,8 +60,7 @@ export const ChloridesTable = ({
         field: "value",
         headerName: "Chlorides (ppm)",
         width: 175,
-        valueFormatter: (value) =>
-          value == null ? "NOT SAMPLED" : value,
+        valueFormatter: (value) => (value == null ? "NOT SAMPLED" : value),
       },
       {
         field: "well",
@@ -122,8 +121,8 @@ const Footer = ({
             size="small"
             onClick={onOpenModal}
             sx={{ flexShrink: 0, width: { xs: "100%", sm: "auto" }, ml: 1.5 }}
+            startIcon={<Add fontSize="small" />}
           >
-            <AddIcon fontSize="small" sx={{ mr: 0.5 }} />
             Create
           </Button>
         ) : null}

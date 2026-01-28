@@ -365,13 +365,13 @@ export const MonitoringWellsView = () => {
           {authUser() && (
             <>
               <CreateModal
-                isNewMeasurementModalOpen={isNewModalOpen}
-                handleCloseNewMeasurementModal={() => setIsNewModalOpen(false)}
+                open={isNewModalOpen}
+                onClose={() => setIsNewModalOpen(false)}
                 handleSubmitNewMeasurement={handleSubmitNewMeasurement}
               />
               <UpdateModal
-                isMeasurementModalOpen={isUpdateModalOpen}
-                handleCloseMeasurementModal={() => setIsUpdateModalOpen(false)}
+                open={isUpdateModalOpen}
+                onClose={() => setIsUpdateModalOpen(false)}
                 measurement={selectedMeasurement}
                 onUpdateMeasurement={(update) =>
                   setSelectedMeasurement({ ...selectedMeasurement, ...update })

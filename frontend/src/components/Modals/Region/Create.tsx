@@ -1,45 +1,50 @@
+import { useState } from "react";
 import {
-  Modal,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   TextField,
   Button,
   MenuItem,
   Select,
   FormControl,
   InputLabel,
-  Grid,
   Typography,
+  Stack,
   FormControlLabel,
   Checkbox,
 } from "@mui/material";
-import { useState } from "react";
+import { RadioButtonUnchecked, TaskAlt, Save } from "@mui/icons-material";
+import { DatePicker, TimePicker } from "@mui/x-date-pickers";
 import { useAuthUser } from "react-auth-kit";
+import { useQuery } from "react-query";
 import {
   MonitoredWell,
   NewRegionMeasurement,
   SecurityScope,
-} from "../../../interfaces.js";
+} from "@/interfaces";
 import dayjs, { Dayjs } from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 dayjs.extend(utc);
 dayjs.extend(timezone);
-import { DatePicker, TimePicker } from "@mui/x-date-pickers";
-import { RadioButtonUnchecked, TaskAlt } from "@mui/icons-material";
-import { useGetUserList } from "../../../service/ApiServiceNew";
-import { useQuery } from "react-query";
-import { useFetchWithAuth } from "../../../hooks/useFetchWithAuth.js";
-import { ModalBackgroundBox } from "./../../";
+
+import { useGetUserList } from "@/service/ApiServiceNew";
+import { useFetchWithAuth } from "@/hooks";
 
 export const CreateModal = ({
   region_id, //Used to filter wells
-  isNewMeasurementModalOpen,
-  handleCloseNewMeasurementModal,
+  open,
+  onClose,
   handleSubmitNewMeasurement,
+  title = "Create New Measurement",
 }: {
   region_id: number; //Used to filter wells
-  isNewMeasurementModalOpen: boolean;
-  handleCloseNewMeasurementModal: () => void;
+  open: boolean;
+  onClose: () => void;
   handleSubmitNewMeasurement: (newMeasurement: NewRegionMeasurement) => void;
+  title?: string;
 }) => {
   const authUser = useAuthUser();
   const hasAdminScope = authUser()
@@ -67,7 +72,7 @@ export const CreateModal = ({
           limit: 100,
         },
       }),
-    enabled: isNewMeasurementModalOpen,
+    enabled: open,
     select: (res) => res.items,
   });
 
@@ -138,7 +143,9 @@ export const CreateModal = ({
           label="Well"
         >
           {wells
-            ?.filter((well: MonitoredWell) => well.chloride_group_id === region_id)
+            ?.filter(
+              (well: MonitoredWell) => well.chloride_group_id === region_id,
+            )
             .map((well: MonitoredWell) => (
               <MenuItem key={well.id} value={well.id}>
                 {well.ra_number}
@@ -155,100 +162,119 @@ export const CreateModal = ({
   };
 
   return (
-    <Modal
-      open={isNewMeasurementModalOpen}
-      onClose={handleCloseNewMeasurementModal}
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
+      maxWidth="sm"
+      aria-labelledby="create-region-measurement-title"
+      aria-describedby="create-region-measurement-description"
     >
-      <ModalBackgroundBox>
-        <Grid container spacing={2}>
-          <Grid item xs={12}>
-            <Typography variant="h4" fontWeight="bold" pb={2} textAlign="center">Create New Measurement</Typography>
-          </Grid>
-          <Grid item xs={12}>
-            <UserSelection />
-          </Grid>
-          <Grid item xs={12}>
-            <DatePicker
-              label="Date"
-              value={date}
-              onChange={setDate}
-              slotProps={{
-                textField: { size: "small", fullWidth: true, required: true },
-              }}
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <TimePicker
-              label="Time"
-              timezone="America/Denver"
-              slotProps={{
-                textField: { size: "small", fullWidth: true, required: true },
-              }}
-              value={time}
-              onChange={setTime}
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <FormControlLabel
-              value="bottom"
-              control={
-                <Checkbox
-                  size="large"
-                  icon={<RadioButtonUnchecked />}
-                  checkedIcon={<TaskAlt />}
-                  checked={notSampled}
-                  onChange={(e) => {
-                    const checked = e.target.checked;
-                    setNotSampled(checked)
+      <DialogTitle id="create-region-measurement-title">{title}</DialogTitle>
 
-                    if (checked) {
-                      setValue(null);
-                    }
-                  }}
-                />
-              }
-              label="Well was visited but NOT SAMPLED"
-              labelPlacement="end"
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <TextField
-              required={!notSampled}
-              fullWidth
-              size={"small"}
-              type="number"
-              disabled={notSampled}
-              value={notSampled ? "" : value ?? ""}
-              label={notSampled ? "NOT SAMPLED" : "Value"}
-              onChange={(event) => {
-                const newValue = event.target.value;
-                setValue(newValue === "" ? null : Number(newValue));
-              }}
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <WellSelection region_id={region_id} />
-          </Grid>
-          <Grid
-            item
-            xs={12}
-            sx={{
-              mr: "auto",
-              ml: "auto",
-              display: "flex",
-              justifyContent: "right",
-            }}
+      <DialogContent dividers>
+        <Stack spacing={2}>
+          <Typography
+            id="create-region-measurement-description"
+            variant="body2"
+            color="text.secondary"
           >
-            <Button
-              type="submit"
-              variant="contained"
-              onClick={onMeasurementSubmitted}
-            >
-              Submit
-            </Button>
-          </Grid>
-        </Grid>
-      </ModalBackgroundBox>
-    </Modal>
+            Enter the measurement details below. Date and time default to the
+            current moment and can be adjusted if needed.
+          </Typography>
+
+          <UserSelection />
+
+          <DatePicker
+            label="Date"
+            value={date}
+            onChange={setDate}
+            slotProps={{
+              textField: { size: "small", fullWidth: true, required: true },
+            }}
+          />
+
+          <TimePicker
+            label="Time"
+            timezone="America/Denver"
+            slotProps={{
+              textField: { size: "small", fullWidth: true, required: true },
+            }}
+            value={time}
+            onChange={setTime}
+          />
+
+          <FormControlLabel
+            value="bottom"
+            control={
+              <Checkbox
+                size="large"
+                icon={<RadioButtonUnchecked />}
+                checkedIcon={<TaskAlt />}
+                checked={notSampled}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  setNotSampled(checked);
+
+                  if (checked) {
+                    setValue(null);
+                  }
+                }}
+              />
+            }
+            label="Well was visited but NOT SAMPLED"
+            labelPlacement="end"
+          />
+
+          <TextField
+            required={!notSampled}
+            fullWidth
+            size={"small"}
+            type="number"
+            disabled={notSampled}
+            value={notSampled ? "" : (value ?? "")}
+            label={notSampled ? "NOT SAMPLED" : "Value"}
+            onChange={(event) => {
+              const newValue = event.target.value;
+              setValue(newValue === "" ? null : Number(newValue));
+            }}
+          />
+
+          <WellSelection region_id={region_id} />
+        </Stack>
+      </DialogContent>
+
+      <DialogActions
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          px: 3,
+          py: 2,
+        }}
+      >
+        <Button onClick={onClose} variant="text">
+          Cancel
+        </Button>
+
+        <Button
+          type="submit"
+          variant="contained"
+          color="success"
+          onClick={onMeasurementSubmitted}
+          disabled={
+            !!selectedUserID &&
+            !!selectedWellID &&
+            !!date &&
+            !!time &&
+            (notSampled || value !== null)
+          }
+          sx={{ flexShrink: 0, width: { xs: "100%", sm: "auto" } }}
+          startIcon={<Save fontSize="small" />}
+        >
+          Save
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 };

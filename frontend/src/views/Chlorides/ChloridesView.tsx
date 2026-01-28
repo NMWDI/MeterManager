@@ -16,10 +16,7 @@ import { useAuthUser } from "react-auth-kit";
 import { useSnackbar } from "notistack";
 import { ChloridesTable } from "./ChloridesTable";
 import { ChloridesPlot } from "./ChloridesPlot";
-import {
-  CreateModal,
-  UpdateModal,
-} from "../../components/Modals/Region";
+import { CreateModal, UpdateModal } from "../../components/Modals/Region";
 import {
   NewRegionMeasurement,
   PatchRegionMeasurement,
@@ -105,12 +102,17 @@ export const ChloridesView = () => {
         },
       }),
     onSuccess: () => {
-      enqueueSnackbar("Chloride measurement created successfully", { variant: "success" });
+      enqueueSnackbar("Chloride measurement created successfully", {
+        variant: "success",
+      });
     },
     onError: (err: any) => {
-      enqueueSnackbar(`Failed to create chloride measurement: ${err.message ?? "Unknown error"}`, {
-        variant: "error",
-      });
+      enqueueSnackbar(
+        `Failed to create chloride measurement: ${err.message ?? "Unknown error"}`,
+        {
+          variant: "error",
+        },
+      );
     },
   });
 
@@ -131,12 +133,17 @@ export const ChloridesView = () => {
         },
       }),
     onSuccess: () => {
-      enqueueSnackbar("Chloride measurement updated successfully", { variant: "success" });
+      enqueueSnackbar("Chloride measurement updated successfully", {
+        variant: "success",
+      });
     },
     onError: (err: any) => {
-      enqueueSnackbar(`Failed to update chloride measurement: ${err.message ?? "Unknown error"}`, {
-        variant: "error",
-      });
+      enqueueSnackbar(
+        `Failed to update chloride measurement: ${err.message ?? "Unknown error"}`,
+        {
+          variant: "error",
+        },
+      );
     },
   });
 
@@ -149,12 +156,17 @@ export const ChloridesView = () => {
         params: { chloride_measurement_id: levelmeasurement_id },
       }),
     onSuccess: () => {
-      enqueueSnackbar("Chloride measurement deleted successfully", { variant: "success" });
+      enqueueSnackbar("Chloride measurement deleted successfully", {
+        variant: "success",
+      });
     },
     onError: (err: any) => {
-      enqueueSnackbar(`Failed to delete chloride measurement: ${err.message ?? "Unknown error"}`, {
-        variant: "error",
-      });
+      enqueueSnackbar(
+        `Failed to delete chloride measurement: ${err.message ?? "Unknown error"}`,
+        {
+          variant: "error",
+        },
+      );
     },
   });
 
@@ -229,8 +241,8 @@ export const ChloridesView = () => {
               }
             >
               <AlertTitle>Error Loading Data</AlertTitle>
-              We couldn’t load chloride data. Please check your connection or try
-              again.
+              We couldn’t load chloride data. Please check your connection or
+              try again.
             </Alert>
           )}
           <FormControl
@@ -259,11 +271,7 @@ export const ChloridesView = () => {
               ))}
             </Select>
           </FormControl>
-          <Grid
-            container
-            spacing={2}
-            sx={{ mt: "1rem" }}
-          >
+          <Grid container spacing={2} sx={{ mt: "1rem" }}>
             <Grid item xs={12} lg={7}>
               <ChloridesPlot
                 isLoading={isLoadingManual}
@@ -289,14 +297,14 @@ export const ChloridesView = () => {
             <>
               <CreateModal
                 region_id={regionId ?? 0}
-                isNewMeasurementModalOpen={isNewModalOpen}
-                handleCloseNewMeasurementModal={() => setIsNewModalOpen(false)}
+                open={isNewModalOpen}
+                onClose={() => setIsNewModalOpen(false)}
                 handleSubmitNewMeasurement={handleSubmitNewMeasurement}
               />
               <UpdateModal
                 region_id={regionId ?? 0}
-                isMeasurementModalOpen={isUpdateModalOpen}
-                handleCloseMeasurementModal={() => setIsUpdateModalOpen(false)}
+                open={isUpdateModalOpen}
+                onClose={() => setIsUpdateModalOpen(false)}
                 measurement={selectedMeasurement}
                 onUpdateMeasurement={(update) =>
                   setSelectedMeasurement({ ...selectedMeasurement, ...update })

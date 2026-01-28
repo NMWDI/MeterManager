@@ -1,1 +1,2 @@
-export * from './Region'
+export * from "./Region";
+export * from "./Parts";

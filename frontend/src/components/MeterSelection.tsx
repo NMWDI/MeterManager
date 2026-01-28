@@ -11,11 +11,11 @@ interface MeterSelectionProps {
   error?: boolean;
 }
 
-export default function MeterSelection({
+export const MeterSelection = ({
   selectedMeter,
   onMeterChange,
   error,
-}: MeterSelectionProps) {
+}: MeterSelectionProps) => {
   const [meterSearchQuery, setMeterSearchQuery] = useState<string>("");
   const [meterSearchQueryDebounced] = useDebounce(meterSearchQuery, 250);
 
@@ -80,4 +80,4 @@ export default function MeterSelection({
       }}
     />
   );
-}
+};

@@ -1,12 +1,12 @@
 import { useMemo } from "react";
 import { Box, Button, Tooltip } from "@mui/material";
 import { DataGrid, GridPagination, GridColDef } from "@mui/x-data-grid";
-import AddIcon from "@mui/icons-material/Add";
-import { MonitoredWell, WellMeasurementDTO } from "../../interfaces";
+import { Add } from "@mui/icons-material";
 import dayjs, { Dayjs } from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import { useIsAuthenticated } from "react-auth-kit";
+import { MonitoredWell, WellMeasurementDTO } from "@/interfaces";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -53,7 +53,12 @@ export const MonitoringWellsTable = ({
           dayjs.utc(value).tz("America/Denver").format("MM/DD/YYYY hh:mm A"),
         type: "dateTime",
       },
-      { field: "value", headerName: "Depth to Water (ft)", flex: 1, minWidth: 100 },
+      {
+        field: "value",
+        headerName: "Depth to Water (ft)",
+        flex: 1,
+        minWidth: 100,
+      },
     ];
 
     // Add user column only if logged in
@@ -122,9 +127,13 @@ const Footer = ({
                 size="small"
                 onClick={onOpenModal}
                 disabled={isPlugged}
-                sx={{ flexShrink: 0, width: { xs: "100%", sm: "auto" }, ml: 1.5 }}
+                sx={{
+                  flexShrink: 0,
+                  width: { xs: "100%", sm: "auto" },
+                  ml: 1.5,
+                }}
+                startIcon={<Add fontSize="small" />}
               >
-                <AddIcon fontSize="small" sx={{ mr: 0.5 }} />
                 Create
               </Button>
             </span>

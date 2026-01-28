@@ -21,6 +21,7 @@ import { Part } from "@/interfaces";
 import {
   CustomCardHeader,
   GridFooterWithButton,
+  IncreaseQuantityModal,
   IsTrueChip,
   TristateToggle,
 } from "@/components";
@@ -37,6 +38,7 @@ export const PartsTable = ({
   const [filteredRows, setFilteredRows] = useState<Part[]>();
   const [inUseFilter, setInUseFilter] = useState<boolean>();
   const [commonlyUsedFilter, setCommonlyUsedFilter] = useState<boolean>();
+  const [increaseOpen, setIncreaseOpen] = useState(false);
 
   const cols: GridColDef[] = [
     { field: "part_number", headerName: "Part Number", width: 150 },
@@ -164,21 +166,26 @@ export const PartsTable = ({
                           flexShrink: 0,
                           width: { xs: "100%", sm: "auto" },
                         }}
+                        startIcon={<Add fontSize="small" />}
                       >
-                        <Add fontSize="small" sx={{ mr: 0.5 }} />
                         Create
                       </Button>
                       <Button
                         variant="outlined"
                         color="secondary"
                         size="small"
-                        onClick={() => setPartAddMode(true)}
+                        onClick={() => setIncreaseOpen(true)}
                         sx={{
                           flexShrink: 0,
                           width: { xs: "100%", sm: "auto" },
                         }}
+                        disabled={
+                          partsList.isLoading ||
+                          !partsList.data ||
+                          partsList.data.length === 0
+                        }
+                        startIcon={<PlusOne fontSize="small" />}
                       >
-                        <PlusOne fontSize="small" sx={{ mr: 0.5 }} />
                         Increase Quantity
                       </Button>
                     </Stack>
@@ -190,6 +197,16 @@ export const PartsTable = ({
           </Grid>
         </Grid>
       </CardContent>
+      <IncreaseQuantityModal
+        open={increaseOpen}
+        onClose={() => setIncreaseOpen(false)}
+        parts={partsList.data ?? []}
+        onSubmit={(payload) => {
+          console.log("submit", payload);
+          // call your mutation here
+          setIncreaseOpen(false);
+        }}
+      />
     </Card>
   );
 };

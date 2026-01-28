@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import DeletedIcon from "@mui/icons-material/Delete";
+import { Delete, Add } from "@mui/icons-material";
 import AddIcon from "@mui/icons-material/Add";
 import HandymanIcon from "@mui/icons-material/Handyman";
 import {
@@ -291,7 +291,7 @@ export default function WorkOrdersTable() {
               </IconButton>
             )}
             <DeleteWorkOrder
-              icon={<DeletedIcon />}
+              icon={<Delete />}
               deleteMessage={`Delete work order ${params.id}?`}
               label="Delete"
               deleteUser={() => handleDeleteClick(params.id)}
@@ -344,8 +344,8 @@ export default function WorkOrdersTable() {
                   size="small"
                   onClick={() => setIsNewWorkOrderModalOpen(true)}
                   sx={{ flexShrink: 0, width: { xs: "100%", sm: "auto" } }}
+                  startIcon={<Add fontSize="small" />}
                 >
-                  <AddIcon fontSize="small" sx={{ mr: 0.5 }} />
                   Create
                 </Button>
               </Stack>
@@ -354,8 +354,8 @@ export default function WorkOrdersTable() {
         }}
       />
       <NewWorkOrderModal
-        openNewWorkOrderModal={isNewWorkOrderModalOpen}
-        closeNewWorkOrderModal={() => setIsNewWorkOrderModalOpen(false)}
+        open={isNewWorkOrderModalOpen}
+        onClose={() => setIsNewWorkOrderModalOpen(false)}
         submitNewWorkOrder={handleNewWorkOrder}
       />
     </Box>
