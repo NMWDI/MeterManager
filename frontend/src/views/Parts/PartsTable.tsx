@@ -25,6 +25,7 @@ import {
   IsTrueChip,
   TristateToggle,
 } from "@/components";
+import { enqueueSnackbar } from "notistack";
 
 export const PartsTable = ({
   setSelectedPartID,
@@ -214,6 +215,7 @@ export const PartsTable = ({
             {
               onSuccess: () => {
                 setIncreaseOpen(false);
+                partsList.refetch();
               },
             },
           );
