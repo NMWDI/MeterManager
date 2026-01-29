@@ -1,3 +1,4 @@
+export * from "./BackupRow";
 export * from "./DeviceAttributes";
 export * from "./DevicePayload";
 export * from "./IncreaseQuantityPayload";

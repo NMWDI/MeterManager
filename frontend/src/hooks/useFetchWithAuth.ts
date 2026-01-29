@@ -15,11 +15,13 @@ export const useFetchWithAuth = () => {
     route,
     params = {},
     body,
+    responseType = "json",
   }: {
     method: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
     route: string;
     params?: Record<string, any>;
     body?: any;
+    responseType?: "json" | "blob" | "text" | "response";
   }) => {
     const url = `${API_URL}${route}${formatQueryParams(params)}`;
 
@@ -27,7 +29,10 @@ export const useFetchWithAuth = () => {
       method,
       headers: {
         Authorization: authHeader(),
-        "Content-Type": "application/json",
+        // Only set JSON content-type when sending JSON
+        ...(body && ["PATCH", "POST", "PUT", "DELETE"].includes(method)
+          ? { "Content-Type": "application/json" }
+          : {}),
       },
       body:
         body && ["PATCH", "POST", "PUT", "DELETE"].includes(method)
@@ -47,11 +52,22 @@ export const useFetchWithAuth = () => {
           variant: "error",
         });
       }
+
+      // try to read error body if available
+      let detail = "";
+      try {
+        detail = await response.text();
+      } catch {}
       throw new Error(
-        `[ERROR] HTTP Status: ${response.status} - ${response.statusText}`,
+        `[ERROR] HTTP Status: ${response.status} - ${response.statusText}${
+          detail ? ` - ${detail}` : ""
+        }`,
       );
     }
 
+    if (responseType === "response") return response;
+    if (responseType === "blob") return response.blob();
+    if (responseType === "text") return response.text();
     return response.json();
   };
 };

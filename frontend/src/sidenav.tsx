@@ -9,15 +9,11 @@ import {
   List,
   ListSubheader,
   Toolbar,
-  Typography
+  Typography,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft } from "@mui/icons-material";
-import {
-  NavLink,
-  ReportsNavItem,
-  RoleChip
-} from "./components";
+import { NavLink, ReportsNavItem, RoleChip } from "./components";
 import { useGetWorkOrders } from "./service/ApiServiceNew";
 import { WorkOrderStatus } from "./enums";
 import { SecurityScope, WorkOrder } from "./interfaces";
@@ -39,8 +35,8 @@ export default function Sidenav({
   // Normalize scopes into a Set for O(1) lookups
   const scopes: Set<string> = new Set(
     authUser()?.user_role?.security_scopes?.map(
-      (scope: SecurityScope) => scope.scope_string
-    ) ?? []
+      (scope: SecurityScope) => scope.scope_string,
+    ) ?? [],
   );
 
   const hasReadScope = scopes.has("read");
@@ -50,14 +46,16 @@ export default function Sidenav({
   const openWorkOrdersQuery = useGetWorkOrders([WorkOrderStatus.Open], {
     refetchInterval: 45_000,
     refetchIntervalInBackground: true,
-    enabled: hasReadScope && !!authUser()
+    enabled: hasReadScope && !!authUser(),
   });
 
   useEffect(() => {
     if (openWorkOrdersQuery.data && userId) {
-      setWorkOrderCount(openWorkOrdersQuery.data.filter(
-        (workOrder: WorkOrder) => workOrder.assigned_user_id === userId
-      )?.length ?? 0);
+      setWorkOrderCount(
+        openWorkOrdersQuery.data.filter(
+          (workOrder: WorkOrder) => workOrder.assigned_user_id === userId,
+        )?.length ?? 0,
+      );
     }
   }, [openWorkOrdersQuery.data, userId]);
 
@@ -131,16 +129,16 @@ export default function Sidenav({
           px: "1rem",
         }}
       >
-        <List
-          subheader={
-            <ListSubheader component="div">
-              Pages
-            </ListSubheader>
-          }>
+        <List subheader={<ListSubheader component="div">Pages</ListSubheader>}>
           {navConfig
-            .filter(item => !item.role)
-            .map(item => (
-              <NavLink key={item.path} route={item.path} label={item.label} icon={item.icon} />
+            .filter((item) => !item.role)
+            .map((item) => (
+              <NavLink
+                key={item.path}
+                route={item.path}
+                label={item.label}
+                icon={item.icon}
+              />
             ))}
           {hasReadScope && (
             <>
@@ -148,22 +146,27 @@ export default function Sidenav({
                 <RoleChip role="Technician" /> Pages
               </ListSubheader>
               {navConfig
-                .filter(item => item.role === "Technician" && !item.parent)
-                .map(item => (
+                .filter((item) => item.role === "Technician" && !item.parent)
+                .map((item) => (
                   <NavLink
                     key={item.path}
                     route={item.path}
                     label={item.label}
                     icon={item.icon}
-                    badgeContent={item.path === "/workorders" ? workOrderCount : undefined}
+                    badgeContent={
+                      item.path === "/workorders" ? workOrderCount : undefined
+                    }
                   />
                 ))}
-              <ReportsNavItem open={openReportsMenu} setOpen={setOpenReportsMenu} />
+              <ReportsNavItem
+                open={openReportsMenu}
+                setOpen={setOpenReportsMenu}
+              />
               <Collapse in={openReportsMenu} timeout="auto" unmountOnExit>
                 <List disablePadding dense>
                   {navConfig
-                    .filter(item => item.parent === "reports")
-                    .map(item => (
+                    .filter((item) => item.parent === "reports")
+                    .map((item) => (
                       <NavLink
                         key={item.path}
                         subItem
@@ -182,9 +185,14 @@ export default function Sidenav({
                 <RoleChip role="Admin" /> Pages
               </ListSubheader>
               {navConfig
-                .filter(item => item.role === "Admin")
-                .map(item => (
-                  <NavLink key={item.path} route={item.path} label={item.label} icon={item.icon} />
+                .filter((item) => item.role === "Admin")
+                .map((item) => (
+                  <NavLink
+                    key={item.path}
+                    route={item.path}
+                    label={item.label}
+                    icon={item.icon}
+                  />
                 ))}
             </>
           )}
