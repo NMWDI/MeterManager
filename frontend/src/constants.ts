@@ -8,6 +8,7 @@ import {
   Build,
   Science,
   People,
+  Storage,
 } from "@mui/icons-material";
 import { SvgIconProps } from "@mui/material";
 import { ComponentType } from "react";
@@ -27,21 +28,70 @@ export const navConfig: NavItem[] = [
   { path: "/monitoringwells", label: "Monitoring Wells", icon: MonitorHeart },
 
   // Technician
-  { path: "/workorders", label: "Work Orders", icon: FormatListBulletedOutlined, role: "Technician" },
-  { path: "/activities", label: "Activities", icon: Construction, role: "Technician" },
-  { path: "/manage/meters", label: "Manage Meters", icon: ScreenshotMonitor, role: "Technician" },
-  { path: "/manage/wells", label: "Manage Wells", icon: Plumbing, role: "Technician" },
+  {
+    path: "/workorders",
+    label: "Work Orders",
+    icon: FormatListBulletedOutlined,
+    role: "Technician",
+  },
+  {
+    path: "/activities",
+    label: "Activities",
+    icon: Construction,
+    role: "Technician",
+  },
+  {
+    path: "/manage/meters",
+    label: "Manage Meters",
+    icon: ScreenshotMonitor,
+    role: "Technician",
+  },
+  {
+    path: "/manage/wells",
+    label: "Manage Wells",
+    icon: Plumbing,
+    role: "Technician",
+  },
 
   // Reports
-  { path: "/reports/monitoringwells", label: "Monitoring Wells", icon: MonitorHeart, role: "Technician", parent: "reports" },
-  { path: "/reports/maintenance", label: "Maintenance", icon: Construction, role: "Technician", parent: "reports" },
-  { path: "/reports/partsused", label: "Parts Used", icon: Build, role: "Technician", parent: "reports" },
-  { path: "/reports/chlorides", label: "Chlorides", icon: Science, role: "Technician", parent: "reports" },
-
+  {
+    path: "/reports/monitoringwells",
+    label: "Monitoring Wells",
+    icon: MonitorHeart,
+    role: "Technician",
+    parent: "reports",
+  },
+  {
+    path: "/reports/maintenance",
+    label: "Maintenance",
+    icon: Construction,
+    role: "Technician",
+    parent: "reports",
+  },
+  {
+    path: "/reports/partsused",
+    label: "Parts Used",
+    icon: Build,
+    role: "Technician",
+    parent: "reports",
+  },
+  {
+    path: "/reports/chlorides",
+    label: "Chlorides",
+    icon: Science,
+    role: "Technician",
+    parent: "reports",
+  },
 
   // Admin
   { path: "/manage/parts", label: "Manage Parts", icon: Build, role: "Admin" },
   { path: "/manage/users", label: "Manage Users", icon: People, role: "Admin" },
+  {
+    path: "/manage/backups",
+    label: "Manage Backups",
+    icon: Storage,
+    role: "Admin",
+  },
 ];
 
 export const PM_COLORS: { [key: string]: string } = {

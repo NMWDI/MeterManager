@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "react-query";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { SnackbarProvider, enqueueSnackbar } from "notistack";
-import { Home, Login, Settings } from "./views";
+import { BackupsView, Home, Login, Settings } from "./views";
 import { MonitoringWellsView } from "./views/MonitoringWells/MonitoringWellsView";
 import { ActivitiesView } from "./views/Activities/ActivitiesView";
 import { ActivityPhotoView } from "./views/Activities/ActivityPhotoView";
@@ -275,6 +275,19 @@ export const App = () => {
                     >
                       <AppLayout>
                         <UserManagementView />
+                      </AppLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/manage/backups"
+                  element={
+                    <ProtectedRoute
+                      requiredScopes={["admin"]}
+                      setErrorMessage={setErrorMessage}
+                    >
+                      <AppLayout>
+                        <BackupsView />
                       </AppLayout>
                     </ProtectedRoute>
                   }

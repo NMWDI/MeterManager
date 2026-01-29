@@ -1,3 +1,4 @@
-export * from './Home'
-export * from './Login'
-export * from './Settings'
+export * from "./Backups";
+export * from "./Home";
+export * from "./Login";
+export * from "./Settings";
