@@ -208,19 +208,28 @@ export const MonitoringWellsReportView = () => {
   });
 
   const columns: GridColDef[] = [
-    { field: "date_time", headerName: "Date / Time", flex: 1 },
+    {
+      field: "well",
+      headerName: "Well",
+      flex: 1,
+    },
+    {
+      field: "date_time",
+      headerName: "Date / Time",
+      flex: 1,
+      valueFormatter: (date) => {
+        if (!date) return "—";
+        return dayjs(date).format("MMM D, YYYY h:mm A");
+      },
+    },
     {
       field: "depth_to_water",
       headerName: "Depth To Water (ft)",
       type: "number",
       flex: 1,
     },
-    {
-      field: "well",
-      headerName: "Well",
-      flex: 1,
-    },
   ];
+
   const tableRows =
     manualMeasurementsQuery?.data?.map(
       (manualMeasurement: WellMeasurementDTO) => ({
@@ -347,7 +356,7 @@ export const MonitoringWellsReportView = () => {
     },
     {
       field: "avg",
-      headerName: "Avg DTW (ft)",
+      headerName: "Average Depth To Water (ft)",
       type: "number",
       flex: 1,
       valueFormatter: (avg?: number | null) =>
@@ -700,11 +709,12 @@ export const MonitoringWellsReportView = () => {
               </Box>
             </Grid>
           </Grid>
-          <Grid item xs={12}>
+          <Grid item xs={12} py={1}>
             <DataGrid
               rows={tableRows ?? []}
               columns={columns}
               disableColumnMenu
+              disableRowSelectionOnClick
               hideFooterSelectedRowCount
               pageSizeOptions={[5, 10, 25]}
               initialState={{
@@ -714,57 +724,55 @@ export const MonitoringWellsReportView = () => {
               }}
             />
           </Grid>
-          <Grid item xs={12}>
-            <Box sx={{ py: 2 }}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                Report Averages ({bucketLabel})
+          <Grid item xs={12} py={1}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+              Report Averages ({bucketLabel})
+            </Typography>
+
+            <Typography variant="body2" sx={{ mt: 1 }}>
+              All selected monitoring wells average:{" "}
+              <strong>
+                {allWellsLatest?.avg_value != null
+                  ? `${allWellsLatest.avg_value.toFixed(2)} ft`
+                  : "—"}
+              </strong>
+            </Typography>
+
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              display="block"
+              sx={{ mb: 1 }}
+            >
+              {from?.format("MMM D, YYYY")} → {to?.format("MMM D, YYYY")}
+            </Typography>
+
+            {reportAveragesQuery.isLoading && (
+              <Typography variant="body2">Loading averages…</Typography>
+            )}
+            {reportAveragesQuery.isError && (
+              <Typography variant="body2" color="error">
+                Failed to load averages: {reportAveragesQuery.error.message}
               </Typography>
+            )}
 
-              <Typography variant="body2" sx={{ mt: 1 }}>
-                All selected monitoring wells average:{" "}
-                <strong>
-                  {allWellsLatest?.avg_value != null
-                    ? `${allWellsLatest.avg_value.toFixed(2)} ft`
-                    : "—"}
-                </strong>
-              </Typography>
-
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                display="block"
-                sx={{ mb: 1 }}
-              >
-                {from?.format("MMM D, YYYY")} → {to?.format("MMM D, YYYY")}
-              </Typography>
-
-              {reportAveragesQuery.isLoading && (
-                <Typography variant="body2">Loading averages…</Typography>
-              )}
-              {reportAveragesQuery.isError && (
-                <Typography variant="body2" color="error">
-                  Failed to load averages: {reportAveragesQuery.error.message}
-                </Typography>
-              )}
-
-              {!reportAveragesQuery.isLoading &&
-                !reportAveragesQuery.isError && (
-                  <Box sx={{ height: 280, mt: 1 }}>
-                    <DataGrid
-                      rows={avgRows}
-                      columns={avgColumns}
-                      disableColumnMenu
-                      hideFooterSelectedRowCount
-                      pageSizeOptions={[5, 10]}
-                      initialState={{
-                        pagination: {
-                          paginationModel: { pageSize: 5, page: 0 },
-                        },
-                      }}
-                    />
-                  </Box>
-                )}
-            </Box>
+            {!reportAveragesQuery.isLoading && !reportAveragesQuery.isError && (
+              <Box sx={{ mt: 1 }}>
+                <DataGrid
+                  rows={avgRows ?? []}
+                  columns={avgColumns}
+                  disableColumnMenu
+                  disableRowSelectionOnClick
+                  hideFooterSelectedRowCount
+                  pageSizeOptions={[5, 10, 25]}
+                  initialState={{
+                    pagination: {
+                      paginationModel: { pageSize: 5, page: 0 },
+                    },
+                  }}
+                />
+              </Box>
+            )}
           </Grid>
           <Grid item xs={12}>
             <Button onClick={() => reset()}>Reset</Button>
