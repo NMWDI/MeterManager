@@ -23,27 +23,25 @@ import {
   Typography,
   useTheme,
 } from "@mui/material";
+import { DataGrid, GridColDef } from "@mui/x-data-grid";
+import { LineChart } from "@mui/x-charts";
 import { css } from "@emotion/react";
 import { Link } from "react-router-dom";
-import ControlledDatepicker from "../../../components/RHControlled/ControlledDatepicker";
-import ControlledAutocomplete from "../../../components/RHControlled/ControlledAutocomplete";
+import { useAuthHeader } from "react-auth-kit";
 import { Controller, useForm } from "react-hook-form";
 import { useMutation, useQuery } from "react-query";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import dayjs, { Dayjs } from "dayjs";
-import { BackgroundBox } from "../../../components/BackgroundBox";
-import { CustomCardHeader } from "../../../components/CustomCardHeader";
-import { DataGrid, GridColDef } from "@mui/x-data-grid";
-import {
-  LineChart,
-} from "@mui/x-charts";
-import { MonitoredWell, WellMeasurementDTO } from "../../../interfaces";
-import { useFetchWithAuth } from "../../../hooks";
-import { separateAndSortMonitoredWells } from "../../../utils";
-import { API_URL } from "../../../config";
-import { useAuthHeader } from "react-auth-kit";
 
+import { BackgroundBox, CustomCardHeader } from "@/components";
+import ControlledDatepicker from "@/components/RHControlled/ControlledDatepicker";
+import ControlledAutocomplete from "@/components/RHControlled/ControlledAutocomplete";
+import { MonitoredWell, WellMeasurementDTO } from "@/interfaces";
+import { ReportAveragesResponse } from "@/interfaces/ReportAveragesResponse";
+import { useFetchWithAuth } from "@/hooks";
+import { separateAndSortMonitoredWells } from "@/utils";
+import { API_URL } from "@/config";
 
 const schema = yup.object().shape({
   from: yup.mixed<Dayjs>().nullable().required("From date is required"),
@@ -51,7 +49,7 @@ const schema = yup.object().shape({
     .mixed<Dayjs>()
     .nullable()
     .required("To date is required")
-    .test("is-after", "'To' date must be after 'From'", function(value) {
+    .test("is-after", "'To' date must be after 'From'", function (value) {
       const { from } = this.parent;
       return !from || !value || dayjs(value).isAfter(dayjs(from));
     }),
@@ -67,7 +65,7 @@ const schema = yup.object().shape({
         outside_recorder: yup.boolean().nullable(),
         chloride_group_id: yup.number().nullable(),
         group: yup.string().nullable(),
-      })
+      }),
     )
     .min(1, "At least one Well is required"),
   isAveragingAllWells: yup.boolean().required(),
@@ -76,8 +74,8 @@ const schema = yup.object().shape({
 });
 
 const defaultSchema = {
-  from: dayjs().startOf('month'),
-  to: dayjs().endOf('month'),
+  from: dayjs().startOf("month"),
+  to: dayjs().endOf("month"),
   wells: [],
   isAveragingAllWells: false,
   isComparingTo1970Average: false,
@@ -95,29 +93,33 @@ export const MonitoringWellsReportView = () => {
   transition: background-color 0.2s ease;
 `;
   const selectedStyle = (isOutside: boolean, theme: any) => css`
-  background-color: ${isOutside
+    background-color: ${isOutside
       ? theme.palette.secondary.dark
       : theme.palette.primary.dark} !important;
-  color: ${isOutside
-      ? theme.palette.secondary.contrastText
-      : theme.palette.primary.contrastText} !important;
-  font-weight: 500;
-`;
-
-  const hoverStyle = (isOutside: boolean, theme: any) => css`
-  &:hover {
-    background-color: ${isOutside
-      ? theme.palette.secondary.main
-      : theme.palette.primary.main} !important;
     color: ${isOutside
       ? theme.palette.secondary.contrastText
       : theme.palette.primary.contrastText} !important;
-  }
-`;
+    font-weight: 500;
+  `;
+
+  const hoverStyle = (isOutside: boolean, theme: any) => css`
+    &:hover {
+      background-color: ${isOutside
+        ? theme.palette.secondary.main
+        : theme.palette.primary.main} !important;
+      color: ${isOutside
+        ? theme.palette.secondary.contrastText
+        : theme.palette.primary.contrastText} !important;
+    }
+  `;
 
   const authHeader = useAuthHeader();
   const fetchWithAuth = useFetchWithAuth();
-  const monitoredWellsQuery = useQuery<{ items: MonitoredWell[] }, Error, MonitoredWell[]>({
+  const monitoredWellsQuery = useQuery<
+    { items: MonitoredWell[] },
+    Error,
+    MonitoredWell[]
+  >({
     queryKey: ["wells"],
     queryFn: () =>
       fetchWithAuth({
@@ -138,18 +140,21 @@ export const MonitoringWellsReportView = () => {
   });
 
   const wells = watch("wells");
-  const wellIds = useMemo(() => wells?.map(w => w.id) ?? [], [wells]);
+  const wellIds = useMemo(() => wells?.map((w) => w.id) ?? [], [wells]);
 
   const from = watch("from");
   const to = watch("to");
 
-  const isAveragingAllWells = watch('isAveragingAllWells');
-  const isComparingTo1970Average = watch('isComparingTo1970Average');
-  const comparisonYear = watch('comparisonYear');
+  const isAveragingAllWells = watch("isAveragingAllWells");
+  const isComparingTo1970Average = watch("isComparingTo1970Average");
+  const comparisonYear = watch("comparisonYear");
 
   useEffect(() => {
-    if (((wells?.length ?? 0) < 2) && isAveragingAllWells) {
-      setValue("isAveragingAllWells", false, { shouldDirty: true, shouldValidate: true });
+    if ((wells?.length ?? 0) < 2 && isAveragingAllWells) {
+      setValue("isAveragingAllWells", false, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
     }
   }, [wells, isAveragingAllWells, setValue]);
 
@@ -161,7 +166,7 @@ export const MonitoringWellsReportView = () => {
       to,
       isAveragingAllWells,
       isComparingTo1970Average,
-      comparisonYear
+      comparisonYear,
     ],
     queryFn: () => {
       const searchParams = new URLSearchParams({
@@ -169,7 +174,7 @@ export const MonitoringWellsReportView = () => {
         to_date: to?.format("YYYY-MM-DD"),
         isAveragingAllWells: isAveragingAllWells.toString(),
         isComparingTo1970Average: isComparingTo1970Average.toString(),
-        comparisonYear: comparisonYear ? comparisonYear.toString() : ""
+        comparisonYear: comparisonYear ? comparisonYear.toString() : "",
       });
 
       wellIds.forEach((id: number) => {
@@ -179,7 +184,25 @@ export const MonitoringWellsReportView = () => {
       return fetchWithAuth({
         method: "GET",
         route: `/waterlevels?${searchParams.toString()}`,
-      })
+      });
+    },
+    enabled: wellIds.length > 0 && !!from && !!to,
+  });
+
+  const reportAveragesQuery = useQuery<ReportAveragesResponse, Error>({
+    queryKey: ["reportAverages", wellIds, from, to],
+    queryFn: () => {
+      const params = new URLSearchParams({
+        from_date: from?.format("YYYY-MM-DD"),
+        to_date: to?.format("YYYY-MM-DD"),
+      });
+
+      wellIds.forEach((id: number) => params.append("well_ids", id.toString()));
+
+      return fetchWithAuth({
+        method: "GET",
+        route: `/waterlevels/report-averages?${params.toString()}`,
+      });
     },
     enabled: wellIds.length > 0 && !!from && !!to,
   });
@@ -198,12 +221,15 @@ export const MonitoringWellsReportView = () => {
       flex: 1,
     },
   ];
-  const tableRows = manualMeasurementsQuery?.data?.map((manualMeasurement: WellMeasurementDTO) => ({
-    id: manualMeasurement.id,
-    date_time: manualMeasurement.timestamp,
-    depth_to_water: manualMeasurement.value,
-    well: manualMeasurement.well.ra_number,
-  })) ?? [];
+  const tableRows =
+    manualMeasurementsQuery?.data?.map(
+      (manualMeasurement: WellMeasurementDTO) => ({
+        id: manualMeasurement.id,
+        date_time: manualMeasurement.timestamp,
+        depth_to_water: manualMeasurement.value,
+        well: manualMeasurement.well.ra_number,
+      }),
+    ) ?? [];
 
   const groupedByWell = useMemo(() => {
     const groups: Record<string, { x: Date; y: number }[]> = {};
@@ -224,7 +250,9 @@ export const MonitoringWellsReportView = () => {
       // Timeshift ONLY the comparison series that are actually enabled/selected
       const shouldShift =
         (isComparingTo1970Average && seriesYear === 1970) ||
-        (comparisonYear !== undefined && !Number.isNaN(comparisonYear) && seriesYear === comparisonYear);
+        (comparisonYear !== undefined &&
+          !Number.isNaN(comparisonYear) &&
+          seriesYear === comparisonYear);
 
       if (shouldShift) {
         const d = dayjs(timestamp);
@@ -249,7 +277,7 @@ export const MonitoringWellsReportView = () => {
       entries.forEach((e) => {
         const ts = new Date(e.x).getTime();
         if (!isNaN(ts)) timestamps.add(ts);
-      })
+      }),
     );
     return Array.from(timestamps).sort((a, b) => a - b);
   }, [groupedByWell]);
@@ -257,7 +285,7 @@ export const MonitoringWellsReportView = () => {
   const series = useMemo(() => {
     return Object.entries(groupedByWell).map(([wellName, entries]) => {
       const dataMap = new Map(
-        entries.map((e) => [new Date(e.x).getTime(), e.y])
+        entries.map((e) => [new Date(e.x).getTime(), e.y]),
       );
       const data = allTimestamps.map((ts) => {
         const value = dataMap.get(ts);
@@ -271,11 +299,70 @@ export const MonitoringWellsReportView = () => {
     });
   }, [groupedByWell, allTimestamps]);
 
-  const [outsideRecorderWells, regularWells] = separateAndSortMonitoredWells(monitoredWellsQuery?.data);
+  const [outsideRecorderWells, regularWells] = separateAndSortMonitoredWells(
+    monitoredWellsQuery?.data,
+  );
   const groupedWells = [
-    ...regularWells.map(well => ({ ...well, group: "Wells" })),
-    ...outsideRecorderWells.map(well => ({ ...well, group: "Outside Recorder Wells" })),
+    ...regularWells.map((well) => ({ ...well, group: "Wells" })),
+    ...outsideRecorderWells.map((well) => ({
+      ...well,
+      group: "Outside Recorder Wells",
+    })),
   ];
+
+  const allWellsLatest = useMemo(() => {
+    const rows = reportAveragesQuery.data?.all_wells ?? [];
+    if (!rows.length) return null;
+    // assume period_start sorts ascending as ISO; if not, sort
+    const sorted = [...rows].sort(
+      (a, b) =>
+        dayjs(a.period_start).valueOf() - dayjs(b.period_start).valueOf(),
+    );
+    return sorted[sorted.length - 1];
+  }, [reportAveragesQuery.data]);
+
+  const bucketLabel =
+    reportAveragesQuery.data?.bucket === "year" ? "Year" : "Month";
+
+  const bucket = reportAveragesQuery.data?.bucket ?? "month";
+
+  const formatPeriodLabel = (periodStart: string) => {
+    const d = dayjs(periodStart);
+    if (!d.isValid()) return periodStart;
+
+    return bucket === "year" ? d.format("YYYY") : d.format("MMM YYYY");
+  };
+
+  const avgColumns: GridColDef[] = [
+    {
+      field: "well",
+      headerName: "Well",
+      flex: 1,
+    },
+    {
+      field: "period",
+      headerName: bucket === "year" ? "Year" : "Month",
+      flex: 1,
+      sortComparator: (a, b) => dayjs(a).valueOf() - dayjs(b).valueOf(),
+    },
+    {
+      field: "avg",
+      headerName: "Avg DTW (ft)",
+      type: "number",
+      flex: 1,
+      valueFormatter: (avg?: number | null) =>
+        typeof avg === "number" ? avg?.toFixed(2) : "—",
+    },
+  ];
+
+  const avgRows =
+    reportAveragesQuery.data?.per_well?.map((r) => ({
+      id: `${r.well_id}-${r.period_start}`,
+      period_start: r.period_start, // keep raw
+      period: formatPeriodLabel(r.period_start),
+      well: r.ra_number,
+      avg: r.avg_value,
+    })) ?? [];
 
   const downloadPDFMutation = useMutation({
     mutationFn: async ({
@@ -284,7 +371,7 @@ export const MonitoringWellsReportView = () => {
       wellIds,
       isAveragingAllWells,
       isComparingTo1970Average,
-      comparisonYear
+      comparisonYear,
     }: {
       from: Dayjs;
       to: Dayjs;
@@ -298,7 +385,7 @@ export const MonitoringWellsReportView = () => {
         to_date: to?.format("YYYY-MM-DD"),
         isAveragingAllWells: isAveragingAllWells.toString(),
         isComparingTo1970Average: isComparingTo1970Average.toString(),
-        comparisonYear
+        comparisonYear,
       });
 
       wellIds.forEach((id) => params.append("well_ids", id.toString()));
@@ -329,14 +416,14 @@ export const MonitoringWellsReportView = () => {
       wellIds,
       isAveragingAllWells,
       isComparingTo1970Average,
-      comparisonYear: comparisonYear ? comparisonYear.toString() : ""
+      comparisonYear: comparisonYear ? comparisonYear.toString() : "",
     });
   };
 
   // 1971 → current year
   const years = Array.from(
     { length: new Date().getFullYear() - 1971 + 1 },
-    (_, i) => 1971 + i
+    (_, i) => 1971 + i,
   );
 
   return (
@@ -359,10 +446,7 @@ export const MonitoringWellsReportView = () => {
                 <IconButton
                   aria-label="export report as pdf"
                   onClick={handleDownloadPDF}
-                  disabled={
-                    !wells?.length ||
-                    downloadPDFMutation.isLoading
-                  }
+                  disabled={!wells?.length || downloadPDFMutation.isLoading}
                 >
                   <PictureAsPdf />
                 </IconButton>
@@ -406,9 +490,15 @@ export const MonitoringWellsReportView = () => {
                 name="wells"
                 control={control}
                 options={groupedWells}
-                groupBy={(option: MonitoredWell & { group: string }) => option.group}
-                getOptionLabel={(option: MonitoredWell) => option?.name ?? "Unnamed Well"}
-                isOptionEqualToValue={(a: MonitoredWell, b: MonitoredWell) => a.id === b.id}
+                groupBy={(option: MonitoredWell & { group: string }) =>
+                  option.group
+                }
+                getOptionLabel={(option: MonitoredWell) =>
+                  option?.name ?? "Unnamed Well"
+                }
+                isOptionEqualToValue={(a: MonitoredWell, b: MonitoredWell) =>
+                  a.id === b.id
+                }
                 disableClearable={false}
                 multiple
                 renderGroup={(params: any) => (
@@ -435,26 +525,33 @@ export const MonitoringWellsReportView = () => {
                   </li>
                 )}
                 renderTags={(value: MonitoredWell[], getTagProps: any) =>
-                  (value as (MonitoredWell & { group: string })[]).map((option, index) => {
-                    const isOutside = option.group === "Outside Recorder Wells";
-                    return (
-                      <Chip
-                        label={option.name?.trim() || "Unnamed Well"}
-                        {...getTagProps({ index })}
-                        sx={{
-                          backgroundColor: isOutside
-                            ? theme.palette.secondary.main
-                            : theme.palette.primary.main,
-                          color: isOutside
-                            ? theme.palette.secondary.contrastText
-                            : theme.palette.primary.contrastText,
-                          fontWeight: 500,
-                        }}
-                      />
-                    );
-                  })
+                  (value as (MonitoredWell & { group: string })[]).map(
+                    (option, index) => {
+                      const isOutside =
+                        option.group === "Outside Recorder Wells";
+                      return (
+                        <Chip
+                          label={option.name?.trim() || "Unnamed Well"}
+                          {...getTagProps({ index })}
+                          sx={{
+                            backgroundColor: isOutside
+                              ? theme.palette.secondary.main
+                              : theme.palette.primary.main,
+                            color: isOutside
+                              ? theme.palette.secondary.contrastText
+                              : theme.palette.primary.contrastText,
+                            fontWeight: 500,
+                          }}
+                        />
+                      );
+                    },
+                  )
                 }
-                renderOption={(props: any, option: MonitoredWell & { group: string }, { selected }: { selected: boolean }) => {
+                renderOption={(
+                  props: any,
+                  option: MonitoredWell & { group: string },
+                  { selected }: { selected: boolean },
+                ) => {
                   const isOutside = option.group === "Outside Recorder Wells";
                   return (
                     <Box
@@ -495,7 +592,12 @@ export const MonitoringWellsReportView = () => {
                   render={({ field: { value, onChange } }) => (
                     <FormControlLabel
                       disabled={(wells?.length ?? 0) < 2}
-                      control={<Switch checked={!!value} onChange={(e) => onChange(e.target.checked)} />}
+                      control={
+                        <Switch
+                          checked={!!value}
+                          onChange={(e) => onChange(e.target.checked)}
+                        />
+                      }
                       label="Average DTWs across all wells"
                     />
                   )}
@@ -532,7 +634,9 @@ export const MonitoringWellsReportView = () => {
                         inputRef={field.ref}
                         displayEmpty
                         MenuProps={{
-                          PaperProps: { style: { maxHeight: 48 * 6.5 + 8, width: 220 } },
+                          PaperProps: {
+                            style: { maxHeight: 48 * 6.5 + 8, width: 220 },
+                          },
                         }}
                       >
                         <MenuItem disabled value="">
@@ -545,7 +649,9 @@ export const MonitoringWellsReportView = () => {
                         ))}
                       </Select>
                       {fieldState.error && (
-                        <FormHelperText>{fieldState.error.message}</FormHelperText>
+                        <FormHelperText>
+                          {fieldState.error.message}
+                        </FormHelperText>
                       )}
                     </FormControl>
                   )}
@@ -559,20 +665,25 @@ export const MonitoringWellsReportView = () => {
                 </Typography>
                 <Box sx={{ width: "100%", height: 550 }}>
                   <LineChart
-                    xAxis={[{
-                      data: allTimestamps,
-                      scaleType: "time",
-                      valueFormatter: (value) => {
-                        const date = dayjs(value);
-                        const isMidnight = date.hour() === 0 && date.minute() === 0;
-                        return isMidnight
-                          ? date.format("MMM D, YYYY")
-                          : date.format("MMM D, YYYY HH:mm");
-                      }
-                    }]}
-                    yAxis={[{
-                      reverse: true,
-                    }]}
+                    xAxis={[
+                      {
+                        data: allTimestamps,
+                        scaleType: "time",
+                        valueFormatter: (value) => {
+                          const date = dayjs(value);
+                          const isMidnight =
+                            date.hour() === 0 && date.minute() === 0;
+                          return isMidnight
+                            ? date.format("MMM D, YYYY")
+                            : date.format("MMM D, YYYY HH:mm");
+                        },
+                      },
+                    ]}
+                    yAxis={[
+                      {
+                        reverse: true,
+                      },
+                    ]}
                     series={series}
                     slotProps={{
                       legend: {
@@ -602,6 +713,58 @@ export const MonitoringWellsReportView = () => {
                 },
               }}
             />
+          </Grid>
+          <Grid item xs={12}>
+            <Box sx={{ py: 2 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                Report Averages ({bucketLabel})
+              </Typography>
+
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                All selected monitoring wells average:{" "}
+                <strong>
+                  {allWellsLatest?.avg_value != null
+                    ? `${allWellsLatest.avg_value.toFixed(2)} ft`
+                    : "—"}
+                </strong>
+              </Typography>
+
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                display="block"
+                sx={{ mb: 1 }}
+              >
+                {from?.format("MMM D, YYYY")} → {to?.format("MMM D, YYYY")}
+              </Typography>
+
+              {reportAveragesQuery.isLoading && (
+                <Typography variant="body2">Loading averages…</Typography>
+              )}
+              {reportAveragesQuery.isError && (
+                <Typography variant="body2" color="error">
+                  Failed to load averages: {reportAveragesQuery.error.message}
+                </Typography>
+              )}
+
+              {!reportAveragesQuery.isLoading &&
+                !reportAveragesQuery.isError && (
+                  <Box sx={{ height: 280, mt: 1 }}>
+                    <DataGrid
+                      rows={avgRows}
+                      columns={avgColumns}
+                      disableColumnMenu
+                      hideFooterSelectedRowCount
+                      pageSizeOptions={[5, 10]}
+                      initialState={{
+                        pagination: {
+                          paginationModel: { pageSize: 5, page: 0 },
+                        },
+                      }}
+                    />
+                  </Box>
+                )}
+            </Box>
           </Grid>
           <Grid item xs={12}>
             <Button onClick={() => reset()}>Reset</Button>
