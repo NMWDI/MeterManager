@@ -5,9 +5,18 @@ import { QueryClient, QueryClientProvider } from "react-query";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { SnackbarProvider, enqueueSnackbar } from "notistack";
-import { BackupsView, Home, Login, Settings } from "./views";
-import { MonitoringWellsView } from "./views/MonitoringWells/MonitoringWellsView";
-import { ActivitiesView } from "./views/Activities/ActivitiesView";
+
+import {
+
+
+  ActivitiesView,
+  MonitoringWellsView,
+  BackupsView,
+  Home,
+  Login,
+  Settings,
+  NotFound
+} from "./views";
 import { ActivityPhotoView } from "./views/Activities/ActivityPhotoView";
 import { MetersView } from "./views/Meters/MetersView";
 import { PartsView } from "./views/Parts/PartsView";
@@ -22,8 +31,8 @@ import { MaintenanceReportView } from "./views/Reports/Maintenance";
 import { PartsUsedReportView } from "./views/Reports/PartsUsed";
 import { BoardReportView } from "./views/Reports/Board";
 import { ChloridesReportView } from "./views/Reports/Chlorides";
+
 import { AppLayout } from "./AppLayout";
-import { NotFound } from "./views/NotFound";
 import { ProtectedRoute } from "./ProtectedRoute";
 
 export const App = () => {

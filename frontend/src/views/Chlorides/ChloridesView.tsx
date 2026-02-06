@@ -11,24 +11,27 @@ import {
   AlertTitle,
   Grid,
 } from "@mui/material";
+import { Science } from "@mui/icons-material";
 import { useMutation, useQuery } from "react-query";
 import { useAuthUser } from "react-auth-kit";
 import { useSnackbar } from "notistack";
-import { ChloridesTable } from "./ChloridesTable";
-import { ChloridesPlot } from "./ChloridesPlot";
-import { CreateModal, UpdateModal } from "../../components/Modals/Region";
+import dayjs, { Dayjs } from "dayjs";
+
+import { CreateModal, UpdateModal } from "@/components/Modals/Region";
 import {
   NewRegionMeasurement,
   PatchRegionMeasurement,
   SecurityScope,
   RegionMeasurementDTO,
-} from "../../interfaces";
-import dayjs, { Dayjs } from "dayjs";
-import { useFetchWithAuth } from "../../hooks";
-import { Science } from "@mui/icons-material";
-import { BackgroundBox } from "../../components/BackgroundBox";
-import { CustomCardHeader } from "../../components/CustomCardHeader";
-import { emptyToNull } from "../../utils";
+} from "@/interfaces";
+import { useFetchWithAuth } from "@/hooks";
+import {
+  BackgroundBox,
+  CustomCardHeader
+} from "@/components";
+import { emptyToNull } from "@/utils";
+import { ChloridesTable } from "./ChloridesTable";
+import { ChloridesPlot } from "./ChloridesPlot";
 
 export const ChloridesView = () => {
   const { enqueueSnackbar } = useSnackbar();
