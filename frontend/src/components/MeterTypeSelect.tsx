@@ -1,6 +1,6 @@
-import { useGetMeterTypeList } from "../service/ApiServiceNew";
 import { FormControl, InputLabel, MenuItem, Select } from "@mui/material";
-import { MeterTypeLU } from "../interfaces";
+import { useGetMeterTypeList } from "@/service";
+import { MeterTypeLU } from "@/interfaces";
 
 export default function MeterTypeSelect({
   selectedMeterTypeID,

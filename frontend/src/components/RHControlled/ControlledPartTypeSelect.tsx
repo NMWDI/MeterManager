@@ -1,4 +1,4 @@
-import { useGetPartTypeList } from "@/service/ApiServiceNew";
+import { useGetPartTypeList } from "@/service";
 import { PartTypeLU } from "@/interfaces";
 
 import { ControlledSelect } from "./ControlledSelect";

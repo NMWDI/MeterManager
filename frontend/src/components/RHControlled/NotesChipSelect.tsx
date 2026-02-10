@@ -1,8 +1,9 @@
-import ChipSelect from "../ChipSelect";
-import { NoteTypeLU } from "@/interfaces";
-import { useGetNoteTypes } from "@/service/ApiServiceNew";
-
 import { Controller } from "react-hook-form";
+
+import { NoteTypeLU } from "@/interfaces";
+import { useGetNoteTypes } from "@/service";
+
+import ChipSelect from "../ChipSelect";
 
 export const NotesChipSelect = ({ name, control }: any) => {
   const notesList = useGetNoteTypes();

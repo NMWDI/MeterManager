@@ -1,8 +1,7 @@
 import { Avatar, Button, ButtonProps } from "@mui/material";
-import { getRoleColor } from "../utils";
 import { Badge, Engineering, Face } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
-
+import { getRoleColor } from "@/utils";
 
 export const TopbarUserButton = ({
   display_name,
@@ -10,9 +9,9 @@ export const TopbarUserButton = ({
   src,
   ...buttonProps
 }: {
-  display_name: string,
-  role: string,
-  src?: string
+  display_name: string;
+  role: string;
+  src?: string;
 } & ButtonProps) => {
   const theme = useTheme();
   const buttonColor = getRoleColor(role);
@@ -23,22 +22,25 @@ export const TopbarUserButton = ({
 
   const roleIcons: Record<string, JSX.Element> = {
     Admin: <Badge fontSize="small" sx={{ color: primary.contrastText }} />,
-    Technician: <Engineering fontSize="small" sx={{ color: secondary.contrastText }} />,
+    Technician: (
+      <Engineering fontSize="small" sx={{ color: secondary.contrastText }} />
+    ),
   };
 
-  const renderRoleIcon = () => roleIcons[role] ?? <Face fontSize="small" sx={{ color: warning.main }} />;
+  const renderRoleIcon = () =>
+    roleIcons[role] ?? <Face fontSize="small" sx={{ color: warning.main }} />;
 
   const roleBgColor: Record<string, string> = {
     Admin: primary.dark,
     Technician: secondary.dark,
-    OSE: warning.dark
-  }
+    OSE: warning.dark,
+  };
 
   const roleBorderColor: Record<string, string> = {
     Admin: primary.contrastText,
     Technician: secondary.contrastText,
-    OSE: warning.contrastText
-  }
+    OSE: warning.contrastText,
+  };
 
   return (
     <Button
@@ -61,7 +63,7 @@ export const TopbarUserButton = ({
           ml: 1,
           bgcolor: roleBgColor[role],
           borderColor: roleBorderColor[role],
-          borderStyle: 'solid',
+          borderStyle: "solid",
           borderWidth: "2px",
         }}
         src={src}
@@ -70,4 +72,4 @@ export const TopbarUserButton = ({
       </Avatar>
     </Button>
   );
-}
+};

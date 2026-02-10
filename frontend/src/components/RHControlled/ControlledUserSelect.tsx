@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useAuthUser } from "react-auth-kit";
 import { User } from "@/interfaces";
-import { useGetUserList } from "@/service/ApiServiceNew";
+import { useGetUserList } from "@/service";
 
 import { ControlledSelect } from "./ControlledSelect";
 

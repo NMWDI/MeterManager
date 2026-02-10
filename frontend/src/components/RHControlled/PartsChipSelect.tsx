@@ -1,7 +1,7 @@
 import { Controller } from "react-hook-form";
 
 import { Part } from "@/interfaces";
-import { useGetMeterPartsList } from "@/service/ApiServiceNew";
+import { useGetMeterPartsList } from "@/service";
 
 import ChipSelect from "../ChipSelect";
 

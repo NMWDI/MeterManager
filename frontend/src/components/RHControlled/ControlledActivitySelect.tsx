@@ -1,4 +1,4 @@
-import { useGetActivityTypeList } from "@/service/ApiServiceNew";
+import { useGetActivityTypeList } from "@/service";
 import { ActivityTypeLU } from "@/interfaces";
 import { ControlledSelect } from "./ControlledSelect";
 

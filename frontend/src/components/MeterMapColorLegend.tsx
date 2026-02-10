@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useLeafletContext } from "@react-leaflet/core";
 import L from "leaflet";
-import { PM_COLORS } from "../constants";
+import { PM_COLORS } from "@/constants";
 
 export const MeterMapColorLegend = () => {
   const context = useLeafletContext();
@@ -9,7 +9,7 @@ export const MeterMapColorLegend = () => {
   useEffect(() => {
     const legend = new L.Control({ position: "bottomleft" });
 
-    legend.onAdd = function() {
+    legend.onAdd = function () {
       const div = L.DomUtil.create("div", "info legend");
 
       div.style.background = "white";
@@ -53,5 +53,4 @@ export const MeterMapColorLegend = () => {
   }, [context.map]);
 
   return null;
-}
-
+};

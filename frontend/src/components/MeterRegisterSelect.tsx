@@ -1,5 +1,4 @@
 import { useEffect, useMemo } from "react";
-import { useGetMeterRegisterList } from "../service/ApiServiceNew";
 import {
   FormControl,
   InputLabel,
@@ -7,7 +6,8 @@ import {
   Select,
   FormHelperText,
 } from "@mui/material";
-import { MeterRegister, MeterType } from "../interfaces";
+import { useGetMeterRegisterList } from "@/service";
+import { MeterRegister, MeterType } from "@/interfaces";
 
 function getRegisterTitle(register: MeterRegister) {
   //Describing the register can be a bit complex, so this function will return a string that describes the register

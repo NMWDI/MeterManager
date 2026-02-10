@@ -28,7 +28,7 @@ import {
   Delete,
   Save,
 } from "@mui/icons-material";
-import { useGetUserList } from "@/service/ApiServiceNew";
+import { useGetUserList } from "@/service";
 import { useQuery } from "react-query";
 import { useFetchWithAuth } from "@/hooks";
 import { MonitoredWell, PatchRegionMeasurement } from "@/interfaces";

@@ -7,7 +7,7 @@ import {
   OutlinedInput,
   Select,
 } from "@mui/material";
-import CancelIcon from "@mui/icons-material/Cancel";
+import { Cancel } from "@mui/icons-material";
 
 interface chipselectitem {
   id: number;
@@ -45,7 +45,7 @@ export default function ChipSelect({
                 label={value.name}
                 clickable
                 deleteIcon={
-                  <CancelIcon
+                  <Cancel
                     onMouseDown={(event: any) => event.stopPropagation()}
                   />
                 }

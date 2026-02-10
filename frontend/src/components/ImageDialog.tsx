@@ -1,5 +1,5 @@
 import { Dialog, DialogContent, IconButton, Box } from "@mui/material";
-import CloseIcon from "@mui/icons-material/Close";
+import { Close } from "@mui/icons-material";
 
 export const ImageDialog = ({
   open,
@@ -25,7 +25,7 @@ export const ImageDialog = ({
             "&:hover": { backgroundColor: "rgba(0,0,0,0.8)" },
           }}
         >
-          <CloseIcon />
+          <Close />
         </IconButton>
         {src && (
           <Box

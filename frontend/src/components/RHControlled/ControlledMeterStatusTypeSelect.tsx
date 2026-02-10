@@ -1,4 +1,4 @@
-import { useGetMeterStatusTypeList } from "@/service/ApiServiceNew";
+import { useGetMeterStatusTypeList } from "@/service";
 import { MeterStatus } from "@/interfaces";
 
 import { ControlledSelect } from "./ControlledSelect";

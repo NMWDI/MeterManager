@@ -1,7 +1,7 @@
 import { Controller } from "react-hook-form";
 
 import { ServiceTypeLU } from "@/interfaces";
-import { useGetServiceTypes } from "@/service/ApiServiceNew";
+import { useGetServiceTypes } from "@/service";
 
 import ChipSelect from "../ChipSelect";
 

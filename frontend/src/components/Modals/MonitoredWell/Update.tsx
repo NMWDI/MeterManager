@@ -20,7 +20,7 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 
 import { DatePicker, TimePicker } from "@mui/x-date-pickers";
-import { useGetUserList } from "@/service/ApiServiceNew";
+import { useGetUserList } from "@/service";
 import { PatchWellMeasurement } from "@/interfaces";
 
 export function UpdateModal({

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { TextField } from "@mui/material";
 import { useDebounce } from "use-debounce";
-import { useGetWells } from "@/service/ApiServiceNew";
+import { useGetWells } from "@/service";
 import { Well } from "@/interfaces";
 
 import { ControlledAutocomplete } from "./ControlledAutocomplete";

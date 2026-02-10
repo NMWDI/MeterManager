@@ -2,7 +2,7 @@ import { useState } from "react";
 import { TextField } from "@mui/material";
 import { useDebounce } from "use-debounce";
 
-import { useGetMeterList } from "@/service/ApiServiceNew";
+import { useGetMeterList } from "@/service";
 import { MeterListDTO } from "@/interfaces";
 import { MeterStatusNames } from "@/enums";
 

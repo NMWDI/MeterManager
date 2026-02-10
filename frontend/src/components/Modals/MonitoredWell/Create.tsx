@@ -22,7 +22,7 @@ dayjs.extend(timezone);
 
 import { DatePicker, TimePicker } from "@mui/x-date-pickers";
 import { NewWellMeasurement, SecurityScope } from "@/interfaces";
-import { useGetUserList } from "@/service/ApiServiceNew";
+import { useGetUserList } from "@/service";
 import { Save } from "@mui/icons-material";
 
 export const CreateModal = ({

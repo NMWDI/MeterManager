@@ -30,7 +30,7 @@ import timezone from "dayjs/plugin/timezone";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-import { useGetUserList } from "@/service/ApiServiceNew";
+import { useGetUserList } from "@/service";
 import { useFetchWithAuth } from "@/hooks";
 
 export const CreateModal = ({

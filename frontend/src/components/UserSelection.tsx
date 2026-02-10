@@ -1,7 +1,7 @@
-import { User } from "../interfaces";
 import { FormControl, InputLabel, Select, MenuItem } from "@mui/material";
-import { useGetUserList } from "../service/ApiServiceNew";
 import { useAuthUser } from "react-auth-kit";
+import { useGetUserList } from "@/service";
+import { User } from "@/interfaces";
 
 export default function UserSelection({
   selectedUser,
