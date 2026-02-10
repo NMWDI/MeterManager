@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { useQueryClient } from "react-query";
 import {
@@ -11,10 +11,8 @@ import {
   Grid,
   Stack,
 } from "@mui/material";
-import AddIcon from "@mui/icons-material/Add";
-import EditIcon from "@mui/icons-material/Edit";
-import SaveIcon from "@mui/icons-material/Save";
-import SaveAsIcon from "@mui/icons-material/SaveAs";
+import { Add, Edit, Save, SaveAs } from "@mui/icons-material";
+import { useAuthUser } from "react-auth-kit";
 import * as Yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { enqueueSnackbar } from "notistack";
@@ -25,8 +23,7 @@ import {
   useGetWaterSources,
   useGetWellStatusTypes,
   useUpdateWell,
-} from "../../service/ApiServiceNew";
-import ControlledTextbox from "../../components/RHControlled/ControlledTextbox";
+} from "@/service/ApiServiceNew";
 import {
   SubmitWellCreate,
   WellUpdate,
@@ -34,15 +31,17 @@ import {
   Well,
   WellStatus,
   WellUseLU,
-} from "../../interfaces";
-import { ControlledSelect } from "../../components/RHControlled/ControlledSelect";
-import ControlledDMS from "../../components/RHControlled/ControlledDMS";
-import { GCSdimension } from "../../enums";
-import { MergeWellModal } from "../../components/MergeWellModal";
-import { useAuthUser } from "react-auth-kit";
-import { SecurityScope } from "../../interfaces";
-import ControlledCheckbox from "../../components/RHControlled/ControlledCheckbox";
-import { CustomCardHeader } from "../../components/CustomCardHeader";
+  SecurityScope,
+} from "@/interfaces";
+import {
+  ControlledTextbox,
+  ControlledSelect,
+  ControlledDMS,
+  MergeWellModal,
+  ControlledCheckbox,
+  CustomCardHeader,
+} from "@/components";
+import { GCSdimension } from "@/enums";
 
 const WellResolverSchema: Yup.ObjectSchema<any> = Yup.object().shape({
   use_type: Yup.object().required("Please select a use type."),
@@ -124,7 +123,7 @@ export const WellDetailsCard = ({
   const hasErrors = () => Object.keys(errors).length > 0;
 
   // Modal related functions
-  const [isWellMergeModalOpen, setIsWellMergeModalOpen] = React.useState(false);
+  const [isWellMergeModalOpen, setIsWellMergeModalOpen] = useState(false);
   const handleOpenMergeModal = () => setIsWellMergeModalOpen(true);
   const handleCloseMergeModal = () => setIsWellMergeModalOpen(false);
 
@@ -132,7 +131,7 @@ export const WellDetailsCard = ({
     <Card>
       <CustomCardHeader
         title={wellAddMode ? "Create Well" : "Edit Well"}
-        icon={wellAddMode ? AddIcon : EditIcon}
+        icon={wellAddMode ? Add : Edit}
       />
       <CardContent>
         <Grid container spacing={2}>
@@ -315,7 +314,7 @@ export const WellDetailsCard = ({
                   variant="contained"
                   onClick={handleSubmit(onAddWell, onErr)}
                 >
-                  <SaveIcon sx={{ fontSize: "1.2rem" }} />
+                  <Save sx={{ fontSize: "1.2rem" }} />
                   &nbsp; Save New Well
                 </Button>
               ) : (
@@ -324,7 +323,7 @@ export const WellDetailsCard = ({
                   variant="contained"
                   onClick={handleSubmit(onSaveChanges, onErr)}
                 >
-                  <SaveAsIcon sx={{ fontSize: "1.2rem" }} />
+                  <SaveAs sx={{ fontSize: "1.2rem" }} />
                   &nbsp; Save Changes
                 </Button>
               )}

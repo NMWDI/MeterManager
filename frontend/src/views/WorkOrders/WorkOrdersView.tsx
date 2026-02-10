@@ -1,16 +1,16 @@
 import { Card, CardContent } from "@mui/material";
-import FormatListBulletedOutlinedIcon from "@mui/icons-material/FormatListBulletedOutlined";
-import WorkOrdersTable from "./WorkOrdersTable";
-import { BackgroundBox } from "../../components/BackgroundBox";
-import { CustomCardHeader } from "../../components/CustomCardHeader";
+import { FormatListBulletedOutlined } from "@mui/icons-material";
+import { BackgroundBox, CustomCardHeader } from "@/components";
 
-export default function WorkOrdersView() {
+import WorkOrdersTable from "./WorkOrdersTable";
+
+export const WorkOrdersView = () => {
   return (
     <BackgroundBox>
-      <Card sx={{ height: "fit-content", overflowX: 'auto' }}>
+      <Card sx={{ height: "fit-content", overflowX: "auto" }}>
         <CustomCardHeader
           title="Work Orders"
-          icon={FormatListBulletedOutlinedIcon}
+          icon={FormatListBulletedOutlined}
         />
         <CardContent>
           <WorkOrdersTable />
@@ -18,4 +18,4 @@ export default function WorkOrdersView() {
       </Card>
     </BackgroundBox>
   );
-}
+};

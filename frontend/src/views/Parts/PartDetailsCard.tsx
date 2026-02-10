@@ -27,10 +27,12 @@ import {
   useGetPart,
   useUpdatePart,
 } from "@/service/ApiServiceNew";
-import ControlledTextbox from "@/components/RHControlled/ControlledTextbox";
-import ControlledPartTypeSelect from "@/components/RHControlled/ControlledPartTypeSelect";
-import { ControlledSelectNonObject } from "@/components/RHControlled/ControlledSelect";
-import { CustomCardHeader } from "@/components";
+import {
+  ControlledTextbox,
+  ControlledPartTypeSelect,
+  ControlledSelectNonObject,
+  CustomCardHeader,
+} from "@/components";
 import { MeterTypeLU, Part } from "@/interfaces";
 
 const PartResolverSchema: Yup.ObjectSchema<any> = Yup.object().shape({

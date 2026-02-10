@@ -1,11 +1,13 @@
 import { Grid } from "@mui/material";
-import ControlledMeterSelection from "../../../components/RHControlled/ControlledMeterSelection";
-import ControlledActivitySelect from "../../../components/RHControlled/ControlledActivitySelect";
-import ControlledUserSelect from "../../../components/RHControlled/ControlledUserSelect";
-import ControlledDatepicker from "../../../components/RHControlled/ControlledDatepicker";
-import ControlledTimepicker from "../../../components/RHControlled/ControlledTimepicker";
-import ControlledCheckbox from "../../../components/RHControlled/ControlledCheckbox";
-import { ControlledWorkOrderSelect } from "../../../components/RHControlled/ControlledWorkOrderSelect";
+import {
+  ControlledActivitySelect,
+  ControlledCheckbox,
+  ControlledDatepicker,
+  ControlledMeterSelection,
+  ControlledTimepicker,
+  ControlledUserSelect,
+  ControlledWorkOrderSelect,
+} from "@/components";
 
 export function MeterActivitySelection({ control, errors, setValue }: any) {
   return (

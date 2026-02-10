@@ -8,27 +8,21 @@ const disabledInputStyle = {
   cursor: "default",
 };
 
-export default function ControlledTextbox({
-  name,
-  control,
-  ...childProps
-}: any) {
-  return (
-    <Controller
-      name={name}
-      control={control}
-      defaultValue={""}
-      render={({ field }) => (
-        <TextField
-          {...field}
-          variant="outlined"
-          size="small"
-          fullWidth
-          sx={disabledInputStyle}
-          value={field.value ?? ""}
-          {...childProps}
-        />
-      )}
-    />
-  );
-}
+export const ControlledTextbox = ({ name, control, ...childProps }: any) => (
+  <Controller
+    name={name}
+    control={control}
+    defaultValue={""}
+    render={({ field }) => (
+      <TextField
+        {...field}
+        variant="outlined"
+        size="small"
+        fullWidth
+        sx={disabledInputStyle}
+        value={field.value ?? ""}
+        {...childProps}
+      />
+    )}
+  />
+);

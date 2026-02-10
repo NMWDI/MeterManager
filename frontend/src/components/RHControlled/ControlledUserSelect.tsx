@@ -1,16 +1,17 @@
 import { useState } from "react";
-import { ControlledSelect } from "./ControlledSelect";
-import { User } from "../../interfaces";
-import { useGetUserList } from "../../service/ApiServiceNew";
 import { useAuthUser } from "react-auth-kit";
+import { User } from "@/interfaces";
+import { useGetUserList } from "@/service/ApiServiceNew";
 
-export default function ControlledUserSelect({
+import { ControlledSelect } from "./ControlledSelect";
+
+export const ControlledUserSelect = ({
   name,
   control,
   hideAndSelectCurrentUser = false,
   setValue = null,
   ...childProps
-}: any) {
+}: any) => {
   const [isCurrentUserSet, setIsCurrentUserSet] = useState<boolean>(false);
 
   if (!hideAndSelectCurrentUser) {
@@ -36,4 +37,4 @@ export default function ControlledUserSelect({
     }
     return null;
   }
-}
+};

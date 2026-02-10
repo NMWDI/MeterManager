@@ -11,12 +11,14 @@ import {
   Grid,
   Typography,
 } from "@mui/material";
-import AddIcon from "@mui/icons-material/Add";
-import EditIcon from "@mui/icons-material/Edit";
-import SaveIcon from "@mui/icons-material/Save";
-import SaveAsIcon from "@mui/icons-material/SaveAs";
-import LockResetIcon from "@mui/icons-material/LockReset";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import {
+  Add,
+  Edit,
+  Save,
+  SaveAs,
+  LockReset,
+  ExpandMore,
+} from "@mui/icons-material";
 import * as Yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { enqueueSnackbar } from "notistack";
@@ -26,14 +28,14 @@ import {
   useUpdateUser,
   useGetRoles,
   useUpdateUserPassword,
-} from "../../service/ApiServiceNew";
-import ControlledTextbox from "../../components/RHControlled/ControlledTextbox";
-import { UpdatedUserPassword, User, UserRole } from "../../interfaces";
+} from "@/service/ApiServiceNew";
 import {
+  ControlledTextbox,
   ControlledSelect,
   ControlledSelectNonObject,
-} from "../../components/RHControlled/ControlledSelect";
-import { CustomCardHeader } from "../../components/CustomCardHeader";
+  CustomCardHeader,
+} from "@/components";
+import { UpdatedUserPassword, User, UserRole } from "@/interfaces";
 
 const UserResolverSchema: Yup.ObjectSchema<any> = Yup.object().shape({
   full_name: Yup.string().required("Please enter a full name."),
@@ -50,21 +52,20 @@ const formatSubmission = (user: User) => {
   formattedUser.user_role_id = user.user_role?.id;
   delete formattedUser.user_role;
   return formattedUser;
-}
+};
 
 const SetNewPasswordAccordion = ({
   control,
   errorMessage,
-  handleSubmit
+  handleSubmit,
 }: any) => {
   return (
     <Accordion sx={{ backgroundColor: "#f0f0f0" }}>
       <AccordionSummary
-        expandIcon={<ExpandMoreIcon />}
+        expandIcon={<ExpandMore />}
         sx={{ m: 0, mx: 2, p: 0, color: "#595959" }}
       >
-        <LockResetIcon style={{ fontSize: "1.2rem", marginTop: "2px" }} />{" "}
-        &nbsp;
+        <LockReset style={{ fontSize: "1.2rem", marginTop: "2px" }} /> &nbsp;
         <Typography>Set New Password for User</Typography>
       </AccordionSummary>
       <AccordionDetails>
@@ -81,7 +82,7 @@ const SetNewPasswordAccordion = ({
           </Grid>
           <Grid item xs={12} xl="auto">
             <Button color="primary" variant="contained" onClick={handleSubmit}>
-              <LockResetIcon sx={{ fontSize: "1.2rem" }} />
+              <LockReset sx={{ fontSize: "1.2rem" }} />
               &nbsp; Reset Password
             </Button>
           </Grid>
@@ -89,7 +90,7 @@ const SetNewPasswordAccordion = ({
       </AccordionDetails>
     </Accordion>
   );
-}
+};
 
 export const UserDetailsCard = ({
   selectedUser,
@@ -113,11 +114,13 @@ export const UserDetailsCard = ({
   const onSuccessfulUpdate = () =>
     enqueueSnackbar("Successfully Updated User!", { variant: "success" });
   const onSuccessfulPasswordUpdate = () =>
-    enqueueSnackbar("Successfully Updated User's Password!", { variant: "success" });
+    enqueueSnackbar("Successfully Updated User's Password!", {
+      variant: "success",
+    });
   const onSuccessfulCreate = () => {
     enqueueSnackbar("Successfully Created New User!", { variant: "success" });
     reset();
-  }
+  };
 
   const onErr = (data: any) => console.error("ERR: ", data);
 
@@ -125,7 +128,8 @@ export const UserDetailsCard = ({
   const createUser = useCreateUser(onSuccessfulCreate);
   const updateUserPassword = useUpdateUserPassword(onSuccessfulPasswordUpdate);
 
-  const onSaveChanges = (user: User) => updateUser.mutate(formatSubmission(user));
+  const onSaveChanges = (user: User) =>
+    updateUser.mutate(formatSubmission(user));
 
   const onCreateUser = (user: User) => {
     if (!user.password || user.password.length < 1) {
@@ -133,7 +137,7 @@ export const UserDetailsCard = ({
       return;
     }
     createUser.mutate(formatSubmission(user));
-  }
+  };
 
   const onUpdateUserPassword = (
     userId: number,
@@ -148,7 +152,7 @@ export const UserDetailsCard = ({
       new_password: newPassword,
     };
     updateUserPassword.mutate(updatedUserPassword);
-  }
+  };
 
   useEffect(() => {
     if (selectedUser != undefined) {
@@ -169,7 +173,7 @@ export const UserDetailsCard = ({
     <Card>
       <CustomCardHeader
         title={userAddMode ? "Create User" : "Edit User"}
-        icon={userAddMode ? AddIcon : EditIcon}
+        icon={userAddMode ? Add : Edit}
       />
       <CardContent>
         <Grid container item xs={12} spacing={2}>
@@ -262,7 +266,7 @@ export const UserDetailsCard = ({
               variant="contained"
               onClick={handleSubmit(onCreateUser, onErr)}
             >
-              <SaveIcon sx={{ fontSize: "1.2rem" }} />
+              <Save sx={{ fontSize: "1.2rem" }} />
               &nbsp; Save New User
             </Button>
           ) : (
@@ -271,7 +275,7 @@ export const UserDetailsCard = ({
               variant="contained"
               onClick={handleSubmit(onSaveChanges, onErr)}
             >
-              <SaveAsIcon sx={{ fontSize: "1.2rem" }} />
+              <SaveAs sx={{ fontSize: "1.2rem" }} />
               &nbsp; Save Changes
             </Button>
           )}

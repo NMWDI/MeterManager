@@ -1,12 +1,12 @@
-import { useGetActivityTypeList } from "../../service/ApiServiceNew";
-import { ActivityTypeLU } from "../../interfaces";
+import { useGetActivityTypeList } from "@/service/ApiServiceNew";
+import { ActivityTypeLU } from "@/interfaces";
 import { ControlledSelect } from "./ControlledSelect";
 
-export default function ControlledActivitySelect({
+export const ControlledActivitySelect = ({
   name,
   control,
   ...childProps
-}: any) {
+}: any) => {
   const activityTypeList = useGetActivityTypeList();
 
   return (
@@ -21,4 +21,4 @@ export default function ControlledActivitySelect({
       value={activityTypeList.isLoading ? "Loading..." : childProps.value}
     />
   );
-}
+};

@@ -3,11 +3,13 @@ import { Box, Button, Grid, Typography, IconButton } from "@mui/material";
 import { UseQueryResult } from "react-query";
 import { Delete } from "@mui/icons-material";
 import { useFieldArray, useWatch } from "react-hook-form";
-import { ObservedPropertyTypeLU } from "../../../interfaces";
-import { useGetPropertyTypes } from "../../../service/ApiServiceNew";
-import { ControlledSelectNonObject } from "../../../components/RHControlled/ControlledSelect";
-import ControlledTimepicker from "../../../components/RHControlled/ControlledTimepicker";
-import ControlledTextbox from "../../../components/RHControlled/ControlledTextbox";
+import { ObservedPropertyTypeLU } from "@/interfaces";
+import { useGetPropertyTypes } from "@/service/ApiServiceNew";
+import {
+  ControlledSelectNonObject,
+  ControlledTimepicker,
+  ControlledTextbox,
+} from "@/components";
 import dayjs from "dayjs";
 
 const ObservationRow = ({

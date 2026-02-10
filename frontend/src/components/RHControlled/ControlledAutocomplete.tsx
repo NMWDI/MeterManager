@@ -8,7 +8,7 @@ const disabledInputStyle = {
   cursor: "default",
 };
 
-export default function ControlledAutocomplete({
+export const ControlledAutocomplete = ({
   control,
   name,
   options = [],
@@ -17,37 +17,35 @@ export default function ControlledAutocomplete({
   isOptionEqualToValue,
   multiple = false,
   ...childProps
-}: any) {
-  return (
-    <Controller
-      name={name}
-      control={control}
-      defaultValue={multiple ? [] : null}
-      render={({ field }) => {
-        const { value, onChange, ...restField } = field;
+}: any) => (
+  <Controller
+    name={name}
+    control={control}
+    defaultValue={multiple ? [] : null}
+    render={({ field }) => {
+      const { value, onChange, ...restField } = field;
 
-        const safeValue = multiple
-          ? Array.isArray(value)
-            ? value
-            : []
-          : value ?? null;
+      const safeValue = multiple
+        ? Array.isArray(value)
+          ? value
+          : []
+        : (value ?? null);
 
-        return (
-          <Autocomplete
-            {...restField}
-            multiple={multiple}
-            disableCloseOnSelect={multiple}
-            options={options}
-            groupBy={groupBy}
-            getOptionLabel={getOptionLabel}
-            isOptionEqualToValue={isOptionEqualToValue}
-            value={safeValue}
-            onChange={(_, newValue) => onChange(newValue)}
-            sx={disabledInputStyle}
-            {...childProps}
-          />
-        );
-      }}
-    />
-  );
-}
+      return (
+        <Autocomplete
+          {...restField}
+          multiple={multiple}
+          disableCloseOnSelect={multiple}
+          options={options}
+          groupBy={groupBy}
+          getOptionLabel={getOptionLabel}
+          isOptionEqualToValue={isOptionEqualToValue}
+          value={safeValue}
+          onChange={(_, newValue) => onChange(newValue)}
+          sx={disabledInputStyle}
+          {...childProps}
+        />
+      );
+    }}
+  />
+);

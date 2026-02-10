@@ -1,9 +1,11 @@
-import ChipSelect from "../ChipSelect";
-import { Part } from "../../interfaces";
-import { useGetMeterPartsList } from "../../service/ApiServiceNew";
 import { Controller } from "react-hook-form";
 
-export default function PartsChipSelect({ name, control, meterid }: any) {
+import { Part } from "@/interfaces";
+import { useGetMeterPartsList } from "@/service/ApiServiceNew";
+
+import ChipSelect from "../ChipSelect";
+
+export const PartsChipSelect = ({ name, control, meterid }: any) => {
   const partsList = useGetMeterPartsList({ meter_id: meterid });
 
   return (
@@ -42,4 +44,4 @@ export default function PartsChipSelect({ name, control, meterid }: any) {
       }}
     />
   );
-}
+};

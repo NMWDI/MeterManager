@@ -1,10 +1,7 @@
 import { useEffect } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { Alert, Button, Card, CardContent, Grid } from "@mui/material";
-import AddIcon from "@mui/icons-material/Add";
-import EditIcon from "@mui/icons-material/Edit";
-import SaveIcon from "@mui/icons-material/Save";
-import SaveAsIcon from "@mui/icons-material/SaveAs";
+import { Add, Edit, Save, SaveAs } from "@mui/icons-material";
 import * as Yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { enqueueSnackbar } from "notistack";
@@ -12,11 +9,13 @@ import { enqueueSnackbar } from "notistack";
 import {
   useCreateMeterType,
   useUpdateMeterType,
-} from "../../service/ApiServiceNew";
-import ControlledTextbox from "../../components/RHControlled/ControlledTextbox";
-import { MeterTypeLU } from "../../interfaces";
-import { ControlledSelectNonObject } from "../../components/RHControlled/ControlledSelect";
-import { CustomCardHeader } from "../../components/CustomCardHeader";
+} from "@/service/ApiServiceNew";
+import {
+  ControlledTextbox,
+  ControlledSelectNonObject,
+  CustomCardHeader,
+} from "@/components";
+import { MeterTypeLU } from "@/interfaces";
 
 const MeterTypeResolverSchema: Yup.ObjectSchema<any> = Yup.object().shape({
   brand: Yup.string().required("Please enter a brand."),
@@ -82,7 +81,7 @@ export const MeterTypeDetailsCard = ({
     <Card>
       <CustomCardHeader
         title={meterTypeAddMode ? "Create Meter Type" : "Edit Meter Type"}
-        icon={meterTypeAddMode ? AddIcon : EditIcon}
+        icon={meterTypeAddMode ? Add : Edit}
       />
       <CardContent>
         <Grid container>
@@ -143,7 +142,7 @@ export const MeterTypeDetailsCard = ({
                 variant="contained"
                 onClick={handleSubmit(onAddPart, onErr)}
               >
-                <SaveIcon sx={{ fontSize: "1.2rem" }} />
+                <Save sx={{ fontSize: "1.2rem" }} />
                 &nbsp; Save New Meter Type
               </Button>
             ) : (
@@ -152,7 +151,7 @@ export const MeterTypeDetailsCard = ({
                 variant="contained"
                 onClick={handleSubmit(onSaveChanges, onErr)}
               >
-                <SaveAsIcon sx={{ fontSize: "1.2rem" }} />
+                <SaveAs sx={{ fontSize: "1.2rem" }} />
                 &nbsp; Save Changes
               </Button>
             )}

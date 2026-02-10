@@ -1,1 +1,2 @@
-export * from './ActivitiesView'
+export * from "./ActivitiesView";
+export * from "./ActivityPhotoView";

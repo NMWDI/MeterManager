@@ -1,12 +1,13 @@
-import { useGetPartTypeList } from "../../service/ApiServiceNew";
-import { PartTypeLU } from "../../interfaces";
+import { useGetPartTypeList } from "@/service/ApiServiceNew";
+import { PartTypeLU } from "@/interfaces";
+
 import { ControlledSelect } from "./ControlledSelect";
 
-export default function ControlledPartTypeSelect({
+export const ControlledPartTypeSelect = ({
   name,
   control,
   ...childProps
-}: any) {
+}: any) => {
   const partTypeList = useGetPartTypeList();
 
   return (
@@ -21,4 +22,4 @@ export default function ControlledPartTypeSelect({
       value={partTypeList.isLoading ? "Loading..." : childProps.value}
     />
   );
-}
+};

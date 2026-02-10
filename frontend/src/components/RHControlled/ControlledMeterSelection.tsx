@@ -1,16 +1,18 @@
 import { useState } from "react";
 import { TextField } from "@mui/material";
 import { useDebounce } from "use-debounce";
-import { useGetMeterList } from "../../service/ApiServiceNew";
-import { MeterListDTO } from "../../interfaces";
-import ControlledAutocomplete from "./ControlledAutocomplete";
-import { MeterStatusNames } from "../../enums";
 
-export default function ControlledMeterSelection({
+import { useGetMeterList } from "@/service/ApiServiceNew";
+import { MeterListDTO } from "@/interfaces";
+import { MeterStatusNames } from "@/enums";
+
+import { ControlledAutocomplete } from "./ControlledAutocomplete";
+
+export const ControlledMeterSelection = ({
   name,
   control,
   ...childProps
-}: any) {
+}: any) => {
   const [meterSearchQuery, setMeterSearchQuery] = useState<string>("");
   const [meterSearchQueryDebounced] = useDebounce(meterSearchQuery, 250);
 
@@ -63,4 +65,4 @@ export default function ControlledMeterSelection({
       }}
     />
   );
-}
+};

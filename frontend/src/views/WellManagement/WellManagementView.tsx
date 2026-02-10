@@ -1,11 +1,12 @@
-import { Grid } from "@mui/material";
 import { useEffect, useState } from "react";
-import { WellsTable } from "./WellsTable";
-import { Well } from "../../interfaces";
-import { WellDetailsCard } from "./WellDetailsCard";
-import { BackgroundBox } from "../../components/BackgroundBox";
+import { Grid } from "@mui/material";
+import { BackgroundBox } from "@/components";
+import { Well } from "@/interfaces";
 
-export default function WellManagementView() {
+import { WellsTable } from "./WellsTable";
+import { WellDetailsCard } from "./WellDetailsCard";
+
+export const WellManagementView = () => {
   const [wellAddMode, setWellAddMode] = useState<boolean>(true);
   const [selectedWell, setSelectedWell] = useState<Well>();
 
@@ -15,10 +16,7 @@ export default function WellManagementView() {
 
   return (
     <BackgroundBox>
-      <Grid
-        container
-        spacing={2}
-      >
+      <Grid container spacing={2}>
         <Grid item xs={12} lg={7}>
           <WellsTable
             setSelectedWell={setSelectedWell}
@@ -34,4 +32,4 @@ export default function WellManagementView() {
       </Grid>
     </BackgroundBox>
   );
-}
+};
