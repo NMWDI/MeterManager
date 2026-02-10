@@ -42,7 +42,7 @@ import {
 } from "@/components";
 import { RedMapIcon, BlackMapIcon } from "@/components/MapIcons";
 import { useFetchWithAuth } from "@/hooks";
-import { useGetWellLocations } from "@/service/ApiServiceNew";
+import { useGetWellLocations } from "@/service";
 import { Well } from "@/interfaces";
 import { WellStatus } from "@/enums";
 
@@ -363,8 +363,8 @@ export const ChloridesReportView = () => {
                             <Marker
                               key={well.id}
                               position={[
-                                well.location?.latitude,
-                                well.location?.longitude,
+                                well.location?.latitude ?? 0,
+                                well.location?.longitude ?? 0,
                               ]}
                               icon={
                                 well.well_status_id === WellStatus.PLUGGED

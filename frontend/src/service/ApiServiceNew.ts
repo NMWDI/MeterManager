@@ -51,7 +51,7 @@ import {
   WaterSource,
   WellStatus,
 } from "@/interfaces";
-import { IncreaseQuantityPayload } from "@/interfaces/IncreaseQuantityPayload";
+import { IncreaseQuantityPayload } from "@/interfaces";
 import { WorkOrderStatus } from "@/enums";
 import { API_URL } from "@/config";
 import { useNavigate } from "react-router-dom";
@@ -1274,9 +1274,14 @@ export function useCreatePart(onSuccess: Function) {
   return useMutation({
     mutationFn: async (part: Part) => {
       try {
-        //Due to the way the form gets generated for a new part, I need to populate part_type_id manually here
+        if (!part.part_type?.id) {
+          throw new Error("part_type_id is required but missing");
+        }
+
+        // Due to the way the form gets generated for a new part,
+        // I need to populate part_type_id manually here
         part.part_type_id = part.part_type?.id;
-        console.log(part);
+
         const response = await POSTFetch(route, part, authHeader());
 
         if (!response.ok) {

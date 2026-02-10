@@ -92,8 +92,8 @@ export default function WellSelectionMap({
                     <Marker
                       key={well.id}
                       position={[
-                        well.location?.latitude,
-                        well.location?.longitude,
+                        well.location?.latitude ?? 0,
+                        well.location?.longitude ?? 0,
                       ]}
                       eventHandlers={{
                         click: () => setSelectedWell(well),

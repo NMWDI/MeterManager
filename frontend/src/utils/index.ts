@@ -1,3 +1,4 @@
+export * from "./AssertDefined";
 export * from "./DateUtils";
 export * from "./DataStreamUtils";
 export * from "./EmptyToNull";

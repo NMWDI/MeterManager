@@ -13,12 +13,6 @@ import {
   TableHead,
   TableRow,
 } from "@mui/material";
-import { SecurityScope, Meter } from "@/interfaces";
-import {
-  useCreateMeter,
-  useGetMeter,
-  useUpdateMeter,
-} from "../../service/ApiServiceNew";
 import * as Yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import {
@@ -29,6 +23,8 @@ import {
   ControlledMeterStatusTypeSelect,
   ControlledMeterRegisterSelect,
 } from "@/components";
+import { SecurityScope, Meter } from "@/interfaces";
+import { useCreateMeter, useGetMeter, useUpdateMeter } from "@/service";
 import { formatLatLong } from "@/conversions";
 
 const MeterResolverSchema: Yup.ObjectSchema<any> = Yup.object().shape({
@@ -217,11 +213,12 @@ export const MeterDetailsFields = ({
                         : watch("well")?.location?.trss}
                     </TableCell>
                     <TableCell sx={{ fontSize: "1rem" }}>
-                      {watch("well")?.location?.latitude == null
+                      {!watch("well")?.location?.latitude ||
+                      !watch("well")?.location?.longitude
                         ? "--"
                         : formatLatLong(
-                            watch("well")?.location?.latitude,
-                            watch("well")?.location?.longitude,
+                            watch("well")?.location?.latitude ?? 0,
+                            watch("well")?.location?.longitude ?? 0,
                           )}
                     </TableCell>
                     <TableCell sx={{ fontSize: "1rem" }}>

@@ -1,9 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Box, Card, CardContent, Grid } from "@mui/material";
-import { MeterHistoryTable } from "./MeterHistoryTable";
-import { SelectedActivityDetails } from "./SelectedActivityDetails";
-import { SelectedObservationDetails } from "./SelectedObservationDetails";
-import { SelectedBlankCard } from "./SelectedBlankCard";
+import { ImageOutlined } from "@mui/icons-material";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { useGetMeterHistory } from "@/service";
 import {
@@ -12,13 +9,19 @@ import {
   PatchObservationForm,
 } from "@/interfaces";
 import { MeterHistoryType } from "@/enums";
+import { CustomCardHeader, ImageDialog, ImagePreviewGrid } from "@/components";
+
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
-import { CustomCardHeader, ImageDialog, ImagePreviewGrid } from "@/components";
-import { ImageOutlined } from "@mui/icons-material";
 dayjs.extend(utc);
 dayjs.extend(timezone);
+
+import { MeterHistoryTable } from "./MeterHistoryTable";
+import { SelectedActivityDetails } from "./SelectedActivityDetails";
+import { SelectedObservationDetails } from "./SelectedObservationDetails";
+import { SelectedBlankCard } from "./SelectedBlankCard";
+import { assertDefined } from "@/utils";
 
 export const MeterHistory = ({
   selectedMeterID,
@@ -83,6 +86,11 @@ export const MeterHistory = ({
   function convertHistoryActivity(
     historyItem: MeterHistoryDTO,
   ): PatchActivityForm {
+    assertDefined(
+      selectedMeterID,
+      "No meter selected (selectedMeterID is undefined)",
+    );
+
     let activity_details: PatchActivityForm = {
       activity_id: historyItem.history_item.id,
       meter_id: selectedMeterID,
