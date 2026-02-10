@@ -25,10 +25,7 @@ import {
   RegionMeasurementDTO,
 } from "@/interfaces";
 import { useFetchWithAuth } from "@/hooks";
-import {
-  BackgroundBox,
-  CustomCardHeader
-} from "@/components";
+import { BackgroundBox, CustomCardHeader } from "@/components";
 import { emptyToNull } from "@/utils";
 import { ChloridesTable } from "./ChloridesTable";
 import { ChloridesPlot } from "./ChloridesPlot";
@@ -91,7 +88,7 @@ export const ChloridesView = () => {
   const milligramPerLiterUnitId = 14;
   const { mutateAsync: createChlorideLevel } = useMutation({
     mutationKey: ["regions", "creation"],
-    mutationFn: (body: NewRegionMeasurement) =>
+    mutationFn: (body: Partial<NewRegionMeasurement>) =>
       fetchWithAuth({
         method: "POST",
         route: "/chlorides",
@@ -175,7 +172,7 @@ export const ChloridesView = () => {
 
   const error = errorRegions || errorManual;
 
-  const handleSubmitNewMeasurement = (data: NewRegionMeasurement) => {
+  const handleSubmitNewMeasurement = (data: Partial<NewRegionMeasurement>) => {
     if (regionId) {
       data.region_id = regionId;
       createChlorideLevel(data, { onSuccess: () => refetchManual() });
@@ -299,12 +296,14 @@ export const ChloridesView = () => {
           {authUser() && (
             <>
               <CreateModal
+                mode="region"
                 region_id={regionId ?? 0}
                 open={isNewModalOpen}
                 onClose={() => setIsNewModalOpen(false)}
                 handleSubmitNewMeasurement={handleSubmitNewMeasurement}
               />
               <UpdateModal
+                mode="region"
                 region_id={regionId ?? 0}
                 open={isUpdateModalOpen}
                 onClose={() => setIsUpdateModalOpen(false)}

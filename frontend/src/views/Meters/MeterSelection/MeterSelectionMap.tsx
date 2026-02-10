@@ -7,27 +7,30 @@ import {
   Marker,
   Pane,
 } from "react-leaflet";
-import { MeterMapDTO } from "../../../interfaces";
+import { MeterMapDTO } from "@/interfaces";
 
 import L from "leaflet";
 import { FeatureCollection } from "geojson";
 
 import "leaflet/dist/leaflet.css";
 import "@changey/react-leaflet-markercluster/dist/styles.min.css";
-import "../../../css/map.css";
-import { useGetMeterLocations } from "../../../service/ApiServiceNew";
-import * as tr_data from "../../../data/RoswellTR_v2.json";
-import * as ss_data from "../../../data/RoswellSS.json";
+import "@/css/map.css";
+import * as tr_data from "@/data/RoswellTR_v2.json";
+import * as ss_data from "@/data/RoswellSS.json";
 
 import icon from "leaflet/dist/images/marker-icon.png";
 import iconShadow from "leaflet/dist/images/marker-shadow.png";
+import { useGetMeterLocations } from "@/service";
 import { Box, Typography } from "@mui/material";
 
 // @ts-ignore
 import MarkerClusterGroup from "@changey/react-leaflet-markercluster";
-import { OpenStreetMapLayer, SatelliteLayer } from "../../../components";
-import { getMeterMarkerColor } from "../../../utils";
-import { MeterMapColorLegend } from "../../../components/MeterMapColorLegend";
+import {
+  OpenStreetMapLayer,
+  SatelliteLayer,
+  MeterMapColorLegend,
+} from "@/components";
+import { getMeterMarkerColor } from "@/utils";
 
 const DefaultIcon = L.icon({ iconUrl: icon, shadowUrl: iconShadow });
 L.Marker.prototype.options.icon = DefaultIcon;
@@ -51,16 +54,16 @@ export default function MeterSelectionMap({
       <Box
         sx={{
           borderRadius: 2,
-          overflow: 'hidden',
-          height: '100%',
+          overflow: "hidden",
+          height: "100%",
           minHeight: 320,
-          '& .leaflet-container': { height: '100%', width: '100%' },
+          "& .leaflet-container": { height: "100%", width: "100%" },
         }}
       >
         <MapContainer
           center={[33, -104.0]}
           zoom={8}
-          style={{ height: '100%', width: '100%' }}
+          style={{ height: "100%", width: "100%" }}
           maxZoom={18}
         >
           <LayersControl position="topleft">
@@ -97,12 +100,17 @@ export default function MeterSelectionMap({
               >
                 {meterMarkers.isSuccess &&
                   meterMarkers.data.map((meter: MeterMapDTO) => {
-                    const color = meter.last_pm ? getMeterMarkerColor(meter.last_pm) : "black";
+                    const color = meter.last_pm
+                      ? getMeterMarkerColor(meter.last_pm)
+                      : "black";
 
                     return (
                       <Marker
                         key={meter.id}
-                        position={[meter.location.latitude, meter.location.longitude]}
+                        position={[
+                          meter.location.latitude,
+                          meter.location.longitude,
+                        ]}
                         eventHandlers={{
                           click: () => onMeterSelection(meter.id),
                         }}
@@ -162,18 +170,27 @@ export default function MeterSelectionMap({
       {/* Loading and empty states */}
       {meterMarkers.isLoading && (
         <Box py={2}>
-          <Typography variant="h6" sx={{
-            pointerEvents: "none",
-            userSelect: "none",
-          }}>Loading meter markers...</Typography>
+          <Typography
+            variant="h6"
+            sx={{
+              pointerEvents: "none",
+              userSelect: "none",
+            }}
+          >
+            Loading meter markers...
+          </Typography>
         </Box>
       )}
       {meterMarkers.isSuccess && meterMarkers?.data.length === 0 && (
         <Box py={2}>
-          <Typography variant="h6" color="text.secondary" sx={{
-            pointerEvents: "none",
-            userSelect: "none",
-          }}>
+          <Typography
+            variant="h6"
+            color="text.secondary"
+            sx={{
+              pointerEvents: "none",
+              userSelect: "none",
+            }}
+          >
             No meters found for that search.
           </Typography>
         </Box>
@@ -181,10 +198,14 @@ export default function MeterSelectionMap({
       {/* Error */}
       {meterMarkers.isError && (
         <Box py={2}>
-          <Typography variant="h6" color="error" sx={{
-            pointerEvents: "none",
-            userSelect: "none",
-          }}>
+          <Typography
+            variant="h6"
+            color="error"
+            sx={{
+              pointerEvents: "none",
+              userSelect: "none",
+            }}
+          >
             Failed to load meters: {meterMarkers.error.message}
           </Typography>
         </Box>

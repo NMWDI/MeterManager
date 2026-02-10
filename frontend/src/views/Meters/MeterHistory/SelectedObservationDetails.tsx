@@ -31,7 +31,7 @@ import {
   useGetPropertyTypes,
   useUpdateObservation,
   useDeleteObservation,
-} from "@/service/ApiServiceNew";
+} from "@/service";
 
 export const SelectedObservationDetails = ({
   selectedObservation,

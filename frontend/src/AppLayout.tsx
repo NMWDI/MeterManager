@@ -1,19 +1,15 @@
 import { useState } from "react";
 import { Box } from "@mui/material";
-import Topbar from "./components/Topbar";
+import { Topbar } from "@/components";
 import Sidenav from "./sidenav";
 
 const drawerWidth = 250;
 
-export const AppLayout = ({
-  children,
-}: {
-  children: JSX.Element
-}) => {
+export const AppLayout = ({ children }: { children: JSX.Element }) => {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
-    <Box sx={{ display: "flex", flexGrow: 1, overflow: 'hidden' }}>
+    <Box sx={{ display: "flex", flexGrow: 1, overflow: "hidden" }}>
       <Topbar
         open={drawerOpen}
         onMenuClick={() => setDrawerOpen(!drawerOpen)}
@@ -35,7 +31,6 @@ export const AppLayout = ({
       >
         {children}
       </Box>
-    </Box >
+    </Box>
   );
 };
-

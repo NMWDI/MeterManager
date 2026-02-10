@@ -1,12 +1,13 @@
 import { Grid } from "@mui/material";
 import { useEffect, useState } from "react";
+import { User, UserRole } from "@/interfaces";
+import { BackgroundBox } from "@/components";
+
 import { UsersTable } from "./UsersTable";
 import { UserDetailsCard } from "./UserDetailsCard";
-import { User, UserRole } from "../../interfaces";
 import { RolesTable } from "./RolesTable";
 import { RoleDetailsCard } from "./RoleDetailsCard";
 import { PermissionsTable } from "./PermissionsTable";
-import { BackgroundBox } from "../../components/BackgroundBox";
 
 export const UserManagementView = () => {
   const [selectedUser, setSelectedUser] = useState<User>();
@@ -53,6 +54,6 @@ export const UserManagementView = () => {
           <PermissionsTable />
         </Grid>
       </Grid>
-    </BackgroundBox >
+    </BackgroundBox>
   );
 };

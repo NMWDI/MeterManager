@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, MouseEvent } from "react";
 import {
   AppBar,
   Toolbar,
@@ -18,7 +18,15 @@ import { useAuthUser, useSignOut } from "react-auth-kit";
 import { Login, Logout, Settings } from "@mui/icons-material";
 import { RoleChip, TopbarUserButton } from "./index";
 
-export default function Topbar({ open, onMenuClick, sx }: { open: boolean, onMenuClick: () => void; sx?: any }) {
+export const Topbar = ({
+  open,
+  onMenuClick,
+  sx,
+}: {
+  open: boolean;
+  onMenuClick: () => void;
+  sx?: any;
+}) => {
   const navigate = useNavigate();
   const signOut = useSignOut();
   const authUser = useAuthUser();
@@ -28,7 +36,7 @@ export default function Topbar({ open, onMenuClick, sx }: { open: boolean, onMen
   const role: string = authUser()?.user_role?.name;
   const isLoggedIn = !!authUser();
 
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+  const handleMenuOpen = (event: MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
 
@@ -60,7 +68,7 @@ export default function Topbar({ open, onMenuClick, sx }: { open: boolean, onMen
           >
             <MenuIcon />
           </IconButton>
-          {!open ?
+          {!open ? (
             <Typography
               variant="h6"
               noWrap
@@ -80,7 +88,7 @@ export default function Topbar({ open, onMenuClick, sx }: { open: boolean, onMen
             >
               Meter Manager
             </Typography>
-            : null}
+          ) : null}
         </Box>
 
         {isLoggedIn ? (
@@ -95,8 +103,8 @@ export default function Topbar({ open, onMenuClick, sx }: { open: boolean, onMen
               anchorEl={anchorEl}
               open={Boolean(anchorEl)}
               onClose={handleMenuClose}
-              transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-              anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+              transformOrigin={{ horizontal: "right", vertical: "top" }}
+              anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
             >
               <Box
                 sx={{
@@ -108,7 +116,11 @@ export default function Topbar({ open, onMenuClick, sx }: { open: boolean, onMen
                   gap: 1,
                 }}
               >
-                <Typography variant="body2" fontWeight="bold" color="text.secondary">
+                <Typography
+                  variant="body2"
+                  fontWeight="bold"
+                  color="text.secondary"
+                >
                   Role:
                 </Typography>
                 <RoleChip role={role ?? "Unknown"} />
@@ -116,8 +128,8 @@ export default function Topbar({ open, onMenuClick, sx }: { open: boolean, onMen
               <Divider />
               <MenuItem
                 onClick={() => {
-                  navigate("/settings")
-                  handleMenuClose()
+                  navigate("/settings");
+                  handleMenuClose();
                 }}
               >
                 <ListItemIcon>
@@ -128,8 +140,8 @@ export default function Topbar({ open, onMenuClick, sx }: { open: boolean, onMen
 
               <MenuItem
                 onClick={() => {
-                  fullSignOut()
-                  handleMenuClose()
+                  fullSignOut();
+                  handleMenuClose();
                 }}
               >
                 <ListItemIcon>
@@ -139,37 +151,35 @@ export default function Topbar({ open, onMenuClick, sx }: { open: boolean, onMen
               </MenuItem>
             </Menu>
           </Box>
-        )
-          : (
-            <Button
-              onClick={() => navigate("/login")}
+        ) : (
+          <Button
+            onClick={() => navigate("/login")}
+            sx={{
+              textTransform: "uppercase",
+              fontFamily: "monospace",
+              fontWeight: "bolder",
+              backgroundColor: "darkblue",
+              color: "white",
+              "&:hover": {
+                backgroundColor: "#00008b",
+              },
+            }}
+          >
+            Login
+            <Avatar
               sx={{
-                textTransform: "uppercase",
-                fontFamily: "monospace",
-                fontWeight: "bolder",
-                backgroundColor: "darkblue",
-                color: "white",
-                "&:hover": {
-                  backgroundColor: "#00008b",
-                },
+                width: 36,
+                height: 36,
+                ml: 1,
+                bgcolor: "rgb(89,90,182)",
+                border: "2px solid #e0e0e0",
               }}
             >
-              Login
-              <Avatar
-                sx={{
-                  width: 36,
-                  height: 36,
-                  ml: 1,
-                  bgcolor: "rgb(89,90,182)",
-                  border: "2px solid #e0e0e0",
-                }}
-              >
-                <Login fontSize="small" />
-              </Avatar>
-            </Button>
-          )}
+              <Login fontSize="small" />
+            </Avatar>
+          </Button>
+        )}
       </Toolbar>
     </AppBar>
   );
-}
-
+};

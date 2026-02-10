@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { PartsTable } from "./PartsTable";
 import { Grid } from "@mui/material";
+import { MeterTypeLU } from "@/interfaces";
+import { BackgroundBox } from "@/components";
+
+import { PartsTable } from "./PartsTable";
+import { MeterTypeDetailsCard } from "./MeterTypeDetailsCard";
 import { PartDetailsCard } from "./PartDetailsCard";
 import { MeterTypesTable } from "./MeterTypesTable";
-import { MeterTypeDetailsCard } from "./MeterTypeDetailsCard";
-import { MeterTypeLU } from "../../interfaces";
-import { BackgroundBox } from "../../components/BackgroundBox";
 
 export const PartsView = () => {
   const [selectedPartID, setSelectedPartID] = useState<number>();
@@ -50,6 +51,6 @@ export const PartsView = () => {
           />
         </Grid>
       </Grid>
-    </BackgroundBox >
+    </BackgroundBox>
   );
 };

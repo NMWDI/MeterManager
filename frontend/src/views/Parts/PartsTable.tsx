@@ -17,7 +17,7 @@ import {
   FormatListBulletedOutlined,
 } from "@mui/icons-material";
 import { useSnackbar } from "notistack";
-import { useGetParts, useAddParts } from "@/service/ApiServiceNew";
+import { useGetParts, useAddParts } from "@/service";
 import { Part } from "@/interfaces";
 import {
   CustomCardHeader,

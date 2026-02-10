@@ -20,11 +20,7 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { enqueueSnackbar } from "notistack";
 import { useFieldArray } from "react-hook-form";
 
-import {
-  useCreateRole,
-  useGetSecurityScopes,
-  useUpdateRole,
-} from "@/service/ApiServiceNew";
+import { useCreateRole, useGetSecurityScopes, useUpdateRole } from "@/service";
 import { ControlledTextbox, CustomCardHeader } from "@/components";
 import { SecurityScope, UserRole } from "@/interfaces";
 

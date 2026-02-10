@@ -10,7 +10,7 @@ import {
   TextField,
 } from "@mui/material";
 import { Search, Add, FormatListBulletedOutlined } from "@mui/icons-material";
-import { useGetRoles } from "@/service/ApiServiceNew";
+import { useGetRoles } from "@/service";
 import { UserRole } from "@/interfaces";
 import { CustomCardHeader, GridFooterWithButton } from "@/components";
 

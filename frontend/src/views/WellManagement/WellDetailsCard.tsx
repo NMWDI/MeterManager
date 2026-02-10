@@ -23,7 +23,7 @@ import {
   useGetWaterSources,
   useGetWellStatusTypes,
   useUpdateWell,
-} from "@/service/ApiServiceNew";
+} from "@/service";
 import {
   SubmitWellCreate,
   WellUpdate,

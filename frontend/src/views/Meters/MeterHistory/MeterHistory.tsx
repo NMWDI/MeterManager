@@ -5,17 +5,17 @@ import { SelectedActivityDetails } from "./SelectedActivityDetails";
 import { SelectedObservationDetails } from "./SelectedObservationDetails";
 import { SelectedBlankCard } from "./SelectedBlankCard";
 import { useLocation, useSearchParams } from "react-router-dom";
-import { useGetMeterHistory } from "../../../service/ApiServiceNew";
+import { useGetMeterHistory } from "@/service";
 import {
   MeterHistoryDTO,
   PatchActivityForm,
   PatchObservationForm,
-} from "../../../interfaces";
-import { MeterHistoryType } from "../../../enums";
+} from "@/interfaces";
+import { MeterHistoryType } from "@/enums";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
-import { CustomCardHeader, ImageDialog, ImagePreviewGrid } from "../../../components";
+import { CustomCardHeader, ImageDialog, ImagePreviewGrid } from "@/components";
 import { ImageOutlined } from "@mui/icons-material";
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -34,9 +34,7 @@ export const MeterHistory = ({
 
   const photos = useMemo(() => {
     if (selectedHistoryItem?.history_type === MeterHistoryType.Activity) {
-      return (
-        selectedHistoryItem.photos?.map((p: any) => p.url) ?? []
-      );
+      return selectedHistoryItem.photos?.map((p: any) => p.url) ?? [];
     }
     return [];
   }, [selectedHistoryItem]);

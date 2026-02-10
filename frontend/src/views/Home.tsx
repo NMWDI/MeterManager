@@ -1,10 +1,19 @@
-import { Grid, Card, CardContent, CardMedia, List, ListItem, ListItemText, Stack, Typography } from "@mui/material";
-import pvacd_logo from "../img/pvacd_logo.png";
-import meter_field from "../img/meter_field.jpg";
-import meter_storage from "../img/meter_storage.jpg";
+import {
+  Grid,
+  Card,
+  CardContent,
+  CardMedia,
+  List,
+  ListItem,
+  ListItemText,
+  Stack,
+  Typography,
+} from "@mui/material";
+import pvacd_logo from "@/img/pvacd_logo.png";
+import meter_field from "@/img/meter_field.jpg";
+import meter_storage from "@/img/meter_storage.jpg";
 import HomeIcon from "@mui/icons-material/Home";
-import { BackgroundBox } from "../components/BackgroundBox";
-import { CustomCardHeader } from "../components/CustomCardHeader";
+import { CustomCardHeader, BackgroundBox } from "@/components";
 
 export const Home = () => {
   const versionHistory = [
@@ -28,7 +37,15 @@ export const Home = () => {
       <Card sx={{ height: "fit-content" }}>
         <CustomCardHeader title="Home" icon={HomeIcon} />
         <CardContent>
-          <Grid container pl={3} pt={3} pb={1} pr={1} spacing={3} alignItems="flex-start">
+          <Grid
+            container
+            pl={3}
+            pt={3}
+            pb={1}
+            pr={1}
+            spacing={3}
+            alignItems="flex-start"
+          >
             <Grid item xs={12} md={6}>
               <CardMedia
                 component="img"
@@ -42,7 +59,9 @@ export const Home = () => {
                 }}
               />
               <Stack spacing={1} alignItems="flex-start" textAlign="left">
-                <Typography variant="body2">PVACD Meter Manager Info</Typography>
+                <Typography variant="body2">
+                  PVACD Meter Manager Info
+                </Typography>
                 <Typography variant="h4">Version History</Typography>
                 <List dense>
                   {versionHistory.map((version) => (

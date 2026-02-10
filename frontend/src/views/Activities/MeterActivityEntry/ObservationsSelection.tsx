@@ -4,7 +4,7 @@ import { UseQueryResult } from "react-query";
 import { Delete } from "@mui/icons-material";
 import { useFieldArray, useWatch } from "react-hook-form";
 import { ObservedPropertyTypeLU } from "@/interfaces";
-import { useGetPropertyTypes } from "@/service/ApiServiceNew";
+import { useGetPropertyTypes } from "@/service";
 import {
   ControlledSelectNonObject,
   ControlledTimepicker,

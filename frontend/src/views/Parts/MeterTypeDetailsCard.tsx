@@ -6,10 +6,7 @@ import * as Yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { enqueueSnackbar } from "notistack";
 
-import {
-  useCreateMeterType,
-  useUpdateMeterType,
-} from "@/service/ApiServiceNew";
+import { useCreateMeterType, useUpdateMeterType } from "@/service";
 import {
   ControlledTextbox,
   ControlledSelectNonObject,

@@ -1,6 +1,6 @@
 import { Grid, Card, CardContent } from "@mui/material";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
-import { CustomCardHeader } from "../../../components/CustomCardHeader";
+import { CustomCardHeader } from "@/components";
 
 // A blank card to display when no history item is selected
 export const SelectedBlankCard = () => {

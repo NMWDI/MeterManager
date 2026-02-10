@@ -1,7 +1,7 @@
 import { Box, Grid, Typography } from "@mui/material";
 import { useFieldArray } from "react-hook-form";
 import { ControlledTextbox, StyledToggleButton } from "@/components";
-import { useGetServiceTypes } from "@/service/ApiServiceNew";
+import { useGetServiceTypes } from "@/service";
 
 export default function MaintenanceRepairSelection({
   control,

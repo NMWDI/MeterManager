@@ -11,7 +11,7 @@ import {
   Typography,
 } from "@mui/material";
 import { Search, Add, FormatListBulletedOutlined } from "@mui/icons-material";
-import { useGetMeterTypeList } from "@/service/ApiServiceNew";
+import { useGetMeterTypeList } from "@/service";
 import { MeterTypeLU } from "@/interfaces";
 import {
   CustomCardHeader,

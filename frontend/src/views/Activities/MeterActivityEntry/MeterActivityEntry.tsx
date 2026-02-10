@@ -8,7 +8,7 @@ import { useAuthHeader } from "react-auth-kit";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { ActivityFormControl, MeterListDTO } from "@/interfaces";
 import { ActivityType } from "@/enums";
-import { useGetMeter, useGetWell } from "@/service/ApiServiceNew";
+import { useGetMeter, useGetWell } from "@/service";
 import { API_URL } from "@/config";
 import { MeterActivitySelection } from "./MeterActivitySelection";
 import ObservationSelection from "./ObservationsSelection";

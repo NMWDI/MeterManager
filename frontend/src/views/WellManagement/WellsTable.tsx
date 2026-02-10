@@ -9,12 +9,12 @@ import {
   Box,
   InputAdornment,
 } from "@mui/material";
-import FormatListBulletedOutlinedIcon from "@mui/icons-material/FormatListBulletedOutlined";
+import { FormatListBulletedOutlined } from "@mui/icons-material";
 import { Search } from "@mui/icons-material";
-import TabPanel from "../../components/TabPanel";
+import { CustomCardHeader, TabPanel } from "@/components";
+
 import WellSelectionTable from "./WellSelectionTable";
 import WellSelectionMap from "./WellSelectionMap";
-import { CustomCardHeader } from "../../components/CustomCardHeader";
 
 export const WellsTable = ({
   setSelectedWell,
@@ -29,22 +29,34 @@ export const WellsTable = ({
     setCurrentTabIndex(newTabIndex);
 
   return (
-    <Card sx={{ height: "100%", minHeight: 'fit-content', display: 'flex', flexDirection: 'column' }}>
-      <CustomCardHeader
-        title="All Wells"
-        icon={FormatListBulletedOutlinedIcon}
-      />
+    <Card
+      sx={{
+        height: "100%",
+        minHeight: "fit-content",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      <CustomCardHeader title="All Wells" icon={FormatListBulletedOutlined} />
       <CardContent>
         <Grid container justifyContent="space-between">
-          <Grid item xs={6} >
+          <Grid item xs={6}>
             <Tabs value={currentTabIndex} onChange={handleTabChange}>
               <Tab label="Well List" />
               <Tab label="Well Map" />
             </Tabs>
           </Grid>
-          <Grid item xs={6} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+          <Grid
+            item
+            xs={6}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "flex-end",
+            }}
+          >
             <TextField
-              sx={{ m: 0, pl: 2, width: '100%', maxWidth: '75rem' }}
+              sx={{ m: 0, pl: 2, width: "100%", maxWidth: "75rem" }}
               placeholder="Search Wells..."
               variant="outlined"
               size="small"

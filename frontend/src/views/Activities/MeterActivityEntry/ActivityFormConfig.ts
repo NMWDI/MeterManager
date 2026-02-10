@@ -1,12 +1,12 @@
 import * as Yup from "yup";
+import Dayjs from "dayjs";
+import dayjs from "dayjs";
 import {
   ActivityForm,
   ActivityFormControl,
   MeterListDTO,
   ObservationForm,
-} from "../../../interfaces.d";
-import Dayjs from "dayjs";
-import dayjs from "dayjs";
+} from "@/interfaces";
 
 // Form validation, these are applied to the current form when submitting
 export const ActivityResolverSchema: Yup.ObjectSchema<any> = Yup.object()

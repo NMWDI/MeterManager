@@ -6,7 +6,7 @@ import { useAuthUser } from "react-auth-kit";
 import { Box, Button, Stack } from "@mui/material";
 import { Add } from "@mui/icons-material";
 import { SecurityScope, Well, WellListQueryParams } from "@/interfaces";
-import { useGetWells } from "@/service/ApiServiceNew";
+import { useGetWells } from "@/service";
 import { SortDirection, WellSortByField } from "@/enums";
 import { GridFooterWithButton } from "@/components";
 

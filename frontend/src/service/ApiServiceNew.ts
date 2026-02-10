@@ -1372,7 +1372,7 @@ export function useCreateWaterLevel() {
   const authHeader = useAuthHeader();
 
   return useMutation({
-    mutationFn: async (newWaterLevel: NewWellMeasurement) => {
+    mutationFn: async (newWaterLevel: Partial<NewWellMeasurement>) => {
       const response = await POSTFetch(route, newWaterLevel, authHeader());
 
       if (!response.ok) {
@@ -1411,7 +1411,7 @@ export function useUpdateWaterLevel(onSuccess: Function) {
   const authHeader = useAuthHeader();
 
   return useMutation({
-    mutationFn: async (updatedWaterLevel: PatchWellMeasurement) => {
+    mutationFn: async (updatedWaterLevel: Partial<PatchWellMeasurement>) => {
       const response = await PATCHFetch(route, updatedWaterLevel, authHeader());
 
       if (!response.ok) {

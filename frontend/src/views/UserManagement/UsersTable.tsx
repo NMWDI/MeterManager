@@ -10,7 +10,7 @@ import {
   Typography,
 } from "@mui/material";
 import { Search, Add, FormatListBulletedOutlined } from "@mui/icons-material";
-import { useGetUserAdminList } from "@/service/ApiServiceNew";
+import { useGetUserAdminList } from "@/service";
 import { User } from "@/interfaces";
 import {
   CustomCardHeader,

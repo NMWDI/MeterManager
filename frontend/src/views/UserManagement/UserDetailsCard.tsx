@@ -28,7 +28,7 @@ import {
   useUpdateUser,
   useGetRoles,
   useUpdateUserPassword,
-} from "@/service/ApiServiceNew";
+} from "@/service";
 import {
   ControlledTextbox,
   ControlledSelect,
