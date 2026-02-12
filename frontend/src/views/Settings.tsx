@@ -25,7 +25,7 @@ import {
 } from "@mui/material";
 import SettingsIcon from "@mui/icons-material/Settings";
 import { useAuthUser, useSignIn } from "react-auth-kit";
-import { Check, Close, Edit, ExpandMore } from "@mui/icons-material";
+import { Check, Close, Delete, Edit, ExpandMore } from "@mui/icons-material";
 import { useMutation, useQuery, useQueryClient } from "react-query";
 import {
   BackgroundBox,
@@ -369,9 +369,30 @@ export const Settings = () => {
                   <Typography component="span">Avatar Configuration</Typography>
                 </AccordionSummary>
                 <AccordionDetails>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} p={2}>
-                      <ImageUploadWithPreview />
+                  <Grid
+                    container
+                    spacing={2}
+                    alignItems="start"
+                    justifyContent="center"
+                  >
+                    <Grid item xs={12} md={6} p={2}>
+                      <ImageUploadWithPreview fileLimit={1} />
+                    </Grid>
+                    <Grid item xs={12} md={6} p={2}>
+                      <Box
+                        py={2}
+                        display="flex"
+                        justifyContent={{ sx: "start", md: "end" }}
+                      >
+                        <Button
+                          variant="outlined"
+                          color="error"
+                          startIcon={<Delete fontSize="small" />}
+                          disabled={!user?.avatar_img}
+                        >
+                          Remove Avatar
+                        </Button>
+                      </Box>
                     </Grid>
                   </Grid>
                 </AccordionDetails>
