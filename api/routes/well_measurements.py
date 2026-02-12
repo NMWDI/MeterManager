@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Any, Dict
 from datetime import datetime, date
 import re
 
@@ -359,94 +359,18 @@ def read_waterlevel_report_averages(
       >= 365 days => year buckets
       else => month buckets
     """
-    DEPTH_TO_WATER_NAME = "Depth to water"
-
-    if not well_ids:
-        return {"bucket": None, "per_well": [], "all_wells": []}
 
     if from_date is None and to_date is None:
         raise HTTPException(
             status_code=400, detail="from_date and/or to_date is required for reports"
         )
 
-    # Build datetime bounds (inclusive end-of-day for to_date)
-    start_dt = datetime.combine(from_date, datetime.min.time()) if from_date else None
-    end_dt = datetime.combine(to_date, datetime.max.time()) if to_date else None
-
-    # Decide bucket granularity based on provided range
-    # If one side missing, fall back to month (or choose a rule you prefer)
-    if from_date and to_date:
-        delta_days = (to_date - from_date).days
-        bucket_unit = "year" if delta_days >= 365 else "month"
-    else:
-        bucket_unit = "month"
-
-    bucket = func.date_trunc(bucket_unit, WellMeasurements.timestamp).label(
-        "period_start"
+    return get_waterlevel_report_averages(
+        well_ids=well_ids,
+        from_date=from_date,
+        to_date=to_date,
+        db=db,
     )
-
-    base_filters = [
-        ObservedPropertyTypeLU.name == DEPTH_TO_WATER_NAME,
-        WellMeasurements.well_id.in_(well_ids),
-    ]
-    if start_dt:
-        base_filters.append(WellMeasurements.timestamp >= start_dt)
-    if end_dt:
-        base_filters.append(WellMeasurements.timestamp <= end_dt)
-
-    # 1) Per-well averages
-    per_well_stmt = (
-        select(
-            WellMeasurements.well_id.label("well_id"),
-            Wells.ra_number.label("ra_number"),
-            bucket,
-            func.avg(WellMeasurements.value).label("avg_value"),
-        )
-        .join(Wells, Wells.id == WellMeasurements.well_id)
-        .join(
-            ObservedPropertyTypeLU,
-            ObservedPropertyTypeLU.id == WellMeasurements.observed_property_id,
-        )
-        .where(and_(*base_filters))
-        .group_by(WellMeasurements.well_id, Wells.ra_number, bucket)
-        .order_by(Wells.ra_number, bucket)
-    )
-    per_well_rows = db.execute(per_well_stmt).all()
-
-    all_wells_stmt = (
-        select(
-            bucket,
-            func.avg(WellMeasurements.value).label("avg_value"),
-        )
-        .join(
-            ObservedPropertyTypeLU,
-            ObservedPropertyTypeLU.id == WellMeasurements.observed_property_id,
-        )
-        .where(and_(*base_filters))
-        .group_by(bucket)
-        .order_by(bucket)
-    )
-    all_wells_rows = db.execute(all_wells_stmt).all()
-
-    return {
-        "bucket": bucket_unit,  # "month" or "year"
-        "per_well": [
-            {
-                "well_id": r.well_id,
-                "ra_number": r.ra_number,
-                "period_start": r.period_start,
-                "avg_value": float(r.avg_value) if r.avg_value is not None else None,
-            }
-            for r in per_well_rows
-        ],
-        "all_wells": [
-            {
-                "period_start": r.period_start,
-                "avg_value": float(r.avg_value) if r.avg_value is not None else None,
-            }
-            for r in all_wells_rows
-        ],
-    }
 
 
 @authenticated_well_measurement_router.get(
@@ -573,6 +497,13 @@ def download_waterlevels_pdf(
             "ON OR NEAR THE 5TH, 15TH AND 25TH OF EACH MONTH"
         )
 
+    averages = get_waterlevel_report_averages(
+        well_ids=well_ids,
+        from_date=from_date,
+        to_date=to_date,
+        db=db,
+    )
+
     html = templates.get_template("waterlevels_report.html").render(
         from_date=from_date,
         to_date=to_date,
@@ -580,6 +511,7 @@ def download_waterlevels_pdf(
         rows=rows,
         report_title=report_title,
         report_subtext=report_subtext,
+        averages=averages,
     )
 
     pdf_io = BytesIO()
@@ -634,3 +566,104 @@ def delete_waterlevel(waterlevel_id: int, db: Session = Depends(get_db)):
     db.commit()
 
     return True
+
+
+def get_waterlevel_report_averages(
+    *,
+    well_ids: List[int],
+    from_date: Optional[date],
+    to_date: Optional[date],
+    db: Session,
+) -> Dict[str, Any]:
+    """
+    Shared logic used by both JSON endpoint and PDF endpoint.
+    Returns:
+      {
+        "bucket": "month" | "year",
+        "per_well": [ { well_id, ra_number, period_start, avg_value }, ...],
+        "all_wells": [ { period_start, avg_value }, ...],
+      }
+    """
+    DEPTH_TO_WATER_NAME = "Depth to water"
+
+    if not well_ids:
+        return {"bucket": None, "per_well": [], "all_wells": []}
+
+    if from_date is None and to_date is None:
+        # Let callers decide whether to raise; for PDF we always have both.
+        return {"bucket": None, "per_well": [], "all_wells": []}
+
+    start_dt = datetime.combine(from_date, datetime.min.time()) if from_date else None
+    end_dt = datetime.combine(to_date, datetime.max.time()) if to_date else None
+
+    if from_date and to_date:
+        delta_days = (to_date - from_date).days
+        bucket_unit = "year" if delta_days >= 365 else "month"
+    else:
+        bucket_unit = "month"
+
+    bucket = func.date_trunc(bucket_unit, WellMeasurements.timestamp).label(
+        "period_start"
+    )
+
+    base_filters = [
+        ObservedPropertyTypeLU.name == DEPTH_TO_WATER_NAME,
+        WellMeasurements.well_id.in_(well_ids),
+    ]
+    if start_dt:
+        base_filters.append(WellMeasurements.timestamp >= start_dt)
+    if end_dt:
+        base_filters.append(WellMeasurements.timestamp <= end_dt)
+
+    per_well_stmt = (
+        select(
+            WellMeasurements.well_id.label("well_id"),
+            Wells.ra_number.label("ra_number"),
+            bucket,
+            func.avg(WellMeasurements.value).label("avg_value"),
+        )
+        .join(Wells, Wells.id == WellMeasurements.well_id)
+        .join(
+            ObservedPropertyTypeLU,
+            ObservedPropertyTypeLU.id == WellMeasurements.observed_property_id,
+        )
+        .where(and_(*base_filters))
+        .group_by(WellMeasurements.well_id, Wells.ra_number, bucket)
+        .order_by(Wells.ra_number, bucket)
+    )
+    per_well_rows = db.execute(per_well_stmt).all()
+
+    all_wells_stmt = (
+        select(
+            bucket,
+            func.avg(WellMeasurements.value).label("avg_value"),
+        )
+        .join(
+            ObservedPropertyTypeLU,
+            ObservedPropertyTypeLU.id == WellMeasurements.observed_property_id,
+        )
+        .where(and_(*base_filters))
+        .group_by(bucket)
+        .order_by(bucket)
+    )
+    all_wells_rows = db.execute(all_wells_stmt).all()
+
+    return {
+        "bucket": bucket_unit,
+        "per_well": [
+            {
+                "well_id": r.well_id,
+                "ra_number": r.ra_number,
+                "period_start": r.period_start,
+                "avg_value": float(r.avg_value) if r.avg_value is not None else None,
+            }
+            for r in per_well_rows
+        ],
+        "all_wells": [
+            {
+                "period_start": r.period_start,
+                "avg_value": float(r.avg_value) if r.avg_value is not None else None,
+            }
+            for r in all_wells_rows
+        ],
+    }
