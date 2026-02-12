@@ -6,7 +6,7 @@ import { useAuthUser } from "react-auth-kit";
 import { Box, Button, Stack } from "@mui/material";
 import { Add } from "@mui/icons-material";
 import { SecurityScope, Well, WellListQueryParams } from "@/interfaces";
-import { useGetWells } from "@/service/ApiServiceNew";
+import { useGetWells } from "@/service";
 import { SortDirection, WellSortByField } from "@/enums";
 import { GridFooterWithButton } from "@/components";
 
@@ -111,9 +111,9 @@ export default function WellSelectionTable({
     const newParams = {
       search_string: wellSearchQueryDebounced,
       sort_by: gridSortModel?.at(0)?.field ?? WellSortByField.Name,
-      sort_direction: gridSortModel
-        ? gridSortModel[0]?.sort
-        : SortDirection.Ascending,
+      sort_direction:
+        (gridSortModel?.at(0)?.sort as SortDirection) ??
+        SortDirection.Ascending,
       limit: paginationModel.pageSize,
       offset: paginationModel.page * paginationModel.pageSize,
     };

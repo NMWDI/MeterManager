@@ -22,6 +22,7 @@ import { useQuery } from "react-query";
 import {
   MonitoredWell,
   NewRegionMeasurement,
+  NewWellMeasurement,
   SecurityScope,
 } from "@/interfaces";
 import dayjs, { Dayjs } from "dayjs";
@@ -30,22 +31,29 @@ import timezone from "dayjs/plugin/timezone";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-import { useGetUserList } from "@/service/ApiServiceNew";
+import { useGetUserList } from "@/service";
 import { useFetchWithAuth } from "@/hooks";
 
-export const CreateModal = ({
-  region_id, //Used to filter wells
-  open,
-  onClose,
-  handleSubmitNewMeasurement,
-  title = "Create New Measurement",
-}: {
-  region_id: number; //Used to filter wells
-  open: boolean;
-  onClose: () => void;
-  handleSubmitNewMeasurement: (newMeasurement: NewRegionMeasurement) => void;
-  title?: string;
-}) => {
+type CreateModalProps =
+  | {
+      mode: "region";
+      region_id?: number;
+      open: boolean;
+      onClose: () => void;
+      handleSubmitNewMeasurement: (m: Partial<NewRegionMeasurement>) => void;
+      title?: string;
+    }
+  | {
+      mode: "well";
+      open: boolean;
+      onClose: () => void;
+      handleSubmitNewMeasurement: (m: Partial<NewWellMeasurement>) => void;
+      title?: string;
+    };
+
+export const CreateModal = (props: CreateModalProps) => {
+  const { open, onClose, title = "Create New Measurement" } = props;
+
   const authUser = useAuthUser();
   const hasAdminScope = authUser()
     ?.user_role.security_scopes.map(
@@ -54,12 +62,13 @@ export const CreateModal = ({
     .includes("admin");
 
   const fetchWithAuth = useFetchWithAuth();
+  const regionId = props.mode === "region" ? props.region_id : undefined;
   const { data: wells, isLoading: isLoadingWells } = useQuery<
     { items: MonitoredWell[] },
     Error,
     MonitoredWell[]
   >({
-    queryKey: ["wells", "has_chloride_groups", region_id],
+    queryKey: ["wells", "has_chloride_groups", regionId],
     queryFn: () =>
       fetchWithAuth({
         method: "GET",
@@ -68,11 +77,11 @@ export const CreateModal = ({
           sort_by: "ra_number",
           sort_direction: "asc",
           has_chloride_group: true,
-          chloride_group_id: region_id,
+          chloride_group_id: regionId,
           limit: 100,
         },
       }),
-    enabled: open,
+    enabled: open && props.mode === "region" && !!regionId,
     select: (res) => res.items,
   });
 
@@ -95,7 +104,7 @@ export const CreateModal = ({
       .minute(selectedTime.minute())
       .second(selectedTime.second());
 
-    handleSubmitNewMeasurement({
+    props.handleSubmitNewMeasurement({
       region_id: 0, // Set by parent
       well_id: selectedWellID as number,
       timestamp: combinedDateTime.toISOString(),
@@ -239,8 +248,9 @@ export const CreateModal = ({
               setValue(newValue === "" ? null : Number(newValue));
             }}
           />
-
-          <WellSelection region_id={region_id} />
+          {props.mode === "region" && regionId ? (
+            <WellSelection region_id={regionId} />
+          ) : null}
         </Stack>
       </DialogContent>
 

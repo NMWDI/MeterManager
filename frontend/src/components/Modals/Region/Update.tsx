@@ -28,32 +28,54 @@ import {
   Delete,
   Save,
 } from "@mui/icons-material";
-import { useGetUserList } from "@/service/ApiServiceNew";
+import { useGetUserList } from "@/service";
 import { useQuery } from "react-query";
 import { useFetchWithAuth } from "@/hooks";
-import { MonitoredWell, PatchRegionMeasurement } from "@/interfaces";
+import {
+  MonitoredWell,
+  PatchRegionMeasurement,
+  PatchWellMeasurement,
+} from "@/interfaces";
 
-export const UpdateModal = ({
-  region_id, //Used to filter wells
-  open,
-  onClose,
-  measurement,
-  onUpdateMeasurement,
-  onSubmitUpdate,
-  onDeleteMeasurement,
-  title = "Update Measurement",
-}: {
-  region_id: number; //Used to filter wells
-  open: boolean;
-  onClose: () => void;
-  measurement: PatchRegionMeasurement;
-  onUpdateMeasurement: (value: Partial<PatchRegionMeasurement>) => void;
-  onSubmitUpdate: () => void;
-  onDeleteMeasurement: () => void;
-  title?: string;
-}) => {
+type UpdateModalProps =
+  | {
+      mode: "region";
+      region_id?: number;
+      open: boolean;
+      onClose: () => void;
+      measurement: Partial<PatchRegionMeasurement>;
+      onUpdateMeasurement: (value: Partial<PatchRegionMeasurement>) => void;
+      onSubmitUpdate: () => void;
+      onDeleteMeasurement: () => void;
+      title?: string;
+    }
+  | {
+      mode: "well";
+      open: boolean;
+      onClose: () => void;
+      measurement: Partial<PatchWellMeasurement>;
+      onUpdateMeasurement: (value: Partial<PatchWellMeasurement>) => void;
+      onSubmitUpdate: () => void;
+      onDeleteMeasurement: () => void;
+      title?: string;
+    };
+
+export const UpdateModal = (props: UpdateModalProps) => {
+  const {
+    open,
+    onClose,
+    onSubmitUpdate,
+    onDeleteMeasurement,
+    title = "Update Measurement",
+  } = props;
+
   const userList = useGetUserList();
   const fetchWithAuth = useFetchWithAuth();
+
+  const regionId = props.mode === "region" ? props.region_id : undefined;
+
+  const measurement = props.measurement as any; // only for local reading convenience
+  const onUpdateMeasurement = props.onUpdateMeasurement as any;
 
   const [notSampled, setNotSampled] = useState<boolean>(
     measurement.value === undefined || measurement.value === null,
@@ -65,7 +87,7 @@ export const UpdateModal = ({
     Error,
     MonitoredWell[]
   >({
-    queryKey: ["wells", "has_chloride_groups", region_id],
+    queryKey: ["wells", "has_chloride_groups", regionId],
     queryFn: () =>
       fetchWithAuth({
         method: "GET",
@@ -74,15 +96,18 @@ export const UpdateModal = ({
           sort_by: "ra_number",
           sort_direction: "asc",
           has_chloride_group: true,
-          chloride_group_id: region_id,
+          chloride_group_id: regionId,
           limit: 100,
         },
       }),
-    enabled: open,
+    enabled: open && props.mode === "region" && !!regionId,
     select: (res) => res.items,
   });
 
   const handleToggleNotSampled = (checked: boolean) => {
+    // only meaningful in region mode
+    if (props.mode !== "region") return;
+
     setNotSampled(checked);
 
     if (checked) {
@@ -98,8 +123,10 @@ export const UpdateModal = ({
   };
 
   useEffect(() => {
-    setNotSampled(measurement.value == null);
-  }, [measurement.value]);
+    if (props.mode === "region") {
+      setNotSampled(measurement.value == null);
+    }
+  }, [props.mode, measurement.value]);
 
   return (
     <Dialog
@@ -220,7 +247,7 @@ export const UpdateModal = ({
             >
               {wells
                 ?.filter(
-                  (well: MonitoredWell) => well.chloride_group_id === region_id,
+                  (well: MonitoredWell) => well.chloride_group_id === regionId,
                 )
                 .map((well: MonitoredWell) => (
                   <MenuItem key={well.id} value={well.id}>

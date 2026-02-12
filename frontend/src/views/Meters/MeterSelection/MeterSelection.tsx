@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { MeterSelectionTable } from "./MeterSelectionTable";
 import MeterSelectionMap from "./MeterSelectionMap";
-import TabPanel from "../../../components/TabPanel";
 import {
   Tabs,
   Tab,
@@ -13,10 +12,9 @@ import {
   ToggleButton,
   InputAdornment,
 } from "@mui/material";
-import FormatListBulletedOutlinedIcon from "@mui/icons-material/FormatListBulletedOutlined";
-import { MeterStatusNames } from "../../../enums";
-import { CustomCardHeader } from "../../../components/CustomCardHeader";
-import { Search } from "@mui/icons-material";
+import { FormatListBulletedOutlined, Search } from "@mui/icons-material";
+import { MeterStatusNames } from "@/enums";
+import { CustomCardHeader, TabPanel } from "@/components";
 
 export const MeterSelection = ({
   onMeterSelection,
@@ -70,13 +68,10 @@ export const MeterSelection = ({
 
   return (
     <Card sx={{ height: "100%" }}>
-      <CustomCardHeader
-        title="All Meters"
-        icon={FormatListBulletedOutlinedIcon}
-      />
+      <CustomCardHeader title="All Meters" icon={FormatListBulletedOutlined} />
       <CardContent sx={{ height: "100%" }}>
         <Grid container justifyContent="space-between">
-          <Grid item xs={6} >
+          <Grid item xs={6}>
             <Tabs
               value={currentTabIndex}
               onChange={handleTabChange}
@@ -90,9 +85,17 @@ export const MeterSelection = ({
               <Tab label="Meter Map" />
             </Tabs>
           </Grid>
-          <Grid item xs={6} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+          <Grid
+            item
+            xs={6}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "flex-end",
+            }}
+          >
             <TextField
-              sx={{ m: 0, pl: 2, width: '100%', maxWidth: '75rem' }}
+              sx={{ m: 0, pl: 2, width: "100%", maxWidth: "75rem" }}
               placeholder="Search Meter..."
               variant="outlined"
               size="small"
@@ -145,7 +148,7 @@ export const MeterSelection = ({
         </TabPanel>
         <TabPanel currentTabIndex={currentTabIndex} tabIndex={1}>
           <Grid container sx={{ mt: 1, height: 550 }}>
-            <Grid item xs={12} sx={{ height: '100%' }}>
+            <Grid item xs={12} sx={{ height: "100%" }}>
               <MeterSelectionMap
                 onMeterSelection={onMeterSelection}
                 meterSearch={meterSearchQuery}

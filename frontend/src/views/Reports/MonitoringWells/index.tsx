@@ -34,9 +34,12 @@ import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import dayjs, { Dayjs } from "dayjs";
 
-import { BackgroundBox, CustomCardHeader } from "@/components";
-import ControlledDatepicker from "@/components/RHControlled/ControlledDatepicker";
-import ControlledAutocomplete from "@/components/RHControlled/ControlledAutocomplete";
+import {
+  ControlledDatepicker,
+  ControlledAutocomplete,
+  BackgroundBox,
+  CustomCardHeader,
+} from "@/components";
 import { MonitoredWell, WellMeasurementDTO } from "@/interfaces";
 import { ReportAveragesResponse } from "@/interfaces/ReportAveragesResponse";
 import { useFetchWithAuth } from "@/hooks";

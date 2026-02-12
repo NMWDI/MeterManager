@@ -11,24 +11,24 @@ import {
   AlertTitle,
   Grid,
 } from "@mui/material";
+import { Science } from "@mui/icons-material";
 import { useMutation, useQuery } from "react-query";
 import { useAuthUser } from "react-auth-kit";
 import { useSnackbar } from "notistack";
-import { ChloridesTable } from "./ChloridesTable";
-import { ChloridesPlot } from "./ChloridesPlot";
-import { CreateModal, UpdateModal } from "../../components/Modals/Region";
+import dayjs, { Dayjs } from "dayjs";
+
+import { CreateModal, UpdateModal } from "@/components/Modals/Region";
 import {
   NewRegionMeasurement,
   PatchRegionMeasurement,
   SecurityScope,
   RegionMeasurementDTO,
-} from "../../interfaces";
-import dayjs, { Dayjs } from "dayjs";
-import { useFetchWithAuth } from "../../hooks";
-import { Science } from "@mui/icons-material";
-import { BackgroundBox } from "../../components/BackgroundBox";
-import { CustomCardHeader } from "../../components/CustomCardHeader";
-import { emptyToNull } from "../../utils";
+} from "@/interfaces";
+import { useFetchWithAuth } from "@/hooks";
+import { BackgroundBox, CustomCardHeader } from "@/components";
+import { emptyToNull } from "@/utils";
+import { ChloridesTable } from "./ChloridesTable";
+import { ChloridesPlot } from "./ChloridesPlot";
 
 export const ChloridesView = () => {
   const { enqueueSnackbar } = useSnackbar();
@@ -88,7 +88,7 @@ export const ChloridesView = () => {
   const milligramPerLiterUnitId = 14;
   const { mutateAsync: createChlorideLevel } = useMutation({
     mutationKey: ["regions", "creation"],
-    mutationFn: (body: NewRegionMeasurement) =>
+    mutationFn: (body: Partial<NewRegionMeasurement>) =>
       fetchWithAuth({
         method: "POST",
         route: "/chlorides",
@@ -172,7 +172,7 @@ export const ChloridesView = () => {
 
   const error = errorRegions || errorManual;
 
-  const handleSubmitNewMeasurement = (data: NewRegionMeasurement) => {
+  const handleSubmitNewMeasurement = (data: Partial<NewRegionMeasurement>) => {
     if (regionId) {
       data.region_id = regionId;
       createChlorideLevel(data, { onSuccess: () => refetchManual() });
@@ -296,12 +296,14 @@ export const ChloridesView = () => {
           {authUser() && (
             <>
               <CreateModal
+                mode="region"
                 region_id={regionId ?? 0}
                 open={isNewModalOpen}
                 onClose={() => setIsNewModalOpen(false)}
                 handleSubmitNewMeasurement={handleSubmitNewMeasurement}
               />
               <UpdateModal
+                mode="region"
                 region_id={regionId ?? 0}
                 open={isUpdateModalOpen}
                 onClose={() => setIsUpdateModalOpen(false)}

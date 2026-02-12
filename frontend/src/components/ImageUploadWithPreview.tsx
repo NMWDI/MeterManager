@@ -7,10 +7,7 @@ import { enqueueSnackbar } from "notistack";
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 
 const VisuallyHiddenInput = (props: any) => (
-  <input
-    style={{ display: "none" }}
-    {...props}
-  />
+  <input style={{ display: "none" }} {...props} />
 );
 
 export const ImageUploadWithPreview = ({
@@ -30,7 +27,7 @@ export const ImageUploadWithPreview = ({
     if (!files) return;
 
     let imageFiles = Array.from(files).filter((file) =>
-      file.type.startsWith("image/")
+      file.type.startsWith("image/"),
     );
 
     // enforce max file size
@@ -38,7 +35,7 @@ export const ImageUploadWithPreview = ({
     if (tooBig.length > 0) {
       enqueueSnackbar(
         `Some files are too large. Max allowed size is ${MAX_FILE_SIZE / 1024 / 1024} MB.`,
-        { variant: "error" }
+        { variant: "error" },
       );
       imageFiles = imageFiles.filter((f) => f.size <= MAX_FILE_SIZE);
     }
@@ -59,9 +56,12 @@ export const ImageUploadWithPreview = ({
         }
 
         if (imageFiles.length > remaining) {
-          enqueueSnackbar(`Only ${remaining} more image${remaining > 1 ? "s" : ""} allowed.`, {
-            variant: "info",
-          });
+          enqueueSnackbar(
+            `Only ${remaining} more image${remaining > 1 ? "s" : ""} allowed.`,
+            {
+              variant: "info",
+            },
+          );
           imageFiles = imageFiles.slice(0, remaining);
         }
       }
@@ -104,7 +104,7 @@ export const ImageUploadWithPreview = ({
           startIcon={<CloudUploadIcon />}
           disabled={fileLimit !== undefined && files.length >= fileLimit} // disable when limit reached
         >
-          Upload photos
+          {`Upload photo${(fileLimit ?? 0) >= 2 ? "s" : ""}`}
           <VisuallyHiddenInput
             type="file"
             accept="image/*"
@@ -114,7 +114,8 @@ export const ImageUploadWithPreview = ({
         </Button>
         {fileLimit && (
           <Typography variant="body2" color="text.secondary">
-            {files.length}/{fileLimit} images uploaded
+            {files.length}/{fileLimit}
+            {` image${(fileLimit ?? 0) >= 2 ? "s" : ""} uploaded`}
           </Typography>
         )}
       </Box>
@@ -137,5 +138,4 @@ export const ImageUploadWithPreview = ({
       )}
     </Grid>
   );
-}
-
+};

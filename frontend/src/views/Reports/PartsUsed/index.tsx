@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from "react";
+import { useAuthHeader } from "react-auth-kit";
 import { ArrowBack, Build, PictureAsPdf } from "@mui/icons-material";
 import {
   Autocomplete,
@@ -13,18 +14,20 @@ import {
   Tooltip,
 } from "@mui/material";
 import { Link } from "react-router-dom";
-import ControlledDatepicker from "../../../components/RHControlled/ControlledDatepicker";
 import { Controller, useForm } from "react-hook-form";
 import { useMutation, useQuery } from "react-query";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
-import dayjs, { Dayjs } from "dayjs";
-import { API_URL } from "../../../config";
-import { useAuthHeader } from "react-auth-kit";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
-import { BackgroundBox } from "../../../components/BackgroundBox";
-import { CustomCardHeader } from "../../../components/CustomCardHeader";
-import { ControlledSelect } from "../../../components/RHControlled/ControlledSelect";
+import dayjs, { Dayjs } from "dayjs";
+
+import { API_URL } from "@/config";
+import {
+  ControlledDatepicker,
+  BackgroundBox,
+  CustomCardHeader,
+  ControlledSelect,
+} from "@/components";
 
 export interface MeterType {
   id: number;
@@ -63,7 +66,7 @@ const schema = yup.object().shape({
     .mixed<Dayjs>()
     .nullable()
     .required("To date is required")
-    .test("is-after", "'To' date must be after 'From'", function(value) {
+    .test("is-after", "'To' date must be after 'From'", function (value) {
       const { from } = this.parent;
       return !from || !value || dayjs(value).isAfter(dayjs(from));
     }),
@@ -87,15 +90,15 @@ const schema = yup.object().shape({
     .array()
     .of(yup.number().required())
     .min(1, "At least one Part is required"),
-  in_use: yup.bool().required()
+  in_use: yup.bool().required(),
 });
 
 const defaultSchema = {
-  from: dayjs().startOf('month'),
-  to: dayjs().endOf('month'),
+  from: dayjs().startOf("month"),
+  to: dayjs().endOf("month"),
   part_types: [],
   parts: [],
-  in_use: true
+  in_use: true,
 };
 
 export const PartsUsedReportView = () => {
@@ -400,7 +403,7 @@ export const PartsUsedReportView = () => {
                 }}
               />
             </Grid>
-            <Grid item xs={12} sx={{ display: 'flex', alignItems: 'center' }}>
+            <Grid item xs={12} sx={{ display: "flex", alignItems: "center" }}>
               <Controller
                 name="in_use"
                 control={control}

@@ -1,9 +1,9 @@
 import { useAuthHeader, useSignOut } from "react-auth-kit";
 import { useNavigate } from "react-router-dom";
-import { formatQueryParams } from "../utils/HttpUtils";
+import { formatQueryParams } from "@/utils";
 import { enqueueSnackbar } from "notistack";
-import { HttpStatus } from "../enums";
-import { API_URL } from "../config";
+import { HttpStatus } from "@/enums";
+import { API_URL } from "@/config";
 
 export const useFetchWithAuth = () => {
   const authHeader = useAuthHeader();

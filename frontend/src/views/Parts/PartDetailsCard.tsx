@@ -20,17 +20,18 @@ import * as Yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { enqueueSnackbar } from "notistack";
 import { useFieldArray } from "react-hook-form";
-
 import {
   useCreatePart,
   useGetMeterTypeList,
   useGetPart,
   useUpdatePart,
-} from "@/service/ApiServiceNew";
-import ControlledTextbox from "@/components/RHControlled/ControlledTextbox";
-import ControlledPartTypeSelect from "@/components/RHControlled/ControlledPartTypeSelect";
-import { ControlledSelectNonObject } from "@/components/RHControlled/ControlledSelect";
-import { CustomCardHeader } from "@/components";
+} from "@/service";
+import {
+  ControlledTextbox,
+  ControlledPartTypeSelect,
+  ControlledSelectNonObject,
+  CustomCardHeader,
+} from "@/components";
 import { MeterTypeLU, Part } from "@/interfaces";
 
 const PartResolverSchema: Yup.ObjectSchema<any> = Yup.object().shape({

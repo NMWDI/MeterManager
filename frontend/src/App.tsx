@@ -5,25 +5,29 @@ import { QueryClient, QueryClientProvider } from "react-query";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { SnackbarProvider, enqueueSnackbar } from "notistack";
-import { BackupsView, Home, Login, Settings } from "./views";
-import { MonitoringWellsView } from "./views/MonitoringWells/MonitoringWellsView";
-import { ActivitiesView } from "./views/Activities/ActivitiesView";
-import { ActivityPhotoView } from "./views/Activities/ActivityPhotoView";
-import { MetersView } from "./views/Meters/MetersView";
-import { PartsView } from "./views/Parts/PartsView";
-import { UserManagementView } from "./views/UserManagement/UserManagementView";
-import WellManagementView from "./views/WellManagement/WellManagementView";
-import WorkOrdersView from "./views/WorkOrders/WorkOrdersView";
-import { ChloridesView } from "./views/Chlorides/ChloridesView";
-import { ReportsView } from "./views/Reports";
-import { WorkOrdersReportView } from "./views/Reports/WorkOrders";
+import {
+  ActivitiesView,
+  MonitoringWellsView,
+  BackupsView,
+  Home,
+  Login,
+  Settings,
+  NotFound,
+  ActivityPhotoView,
+  MetersView,
+  PartsView,
+  UserManagementView,
+  WellManagementView,
+  WorkOrdersView,
+  ChloridesView,
+  ReportsView,
+} from "./views";
 import { MonitoringWellsReportView } from "./views/Reports/MonitoringWells";
 import { MaintenanceReportView } from "./views/Reports/Maintenance";
 import { PartsUsedReportView } from "./views/Reports/PartsUsed";
-import { BoardReportView } from "./views/Reports/Board";
 import { ChloridesReportView } from "./views/Reports/Chlorides";
+
 import { AppLayout } from "./AppLayout";
-import { NotFound } from "./views/NotFound";
 import { ProtectedRoute } from "./ProtectedRoute";
 
 export const App = () => {
@@ -176,19 +180,6 @@ export const App = () => {
                   }
                 />
                 <Route
-                  path="/reports/workorders"
-                  element={
-                    <ProtectedRoute
-                      requiredScopes={["read"]}
-                      setErrorMessage={setErrorMessage}
-                    >
-                      <AppLayout>
-                        <WorkOrdersReportView />
-                      </AppLayout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
                   path="/reports/monitoringwells"
                   element={
                     <ProtectedRoute
@@ -223,19 +214,6 @@ export const App = () => {
                     >
                       <AppLayout>
                         <PartsUsedReportView />
-                      </AppLayout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/reports/board"
-                  element={
-                    <ProtectedRoute
-                      requiredScopes={["read"]}
-                      setErrorMessage={setErrorMessage}
-                    >
-                      <AppLayout>
-                        <BoardReportView />
                       </AppLayout>
                     </ProtectedRoute>
                   }

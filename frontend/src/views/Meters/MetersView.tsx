@@ -1,12 +1,12 @@
-import { useEffect } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
+import { Grid } from "@mui/material";
+
 import { MeterSelection } from "./MeterSelection/MeterSelection";
 import { MeterDetailsFields } from "./MeterDetailsFields";
 import { MeterHistory } from "./MeterHistory/MeterHistory";
 
-import { Grid } from "@mui/material";
-import { BackgroundBox } from "../../components/BackgroundBox";
+import { BackgroundBox } from "@/components";
 
 // Main view for the Meters page
 // Can pass state to this view to pre-select a meter and meter history using React Router useLocation

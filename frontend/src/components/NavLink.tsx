@@ -1,7 +1,14 @@
-import { SvgIconProps, Badge, ListItem, ListItemButton, ListItemIcon, ListItemText } from "@mui/material";
-import TableViewIcon from "@mui/icons-material/TableView";
+import {
+  SvgIconProps,
+  Badge,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+} from "@mui/material";
+import { TableView } from "@mui/icons-material";
 import { Link, type LinkProps } from "react-router-dom";
-import { useIsActiveRoute } from "../hooks";
+import { useIsActiveRoute } from "@/hooks";
 
 export const NavLink = ({
   disabled = false,
@@ -46,7 +53,7 @@ export const NavLink = ({
               <Icon fontSize="small" />
             </Badge>
           ) : (
-            <TableViewIcon fontSize="small" />
+            <TableView fontSize="small" />
           )}
         </ListItemIcon>
         <ListItemText

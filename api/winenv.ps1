@@ -1,8 +1,0 @@
-$Env:POSTGRES_USER='docker'
-$Env:POSTGRES_PASSWORD='docker'
-$Env:POSTGRES_SERVER='db'
-$Env:POSTGRES_PORT='5432'
-$Env:POSTGRES_DB='gis'
-
-$Env:SETUP_DB='1'
-$Env:POPULATE_DB='1'

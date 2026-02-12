@@ -17,20 +17,34 @@ import {
   Divider,
   Box,
 } from "@mui/material";
-import { LayersControl, MapContainer, Marker, Tooltip as MapTooltip } from "react-leaflet";
+import {
+  LayersControl,
+  MapContainer,
+  Marker,
+  Tooltip as MapTooltip,
+} from "react-leaflet";
 import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import L from "leaflet";
-import { API_URL } from "../../../config";
-import ControlledDatepicker from "../../../components/RHControlled/ControlledDatepicker";
-import { CustomCardHeader, BackgroundBox, DirectionCard, SoutheastGuideLayer, SatelliteLayer, OpenStreetMapLayer, WellMapLegend } from "../../../components";
-import { useFetchWithAuth } from "../../../hooks";
-import { useGetWellLocations } from "../../../service/ApiServiceNew";
-import { Well } from "../../../interfaces";
-import { RedMapIcon, BlackMapIcon } from "../../../components/MapIcons";
-import { WellStatus } from "../../../enums";
+
+import { API_URL } from "@/config";
+import {
+  ControlledDatepicker,
+  CustomCardHeader,
+  BackgroundBox,
+  DirectionCard,
+  SoutheastGuideLayer,
+  SatelliteLayer,
+  OpenStreetMapLayer,
+  WellMapLegend,
+} from "@/components";
+import { RedMapIcon, BlackMapIcon } from "@/components/MapIcons";
+import { useFetchWithAuth } from "@/hooks";
+import { useGetWellLocations } from "@/service";
+import { Well } from "@/interfaces";
+import { WellStatus } from "@/enums";
 
 // @ts-ignore
 import MarkerClusterGroup from "@changey/react-leaflet-markercluster";
@@ -43,15 +57,15 @@ const schema = yup.object().shape({
     .mixed<Dayjs>()
     .nullable()
     .required("To date is required")
-    .test("is-after", "'To' date must be after 'From'", function(value) {
+    .test("is-after", "'To' date must be after 'From'", function (value) {
       const { from } = this.parent;
       return !from || !value || dayjs(value).isAfter(dayjs(from));
     }),
 });
 
 const defaultSchema = {
-  from: dayjs().startOf('month'),
-  to: dayjs().endOf('month'),
+  from: dayjs().startOf("month"),
+  to: dayjs().endOf("month"),
 };
 
 interface iMinMaxAvgMedCount {
@@ -92,19 +106,13 @@ export const ChloridesReportView = () => {
       return fetchWithAuth({
         method: "GET",
         route: `/chlorides/report?${searchParams.toString()}`,
-      })
+      });
     },
     enabled: !!from && !!to,
   });
 
   const downloadPDFMutation = useMutation({
-    mutationFn: async ({
-      from,
-      to,
-    }: {
-      from: Dayjs;
-      to: Dayjs;
-    }) => {
+    mutationFn: async ({ from, to }: { from: Dayjs; to: Dayjs }) => {
       const params = new URLSearchParams({
         from_date: from?.format("YYYY-MM-DD"),
         to_date: to?.format("YYYY-MM-DD"),
@@ -140,7 +148,7 @@ export const ChloridesReportView = () => {
     });
   };
 
-  const wellQuery = useGetWellLocations('', true);
+  const wellQuery = useGetWellLocations("", true);
 
   useEffect(() => {
     if (wellQuery.hasNextPage && !wellQuery.isFetchingNextPage) {
@@ -153,10 +161,7 @@ export const ChloridesReportView = () => {
   return (
     <BackgroundBox>
       <Card sx={{ height: "fit-content" }}>
-        <CustomCardHeader
-          title="Chlorides Report"
-          icon={Science}
-        />
+        <CustomCardHeader title="Chlorides Report" icon={Science} />
         <CardContent>
           <Grid
             container
@@ -225,16 +230,25 @@ export const ChloridesReportView = () => {
             sx={{ py: 3, px: 2 }}
           >
             <Grid item xs={12} md={6}>
-              <Typography variant="h4" sx={{ textTransform: 'uppercase' }}>Chlorides Reading:</Typography>
+              <Typography variant="h4" sx={{ textTransform: "uppercase" }}>
+                Chlorides Reading:
+              </Typography>
               {chloridesQuery.isLoading && (
                 <Grid container spacing={2} sx={{ mt: 2 }}>
                   {[0, 1, 2, 3].map((i) => (
                     <Grid key={i} item xs={12}>
-                      <Card variant="outlined" sx={{ height: 140, borderRadius: 3 }}>
+                      <Card
+                        variant="outlined"
+                        sx={{ height: 140, borderRadius: 3 }}
+                      >
                         <CardContent>
                           <Skeleton width="40%" />
                           <Divider sx={{ my: 1.5 }} />
-                          <Stack direction="row" spacing={2} justifyContent="space-between">
+                          <Stack
+                            direction="row"
+                            spacing={2}
+                            justifyContent="space-between"
+                          >
                             <Skeleton width={60} height={36} />
                             <Skeleton width={60} height={36} />
                             <Skeleton width={60} height={36} />
@@ -247,7 +261,8 @@ export const ChloridesReportView = () => {
               )}
               {chloridesQuery.isError && (
                 <Alert severity="error" sx={{ mt: 2 }}>
-                  {chloridesQuery.error?.message || "Failed to load chloride readings."}
+                  {chloridesQuery.error?.message ||
+                    "Failed to load chloride readings."}
                 </Alert>
               )}
               {!chloridesQuery.isLoading && !chloridesQuery.isError && (
@@ -296,17 +311,19 @@ export const ChloridesReportView = () => {
               )}
             </Grid>
             <Grid item xs={12} md={6}>
-              <Box sx={{
-                height: { xs: 360, md: "100%" },
-                minHeight: 360,
-                borderRadius: 2,
-                overflow: "hidden",
-                "& .leaflet-container": { height: "100%", width: "100%" },
-              }} >
+              <Box
+                sx={{
+                  height: { xs: 360, md: "100%" },
+                  minHeight: 360,
+                  borderRadius: 2,
+                  overflow: "hidden",
+                  "& .leaflet-container": { height: "100%", width: "100%" },
+                }}
+              >
                 <MapContainer
                   center={[33, -104.0]}
                   zoom={8}
-                  style={{ height: '100%', width: '100%' }}
+                  style={{ height: "100%", width: "100%" }}
                   maxZoom={18}
                 >
                   <LayersControl position="topleft">
@@ -346,11 +363,13 @@ export const ChloridesReportView = () => {
                             <Marker
                               key={well.id}
                               position={[
-                                well.location?.latitude,
-                                well.location?.longitude,
+                                well.location?.latitude ?? 0,
+                                well.location?.longitude ?? 0,
                               ]}
                               icon={
-                                well.well_status_id === WellStatus.PLUGGED ? BlackMapIcon : RedMapIcon
+                                well.well_status_id === WellStatus.PLUGGED
+                                  ? BlackMapIcon
+                                  : RedMapIcon
                               }
                             >
                               <MapTooltip>
@@ -367,27 +386,41 @@ export const ChloridesReportView = () => {
               {/* Loading first page */}
               {wellQuery.isLoading && (
                 <Box py={2}>
-                  <Typography variant="h6" sx={{
-                    pointerEvents: "none",
-                    userSelect: "none",
-                  }}>Loading well markers...</Typography>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      pointerEvents: "none",
+                      userSelect: "none",
+                    }}
+                  >
+                    Loading well markers...
+                  </Typography>
                 </Box>
               )}
               {/* Loading additional pages */}
               {wellQuery.isFetchingNextPage && (
                 <Box py={2}>
-                  <Typography variant="h6" sx={{
-                    pointerEvents: "none",
-                    userSelect: "none",
-                  }}>Loading more wells...</Typography>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      pointerEvents: "none",
+                      userSelect: "none",
+                    }}
+                  >
+                    Loading more wells...
+                  </Typography>
                 </Box>
               )}
               {wellQuery.isSuccess && wellMarkers.length === 0 && (
                 <Box py={2}>
-                  <Typography variant="h6" color="text.secondary" sx={{
-                    pointerEvents: "none",
-                    userSelect: "none",
-                  }}>
+                  <Typography
+                    variant="h6"
+                    color="text.secondary"
+                    sx={{
+                      pointerEvents: "none",
+                      userSelect: "none",
+                    }}
+                  >
                     No wells found for that search.
                   </Typography>
                 </Box>
@@ -395,10 +428,14 @@ export const ChloridesReportView = () => {
               {/* Error */}
               {wellQuery.isError && (
                 <Box py={2}>
-                  <Typography variant="h6" color="error" sx={{
-                    pointerEvents: "none",
-                    userSelect: "none",
-                  }}>
+                  <Typography
+                    variant="h6"
+                    color="error"
+                    sx={{
+                      pointerEvents: "none",
+                      userSelect: "none",
+                    }}
+                  >
                     Failed to load wells: {wellQuery.error.message}
                   </Typography>
                 </Box>
@@ -412,6 +449,6 @@ export const ChloridesReportView = () => {
           </Grid>
         </CardContent>
       </Card>
-    </BackgroundBox >
+    </BackgroundBox>
   );
 };

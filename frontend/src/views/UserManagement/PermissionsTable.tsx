@@ -10,7 +10,7 @@ import {
   Tooltip,
 } from "@mui/material";
 import { Search, Add, FormatListBulletedOutlined } from "@mui/icons-material";
-import { useGetSecurityScopes } from "@/service/ApiServiceNew";
+import { useGetSecurityScopes } from "@/service";
 import { SecurityScope } from "@/interfaces";
 import { CustomCardHeader, GridFooterWithButton } from "@/components";
 

@@ -14,24 +14,15 @@ import {
   OutlinedInput,
   Select,
 } from "@mui/material";
-import AddIcon from "@mui/icons-material/Add";
-import EditIcon from "@mui/icons-material/Edit";
-import SaveIcon from "@mui/icons-material/Save";
-import SaveAsIcon from "@mui/icons-material/SaveAs";
-import CancelIcon from "@mui/icons-material/Cancel";
+import { Add, Edit, Save, SaveAs, Cancel } from "@mui/icons-material";
 import * as Yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { enqueueSnackbar } from "notistack";
 import { useFieldArray } from "react-hook-form";
 
-import {
-  useCreateRole,
-  useGetSecurityScopes,
-  useUpdateRole,
-} from "../../service/ApiServiceNew";
-import ControlledTextbox from "../../components/RHControlled/ControlledTextbox";
-import { SecurityScope, UserRole } from "../../interfaces";
-import { CustomCardHeader } from "../../components/CustomCardHeader";
+import { useCreateRole, useGetSecurityScopes, useUpdateRole } from "@/service";
+import { ControlledTextbox, CustomCardHeader } from "@/components";
+import { SecurityScope, UserRole } from "@/interfaces";
 
 const RoleResolverSchema: Yup.ObjectSchema<any> = Yup.object().shape({
   name: Yup.string().required("Please enter a name."),
@@ -113,7 +104,7 @@ export const RoleDetailsCard = ({
     <Card>
       <CustomCardHeader
         title={roleAddMode ? "Create Role" : "Edit Role"}
-        icon={roleAddMode ? AddIcon : EditIcon}
+        icon={roleAddMode ? Add : Edit}
       />
       <CardContent>
         <Grid container>
@@ -148,7 +139,7 @@ export const RoleDetailsCard = ({
                             label={value.scope_string}
                             clickable
                             deleteIcon={
-                              <CancelIcon
+                              <Cancel
                                 onMouseDown={(event: any) =>
                                   event.stopPropagation()
                                 }
@@ -189,7 +180,7 @@ export const RoleDetailsCard = ({
                 variant="contained"
                 onClick={handleSubmit(onAddPart, onErr)}
               >
-                <SaveIcon sx={{ fontSize: "1.2rem" }} />
+                <Save sx={{ fontSize: "1.2rem" }} />
                 &nbsp; Save New Role
               </Button>
             ) : (
@@ -198,7 +189,7 @@ export const RoleDetailsCard = ({
                 variant="contained"
                 onClick={handleSubmit(onSaveChanges, onErr)}
               >
-                <SaveAsIcon sx={{ fontSize: "1.2rem" }} />
+                <SaveAs sx={{ fontSize: "1.2rem" }} />
                 &nbsp; Save Changes
               </Button>
             )}

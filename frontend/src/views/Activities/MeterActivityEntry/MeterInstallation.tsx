@@ -8,10 +8,9 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
-import { ActivityType } from "../../../enums";
-import ControlledTextbox from "../../../components/RHControlled/ControlledTextbox";
-import ControlledWellSelection from "../../../components/RHControlled/ControlledWellSelection";
-import { formatLatLong } from "../../../conversions";
+import { ActivityType } from "@/enums";
+import { ControlledTextbox, ControlledWellSelection } from "@/components";
+import { formatLatLong } from "@/conversions";
 
 export default function MeterInstallation({ control, errors, watch }: any) {
   const isActivity = (activitiesList: ActivityType[]) =>
@@ -62,12 +61,12 @@ export default function MeterInstallation({ control, errors, watch }: any) {
                 </TableCell>
                 <TableCell sx={{ fontSize: "1rem" }}>
                   {watch("current_installation.well")?.location?.latitude ==
-                    null
+                  null
                     ? "--"
                     : formatLatLong(
-                      watch("current_installation.well")?.location?.latitude,
-                      watch("current_installation.well")?.location?.longitude,
-                    )}
+                        watch("current_installation.well")?.location?.latitude,
+                        watch("current_installation.well")?.location?.longitude,
+                      )}
                 </TableCell>
                 <TableCell sx={{ fontSize: "1rem" }}>
                   {watch("current_installation.well")?.osetag ?? "--"}

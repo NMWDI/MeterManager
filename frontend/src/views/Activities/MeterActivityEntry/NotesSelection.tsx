@@ -11,10 +11,10 @@ import {
 } from "@mui/material";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import { Controller, useFieldArray } from "react-hook-form";
-import { ImageUploadWithPreview, StyledToggleButton } from "../../../components";
-import { NoteTypeLU } from "../../../interfaces";
-import { WorkingOnArrivalValue } from "../../../enums";
-import { useGetNoteTypes } from "../../../service/ApiServiceNew";
+import { ImageUploadWithPreview, StyledToggleButton } from "@/components";
+import { NoteTypeLU } from "@/interfaces";
+import { WorkingOnArrivalValue } from "@/enums";
+import { useGetNoteTypes } from "@/service";
 
 export default function NotesSelection({ control, watch }: any) {
   const notesList = useGetNoteTypes();
@@ -134,7 +134,10 @@ export default function NotesSelection({ control, watch }: any) {
             name="photos"
             control={control}
             render={({ field }) => (
-              <ImageUploadWithPreview fileLimit={2} onFilesChange={(files) => field.onChange(files)} />
+              <ImageUploadWithPreview
+                fileLimit={2}
+                onFilesChange={(files) => field.onChange(files)}
+              />
             )}
           />
         </Grid>

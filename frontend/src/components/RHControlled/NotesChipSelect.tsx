@@ -1,9 +1,11 @@
-import ChipSelect from "../ChipSelect";
-import { NoteTypeLU } from "../../interfaces";
-import { useGetNoteTypes } from "../../service/ApiServiceNew";
 import { Controller } from "react-hook-form";
 
-export default function NotesChipSelect({ name, control }: any) {
+import { NoteTypeLU } from "@/interfaces";
+import { useGetNoteTypes } from "@/service";
+
+import ChipSelect from "../ChipSelect";
+
+export const NotesChipSelect = ({ name, control }: any) => {
   const notesList = useGetNoteTypes();
 
   return (
@@ -44,4 +46,4 @@ export default function NotesChipSelect({ name, control }: any) {
       }}
     />
   );
-}
+};

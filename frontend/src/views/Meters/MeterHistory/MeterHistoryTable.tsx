@@ -7,9 +7,9 @@ import timezone from "dayjs/plugin/timezone";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-import { MeterHistoryType } from "../../../enums";
-import { MeterHistoryDTO } from "../../../interfaces";
-import { CustomCardHeader } from "../../../components/CustomCardHeader";
+import { MeterHistoryType } from "@/enums";
+import { MeterHistoryDTO } from "@/interfaces";
+import { CustomCardHeader } from "@/components";
 
 export const MeterHistoryTable = ({
   onHistoryItemSelection,

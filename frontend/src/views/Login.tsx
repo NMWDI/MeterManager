@@ -11,11 +11,11 @@ import {
   Stack,
   Grid,
 } from "@mui/material";
-import LoginIcon from '@mui/icons-material/Login';
+import { Login as LoginIcon } from "@mui/icons-material";
 import { enqueueSnackbar } from "notistack";
-import { SecurityScope } from "../interfaces";
-import { API_URL } from "../config";
-import { CustomCardHeader } from "../components";
+import { SecurityScope } from "@/interfaces";
+import { API_URL } from "@/config";
+import { CustomCardHeader } from "@/components";
 
 export const Login = () => {
   const [username, setUsername] = useState("");
@@ -38,7 +38,7 @@ export const Login = () => {
       .then(handleLogin)
       .catch((_) => {
         setError(
-          "Unable to connect to the server. Please check your internet connection and try again. If the issue persists, contact support."
+          "Unable to connect to the server. Please check your internet connection and try again. If the issue persists, contact support.",
         );
       });
   };
@@ -59,7 +59,7 @@ export const Login = () => {
         ) {
           enqueueSnackbar(
             "Your role does not have access to the site UI. Please try accessing data via our API.",
-            { variant: "error" }
+            { variant: "error" },
           );
           return;
         }
@@ -95,10 +95,7 @@ export const Login = () => {
       }}
     >
       <Card sx={{ width: "25%", minWidth: 300 }}>
-        <CustomCardHeader
-          title="Login"
-          icon={LoginIcon}
-        />
+        <CustomCardHeader title="Login" icon={LoginIcon} />
         <CardContent
           sx={{
             pt: 0,
@@ -164,4 +161,3 @@ export const Login = () => {
 };
 
 export default Login;
-

@@ -2,11 +2,16 @@ import { useEffect } from "react";
 import { useDebounce } from "use-debounce";
 import { LayersControl, MapContainer, Marker, Tooltip } from "react-leaflet";
 import { Box, Typography } from "@mui/material";
-import { useGetWellLocations } from "../../service/ApiServiceNew";
-import { Well } from "../../interfaces";
-import { OpenStreetMapLayer, SatelliteLayer, SoutheastGuideLayer, WellMapLegend } from "../../components";
-import { BlueMapIcon, RedMapIcon, BlackMapIcon } from "../../components/MapIcons";
-import { WellStatus } from "../../enums";
+import { useGetWellLocations } from "@/service";
+import { Well } from "@/interfaces";
+import {
+  OpenStreetMapLayer,
+  SatelliteLayer,
+  SoutheastGuideLayer,
+  WellMapLegend,
+} from "@/components";
+import { BlueMapIcon, RedMapIcon, BlackMapIcon } from "@/components/MapIcons";
+import { WellStatus } from "@/enums";
 
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -38,16 +43,16 @@ export default function WellSelectionMap({
       <Box
         sx={{
           borderRadius: 2,
-          overflow: 'hidden',
-          height: '100%',
+          overflow: "hidden",
+          height: "100%",
           minHeight: 500,
-          '& .leaflet-container': { height: '100%', width: '100%' },
+          "& .leaflet-container": { height: "100%", width: "100%" },
         }}
       >
         <MapContainer
           center={[33, -104.0]}
           zoom={8}
-          style={{ height: '100%', width: '100%', minHeight: 500 }}
+          style={{ height: "100%", width: "100%", minHeight: 500 }}
           maxZoom={18}
         >
           <LayersControl position="topleft">
@@ -87,8 +92,8 @@ export default function WellSelectionMap({
                     <Marker
                       key={well.id}
                       position={[
-                        well.location?.latitude,
-                        well.location?.longitude,
+                        well.location?.latitude ?? 0,
+                        well.location?.longitude ?? 0,
                       ]}
                       eventHandlers={{
                         click: () => setSelectedWell(well),
@@ -109,27 +114,41 @@ export default function WellSelectionMap({
       {/* Loading first page */}
       {wellQuery.isLoading && (
         <Box py={2}>
-          <Typography variant="h6" sx={{
-            pointerEvents: "none",
-            userSelect: "none",
-          }}>Loading well markers...</Typography>
+          <Typography
+            variant="h6"
+            sx={{
+              pointerEvents: "none",
+              userSelect: "none",
+            }}
+          >
+            Loading well markers...
+          </Typography>
         </Box>
       )}
       {/* Loading additional pages */}
       {wellQuery.isFetchingNextPage && (
         <Box py={2}>
-          <Typography variant="h6" sx={{
-            pointerEvents: "none",
-            userSelect: "none",
-          }}>Loading more wells...</Typography>
+          <Typography
+            variant="h6"
+            sx={{
+              pointerEvents: "none",
+              userSelect: "none",
+            }}
+          >
+            Loading more wells...
+          </Typography>
         </Box>
       )}
       {wellQuery.isSuccess && wellMarkers.length === 0 && (
         <Box py={2}>
-          <Typography variant="h6" color="text.secondary" sx={{
-            pointerEvents: "none",
-            userSelect: "none",
-          }}>
+          <Typography
+            variant="h6"
+            color="text.secondary"
+            sx={{
+              pointerEvents: "none",
+              userSelect: "none",
+            }}
+          >
             No wells found for that search.
           </Typography>
         </Box>
@@ -137,10 +156,14 @@ export default function WellSelectionMap({
       {/* Error */}
       {wellQuery.isError && (
         <Box py={2}>
-          <Typography variant="h6" color="error" sx={{
-            pointerEvents: "none",
-            userSelect: "none",
-          }}>
+          <Typography
+            variant="h6"
+            color="error"
+            sx={{
+              pointerEvents: "none",
+              userSelect: "none",
+            }}
+          >
             Failed to load wells: {wellQuery.error.message}
           </Typography>
         </Box>
@@ -157,5 +180,4 @@ const getWellIcon = (well: Well) => {
     return RedMapIcon;
   }
   return BlueMapIcon;
-}
-
+};

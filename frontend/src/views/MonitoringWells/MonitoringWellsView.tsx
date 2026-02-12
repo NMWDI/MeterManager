@@ -15,12 +15,6 @@ import {
 } from "@mui/material";
 import { useQuery, useQueryClient } from "react-query";
 import { useAuthUser } from "react-auth-kit";
-import { MonitoringWellsTable } from "./MonitoringWellsTable";
-import { MonitoringWellsPlot } from "./MonitoringWellsPlot";
-import {
-  CreateModal,
-  UpdateModal,
-} from "../../components/Modals/MonitoredWell";
 import {
   NewWellMeasurement,
   PatchWellMeasurement,
@@ -28,19 +22,26 @@ import {
   SecurityScope,
   WellMeasurementDTO,
   MonitoredWell,
-} from "../../interfaces";
+} from "@/interfaces";
 import {
   useCreateWaterLevel,
   useUpdateWaterLevel,
   useDeleteWaterLevel,
-} from "../../service/ApiServiceNew";
+} from "@/service";
 import dayjs, { Dayjs } from "dayjs";
-import { useFetchWithAuth, useFetchST2 } from "../../hooks";
-import { getDataStreamId } from "../../utils/DataStreamUtils";
+import { enqueueSnackbar } from "notistack";
+import { useFetchWithAuth, useFetchST2 } from "@/hooks";
+import { getDataStreamId, separateAndSortMonitoredWells } from "@/utils";
 import { MonitorHeart } from "@mui/icons-material";
-import { BackgroundBox } from "../../components/BackgroundBox";
-import { CustomCardHeader } from "../../components/CustomCardHeader";
-import { separateAndSortMonitoredWells } from "../../utils";
+import {
+  CreateModal,
+  UpdateModal,
+  CustomCardHeader,
+  BackgroundBox,
+} from "@/components";
+
+import { MonitoringWellsTable } from "./MonitoringWellsTable";
+import { MonitoringWellsPlot } from "./MonitoringWellsPlot";
 
 export const MonitoringWellsView = () => {
   const theme = useTheme();
@@ -50,13 +51,14 @@ export const MonitoringWellsView = () => {
   const fetchSt2 = useFetchST2();
   const selectWellId = useId();
   const [wellId, setWellId] = useState<number>();
-  const [selectedMeasurement, setSelectedMeasurement] =
-    useState<PatchWellMeasurement>({
-      levelmeasurement_id: 0,
-      timestamp: dayjs(),
-      value: 0,
-      submitting_user_id: 0,
-    });
+  const [selectedMeasurement, setSelectedMeasurement] = useState<
+    Partial<PatchWellMeasurement>
+  >({
+    levelmeasurement_id: 0,
+    timestamp: dayjs(),
+    value: 0,
+    submitting_user_id: 0,
+  });
 
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
@@ -142,7 +144,7 @@ export const MonitoringWellsView = () => {
     errorSt2 ||
     errorJohnsonSensorData;
 
-  const handleSubmitNewMeasurement = (data: NewWellMeasurement) => {
+  const handleSubmitNewMeasurement = (data: Partial<NewWellMeasurement>) => {
     if (wellId) {
       data.well_id = wellId;
       createMeasurement.mutate(data, {
@@ -170,11 +172,26 @@ export const MonitoringWellsView = () => {
 
   const handleDeleteMeasurement = () => {
     setIsUpdateModalOpen(false);
+
+    const id = selectedMeasurement.levelmeasurement_id;
+    if (!id) {
+      enqueueSnackbar("No measurement selected to delete.", {
+        variant: "warning",
+      });
+      return;
+    }
+
     if (window.confirm("Are you sure you want to delete this measurement?")) {
-      deleteMeasurement.mutate(selectedMeasurement.levelmeasurement_id, {
+      deleteMeasurement.mutate(id, {
         onSuccess: () => {
           queryClient.invalidateQueries({
             queryKey: ["manualMeasurements", wellId],
+          });
+          enqueueSnackbar("Measurement deleted.", { variant: "success" });
+        },
+        onError: (e: any) => {
+          enqueueSnackbar(e?.message ?? "Failed to delete measurement.", {
+            variant: "error",
           });
         },
       });
@@ -365,16 +382,18 @@ export const MonitoringWellsView = () => {
           {authUser() && (
             <>
               <CreateModal
+                mode="well"
                 open={isNewModalOpen}
                 onClose={() => setIsNewModalOpen(false)}
                 handleSubmitNewMeasurement={handleSubmitNewMeasurement}
               />
               <UpdateModal
+                mode="well"
                 open={isUpdateModalOpen}
                 onClose={() => setIsUpdateModalOpen(false)}
                 measurement={selectedMeasurement}
                 onUpdateMeasurement={(update) =>
-                  setSelectedMeasurement({ ...selectedMeasurement, ...update })
+                  setSelectedMeasurement((prev) => ({ ...prev, ...update }))
                 }
                 onSubmitUpdate={handleSubmitMeasurementUpdate}
                 onDeleteMeasurement={handleDeleteMeasurement}

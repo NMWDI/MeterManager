@@ -1,8 +1,7 @@
 import { CardContent, Card } from "@mui/material";
 import MeterActivityEntry from "./MeterActivityEntry/MeterActivityEntry";
 import { Construction } from "@mui/icons-material";
-import { BackgroundBox } from "../../components/BackgroundBox";
-import { CustomCardHeader } from "../../components/CustomCardHeader";
+import { BackgroundBox, CustomCardHeader } from "@/components";
 
 export const ActivitiesView = () => {
   return (

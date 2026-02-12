@@ -27,8 +27,8 @@ export const MeterSelectionTable = ({
     useState<MeterListQueryParams>({
       search_string: "",
       filter_by_status: [MeterStatusNames.Installed],
-      sort_by: "serial_number",
-      sort_direction: "asc",
+      sort_by: MeterSortByField.SerialNumber,
+      sort_direction: SortDirection.Ascending,
       limit: 25,
       offset: 0,
     });
@@ -80,12 +80,11 @@ export const MeterSelectionTable = ({
     const newParams = {
       search_string: meterSearchQueryDebounced,
       filter_by_status: meterStatusFilter,
-      sort_by: gridSortModel
-        ? gridSortModel[0]?.field
-        : MeterSortByField.SerialNumber,
-      sort_direction: gridSortModel
-        ? gridSortModel[0]?.sort
-        : SortDirection.Ascending,
+      sort_by:
+        (gridSortModel?.[0]?.field as MeterSortByField) ??
+        MeterSortByField.SerialNumber,
+      sort_direction:
+        (gridSortModel?.[0]?.sort as SortDirection) ?? SortDirection.Ascending,
       limit: paginationModel.pageSize,
       offset: paginationModel.page * paginationModel.pageSize,
     };
