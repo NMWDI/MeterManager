@@ -33,9 +33,6 @@ class Base(DeclarativeBase):
     __name__: str
 
 
-# ---------- Parts/Services/Notes ------------
-
-
 class PartTypeLU(Base):
     """
     The types of parts
@@ -162,8 +159,6 @@ Notes = Table(
     Column("note_type_id", ForeignKey("NoteTypeLU.id"), nullable=False),
 )
 
-# ---------  Meter Related Tables ---------
-
 
 class Meters(Base):
     """
@@ -216,8 +211,6 @@ class MeterTypeLU(Base):
     size: Mapped[float] = mapped_column(Float)
     description: Mapped[str] = mapped_column(String)
     in_use: Mapped[bool] = mapped_column(Boolean, nullable=False)
-
-    # parts: Mapped[List["Parts"]] = relationship(secondary=PartAssociation)
 
 
 class MeterStatusLU(Base):
@@ -375,15 +368,12 @@ class Units(Base):
     description: Mapped[str] = mapped_column(String)
 
 
-# Association table that links observed property types and their appropriate units
 PropertyUnits = Table(
     "PropertyUnits",
     Base.metadata,
     Column("property_id", ForeignKey("ObservedPropertyTypeLU.id"), nullable=False),
     Column("unit_id", ForeignKey("Units.id"), nullable=False),
 )
-
-# ---------- Other Tables ---------------
 
 
 class Locations(Base):
@@ -402,7 +392,6 @@ class Locations(Base):
     quarter: Mapped[int] = mapped_column(Integer)
     half_quarter: Mapped[int] = mapped_column(Integer)
     quarter_quarter: Mapped[int] = mapped_column(Integer)
-    # geom = mapped_column(Geometry("POINT")) # SQLAlchemy/FastAPI has some issue sending this
 
     type_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("LocationTypeLU.id"), nullable=False
@@ -460,9 +449,6 @@ class LandOwners(Base):
     note: Mapped[str] = mapped_column(String)
 
 
-# -----------    Security Tables    ---------------
-
-
 class Users(Base):
     """
     All info about a user of the app
@@ -515,9 +501,6 @@ class UserRoles(Base):
     security_scopes: Mapped[List["SecurityScopes"]] = relationship(
         secondary=ScopesRoles
     )
-
-
-# ------------ Wells --------------
 
 
 class WellUseLU(Base):
@@ -646,9 +629,6 @@ class workOrders(Base):
         Integer, ForeignKey("Users.id"), nullable=True
     )
     ose_request_id: Mapped[int] = mapped_column(Integer, nullable=True)
-
-    # Associated Activities
-    # associated_activities: Mapped[List['MeterActivities']] = relationship("MeterActivities")
 
     meter: Mapped["Meters"] = relationship()
     status: Mapped["workOrderStatusLU"] = relationship()
