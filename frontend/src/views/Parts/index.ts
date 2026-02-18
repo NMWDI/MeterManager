@@ -1,1 +1,2 @@
-export * from './PartsView'
+export * from "./PartsView";
+export * from "./PartsHistory";

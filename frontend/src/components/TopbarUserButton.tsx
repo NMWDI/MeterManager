@@ -1,6 +1,12 @@
-import { Avatar, Button, ButtonProps } from "@mui/material";
+import {
+  Avatar,
+  Button,
+  ButtonProps,
+  useTheme,
+  useMediaQuery,
+  IconButton,
+} from "@mui/material";
 import { Badge, Engineering, Face } from "@mui/icons-material";
-import { useTheme } from "@mui/material/styles";
 import { getRoleColor } from "@/utils";
 
 export const TopbarUserButton = ({
@@ -14,6 +20,7 @@ export const TopbarUserButton = ({
   src?: string;
 } & ButtonProps) => {
   const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
   const buttonColor = getRoleColor(role);
 
   const primary = theme.palette.primary;
@@ -42,7 +49,36 @@ export const TopbarUserButton = ({
     OSE: warning.contrastText,
   };
 
-  return (
+  return isSmallScreen ? (
+    <IconButton
+      color={buttonColor}
+      sx={{
+        bgcolor: buttonColor,
+        width: 44,
+        height: 44,
+        "&:hover": {
+          bgcolor: buttonColor,
+          opacity: 0.85,
+        },
+        ...buttonProps.sx,
+      }}
+      {...buttonProps}
+    >
+      <Avatar
+        sx={{
+          width: 36,
+          height: 36,
+          bgcolor: roleBgColor[role],
+          borderColor: roleBorderColor[role],
+          borderStyle: "solid",
+          borderWidth: "2px",
+        }}
+        src={src}
+      >
+        {src ? null : renderRoleIcon()}
+      </Avatar>
+    </IconButton>
+  ) : (
     <Button
       color={buttonColor}
       variant="contained"
@@ -51,7 +87,7 @@ export const TopbarUserButton = ({
         fontFamily: "monospace",
         fontWeight: "bolder",
         color: "white",
-        ...buttonProps.sx, // allow overriding sx
+        ...buttonProps.sx,
       }}
       {...buttonProps}
     >

@@ -79,7 +79,8 @@ export const UsersTable = ({
         <Grid container spacing={2}>
           <Grid
             item
-            xs={6}
+            xs={12}
+            md={6}
             sx={{
               display: "flex",
               alignItems: "center",
@@ -104,7 +105,8 @@ export const UsersTable = ({
           </Grid>
           <Grid
             item
-            xs={6}
+            xs={12}
+            md={6}
             sx={{
               display: "flex",
               alignItems: "center",

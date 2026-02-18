@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import {
+  Box,
   Button,
   Card,
   CardContent,
   Grid,
+  IconButton,
   InputAdornment,
   Stack,
   TextField,
@@ -15,8 +17,10 @@ import {
   Search,
   Add,
   FormatListBulletedOutlined,
+  History,
 } from "@mui/icons-material";
 import { useSnackbar } from "notistack";
+import { Link } from "react-router-dom";
 import { useGetParts, useAddParts } from "@/service";
 import { Part } from "@/interfaces";
 import {
@@ -52,7 +56,40 @@ export const PartsTable = ({
       width: 200,
       valueGetter: (params: any) => params?.name,
     },
-    { field: "current_count", headerName: "Current Count", width: 150 },
+    {
+      field: "current_count",
+      headerName: "Current Count",
+      width: 150,
+      renderCell: (params: any) => (
+        <Box
+          sx={{
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            gap: 2,
+            justifyContent: "start",
+            alignItems: "center",
+          }}
+        >
+          <Typography sx={{ fontWeight: 700 }}>{params.value}</Typography>
+          <IconButton
+            component={Link}
+            to={`/manage/parts/${params.row.id}/history`}
+            size="small"
+            onClick={(e) => e.stopPropagation()}
+            sx={{
+              p: 0.5,
+              "&:hover": {
+                backgroundColor: "transparent",
+              },
+            }}
+            disableRipple
+          >
+            <History fontSize="small" />
+          </IconButton>
+        </Box>
+      ),
+    },
     {
       field: "in_use",
       headerName: "In Use",
@@ -91,7 +128,8 @@ export const PartsTable = ({
         <Grid container spacing={2}>
           <Grid
             item
-            xs={6}
+            xs={12}
+            md={6}
             sx={{
               display: "flex",
               alignItems: "center",
@@ -116,7 +154,8 @@ export const PartsTable = ({
           </Grid>
           <Grid
             item
-            xs={6}
+            xs={12}
+            md={6}
             sx={{
               display: "flex",
               alignItems: "center",
@@ -171,7 +210,9 @@ export const PartsTable = ({
                         }}
                         startIcon={<Add fontSize="small" />}
                       >
-                        Create
+                        <Box sx={{ display: { xs: "none", md: "inline" } }}>
+                          Create
+                        </Box>
                       </Button>
                       <Button
                         variant="outlined"
@@ -181,6 +222,9 @@ export const PartsTable = ({
                         sx={{
                           flexShrink: 0,
                           width: { xs: "100%", sm: "auto" },
+                          "& .MuiButton-startIcon": {
+                            mr: { xs: 0, md: 1 },
+                          },
                         }}
                         disabled={
                           partsList.isLoading ||
@@ -189,7 +233,9 @@ export const PartsTable = ({
                         }
                         startIcon={<PlusOne fontSize="small" />}
                       >
-                        Increase Quantity
+                        <Box sx={{ display: { xs: "none", md: "inline" } }}>
+                          Increase Quantity
+                        </Box>
                       </Button>
                     </Stack>
                   ),

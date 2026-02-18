@@ -1,5 +1,5 @@
-from typing import Optional
-from datetime import date
+from typing import List, Literal, Optional
+from datetime import date, datetime
 from api.schemas.base import ORMBase
 from api.schemas.meter_schemas import MeterTypeLU
 
@@ -56,3 +56,22 @@ class PartsAddRequest(ORMBase):
     count: int
     date: date
     note: Optional[str] = None
+
+
+class PartHistoryRow(ORMBase):
+    row_id: str
+    part_id: int
+    event_date: datetime
+    event_type: Literal["initial", "added", "used"]
+    ref_id: int | None = None
+    work_order_id: int | None = None
+    note: str | None = None
+    delta: int
+    total_after: int
+
+
+class PartHistoryResponse(ORMBase):
+    part_id: int
+    part_number: str
+    initial_count: int
+    history: List[PartHistoryRow]

@@ -4,6 +4,7 @@ export * from "./ChipSelect";
 export * from "./CustomCardHeader";
 export * from "./DMSentry";
 export * from "./DirectionCard";
+export * from "./EventTypeChip";
 export * from "./GridFooterWithButton";
 export * from "./ImageDialog";
 export * from "./ImagePreviewGrid";

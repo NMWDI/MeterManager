@@ -1,8 +1,8 @@
 from fastapi import Depends, APIRouter, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload, selectinload
-from sqlalchemy import select, func
+from sqlalchemy import select, func, literal, union_all
 from typing import List, Union, Optional
-from datetime import datetime, date
+from datetime import datetime, date, time
 from fastapi.responses import StreamingResponse
 from weasyprint import HTML
 from io import BytesIO
@@ -447,3 +447,99 @@ def add_parts(payload: part_schemas.PartsAddRequest, db: Session = Depends(get_d
     part_obj, curr = row
     part_obj.current_count = curr
     return part_obj
+
+
+@part_router.get(
+    "/parts/{part_id}/history",
+    response_model=part_schemas.PartHistoryResponse,
+    dependencies=[Depends(ScopedUser.Admin)],
+    tags=["Parts"],
+)
+def get_part_history(part_id: int, db: Session = Depends(get_db)):
+    part = db.scalars(select(Parts).where(Parts.id == part_id)).first()
+    if not part:
+        raise HTTPException(status_code=404, detail="Part not found")
+
+    # ADDED events (date is a DATE)
+    added_q = select(
+        PartsAdded.id.label("ref_id"),
+        PartsAdded.part_id.label("part_id"),
+        PartsAdded.date.label("event_date"),  # date
+        literal("added").label("event_type"),
+        PartsAdded.note.label("note"),
+        PartsAdded.count.label("delta"),
+        literal(None).label("work_order_id"),
+    ).where(PartsAdded.part_id == part_id)
+
+    # USED events (datetime comes from MeterActivities.timestamp_start)
+    used_q = (
+        select(
+            PartsUsed.id.label("ref_id"),
+            PartsUsed.part_id.label("part_id"),
+            MeterActivities.timestamp_start.label("event_date"),  # datetime
+            literal("used").label("event_type"),
+            MeterActivities.description.label("note"),
+            (-PartsUsed.count).label("delta"),
+            MeterActivities.work_order_id.label("work_order_id"),
+        )
+        .join(MeterActivities, MeterActivities.id == PartsUsed.meter_activity_id)
+        .where(PartsUsed.part_id == part_id)
+    )
+
+    events = union_all(added_q, used_q).subquery()
+
+    rows = db.execute(
+        select(
+            events.c.ref_id,
+            events.c.part_id,
+            events.c.event_date,
+            events.c.event_type,
+            events.c.note,
+            events.c.delta,
+            events.c.work_order_id,
+        ).order_by(events.c.event_date.asc(), events.c.ref_id.asc())
+    ).all()
+
+    running = int(part.initial_count)
+
+    history: list[part_schemas.PartHistoryRow] = [
+        part_schemas.PartHistoryRow(
+            row_id=f"initial-{part_id}",
+            part_id=part_id,
+            event_date=datetime.min,
+            event_type="initial",
+            ref_id=None,
+            note="Initial count",
+            delta=0,
+            total_after=running,
+            work_order_id=None,
+        )
+    ]
+
+    for ref_id, pid, event_date, event_type, note, delta, work_order_id in rows:
+        # convert DATE -> DATETIME if needed
+        if not isinstance(event_date, datetime):
+            event_date = datetime.combine(event_date, time.min)
+
+        running += int(delta)
+
+        history.append(
+            part_schemas.PartHistoryRow(
+                row_id=f"{event_type}-{ref_id}",
+                part_id=pid,
+                event_date=event_date,
+                event_type=event_type,
+                ref_id=ref_id,
+                note=note,
+                delta=int(delta),
+                total_after=running,
+                work_order_id=work_order_id,
+            )
+        )
+
+    return part_schemas.PartHistoryResponse(
+        part_id=part.id,
+        part_number=part.part_number,
+        initial_count=part.initial_count,
+        history=history,
+    )

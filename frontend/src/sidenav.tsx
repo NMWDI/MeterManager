@@ -13,11 +13,11 @@ import {
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft } from "@mui/icons-material";
-import { NavLink, ReportsNavItem, RoleChip } from "./components";
-import { useGetWorkOrders } from "./service/ApiServiceNew";
-import { WorkOrderStatus } from "./enums";
-import { SecurityScope, WorkOrder } from "./interfaces";
-import { navConfig } from "./constants";
+import { NavLink, ReportsNavItem, RoleChip } from "@/components";
+import { useGetWorkOrders } from "@/service";
+import { WorkOrderStatus } from "@/enums";
+import { SecurityScope, WorkOrder } from "@/interfaces";
+import { navConfig } from "@/constants";
 
 export default function Sidenav({
   open,
@@ -82,9 +82,15 @@ export default function Sidenav({
       {/* Header */}
       <Box
         sx={{
+          position: "sticky",
+          top: 0,
+          zIndex: 1,
+          backgroundColor: "white",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
+          borderBottom: "1px solid",
+          borderColor: "divider",
         }}
       >
         <Typography
@@ -127,6 +133,7 @@ export default function Sidenav({
         sx={{
           height: "100%",
           px: "1rem",
+          overflowY: "auto",
         }}
       >
         <List subheader={<ListSubheader component="div">Pages</ListSubheader>}>

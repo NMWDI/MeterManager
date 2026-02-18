@@ -21,6 +21,7 @@ import {
   WorkOrdersView,
   ChloridesView,
   ReportsView,
+  PartsHistory,
 } from "./views";
 import { MonitoringWellsReportView } from "./views/Reports/MonitoringWells";
 import { MaintenanceReportView } from "./views/Reports/Maintenance";
@@ -240,6 +241,19 @@ export const App = () => {
                     >
                       <AppLayout>
                         <PartsView />
+                      </AppLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/manage/parts/:id/history"
+                  element={
+                    <ProtectedRoute
+                      requiredScopes={["admin"]}
+                      setErrorMessage={setErrorMessage}
+                    >
+                      <AppLayout>
+                        <PartsHistory />
                       </AppLayout>
                     </ProtectedRoute>
                   }

@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react";
-import { Delete, Add } from "@mui/icons-material";
-import HandymanIcon from "@mui/icons-material/Handyman";
+import { useEffect, useMemo, useState } from "react";
+import { Delete, Add, Handyman } from "@mui/icons-material";
 import {
   DataGrid,
   GridColDef,
@@ -10,7 +9,7 @@ import {
   GridFilterItem,
 } from "@mui/x-data-grid";
 import { useAuthUser } from "react-auth-kit";
-import { Link, createSearchParams } from "react-router-dom";
+import { Link, createSearchParams, useSearchParams } from "react-router-dom";
 import {
   useGetWorkOrders,
   useUpdateWorkOrder,
@@ -26,6 +25,26 @@ import { DeleteWorkOrder } from "./DeleteWorkOrder";
 import { NewWorkOrderModal } from "./NewWorkOrderModal";
 
 export default function WorkOrdersTable() {
+  const [searchParams] = useSearchParams();
+
+  const workOrderIdFilter = useMemo(() => {
+    // supports:
+    // ?work_order_id=617
+    // ?work_order_id=617,618
+    // ?work_order_id=617&work_order_id=618
+    const all = searchParams.getAll("work_order_id");
+    if (!all || all.length === 0) return null;
+
+    const ids = all
+      .flatMap((v) => v.split(","))
+      .map((v) => v.trim())
+      .filter(Boolean)
+      .map((v) => Number(v))
+      .filter((n) => Number.isFinite(n) && n > 0);
+
+    return ids.length ? ids : null;
+  }, [searchParams]);
+
   const [workOrderFilters, setWorkOrderFilters] = useState<WorkOrderStatus[]>([
     WorkOrderStatus.Open,
     WorkOrderStatus.Review,
@@ -42,6 +61,13 @@ export default function WorkOrdersTable() {
 
   const [isNewWorkOrderModalOpen, setIsNewWorkOrderModalOpen] =
     useState<boolean>(false);
+
+  const displayedRows = useMemo(() => {
+    const rows = workOrderList.data ?? [];
+    if (!workOrderIdFilter) return rows;
+    const set = new Set(workOrderIdFilter);
+    return rows.filter((r: any) => set.has(r.work_order_id));
+  }, [workOrderList.data, workOrderIdFilter]);
 
   //Current user needed for various changes to UI based on user role
   const authUser = useAuthUser();
@@ -137,6 +163,7 @@ export default function WorkOrdersTable() {
     {
       field: "work_order_id",
       headerName: "ID",
+      type: "number",
       flex: 1,
       minWidth: 50,
     },
@@ -286,7 +313,7 @@ export default function WorkOrdersTable() {
                 }
                 aria-label="Edit Activity"
               >
-                <HandymanIcon />
+                <Handyman />
               </IconButton>
             )}
             <DeleteWorkOrder
@@ -306,11 +333,17 @@ export default function WorkOrdersTable() {
   return (
     <Box sx={{ height: 700, width: "100%", overflowX: "auto" }}>
       <DataGrid
-        rows={workOrderList.data ?? []}
+        key={
+          workOrderIdFilter?.length
+            ? `woids-${workOrderIdFilter.join(",")}`
+            : `default-${hasAdminScope ? "admin" : "tech"}`
+        }
+        rows={displayedRows ?? []}
         getRowHeight={() => "auto"}
         getRowId={(row) => row.work_order_id}
         columns={columns}
         disableColumnResize={false}
+        filterModel={workOrderIdFilter?.length ? { items: [] } : undefined}
         initialState={{
           columns: {
             columnVisibilityModel: {
@@ -320,7 +353,9 @@ export default function WorkOrdersTable() {
               assigned_user_id: hasAdminScope,
             },
           },
-          filter: { filterModel: { items: initialFilter } },
+          ...(workOrderIdFilter?.length
+            ? {} // NO default filter when URL param exists
+            : { filter: { filterModel: { items: initialFilter } } }),
         }}
         processRowUpdate={handleRowUpdate}
         onProcessRowUpdateError={handleProcessRowUpdateError}

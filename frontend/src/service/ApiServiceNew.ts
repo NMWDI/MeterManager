@@ -55,6 +55,7 @@ import { IncreaseQuantityPayload } from "@/interfaces";
 import { WorkOrderStatus } from "@/enums";
 import { API_URL } from "@/config";
 import { useNavigate } from "react-router-dom";
+import { PartHistoryResponse } from "@/interfaces/PartHistoryResponse";
 
 // Date display util
 export function toGMT6String(date: Date) {
@@ -1666,4 +1667,23 @@ export function useAddParts(onSuccess?: () => void) {
     },
     retry: 0,
   });
+}
+
+export function useGetPartHistory(partId?: string) {
+  const authHeader = useAuthHeader();
+  const navigate = useNavigate();
+  const signOut = useSignOut();
+
+  return useQuery<PartHistoryResponse, Error>(
+    ["parts-history", partId],
+    () =>
+      GETFetch(
+        `parts/${partId}/history`,
+        null,
+        authHeader(),
+        signOut,
+        navigate,
+      ),
+    { enabled: !!partId, keepPreviousData: true },
+  );
 }

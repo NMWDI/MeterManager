@@ -76,7 +76,8 @@ export const MeterTypesTable = ({
         <Grid container spacing={2}>
           <Grid
             item
-            xs={6}
+            xs={12}
+            md={6}
             sx={{
               display: "flex",
               alignItems: "center",
@@ -103,7 +104,8 @@ export const MeterTypesTable = ({
           </Grid>
           <Grid
             item
-            xs={6}
+            xs={12}
+            md={6}
             sx={{
               display: "flex",
               alignItems: "center",
