@@ -74,4 +74,5 @@ class PartHistoryResponse(ORMBase):
     part_id: int
     part_number: str
     initial_count: int
+    current_count: int
     history: List[PartHistoryRow]

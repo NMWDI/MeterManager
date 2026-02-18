@@ -16,6 +16,7 @@ from api.models.main_models import (
     MeterTypeLU,
     meterRegisters,
     MeterActivities,
+    workOrders,
 )
 from api.schemas import part_schemas
 from api.session import get_db
@@ -478,11 +479,20 @@ def get_part_history(part_id: int, db: Session = Depends(get_db)):
             PartsUsed.part_id.label("part_id"),
             MeterActivities.timestamp_start.label("event_date"),  # datetime
             literal("used").label("event_type"),
-            MeterActivities.description.label("note"),
+            func.coalesce(
+                func.nullif(func.trim(MeterActivities.description), ""),
+                func.nullif(func.trim(workOrders.description), ""),
+                func.nullif(func.trim(workOrders.notes), ""),
+                func.nullif(func.trim(workOrders.title), ""),
+            ).label("note"),
             (-PartsUsed.count).label("delta"),
             MeterActivities.work_order_id.label("work_order_id"),
         )
         .join(MeterActivities, MeterActivities.id == PartsUsed.meter_activity_id)
+        .outerjoin(
+            workOrders,
+            workOrders.id == MeterActivities.work_order_id,
+        )
         .where(PartsUsed.part_id == part_id)
     )
 
@@ -537,9 +547,12 @@ def get_part_history(part_id: int, db: Session = Depends(get_db)):
             )
         )
 
+    current_count = running
+
     return part_schemas.PartHistoryResponse(
         part_id=part.id,
         part_number=part.part_number,
         initial_count=part.initial_count,
+        current_count=current_count,
         history=history,
     )

@@ -13,5 +13,6 @@ export type PartHistoryResponse = {
   part_id: number;
   part_number: string;
   initial_count: number;
+  current_count: number;
   history: PartHistoryRow[];
 };
