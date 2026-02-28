@@ -12,12 +12,17 @@ import {
 import { Storage, Refresh, Download } from "@mui/icons-material";
 import { DataGrid, GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
 import { useQuery } from "react-query";
+import { Route } from "@/routes/manage/backups";
+import { useNavigate } from "@tanstack/react-router";
 import { BackupRow } from "@/interfaces/BackupRow";
 import { useFetchWithAuth } from "@/hooks";
 import { BackgroundBox, CustomCardHeader } from "@/components";
 import { toYYYYMMDD, formatBytes } from "@/utils";
 
 export const BackupsView = () => {
+  const navigate = useNavigate();
+  const { page, pageSize } = Route.useSearch();
+
   const fetchWithAuth = useFetchWithAuth();
   const [downloading, setDownloading] = useState<Record<string, boolean>>({});
 
@@ -173,6 +178,17 @@ export const BackupsView = () => {
                     pagination: { paginationModel: { page: 0, pageSize: 25 } },
                   }}
                   pageSizeOptions={[10, 25, 50, 100]}
+                  paginationModel={{ page, pageSize }}
+                  onPaginationModelChange={(m) => {
+                    navigate({
+                      to: "/manage/backups",
+                      search: {
+                        page: m.page,
+                        pageSize: m.pageSize,
+                      },
+                      replace: true, // avoid polluting history on every click
+                    });
+                  }}
                   slotProps={{
                     toolbar: {
                       showQuickFilter: true,

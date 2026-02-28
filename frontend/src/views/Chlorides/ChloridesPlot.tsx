@@ -1,9 +1,9 @@
 import { useMemo } from "react";
 import { Box, CircularProgress, Typography } from "@mui/material";
-import Plot from "react-plotly.js";
+import ReactPlot from "react-plotly.js";
 import { Data } from "plotly.js";
 
-export const ChloridesPlot = ({
+export const Plot = ({
   manual_dates,
   manual_vals,
   isLoading,
@@ -34,8 +34,8 @@ export const ChloridesPlot = ({
   }, [manual_dates, manual_vals]);
 
   return (
-    <Box sx={{ height: 600, width: '100%' }}>
-      {isLoading ?
+    <Box sx={{ height: 600, width: "100%" }}>
+      {isLoading ? (
         <Box
           sx={{
             height: 600,
@@ -51,8 +51,8 @@ export const ChloridesPlot = ({
             Loading plot data...
           </Typography>
         </Box>
-        :
-        <Plot
+      ) : (
+        <ReactPlot
           data={data}
           layout={{
             autosize: true,
@@ -76,7 +76,7 @@ export const ChloridesPlot = ({
           useResizeHandler
           style={{ width: "100%", height: "100%" }}
         />
-      }
+      )}
     </Box>
   );
 };

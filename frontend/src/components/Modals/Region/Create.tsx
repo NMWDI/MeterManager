@@ -170,6 +170,14 @@ export const CreateModal = (props: CreateModalProps) => {
     );
   };
 
+  const hasValue = value !== null && !Number.isNaN(value);
+  const canSave =
+    !!selectedUserID &&
+    !!selectedWellID &&
+    !!date &&
+    !!time &&
+    (notSampled || hasValue);
+
   return (
     <Dialog
       open={open}
@@ -272,13 +280,7 @@ export const CreateModal = (props: CreateModalProps) => {
           variant="contained"
           color="success"
           onClick={onMeasurementSubmitted}
-          disabled={
-            !!selectedUserID &&
-            !!selectedWellID &&
-            !!date &&
-            !!time &&
-            (notSampled || value !== null)
-          }
+          disabled={!canSave}
           sx={{ flexShrink: 0, width: { xs: "100%", sm: "auto" } }}
           startIcon={<Save fontSize="small" />}
         >

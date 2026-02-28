@@ -1,1 +1,2 @@
-export * from './ChloridesView'
+export * from "./ChloridesPlot";
+export * from "./ChloridesTable";
