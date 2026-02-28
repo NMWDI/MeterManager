@@ -1,5 +1,5 @@
 import { useAuthHeader, useSignOut } from "react-auth-kit";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@tanstack/react-router";
 import { formatQueryParams } from "@/utils";
 import { enqueueSnackbar } from "notistack";
 import { HttpStatus } from "@/enums";
@@ -46,7 +46,7 @@ export const useFetchWithAuth = () => {
         localStorage.getItem("loggedIn")
       ) {
         localStorage.removeItem("loggedIn");
-        navigate("/");
+        navigate({ to: "/" });
         signOut();
         enqueueSnackbar("Session expired. Please log in to continue.", {
           variant: "error",

@@ -54,7 +54,7 @@ import {
 import { IncreaseQuantityPayload } from "@/interfaces";
 import { WorkOrderStatus } from "@/enums";
 import { API_URL } from "@/config";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@tanstack/react-router";
 import { PartHistoryResponse } from "@/interfaces/PartHistoryResponse";
 
 // Date display util
@@ -125,7 +125,7 @@ async function GETFetch(
     // If backend indicates that user's token is expired, log them out and notify
     if (response.status == 440 && localStorage.getItem("loggedIn")) {
       localStorage.removeItem("loggedIn");
-      navigate("/");
+      navigate({ to: "/" });
       signOut();
       enqueueSnackbar("Your session has expired, please login again.", {
         variant: "error",

@@ -9,7 +9,7 @@ import {
   GridFilterItem,
 } from "@mui/x-data-grid";
 import { useAuthUser } from "react-auth-kit";
-import { Link, createSearchParams, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import {
   useGetWorkOrders,
   useUpdateWorkOrder,
@@ -25,25 +25,12 @@ import { DeleteWorkOrder } from "./DeleteWorkOrder";
 import { NewWorkOrderModal } from "./NewWorkOrderModal";
 
 export default function WorkOrdersTable() {
-  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const search = useSearch({ from: "/workorders" });
 
   const workOrderIdFilter = useMemo(() => {
-    // supports:
-    // ?work_order_id=617
-    // ?work_order_id=617,618
-    // ?work_order_id=617&work_order_id=618
-    const all = searchParams.getAll("work_order_id");
-    if (!all || all.length === 0) return null;
-
-    const ids = all
-      .flatMap((v) => v.split(","))
-      .map((v) => v.trim())
-      .filter(Boolean)
-      .map((v) => Number(v))
-      .filter((n) => Number.isFinite(n) && n > 0);
-
-    return ids.length ? ids : null;
-  }, [searchParams]);
+    return search.work_order_id?.length ? search.work_order_id : null;
+  }, [search.work_order_id]);
 
   const [workOrderFilters, setWorkOrderFilters] = useState<WorkOrderStatus[]>([
     WorkOrderStatus.Open,
@@ -183,10 +170,15 @@ export default function WorkOrdersTable() {
       renderCell: (params) => {
         return (
           <Link
-            to={{
-              pathname: "/manage/meters",
-              search: `?meter_id=${params.row.meter_id}`,
-            }}
+            to="/manage/meters"
+            search={(prev) => ({
+              meter_id: params.row.meter_id,
+              activity_id: prev.activity_id ?? undefined,
+              add: prev.add ?? undefined,
+              tab: prev.tab ?? undefined,
+              q: prev.q ?? undefined,
+              filters: prev.filters ?? undefined,
+            })}
           >
             {params.value}
           </Link>
@@ -234,10 +226,15 @@ export default function WorkOrdersTable() {
         const links = activities.map((activity, index) => (
           <span key={activity.id}>
             <Link
-              to={{
-                pathname: "/manage/meters",
-                search: `?meter_id=${activity.meter_id}&activity_id=${activity.id}`,
-              }}
+              to="/manage/meters"
+              search={(prev) => ({
+                meter_id: activity.meter_id,
+                activity_id: activity.id,
+                add: prev.add ?? undefined,
+                tab: prev.tab ?? undefined,
+                q: prev.q ?? undefined,
+                filters: prev.filters ?? undefined,
+              })}
             >
               {activity.id}
             </Link>
@@ -302,16 +299,11 @@ export default function WorkOrdersTable() {
               <IconButton
                 color="primary"
                 size="small"
-                component={Link}
-                to={
-                  "/activities?" +
-                  createSearchParams({
-                    meter_id: params.row.meter_id,
-                    serial_number: params.row.meter_serial,
-                    work_order_id: params.row.work_order_id,
-                  }).toString()
-                }
                 aria-label="Edit Activity"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate({ to: `/manage/parts/${params.row.id}/history` });
+                }}
               >
                 <Handyman />
               </IconButton>

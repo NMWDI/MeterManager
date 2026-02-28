@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { Alert, Box, Button, Stack, Typography } from "@mui/material";
 import { useSnackbar } from "notistack";
 import { useForm, SubmitHandler } from "react-hook-form";
@@ -25,7 +25,7 @@ import {
 export default function MeterActivityEntry() {
   const navigate = useNavigate();
   const authHeader = useAuthHeader();
-  const [searchParams] = useSearchParams();
+  const search = useSearch({ from: "/activities" });
   const { enqueueSnackbar } = useSnackbar();
   const [meterID, setMeterID] = useState<number>();
   const [wellID, setWellID] = useState<number>();
@@ -39,8 +39,15 @@ export default function MeterActivityEntry() {
   const onSuccessfulSubmit = (activity_id: number, meter_id: number) => {
     enqueueSnackbar("Successfully Submitted Activity!", { variant: "success" });
     navigate({
-      pathname: "/manage/meters",
-      search: `?meter_id=${meter_id}&activity_id=${activity_id}`,
+      to: "/manage/meters",
+      search: {
+        meter_id,
+        activity_id,
+        add: false,
+        tab: undefined,
+        q: undefined,
+        filters: undefined,
+      },
     });
   };
 
@@ -82,8 +89,8 @@ export default function MeterActivityEntry() {
       });
     },
     onSuccess: (responseJson) => {
-      const activity_id = responseJson.id;
-      const meter_id = responseJson.meter_id;
+      const activity_id: number = responseJson.id;
+      const meter_id: number = responseJson.meter_id;
       enqueueSnackbar("Successfully Submitted Activity!", {
         variant: "success",
       });
@@ -92,13 +99,13 @@ export default function MeterActivityEntry() {
   });
 
   let initialMeter: Partial<MeterListDTO> | null = null;
-  const qpMeterID = searchParams.get("meter_id");
-  const qpSerialNumber = searchParams.get("serial_number");
-  const qpWorkOrderID = searchParams.get("work_order_id");
+  const qpMeterID = search.meter_id;
+  const qpSerialNumber = search.serial_number;
+  const qpWorkOrderID = search.work_order_id;
 
   if (qpMeterID && qpSerialNumber) {
     initialMeter = {
-      id: qpMeterID as unknown as number,
+      id: qpMeterID,
       serial_number: qpSerialNumber,
     };
   }
@@ -111,10 +118,7 @@ export default function MeterActivityEntry() {
     formState: { errors },
   } = useForm<ActivityFormControl>({
     resolver: yupResolver(ActivityResolverSchema),
-    defaultValues: getDefaultForm(
-      initialMeter,
-      qpWorkOrderID ? parseInt(qpWorkOrderID) : null,
-    ),
+    defaultValues: getDefaultForm(initialMeter, qpWorkOrderID ?? null),
   });
 
   const onSubmit: SubmitHandler<ActivityFormControl> = (data) =>

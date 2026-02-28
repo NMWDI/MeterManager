@@ -1,5 +1,5 @@
 import { useEffect, useState, ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "@tanstack/react-router";
 import { DataGrid, GridColDef, GridSortModel } from "@mui/x-data-grid";
 import { useDebounce } from "use-debounce";
 import { useAuthUser } from "react-auth-kit";
@@ -92,10 +92,15 @@ export default function WellSelectionTable({
         const links = meters.map((meter, index) => (
           <span key={meter.id}>
             <Link
-              to={{
-                pathname: "/manage/meters",
-                search: `?meter_id=${meter.id}`,
-              }}
+              to="/manage/meters"
+              search={(prev) => ({
+                meter_id: meter.id,
+                activity_id: prev.activity_id ?? undefined,
+                add: prev.add ?? undefined,
+                tab: prev.tab ?? undefined,
+                q: prev.q ?? undefined,
+                filters: prev.filters ?? undefined,
+              })}
             >
               {meter.serial_number}
             </Link>

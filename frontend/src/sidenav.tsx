@@ -11,7 +11,7 @@ import {
   Toolbar,
   Typography,
 } from "@mui/material";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@tanstack/react-router";
 import { ChevronLeft } from "@mui/icons-material";
 import { NavLink, ReportsNavItem, RoleChip } from "@/components";
 import { useGetWorkOrders } from "@/service";
@@ -108,7 +108,7 @@ export default function Sidenav({
               xl: "1.625remrem",
             },
           }}
-          onClick={() => navigate("/")}
+          onClick={() => navigate({ to: "/" })}
         >
           Meter Manager
         </Typography>

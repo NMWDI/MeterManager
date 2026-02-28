@@ -23,7 +23,7 @@ import {
   Marker,
   Tooltip as MapTooltip,
 } from "react-leaflet";
-import { Link } from "react-router-dom";
+import { Link } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";

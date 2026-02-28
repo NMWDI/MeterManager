@@ -1,22 +1,22 @@
-import { Navigate } from "react-router-dom";
+import { Navigate } from "@tanstack/react-router";
 import { useAuthUser, useIsAuthenticated } from "react-auth-kit";
 import { SecurityScope } from "./interfaces";
+import { useErrorMessage } from "./contexts/ErrorMessageContext";
 
 export const ProtectedRoute = ({
   children,
   requiredScopes,
-  setErrorMessage,
 }: {
   children: JSX.Element;
   requiredScopes?: string[];
-  setErrorMessage?: (msg: string) => void;
 }) => {
   const isAuthenticated = useIsAuthenticated();
   const authUser = useAuthUser();
+  const { setErrorMessage } = useErrorMessage();
 
   // Case 1: Not logged in
   if (!isAuthenticated()) {
-    if (setErrorMessage) setErrorMessage("You must login to view this page.");
+    setErrorMessage("You must login to view this page.");
     return <Navigate to="/login" replace />;
   }
 
@@ -27,15 +27,13 @@ export const ProtectedRoute = ({
     ) ?? [];
 
   if (userScopes.length === 0) {
-    if (setErrorMessage)
-      setErrorMessage("Your account does not have any permissions.");
+    setErrorMessage("Your account does not have any permissions.");
     return <Navigate to="/" replace />;
   }
 
   // Case 3: Missing required scopes
   if (requiredScopes && !requiredScopes.every((s) => userScopes.includes(s))) {
-    if (setErrorMessage)
-      setErrorMessage("You do not have sufficient permissions.");
+    setErrorMessage("You do not have sufficient permissions.");
     return <Navigate to="/" replace />;
   }
 

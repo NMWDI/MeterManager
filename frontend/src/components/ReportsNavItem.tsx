@@ -6,7 +6,7 @@ import {
   ListItemText,
 } from "@mui/material";
 import { Assessment, ExpandLess, ExpandMore } from "@mui/icons-material";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@tanstack/react-router";
 import { useIsActiveRoute } from "@/hooks";
 
 export function ReportsNavItem({
@@ -39,7 +39,7 @@ export function ReportsNavItem({
     }
     e.stopPropagation();
     setOpen(false);
-    navigate("/reports");
+    navigate({ to: "/reports" });
   };
 
   return (

@@ -13,7 +13,7 @@ import {
   ListItemIcon,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@tanstack/react-router";
 import { useAuthUser, useSignOut } from "react-auth-kit";
 import { Login, Logout, Settings } from "@mui/icons-material";
 import { RoleChip, TopbarUserButton } from "./index";
@@ -45,7 +45,7 @@ export const Topbar = ({
   };
 
   const fullSignOut = () => {
-    navigate("/");
+    navigate({ to: "/" });
     localStorage.removeItem("loggedIn");
     signOut();
   };
@@ -84,7 +84,7 @@ export const Topbar = ({
                   xl: "2rem",
                 },
               }}
-              onClick={() => navigate("/")}
+              onClick={() => navigate({ to: "/" })}
             >
               Meter Manager
             </Typography>
@@ -128,7 +128,7 @@ export const Topbar = ({
               <Divider />
               <MenuItem
                 onClick={() => {
-                  navigate("/settings");
+                  navigate({ to: "/settings" });
                   handleMenuClose();
                 }}
               >
@@ -153,7 +153,7 @@ export const Topbar = ({
           </Box>
         ) : (
           <Button
-            onClick={() => navigate("/login")}
+            onClick={() => navigate({ to: "/login" })}
             sx={{
               textTransform: "uppercase",
               fontFamily: "monospace",

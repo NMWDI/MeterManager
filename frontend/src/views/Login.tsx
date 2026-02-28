@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@tanstack/react-router";
 import { useAuthUser, useIsAuthenticated, useSignIn } from "react-auth-kit";
 import {
   Box,
@@ -45,7 +45,7 @@ export const Login = () => {
 
   useEffect(() => {
     if (isAuthenticated()) {
-      navigate(authUser()?.redirect_page ?? "/");
+      navigate({ to: authUser()?.redirect_page ?? "/" });
     }
   }, [isAuthenticated, navigate]);
 
@@ -73,7 +73,7 @@ export const Login = () => {
         ) {
           localStorage.setItem("_auth", data.access_token);
           localStorage.setItem("loggedIn", "true");
-          navigate(data.user.redirect_page ?? "/");
+          navigate({ to: data.user.redirect_page ?? "/" });
         } else {
           setError("Invalid username or password. Please try again.");
         }

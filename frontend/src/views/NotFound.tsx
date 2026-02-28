@@ -1,6 +1,6 @@
 import { Box, Button, Card, CardContent, Typography } from "@mui/material";
 import { Home, DoNotTouch } from "@mui/icons-material";
-import { Link } from "react-router-dom";
+import { Link } from "@tanstack/react-router";
 import { BackgroundBox, CustomCardHeader } from "@/components";
 
 export const NotFound = () => {

@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link, useParams } from "@tanstack/react-router";
 import {
   Box,
   Card,
@@ -11,9 +11,16 @@ import {
   IconButton,
   Button,
   InputAdornment,
+  Snackbar,
+  Alert,
 } from "@mui/material";
-import { ArrowBack, History, Search } from "@mui/icons-material";
-import { DataGrid, GridColDef } from "@mui/x-data-grid";
+import { ArrowBack, History, Save, Search } from "@mui/icons-material";
+import {
+  DataGrid,
+  GridColDef,
+  GridFooter,
+  GridFooterContainer,
+} from "@mui/x-data-grid";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import dayjs, { Dayjs } from "dayjs";
@@ -26,6 +33,7 @@ import {
 } from "@/components";
 import { useGetPartHistory } from "@/service";
 import { useForm } from "react-hook-form";
+import { DateTimePicker } from "@mui/x-date-pickers";
 
 type EventType = "initial" | "used" | "added" | "current";
 
@@ -64,9 +72,17 @@ const defaultSchema = {
 };
 
 export const PartsHistory = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id } = useParams({ from: "/manage/parts/$id/history" });
   const history = useGetPartHistory(id);
   const [search, setSearch] = useState("");
+
+  const [rows, setRows] = useState<any[]>([]);
+  const [originalRows, setOriginalRows] = useState<any[]>([]);
+  const [hasChanges, setHasChanges] = useState(false);
+  const [snackbar, setSnackbar] = useState<{
+    message: string;
+    severity: "success" | "error";
+  } | null>(null);
 
   const { control, watch, reset } = useForm<PartsHistoryFormValues>({
     resolver: yupResolver(schema),
@@ -77,22 +93,17 @@ export const PartsHistory = () => {
   const to = watch("to");
   const eventTypes = watch("event_types");
 
-  const rows = useMemo(() => {
-    const raw = history.data?.history ?? [];
-    const q = search.trim().toLowerCase();
+  useEffect(() => {
+    if (!history.data) return;
 
-    const fromDate = from ? dayjs(from).startOf("day") : null;
-    const toDate = to ? dayjs(to).endOf("day") : null;
-
-    const selectedTypes = new Set((eventTypes ?? []) as string[]);
-
+    const raw = history.data.history ?? [];
     const currentRow =
-      history.data?.current_count != null
+      history.data.current_count != null
         ? {
             row_id: `current-${id ?? "unknown"}`,
             part_id: Number(id),
-            event_date: dayjs().toISOString(), // "today"
-            event_type: "current" as const,
+            event_date: dayjs().toISOString(),
+            event_type: "current",
             ref_id: null,
             note: "Current count",
             delta: 0,
@@ -102,31 +113,86 @@ export const PartsHistory = () => {
         : null;
 
     const withCurrent = currentRow ? [...raw, currentRow] : raw;
+    setRows(withCurrent);
+    setOriginalRows(withCurrent); // snapshot on load
+    setHasChanges(false);
+  }, [history.data, id]);
 
-    return withCurrent.filter((r: any) => {
-      // event type filter
+  const filteredRows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const fromDate = from ? dayjs(from).startOf("day") : null;
+    const toDate = to ? dayjs(to).endOf("day") : null;
+    const selectedTypes = new Set((eventTypes ?? []) as string[]);
+
+    return rows.filter((r: any) => {
       if (selectedTypes.size && !selectedTypes.has(r.event_type)) return false;
-
-      // note search filter
       if (q && !(r.note ?? "").toLowerCase().includes(q)) return false;
 
-      // date range filter
-      if (r.event_type === "initial") return selectedTypes.has("initial"); // keep initial independent of date
-      if (r.event_type === "current") return selectedTypes.has("current");
+      if (r.event_type === "initial" || r.event_type === "current") {
+        return selectedTypes.has(r.event_type);
+      }
 
       const d = dayjs(r.event_date);
       if (fromDate && d.isBefore(fromDate)) return false;
       if (toDate && d.isAfter(toDate)) return false;
-
       return true;
     });
-  }, [history.data, search, from, to, eventTypes]);
+  }, [rows, search, from, to, eventTypes]);
+
+  const processRowUpdate = useCallback((newRow: any, _oldRow: any) => {
+    if (newRow.delta !== undefined && isNaN(Number(newRow.delta))) {
+      throw new Error("Delta must be a number");
+    }
+
+    if (newRow.event_type === "used") {
+      const deltaNum = Number(newRow.delta ?? 0);
+
+      if (deltaNum >= 0) {
+        throw new Error(
+          "Delta for work order usage ('used') must be negative (parts removed)",
+        );
+      }
+    }
+
+    if (newRow.event_type === "added" && Number(newRow.delta ?? 0) <= 0) {
+      throw new Error("Delta for added parts must be positive");
+    }
+
+    setRows((prevRows) =>
+      prevRows.map((r) => (r.row_id === newRow.row_id ? { ...newRow } : r)),
+    );
+
+    setHasChanges(true);
+    return newRow;
+  }, []);
+
+  const handleSave = async () => {
+    try {
+      // Example: await updatePartHistory(id, rows);
+      // For now, just simulate success
+      setOriginalRows(rows); // accept changes
+      setHasChanges(false);
+      setSnackbar({
+        message: "Changes saved successfully",
+        severity: "success",
+      });
+    } catch (err) {
+      setSnackbar({ message: "Failed to save changes", severity: "error" });
+    }
+  };
+
+  const handleDiscard = () => {
+    setRows(originalRows);
+    setHasChanges(false);
+    setSnackbar({ message: "Changes discarded", severity: "success" });
+  };
 
   const cols: GridColDef[] = [
     {
       field: "event_date",
       headerName: "Date",
-      width: 200,
+      width: 250,
+      editable: true,
       renderCell: (params) => {
         const row = params.row;
         if (row.event_type === "initial") return "-";
@@ -137,6 +203,33 @@ export const PartsHistory = () => {
         return isNaN(d.getTime())
           ? String(params.value)
           : dayjs(d).format("MMM D, YYYY h:mm A");
+      },
+      renderEditCell: (params) => {
+        const { id, value, api } = params;
+
+        return (
+          <DateTimePicker
+            value={value ? dayjs(value) : null}
+            onChange={(newValue) => {
+              if (newValue) {
+                api.setEditCellValue({
+                  id,
+                  field: "event_date",
+                  value: newValue.toISOString(),
+                });
+              }
+            }}
+            slotProps={{
+              textField: {
+                variant: "outlined",
+                size: "small",
+                autoFocus: true,
+                fullWidth: true,
+              },
+            }}
+            format="MMM D, YYYY h:mm A"
+          />
+        );
       },
       sortComparator: (a, b) => {
         // keep Initial at top
@@ -157,6 +250,7 @@ export const PartsHistory = () => {
       field: "delta",
       headerName: "Change",
       width: 140,
+      editable: true,
       renderCell: (params) => {
         const n = Number(params.value ?? 0);
         const label = `${n > 0 ? "+" : ""}${n}`;
@@ -173,6 +267,13 @@ export const PartsHistory = () => {
             <Typography sx={{ fontWeight: 700 }}>{label}</Typography>
           </Box>
         );
+      },
+      preProcessEditCellProps: (params) => {
+        const hasError =
+          params.row.event_type === "used" &&
+          Number(params.props.value ?? 0) >= 0;
+
+        return { ...params.props, error: hasError };
       },
     },
     {
@@ -200,10 +301,8 @@ export const PartsHistory = () => {
       renderCell: (params) =>
         params.value ? (
           <Link
-            to={{
-              pathname: "/workorders",
-              search: `?work_order_id=${params.value}`,
-            }}
+            to="/workorders"
+            search={{ work_order_id: [Number(params.value)] }}
           >
             WO {params.value}
           </Link>
@@ -211,7 +310,18 @@ export const PartsHistory = () => {
           "N/A"
         ),
     },
-    { field: "note", headerName: "Note", flex: 1, minWidth: 240 },
+    {
+      field: "note",
+      editable: true,
+      headerName: "Note",
+      flex: 1,
+      minWidth: 240,
+      cellClassName: (params) =>
+        params.row.event_type === "initial" ||
+        params.row.event_type === "current"
+          ? "disabled-cell"
+          : "",
+    },
   ];
 
   return (
@@ -292,27 +402,84 @@ export const PartsHistory = () => {
             <Grid item xs={12}>
               <DataGrid
                 sx={{ height: 600 }}
-                rows={rows}
+                rows={filteredRows}
                 getRowId={(row) => row.row_id}
                 loading={history.isLoading}
                 columns={cols}
+                processRowUpdate={processRowUpdate}
                 disableRowSelectionOnClick
                 disableColumnMenu
                 disableColumnFilter
                 hideFooterSelectedRowCount
+                editMode="row"
+                isCellEditable={(params) => {
+                  return (
+                    params.row.event_type !== "initial" &&
+                    params.row.event_type !== "current"
+                  );
+                }}
                 initialState={{
                   sorting: {
                     sortModel: [{ field: "event_date", sort: "asc" }],
                   },
                 }}
+                slots={{
+                  footer: () => {
+                    return (
+                      <GridFooterContainer
+                        sx={{ py: 0.5, px: 2, justifyContent: "space-between" }}
+                      >
+                        <Box
+                          sx={{ display: "flex", gap: 3, alignItems: "center" }}
+                        >
+                          {hasChanges && (
+                            <>
+                              <Button
+                                size="small"
+                                onClick={handleDiscard}
+                                color="error"
+                              >
+                                Discard
+                              </Button>
+
+                              <Button
+                                variant="contained"
+                                color="success"
+                                onClick={handleSave}
+                                sx={{
+                                  flexShrink: 0,
+                                  width: { xs: "100%", sm: "auto" },
+                                }}
+                                startIcon={<Save fontSize="small" />}
+                              >
+                                Save
+                              </Button>
+                            </>
+                          )}
+                        </Box>
+                        <GridFooter sx={{ border: "none" }} />
+                      </GridFooterContainer>
+                    );
+                  },
+                }}
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid item xs={12} justifyContent="space-around">
               <Button onClick={() => reset(defaultSchema)}>Reset</Button>
+              {hasChanges && <Box display="flex" gap={2}></Box>}
             </Grid>
           </Grid>
         </CardContent>
       </Card>
+      <Snackbar
+        open={!!snackbar}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar(null)}
+      >
+        <Alert severity={snackbar?.severity} onClose={() => setSnackbar(null)}>
+          {snackbar?.message}
+        </Alert>
+      </Snackbar>
     </BackgroundBox>
   );
 };

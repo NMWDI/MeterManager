@@ -6,7 +6,6 @@ import {
   Card,
   CardContent,
   Grid,
-  IconButton,
   InputAdornment,
   Stack,
   TextField,
@@ -20,7 +19,7 @@ import {
   History,
 } from "@mui/icons-material";
 import { useSnackbar } from "notistack";
-import { Link } from "react-router-dom";
+import { Link } from "@tanstack/react-router";
 import { useGetParts, useAddParts } from "@/service";
 import { Part } from "@/interfaces";
 import {
@@ -28,6 +27,7 @@ import {
   GridFooterWithButton,
   IncreaseQuantityModal,
   IsTrueChip,
+  TanstackIconButton,
   TristateToggle,
 } from "@/components";
 
@@ -72,21 +72,16 @@ export const PartsTable = ({
           }}
         >
           <Typography sx={{ fontWeight: 700 }}>{params.value}</Typography>
-          <IconButton
+          <TanstackIconButton
             component={Link}
-            to={`/manage/parts/${params.row.id}/history`}
+            to="/manage/parts/$id/history"
+            params={{ id: String(params.row.id) }}
             size="small"
-            onClick={(e) => e.stopPropagation()}
-            sx={{
-              p: 0.5,
-              "&:hover": {
-                backgroundColor: "transparent",
-              },
-            }}
-            disableRipple
+            onMouseDown={(e: any) => e.stopPropagation()}
+            onClick={(e: any) => e.stopPropagation()}
           >
             <History fontSize="small" />
-          </IconButton>
+          </TanstackIconButton>
         </Box>
       ),
     },

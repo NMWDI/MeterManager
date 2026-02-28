@@ -7,7 +7,7 @@ import {
   ListItemText,
 } from "@mui/material";
 import { TableView } from "@mui/icons-material";
-import { Link, type LinkProps } from "react-router-dom";
+import { Link } from "@tanstack/react-router";
 import { useIsActiveRoute } from "@/hooks";
 
 export const NavLink = ({
@@ -19,7 +19,7 @@ export const NavLink = ({
   subItem = false,
 }: {
   disabled?: boolean;
-  route: LinkProps["to"];
+  route: string;
   label: string;
   icon?: React.ComponentType<SvgIconProps>;
   badgeContent?: number;

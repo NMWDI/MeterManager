@@ -1,12 +1,14 @@
 import { useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams } from "@tanstack/react-router";
 import { Card, CardContent, Skeleton, Box, Alert } from "@mui/material";
 import { Image } from "@mui/icons-material";
 import { API_URL } from "@/config";
 import { BackgroundBox, CustomCardHeader } from "@/components";
 
 export const ActivityPhotoView = () => {
-  const { activity_id, photo_file_name } = useParams();
+  const { activity_id, photo_file_name } = useParams({
+    from: "/activities/$activity_id/photos/$photo_file_name",
+  });
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string>();
 

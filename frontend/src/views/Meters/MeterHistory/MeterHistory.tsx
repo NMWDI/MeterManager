@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Box, Card, CardContent, Grid } from "@mui/material";
 import { ImageOutlined } from "@mui/icons-material";
-import { useLocation, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useGetMeterHistory } from "@/service";
 import {
   MeterHistoryDTO,
@@ -28,10 +28,10 @@ export const MeterHistory = ({
 }: {
   selectedMeterID?: number;
 }) => {
-  const location = useLocation();
+  const navigate = useNavigate();
   const [selectedHistoryItem, setSelectedHistoryItem] = useState<any>();
   const meterHistory = useGetMeterHistory({ meter_id: selectedMeterID });
-  const [searchParams, setSearchParams] = useSearchParams();
+  const search = useSearch({ from: "/manage/meters" });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
@@ -44,9 +44,9 @@ export const MeterHistory = ({
 
   // If there is an activity_id in the URL, set the selectedHistoryItem to the corresponding item and scroll to it
   useEffect(() => {
-    const activity_id = searchParams.get("activity_id") as number | null;
+    const activity_id = search.activity_id;
 
-    if (meterHistory.data && activity_id !== null) {
+    if (meterHistory.data && activity_id !== undefined) {
       // Find the history item with the corresponding 'id'
       const load_history_item = meterHistory.data?.find(
         (item: MeterHistoryDTO) =>
@@ -63,15 +63,30 @@ export const MeterHistory = ({
           element.scrollIntoView({ behavior: "smooth" });
 
           // Remove the hash from the URL so that the user can switch meters without scrolling
-          location.hash = "";
+          window.history.replaceState(
+            null,
+            "",
+            window.location.pathname + window.location.search,
+          );
         } else {
           console.error("element not found");
         }
       }
       // Clear the activity_id from the URL so it doesn't interfere later
-      setSearchParams();
+      navigate({
+        to: "/manage/meters",
+        search: (prev) => ({
+          meter_id: prev.meter_id ?? undefined,
+          add: prev.add ?? undefined,
+          tab: prev.tab ?? undefined,
+          q: prev.q ?? undefined,
+          filters: prev.filters ?? undefined,
+          activity_id: undefined,
+        }),
+        replace: true,
+      });
     }
-  }, [meterHistory.data]); // Run the effect only when meter history changes otherwise there is a race condition
+  }, [meterHistory.data, search.activity_id, navigate]); // Run the effect when meter history or the URL selection changes
 
   function handleDeleteItem() {
     setSelectedHistoryItem(undefined);
@@ -81,6 +96,35 @@ export const MeterHistory = ({
     //Update the meter history
     meterHistory.refetch();
   }
+
+  const handleHistoryItemSelection = (historyItem: MeterHistoryDTO) => {
+    setSelectedHistoryItem(historyItem);
+    if (historyItem.history_type === MeterHistoryType.Activity) {
+      navigate({
+        to: "/manage/meters",
+        search: (prev) => ({
+          meter_id: prev.meter_id ?? undefined,
+          add: prev.add ?? undefined,
+          tab: prev.tab ?? undefined,
+          q: prev.q ?? undefined,
+          filters: prev.filters ?? undefined,
+          activity_id: historyItem.history_item.id,
+        }),
+      });
+    } else if (search.activity_id !== undefined) {
+      navigate({
+        to: "/manage/meters",
+        search: (prev) => ({
+          meter_id: prev.meter_id ?? undefined,
+          add: prev.add ?? undefined,
+          tab: prev.tab ?? undefined,
+          q: prev.q ?? undefined,
+          filters: prev.filters ?? undefined,
+          activity_id: undefined,
+        }),
+      });
+    }
+  };
 
   // Function to convert MeterHistoryDTO to PatchMeterActivity
   function convertHistoryActivity(
@@ -192,7 +236,7 @@ export const MeterHistory = ({
       <Grid container spacing={2} sx={{ minHeight: "700px" }}>
         <Grid item xs={12} lg={6}>
           <MeterHistoryTable
-            onHistoryItemSelection={setSelectedHistoryItem}
+            onHistoryItemSelection={handleHistoryItemSelection}
             selectedMeterHistory={meterHistory.data}
           />
         </Grid>

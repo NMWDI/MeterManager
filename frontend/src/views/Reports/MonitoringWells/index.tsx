@@ -26,7 +26,7 @@ import {
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import { LineChart } from "@mui/x-charts";
 import { css } from "@emotion/react";
-import { Link } from "react-router-dom";
+import { Link } from "@tanstack/react-router";
 import { useAuthHeader } from "react-auth-kit";
 import { Controller, useForm } from "react-hook-form";
 import { useMutation, useQuery } from "react-query";

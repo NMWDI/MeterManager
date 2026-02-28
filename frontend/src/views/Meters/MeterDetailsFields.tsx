@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { enqueueSnackbar } from "notistack";
 import { useAuthUser } from "react-auth-kit";
-import { createSearchParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "@tanstack/react-router";
 import { Add, Grading, Save, SaveAs } from "@mui/icons-material";
 import { Button, Grid, Card, CardContent, InputAdornment } from "@mui/material";
 import {
@@ -107,11 +107,12 @@ export const MeterDetailsFields = ({
 
   const navigateToNewActivity = () => {
     navigate({
-      pathname: "/activities",
-      search: createSearchParams({
-        meter_id: selectedMeterID?.toString() ?? "",
-        serial_number: meterDetails.data?.serial_number ?? "",
-      }).toString(),
+      to: "/activities",
+      search: {
+        meter_id: selectedMeterID,
+        serial_number: meterDetails.data?.serial_number ?? undefined,
+        work_order_id: undefined,
+      },
     });
   };
 

@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { MeterSelectionTable } from "./MeterSelectionTable";
 import MeterSelectionMap from "./MeterSelectionMap";
 import {
@@ -19,21 +18,24 @@ import { CustomCardHeader, TabPanel } from "@/components";
 export const MeterSelection = ({
   onMeterSelection,
   setMeterAddMode,
+  currentTabIndex,
+  onTabChange,
+  meterSearchQuery,
+  onSearchQueryChange,
+  meterFilterButtons,
+  onFilterButtonsChange,
 }: {
   onMeterSelection: Function;
   setMeterAddMode: Function;
+  currentTabIndex: number;
+  onTabChange: (index: number) => void;
+  meterSearchQuery: string;
+  onSearchQueryChange: (query: string) => void;
+  meterFilterButtons: string[];
+  onFilterButtonsChange: (filters: string[]) => void;
 }) => {
-  const [currentTabIndex, setCurrentTabIndex] = useState(0);
-  const [meterSearchQuery, setMeterSearchQuery] = useState<string>("");
-  const [meterFilterButtons, setMeterFilterButtons] = useState<string[]>([
-    "installed",
-  ]);
-  const [meterFilters, setMeterFilters] = useState<MeterStatusNames[]>([
-    MeterStatusNames.Installed,
-  ]);
-
   const handleTabChange = (_: React.SyntheticEvent, newTabIndex: number) =>
-    setCurrentTabIndex(newTabIndex);
+    onTabChange(newTabIndex);
 
   const handleFilterSelect = (
     _: React.MouseEvent<HTMLElement>,
@@ -43,28 +45,30 @@ export const MeterSelection = ({
       newFilters.push("installed");
     }
 
-    setMeterFilterButtons(newFilters);
+    onFilterButtonsChange(newFilters);
+  };
 
-    //Update the meterFilters based on the selected filter buttons
+  const meterFilters: MeterStatusNames[] = (() => {
+    // Update the meterFilters based on the selected filter buttons
     let updatedMeterFilters: MeterStatusNames[] = [];
-    if (newFilters.includes("installed")) {
+    if (meterFilterButtons.includes("installed")) {
       updatedMeterFilters.push(MeterStatusNames.Installed);
     }
-    if (newFilters.includes("stored")) {
+    if (meterFilterButtons.includes("stored")) {
       updatedMeterFilters.push(MeterStatusNames.Warehouse);
     }
-    if (newFilters.includes("sold")) {
+    if (meterFilterButtons.includes("sold")) {
       updatedMeterFilters.push(MeterStatusNames.Sold);
     }
-    if (newFilters.includes("scrapped")) {
+    if (meterFilterButtons.includes("scrapped")) {
       updatedMeterFilters.push(MeterStatusNames.Scrapped);
       updatedMeterFilters.push(MeterStatusNames.Returned);
     }
-    if (newFilters.includes("unknown")) {
+    if (meterFilterButtons.includes("unknown")) {
       updatedMeterFilters.push(MeterStatusNames.Unknown);
     }
-    setMeterFilters(updatedMeterFilters);
-  };
+    return updatedMeterFilters;
+  })();
 
   return (
     <Card sx={{ height: "100%" }}>
@@ -101,7 +105,7 @@ export const MeterSelection = ({
               size="small"
               value={meterSearchQuery}
               onChange={(e) => {
-                setMeterSearchQuery(e.target.value);
+                onSearchQueryChange(e.target.value);
               }}
               InputProps={{
                 startAdornment: (
