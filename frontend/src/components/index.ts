@@ -30,7 +30,6 @@ export * from "./Topbar";
 export * from "./TopbarUserButton";
 export * from "./TristateToggle";
 export * from "./UserSelection";
-export * from "./UI";
 export * from "./WellMapLegend";
 export * from "./WellSelection";
 export * from "./WorkOrderSelect";

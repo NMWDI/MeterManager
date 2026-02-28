@@ -6,6 +6,7 @@ import {
   Card,
   CardContent,
   Grid,
+  IconButton,
   InputAdornment,
   Stack,
   TextField,
@@ -27,7 +28,6 @@ import {
   GridFooterWithButton,
   IncreaseQuantityModal,
   IsTrueChip,
-  TanstackIconButton,
   TristateToggle,
 } from "@/components";
 
@@ -72,16 +72,21 @@ export const PartsTable = ({
           }}
         >
           <Typography sx={{ fontWeight: 700 }}>{params.value}</Typography>
-          <TanstackIconButton
-            component={Link}
+          <Link
             to="/manage/parts/$id/history"
             params={{ id: String(params.row.id) }}
-            size="small"
+            style={{ display: "inline-flex" }}
             onMouseDown={(e: any) => e.stopPropagation()}
             onClick={(e: any) => e.stopPropagation()}
           >
-            <History fontSize="small" />
-          </TanstackIconButton>
+            <IconButton
+              color="primary"
+              size="small"
+              aria-label="See Part History"
+            >
+              <History fontSize="small" />
+            </IconButton>
+          </Link>
         </Box>
       ),
     },

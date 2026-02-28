@@ -20,13 +20,17 @@ import {
 import { WorkOrderStatus } from "@/enums";
 import { Box, Button, IconButton, Stack } from "@mui/material";
 import { GridFooterWithButton } from "@/components";
+import { Create } from "@/components/Modals/WorkOrders";
 import { MeterActivity, NewWorkOrder, SecurityScope } from "@/interfaces";
-import { DeleteWorkOrder } from "./DeleteWorkOrder";
-import { NewWorkOrderModal } from "./NewWorkOrderModal";
+import { Route } from "@/routes/workorders";
+import { useSnackbar } from "notistack";
 
-export default function WorkOrdersTable() {
+export const WorkOrdersTable = () => {
   const navigate = useNavigate();
+  const { page, pageSize } = Route.useSearch();
   const search = useSearch({ from: "/workorders" });
+
+  const { enqueueSnackbar } = useSnackbar();
 
   const workOrderIdFilter = useMemo(() => {
     return search.work_order_id?.length ? search.work_order_id : null;
@@ -133,10 +137,29 @@ export default function WorkOrdersTable() {
   };
 
   const handleDeleteClick = (id: GridRowId) => {
-    let deletepromise = deleteWorkOrder.mutateAsync(id as number);
-    deletepromise.then(() => {
-      //Get the updated rows
-      workOrderList.refetch();
+    if (typeof id !== "number" || !Number.isInteger(id) || id <= 0) {
+      enqueueSnackbar("Invalid work order ID. Delete aborted.", {
+        variant: "error",
+      });
+      return;
+    }
+
+    if (!window.confirm(`Are you sure you want to delete work order ${id}?`)) {
+      return;
+    }
+
+    deleteWorkOrder.mutate(id, {
+      onSuccess: () => {
+        enqueueSnackbar(`Work order ${id} deleted successfully.`, {
+          variant: "success",
+        });
+        workOrderList.refetch();
+      },
+      onError: (error: any) => {
+        enqueueSnackbar(error?.message || "Failed to delete work order.", {
+          variant: "error",
+        });
+      },
     });
   };
 
@@ -296,26 +319,39 @@ export default function WorkOrdersTable() {
             gap={1}
           >
             {isOpen && (
+              <Link
+                to="/activities"
+                search={{
+                  meter_id: params.row.meter_id,
+                  serial_number: params.row.meter_serial,
+                  work_order_id: params.row.work_order_id,
+                }}
+                style={{ display: "inline-flex" }}
+                onMouseDown={(e: any) => e.stopPropagation()}
+                onClick={(e: any) => e.stopPropagation()}
+              >
+                <IconButton
+                  color="primary"
+                  size="small"
+                  aria-label="Edit Activity"
+                >
+                  <Handyman />
+                </IconButton>
+              </Link>
+            )}
+            {hasAdminScope && (
               <IconButton
-                color="primary"
+                color="error"
                 size="small"
-                aria-label="Edit Activity"
+                aria-label="Delete Work Order"
                 onClick={(e) => {
                   e.stopPropagation();
-                  navigate({ to: `/manage/parts/${params.row.id}/history` });
+                  handleDeleteClick(params.id);
                 }}
               >
-                <Handyman />
+                <Delete />
               </IconButton>
             )}
-            <DeleteWorkOrder
-              icon={<Delete />}
-              deleteMessage={`Delete work order ${params.id}?`}
-              label="Delete"
-              deleteUser={() => handleDeleteClick(params.id)}
-              showInMenu={false}
-              disabled={!hasAdminScope}
-            />
           </Box>
         );
       },
@@ -337,6 +373,7 @@ export default function WorkOrdersTable() {
         disableColumnResize={false}
         filterModel={workOrderIdFilter?.length ? { items: [] } : undefined}
         initialState={{
+          pagination: { paginationModel: { page: 0, pageSize: 25 } },
           columns: {
             columnVisibilityModel: {
               work_order_id: false,
@@ -348,6 +385,20 @@ export default function WorkOrdersTable() {
           ...(workOrderIdFilter?.length
             ? {} // NO default filter when URL param exists
             : { filter: { filterModel: { items: initialFilter } } }),
+        }}
+        pagination
+        pageSizeOptions={[10, 25, 50, 100]}
+        paginationModel={{ page, pageSize }}
+        onPaginationModelChange={(m) => {
+          navigate({
+            to: "/workorders",
+            search: (prev) => ({
+              work_order_id: prev.work_order_id ?? undefined,
+              pageSize: m.pageSize,
+              page: m.pageSize !== prev.pageSize ? 0 : m.page,
+            }),
+            replace: true,
+          });
         }}
         processRowUpdate={handleRowUpdate}
         onProcessRowUpdateError={handleProcessRowUpdateError}
@@ -379,11 +430,11 @@ export default function WorkOrdersTable() {
           },
         }}
       />
-      <NewWorkOrderModal
+      <Create
         open={isNewWorkOrderModalOpen}
         onClose={() => setIsNewWorkOrderModalOpen(false)}
         submitNewWorkOrder={handleNewWorkOrder}
       />
     </Box>
   );
-}
+};

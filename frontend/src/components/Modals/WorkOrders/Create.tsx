@@ -13,17 +13,15 @@ import { Save } from "@mui/icons-material";
 import { MeterListDTO, NewWorkOrder } from "@/interfaces";
 import { MeterSelection } from "@/components";
 
-interface NewWorkOrderModalProps {
-  open: boolean;
-  onClose: () => void;
-  submitNewWorkOrder: (newWorkOrder: NewWorkOrder) => void;
-}
-
-export function NewWorkOrderModal({
+export const Create = ({
   open,
   onClose,
   submitNewWorkOrder,
-}: NewWorkOrderModalProps) {
+}: {
+  open: boolean;
+  onClose: () => void;
+  submitNewWorkOrder: (newWorkOrder: NewWorkOrder) => void;
+}) => {
   const [workOrderTitle, setWorkOrderTitle] = useState<string>("");
   const [workOrderMeter, setWorkOrderMeter] = useState<
     MeterListDTO | undefined
@@ -123,4 +121,4 @@ export function NewWorkOrderModal({
       </DialogActions>
     </Dialog>
   );
-}
+};
