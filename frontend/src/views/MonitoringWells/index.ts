@@ -1,1 +1,2 @@
-export * from './MonitoringWellsView'
+export * from "./MonitoringWellsPlot";
+export * from "./MonitoringWellsTable";

@@ -7,6 +7,8 @@ import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import { useIsAuthenticated } from "react-auth-kit";
 import { MonitoredWell, WellMeasurementDTO } from "@/interfaces";
+import { useNavigate } from "@tanstack/react-router";
+import { Route } from "@/routes/monitoringwells";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -19,7 +21,7 @@ declare module "@mui/x-data-grid" {
   }
 }
 
-export const MonitoringWellsTable = ({
+export const Table = ({
   rows,
   onOpenModal,
   isWellSelected,
@@ -41,6 +43,8 @@ export const MonitoringWellsTable = ({
     };
   }) => void;
 }) => {
+  const navigate = useNavigate();
+  const { page, pageSize } = Route.useSearch();
   const isAuthenticated = useIsAuthenticated();
   const columns: GridColDef[] = useMemo(() => {
     const baseCols: GridColDef[] = [
@@ -80,6 +84,23 @@ export const MonitoringWellsTable = ({
       <DataGrid
         rows={rows}
         columns={columns}
+        pagination
+        initialState={{
+          pagination: { paginationModel: { page: 0, pageSize: 25 } },
+        }}
+        pageSizeOptions={[10, 25, 50, 100]}
+        paginationModel={{ page, pageSize }}
+        onPaginationModelChange={(m) => {
+          navigate({
+            to: "/monitoringwells",
+            search: (prev) => ({
+              wellId: prev.wellId ?? undefined,
+              page: m.page,
+              pageSize: m.pageSize,
+            }),
+            replace: true,
+          });
+        }}
         slots={{
           footer: Footer,
         }}

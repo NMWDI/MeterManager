@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogActions,
@@ -22,7 +22,6 @@ import { useQuery } from "react-query";
 import {
   MonitoredWell,
   NewRegionMeasurement,
-  NewWellMeasurement,
   SecurityScope,
 } from "@/interfaces";
 import dayjs, { Dayjs } from "dayjs";
@@ -34,26 +33,19 @@ dayjs.extend(timezone);
 import { useGetUserList } from "@/service";
 import { useFetchWithAuth } from "@/hooks";
 
-type CreateModalProps =
-  | {
-      mode: "region";
-      region_id?: number;
-      open: boolean;
-      onClose: () => void;
-      handleSubmitNewMeasurement: (m: Partial<NewRegionMeasurement>) => void;
-      title?: string;
-    }
-  | {
-      mode: "well";
-      open: boolean;
-      onClose: () => void;
-      handleSubmitNewMeasurement: (m: Partial<NewWellMeasurement>) => void;
-      title?: string;
-    };
-
-export const CreateModal = (props: CreateModalProps) => {
-  const { open, onClose, title = "Create New Measurement" } = props;
-
+export const CreateModal = ({
+  region_id,
+  open,
+  onClose,
+  handleSubmitNewMeasurement,
+  title = "Create New Measurement",
+}: {
+  region_id: number;
+  open: boolean;
+  onClose: () => void;
+  handleSubmitNewMeasurement: (m: Partial<NewRegionMeasurement>) => void;
+  title?: string;
+}) => {
   const authUser = useAuthUser();
   const hasAdminScope = authUser()
     ?.user_role.security_scopes.map(
@@ -62,7 +54,7 @@ export const CreateModal = (props: CreateModalProps) => {
     .includes("admin");
 
   const fetchWithAuth = useFetchWithAuth();
-  const regionId = props.mode === "region" ? props.region_id : undefined;
+  const regionId = region_id;
   const { data: wells, isLoading: isLoadingWells } = useQuery<
     { items: MonitoredWell[] },
     Error,
@@ -81,7 +73,7 @@ export const CreateModal = (props: CreateModalProps) => {
           limit: 100,
         },
       }),
-    enabled: open && props.mode === "region" && !!regionId,
+    enabled: open && !!regionId,
     select: (res) => res.items,
   });
 
@@ -104,42 +96,48 @@ export const CreateModal = (props: CreateModalProps) => {
       .minute(selectedTime.minute())
       .second(selectedTime.second());
 
-    props.handleSubmitNewMeasurement({
+    handleSubmitNewMeasurement({
       region_id: 0, // Set by parent
       well_id: selectedWellID as number,
       timestamp: combinedDateTime.toISOString(),
-      value: value as number,
+      value: notSampled ? null : value,
       submitting_user_id: selectedUserID as number,
     });
   }
 
-  const UserSelection = () => {
-    if (hasAdminScope) {
-      return (
-        <FormControl size="small" fullWidth required>
-          <InputLabel>User</InputLabel>
-          <Select
-            value={userList.isLoading ? "loading" : selectedUserID}
-            onChange={(event: any) => setSelectedUserID(event.target.value)}
-            label="User"
-          >
-            {userList.data?.map((user: any) => (
-              <MenuItem key={user.id} value={user.id}>
-                {user.full_name}
-              </MenuItem>
-            ))}
-            {userList.isLoading && (
-              <MenuItem value={"loading"} hidden>
-                Loading...
-              </MenuItem>
-            )}
-          </Select>
-        </FormControl>
-      );
-    } else {
-      setSelectedUserID(authUser()?.id);
-      return null;
+  useEffect(() => {
+    if (!open) return;
+
+    if (!hasAdminScope) {
+      const id = authUser()?.id;
+      if (id != null) setSelectedUserID(id);
     }
+  }, [open, hasAdminScope, authUser]);
+
+  const UserSelection = () => {
+    if (!hasAdminScope) return null;
+
+    return (
+      <FormControl size="small" fullWidth required>
+        <InputLabel>User</InputLabel>
+        <Select
+          value={userList.isLoading ? "loading" : selectedUserID}
+          onChange={(event) => setSelectedUserID(event.target.value)}
+          label="User"
+        >
+          {userList.data?.map((user: any) => (
+            <MenuItem key={user.id} value={user.id}>
+              {user.full_name}
+            </MenuItem>
+          ))}
+          {userList.isLoading && (
+            <MenuItem value={"loading"} hidden>
+              Loading...
+            </MenuItem>
+          )}
+        </Select>
+      </FormControl>
+    );
   };
 
   const WellSelection = ({ region_id }: { region_id: number }) => {
@@ -172,11 +170,7 @@ export const CreateModal = (props: CreateModalProps) => {
 
   const hasValue = value !== null && !Number.isNaN(value);
   const canSave =
-    !!selectedUserID &&
-    !!selectedWellID &&
-    !!date &&
-    !!time &&
-    (notSampled || hasValue);
+    !!selectedUserID && !!date && !!time && (notSampled || hasValue);
 
   return (
     <Dialog
@@ -256,9 +250,7 @@ export const CreateModal = (props: CreateModalProps) => {
               setValue(newValue === "" ? null : Number(newValue));
             }}
           />
-          {props.mode === "region" && regionId ? (
-            <WellSelection region_id={regionId} />
-          ) : null}
+          <WellSelection region_id={regionId} />
         </Stack>
       </DialogContent>
 

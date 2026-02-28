@@ -306,14 +306,12 @@ function Chlorides() {
           {authUser() && (
             <>
               <CreateModal
-                mode="region"
                 region_id={regionId ?? 0}
                 open={isNewModalOpen}
                 onClose={() => setIsNewModalOpen(false)}
                 handleSubmitNewMeasurement={handleSubmitNewMeasurement}
               />
               <UpdateModal
-                mode="region"
                 region_id={regionId ?? 0}
                 open={isUpdateModalOpen}
                 onClose={() => setIsUpdateModalOpen(false)}

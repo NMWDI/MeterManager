@@ -31,51 +31,31 @@ import {
 import { useGetUserList } from "@/service";
 import { useQuery } from "react-query";
 import { useFetchWithAuth } from "@/hooks";
-import {
-  MonitoredWell,
-  PatchRegionMeasurement,
-  PatchWellMeasurement,
-} from "@/interfaces";
+import { MonitoredWell, PatchRegionMeasurement } from "@/interfaces";
 
-type UpdateModalProps =
-  | {
-      mode: "region";
-      region_id?: number;
-      open: boolean;
-      onClose: () => void;
-      measurement: Partial<PatchRegionMeasurement>;
-      onUpdateMeasurement: (value: Partial<PatchRegionMeasurement>) => void;
-      onSubmitUpdate: () => void;
-      onDeleteMeasurement: () => void;
-      title?: string;
-    }
-  | {
-      mode: "well";
-      open: boolean;
-      onClose: () => void;
-      measurement: Partial<PatchWellMeasurement>;
-      onUpdateMeasurement: (value: Partial<PatchWellMeasurement>) => void;
-      onSubmitUpdate: () => void;
-      onDeleteMeasurement: () => void;
-      title?: string;
-    };
-
-export const UpdateModal = (props: UpdateModalProps) => {
-  const {
-    open,
-    onClose,
-    onSubmitUpdate,
-    onDeleteMeasurement,
-    title = "Update Measurement",
-  } = props;
+export const UpdateModal = ({
+  region_id,
+  open,
+  onClose,
+  measurement,
+  onUpdateMeasurement,
+  onSubmitUpdate,
+  onDeleteMeasurement,
+  title = "Update Measurement",
+}: {
+  region_id?: number;
+  open: boolean;
+  onClose: () => void;
+  measurement: Partial<PatchRegionMeasurement>;
+  onUpdateMeasurement: (value: Partial<PatchRegionMeasurement>) => void;
+  onSubmitUpdate: () => void;
+  onDeleteMeasurement: () => void;
+  title?: string;
+}) => {
+  const regionId = region_id;
 
   const userList = useGetUserList();
   const fetchWithAuth = useFetchWithAuth();
-
-  const regionId = props.mode === "region" ? props.region_id : undefined;
-
-  const measurement = props.measurement as any; // only for local reading convenience
-  const onUpdateMeasurement = props.onUpdateMeasurement as any;
 
   const [notSampled, setNotSampled] = useState<boolean>(
     measurement.value === undefined || measurement.value === null,
@@ -100,14 +80,11 @@ export const UpdateModal = (props: UpdateModalProps) => {
           limit: 100,
         },
       }),
-    enabled: open && props.mode === "region" && !!regionId,
+    enabled: open && !!regionId,
     select: (res) => res.items,
   });
 
   const handleToggleNotSampled = (checked: boolean) => {
-    // only meaningful in region mode
-    if (props.mode !== "region") return;
-
     setNotSampled(checked);
 
     if (checked) {
@@ -123,10 +100,8 @@ export const UpdateModal = (props: UpdateModalProps) => {
   };
 
   useEffect(() => {
-    if (props.mode === "region") {
-      setNotSampled(measurement.value == null);
-    }
-  }, [props.mode, measurement.value]);
+    setNotSampled(measurement.value == null);
+  }, [measurement.value]);
 
   return (
     <Dialog

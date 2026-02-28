@@ -1,9 +1,9 @@
 import { useMemo } from "react";
 import { Box, CircularProgress, Typography } from "@mui/material";
-import Plot from "react-plotly.js";
+import ReactPlot from "react-plotly.js";
 import { Data } from "plotly.js";
 
-export const MonitoringWellsPlot = ({
+export const Plot = ({
   manual_dates,
   manual_vals,
   logger_dates,
@@ -75,7 +75,7 @@ export const MonitoringWellsPlot = ({
           </Typography>
         </Box>
       ) : (
-        <Plot
+        <ReactPlot
           data={data}
           layout={{
             autosize: true,
