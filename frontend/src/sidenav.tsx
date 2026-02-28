@@ -118,6 +118,8 @@ export default function Sidenav({
             alignItems: "center",
             justifyContent: "flex-end",
             px: [1],
+            minHeight: { xs: 45, sm: 47.5 },
+            py: { xs: 0, sm: 0.5 },
           }}
         >
           <IconButton onClick={onClose} sx={{ color: "darkblue" }}>

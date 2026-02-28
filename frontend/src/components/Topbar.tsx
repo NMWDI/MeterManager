@@ -11,6 +11,8 @@ import {
   Box,
   Divider,
   ListItemIcon,
+  useTheme,
+  useMediaQuery,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import { useNavigate } from "@tanstack/react-router";
@@ -27,6 +29,8 @@ export const Topbar = ({
   onMenuClick: () => void;
   sx?: any;
 }) => {
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
   const navigate = useNavigate();
   const signOut = useSignOut();
   const authUser = useAuthUser();
@@ -54,11 +58,17 @@ export const Topbar = ({
     <AppBar
       position="fixed"
       sx={{
-        backgroundColor: "white",
         ...sx,
+        backgroundColor: "white",
       }}
     >
-      <Toolbar sx={{ justifyContent: "space-between" }}>
+      <Toolbar
+        sx={{
+          justifyContent: "space-between",
+          minHeight: { xs: 45, sm: 47.5 },
+          py: { xs: 0, sm: 0.5 },
+        }}
+      >
         <Box sx={{ display: "flex", alignItems: "center" }}>
           <IconButton
             edge="start"
@@ -78,10 +88,10 @@ export const Topbar = ({
                 fontWeight: "bold",
                 ml: 1,
                 fontSize: {
-                  xs: "1.5rem",
-                  md: "1.625rem",
-                  lg: "1.75rem",
-                  xl: "2rem",
+                  sx: "1rem",
+                  md: "1.25rem",
+                  lg: "1.5rem",
+                  xl: "1.625remrem",
                 },
               }}
               onClick={() => navigate({ to: "/" })}
@@ -153,6 +163,7 @@ export const Topbar = ({
           </Box>
         ) : (
           <Button
+            size="small"
             onClick={() => navigate({ to: "/login" })}
             sx={{
               textTransform: "uppercase",
@@ -166,17 +177,19 @@ export const Topbar = ({
             }}
           >
             Login
-            <Avatar
-              sx={{
-                width: 36,
-                height: 36,
-                ml: 1,
-                bgcolor: "rgb(89,90,182)",
-                border: "2px solid #e0e0e0",
-              }}
-            >
-              <Login fontSize="small" />
-            </Avatar>
+            {!isSmallScreen && (
+              <Avatar
+                sx={{
+                  width: 30,
+                  height: 30,
+                  ml: 1,
+                  bgcolor: "rgb(89,90,182)",
+                  border: "2px solid #e0e0e0",
+                }}
+              >
+                <Login fontSize="small" />
+              </Avatar>
+            )}
           </Button>
         )}
       </Toolbar>

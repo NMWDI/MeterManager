@@ -51,8 +51,10 @@ export const TopbarUserButton = ({
 
   return isSmallScreen ? (
     <IconButton
+      size="small"
       color={buttonColor}
       sx={{
+        ...buttonProps.sx,
         bgcolor: buttonColor,
         width: 44,
         height: 44,
@@ -60,14 +62,14 @@ export const TopbarUserButton = ({
           bgcolor: buttonColor,
           opacity: 0.85,
         },
-        ...buttonProps.sx,
+        m: undefined,
       }}
       {...buttonProps}
     >
       <Avatar
         sx={{
-          width: 36,
-          height: 36,
+          width: 30,
+          height: 30,
           bgcolor: roleBgColor[role],
           borderColor: roleBorderColor[role],
           borderStyle: "solid",
@@ -82,20 +84,22 @@ export const TopbarUserButton = ({
     <Button
       color={buttonColor}
       variant="contained"
+      size="small"
       sx={{
+        ...buttonProps.sx,
         textTransform: "uppercase",
         fontFamily: "monospace",
         fontWeight: "bolder",
         color: "white",
-        ...buttonProps.sx,
+        m: undefined,
       }}
       {...buttonProps}
     >
       {display_name ?? "Username"}
       <Avatar
         sx={{
-          width: 36,
-          height: 36,
+          width: 30,
+          height: 30,
           ml: 1,
           bgcolor: roleBgColor[role],
           borderColor: roleBorderColor[role],
