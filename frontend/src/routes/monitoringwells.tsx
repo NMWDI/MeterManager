@@ -396,13 +396,11 @@ function MonitoringWells() {
           {authUser() && (
             <>
               <CreateModal
-                mode="well"
                 open={isNewModalOpen}
                 onClose={() => setIsNewModalOpen(false)}
                 handleSubmitNewMeasurement={handleSubmitNewMeasurement}
               />
               <UpdateModal
-                mode="well"
                 open={isUpdateModalOpen}
                 onClose={() => setIsUpdateModalOpen(false)}
                 measurement={selectedMeasurement}

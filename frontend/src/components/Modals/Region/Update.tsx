@@ -103,6 +103,20 @@ export const UpdateModal = ({
     setNotSampled(measurement.value == null);
   }, [measurement.value]);
 
+  const userIdNum = Number(measurement.submitting_user_id);
+  const ts = measurement.timestamp ? dayjs(measurement.timestamp as any) : null;
+
+  const valueNum = measurement.value == null ? NaN : Number(measurement.value);
+
+  const hasValue = valueNum !== null && Number.isFinite(valueNum);
+
+  const canSave =
+    Number.isFinite(userIdNum) &&
+    userIdNum > 0 &&
+    ts != null &&
+    ts.isValid() &&
+    (notSampled || hasValue);
+
   return (
     <Dialog
       open={open}
@@ -263,6 +277,7 @@ export const UpdateModal = ({
           variant="contained"
           color="success"
           onClick={onSubmitUpdate}
+          disabled={!canSave}
           startIcon={<Save fontSize="small" />}
         >
           Update

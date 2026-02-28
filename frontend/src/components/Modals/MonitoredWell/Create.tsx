@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   DialogActions,
   DialogContent,
@@ -37,25 +37,49 @@ export const CreateModal = ({
   title?: string;
 }) => {
   const authUser = useAuthUser();
+  const userList = useGetUserList();
+
   const hasAdminScope = authUser()
     ?.user_role.security_scopes.map(
       (scope: SecurityScope) => scope.scope_string,
     )
     .includes("admin");
 
-  const userList = useGetUserList();
-  const [value, setValue] = useState<number | null>(null);
-  const [selectedUserID, setSelectedUserID] = useState<number | string>("");
+  const [valueRaw, setValueRaw] = useState<string>("");
+  const [selectedUserID, setSelectedUserID] = useState<number | null>(null);
   const [date, setDate] = useState<Dayjs | null>(dayjs.utc());
   const [time, setTime] = useState<Dayjs | null>(dayjs.utc());
 
-  // Sends user entered information to the parent through callback
+  useEffect(() => {
+    if (!open) return;
+
+    if (!hasAdminScope) {
+      const id = authUser()?.id;
+      setSelectedUserID(typeof id === "number" ? id : Number(id));
+    } else {
+      setSelectedUserID(null);
+    }
+  }, [open, hasAdminScope]);
+
+  const valueNum = valueRaw === "" ? NaN : Number(valueRaw);
+  const hasValue = Number.isFinite(valueNum);
+
+  const canSave =
+    selectedUserID != null &&
+    Number.isFinite(selectedUserID) &&
+    selectedUserID > 0 &&
+    date != null &&
+    date.isValid() &&
+    time != null &&
+    time.isValid() &&
+    hasValue;
+
   function onMeasurementSubmitted() {
-    // default fallback: now
+    if (!canSave) return;
+
     const selectedDate = date ?? dayjs();
     const selectedTime = time ?? dayjs();
 
-    // merge date + time into one object
     const combinedDateTime = selectedDate
       .hour(selectedTime.hour())
       .minute(selectedTime.minute())
@@ -63,8 +87,8 @@ export const CreateModal = ({
 
     handleSubmitNewMeasurement({
       timestamp: combinedDateTime.toISOString(),
-      value: value as number,
-      submitting_user_id: selectedUserID as number,
+      value: valueNum,
+      submitting_user_id: selectedUserID,
       well_id: -1, // Set by parent
     });
   }
@@ -93,9 +117,6 @@ export const CreateModal = ({
           </Select>
         </FormControl>
       );
-    } else {
-      setSelectedUserID(authUser()?.id);
-      return null;
     }
   }
 
@@ -147,10 +168,14 @@ export const CreateModal = ({
             fullWidth
             size={"small"}
             type="number"
-            value={value}
+            value={valueRaw}
             label="Value"
-            onChange={(event) =>
-              setValue(event.target.value as unknown as number)
+            onChange={(e) => setValueRaw(e.target.value)}
+            error={valueRaw !== "" && !Number.isFinite(valueNum)}
+            helperText={
+              valueRaw !== "" && !Number.isFinite(valueNum)
+                ? "Enter a valid number."
+                : " "
             }
           />
         </Stack>
@@ -177,6 +202,7 @@ export const CreateModal = ({
             flexShrink: 0,
             width: { xs: "100%", sm: "auto" },
           }}
+          disabled={!canSave}
           startIcon={<Save fontSize="small" />}
         >
           Save

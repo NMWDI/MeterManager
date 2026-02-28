@@ -33,12 +33,24 @@ export function UpdateModal({
 }: {
   open: boolean;
   onClose: () => void;
-  measurement: PatchWellMeasurement;
+  measurement: Partial<PatchWellMeasurement>;
   onUpdateMeasurement: (value: Partial<PatchWellMeasurement>) => void;
   onSubmitUpdate: () => void;
   onDeleteMeasurement: () => void;
 }) {
   const userList = useGetUserList();
+
+  const userIdNum = Number(measurement.submitting_user_id);
+  const ts = measurement.timestamp ? dayjs(measurement.timestamp as any) : null;
+
+  const valueNum = measurement.value == null ? NaN : Number(measurement.value);
+
+  const canSave =
+    Number.isFinite(userIdNum) &&
+    userIdNum > 0 &&
+    ts != null &&
+    ts.isValid() &&
+    Number.isFinite(valueNum);
 
   return (
     <Dialog
@@ -93,9 +105,9 @@ export function UpdateModal({
           <DatePicker
             label="Date"
             value={measurement.timestamp}
-            onChange={(dateval) =>
-              dateval ? onUpdateMeasurement({ timestamp: dateval }) : null
-            }
+            onChange={(dateval) => {
+              dateval ? onUpdateMeasurement({ timestamp: dateval }) : null;
+            }}
             slotProps={{
               textField: { size: "small", fullWidth: true, required: true },
             }}
@@ -108,9 +120,9 @@ export function UpdateModal({
               textField: { size: "small", fullWidth: true, required: true },
             }}
             value={measurement.timestamp}
-            onChange={(dateval) =>
-              dateval ? onUpdateMeasurement({ timestamp: dateval }) : null
-            }
+            onChange={(dateval) => {
+              dateval ? onUpdateMeasurement({ timestamp: dateval }) : null;
+            }}
           />
 
           <TextField
@@ -120,11 +132,14 @@ export function UpdateModal({
             type="number"
             value={measurement.value}
             label="Value"
-            onChange={(event) =>
+            onChange={(event) => {
+              const rawValue: string = event.target.value;
+              const valueNum: number = rawValue === "" ? NaN : Number(rawValue);
+
               onUpdateMeasurement({
-                value: event.target.value as unknown as number,
-              })
-            }
+                value: valueNum,
+              });
+            }}
           />
         </Stack>
       </DialogContent>
@@ -152,6 +167,7 @@ export function UpdateModal({
           variant="contained"
           color="success"
           onClick={onSubmitUpdate}
+          disabled={!canSave}
           startIcon={<Save fontSize="small" />}
         >
           Update

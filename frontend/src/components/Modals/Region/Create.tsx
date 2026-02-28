@@ -168,9 +168,16 @@ export const CreateModal = ({
     );
   };
 
-  const hasValue = value !== null && !Number.isNaN(value);
+  const userOk =
+    Number.isFinite(Number(selectedUserID)) && Number(selectedUserID) > 0;
+  const wellOk =
+    Number.isFinite(Number(selectedWellID)) && Number(selectedWellID) > 0;
+  const dateOk = date != null && dayjs(date).isValid();
+  const timeOk = time != null && dayjs(time).isValid();
+  const hasValue = value !== null && Number.isFinite(value);
+
   const canSave =
-    !!selectedUserID && !!date && !!time && (notSampled || hasValue);
+    userOk && wellOk && dateOk && timeOk && (notSampled || hasValue);
 
   return (
     <Dialog
