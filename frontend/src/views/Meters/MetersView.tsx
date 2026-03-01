@@ -1,144 +1,96 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { Grid } from "@mui/material";
 
-import { MeterSelection } from "./MeterSelection/MeterSelection";
-import { MeterDetailsFields } from "./MeterDetailsFields";
-import { MeterHistory } from "./MeterHistory/MeterHistory";
-
+import { MeterSelection } from "@/views/Meters/MeterSelection/MeterSelection";
+import { MeterDetailsFields } from "@/views/Meters/MeterDetailsFields";
+import { MeterHistory } from "@/views/Meters/MeterHistory/MeterHistory";
 import { BackgroundBox } from "@/components";
 
-// Main view for the Meters page
-// URL state is used to pre-select a meter and history details
+const tabToIndex = (tab: "list" | "map") => (tab === "list" ? 0 : 1);
+const indexToTab = (i: number): "list" | "map" => (i === 1 ? "map" : "list");
+
 export const MetersView = () => {
   const navigate = useNavigate();
   const search = useSearch({ from: "/manage/meters" });
 
-  const [selectedMeter, setSelectedMeter] = useState<number | undefined>(
-    search.meter_id,
-  );
-  const [meterAddMode, setMeterAddMode] = useState<boolean>(
-    search.add ?? false,
-  );
-  const [currentTabIndex, setCurrentTabIndex] = useState<number>(
-    search.tab ?? 0,
-  );
-  const [meterSearchQuery, setMeterSearchQuery] = useState<string>(
-    search.q ?? "",
-  );
-  const [meterFilterButtons, setMeterFilterButtons] = useState<string[]>(
-    search.filters && search.filters.length > 0
-      ? search.filters
-      : ["installed"],
-  );
+  const selectedMeter = search.meter_id;
+  const meterAddMode = search.add;
+  const currentTab = search.tab;
+  const meterSearchQuery = search.q ?? "";
+  const meterFilterButtons = search.filters;
 
+  // If a meter is selected, force add mode off (and reflect in URL)
   useEffect(() => {
-    setSelectedMeter(search.meter_id);
-    setMeterAddMode(search.add ?? false);
-    setCurrentTabIndex(search.tab ?? 0);
-    setMeterSearchQuery(search.q ?? "");
-    setMeterFilterButtons(
-      search.filters && search.filters.length > 0
-        ? search.filters
-        : ["installed"],
-    );
-  }, [search.add, search.filters, search.meter_id, search.q, search.tab]);
+    if (!selectedMeter) return;
+    if (search.add === false) return;
 
-  //Always set the meterAddMode to false when a new meter is selected
-  useEffect(() => {
-    if (selectedMeter) {
-      setMeterAddMode(false);
-    }
-  }, [selectedMeter]);
-
-  useEffect(() => {
-    if (selectedMeter && search.add) {
-      navigate({
-        to: "/manage/meters",
-        search: (prev) => ({
-          meter_id: prev.meter_id ?? undefined,
-          tab: prev.tab ?? undefined,
-          q: prev.q ?? undefined,
-          filters: prev.filters ?? undefined,
-          activity_id: prev.activity_id ?? undefined,
-          add: undefined,
-        }),
-        replace: true,
-      });
-    }
-  }, [selectedMeter, search.add, navigate]);
-
-  const handleMeterSelection = (meterId?: number) => {
-    setSelectedMeter(meterId);
     navigate({
       to: "/manage/meters",
       search: (prev) => ({
-        tab: prev.tab ?? undefined,
-        q: prev.q ?? undefined,
-        filters: prev.filters ?? undefined,
+        ...(prev as any),
+        add: false,
+      }),
+      replace: true,
+    });
+  }, [selectedMeter, search.add, navigate]);
+
+  const handleMeterSelection = (meterId?: number) => {
+    navigate({
+      to: "/manage/meters",
+      search: (prev) => ({
+        ...(prev as any),
         meter_id: meterId,
         activity_id: undefined,
+        observation_id: undefined,
+        // selecting a meter turns add off
         add: meterId ? false : prev.add,
       }),
     });
   };
 
   const handleMeterAddMode = (addMode: boolean) => {
-    setMeterAddMode(addMode);
     navigate({
       to: "/manage/meters",
       search: (prev) => ({
-        tab: prev.tab ?? undefined,
-        q: prev.q ?? undefined,
-        filters: prev.filters ?? undefined,
-        add: addMode ? true : undefined,
+        ...(prev as any),
+        add: addMode,
+        // entering add mode clears meter selection + activity + observation
         meter_id: addMode ? undefined : prev.meter_id,
         activity_id: addMode ? undefined : prev.activity_id,
+        observation_id: addMode ? undefined : prev.observation_id,
       }),
     });
   };
 
   const handleTabChange = (tabIndex: number) => {
-    setCurrentTabIndex(tabIndex);
     navigate({
       to: "/manage/meters",
       search: (prev) => ({
-        q: prev.q ?? undefined,
-        filters: prev.filters ?? undefined,
-        add: prev.add ? true : undefined,
-        meter_id: prev.meter_id ?? undefined,
-        activity_id: prev.activity_id ?? undefined,
-        tab: tabIndex ? tabIndex : undefined,
+        ...(prev as any),
+        tab: indexToTab(tabIndex),
       }),
     });
   };
 
   const handleSearchQueryChange = (query: string) => {
-    setMeterSearchQuery(query);
     navigate({
       to: "/manage/meters",
       search: (prev) => ({
-        tab: prev.tab ?? undefined,
-        filters: prev.filters ?? undefined,
-        add: prev.add ? true : undefined,
-        meter_id: prev.meter_id ?? undefined,
-        activity_id: prev.activity_id ?? undefined,
-        q: query ? query : undefined,
+        ...(prev as any),
+        q: query.trim() ? query : undefined,
       }),
     });
   };
 
-  const handleFilterButtonsChange = (filters: string[]) => {
-    setMeterFilterButtons(filters);
+  const handleFilterButtonsChange = (
+    filters: Array<"installed" | "stored" | "sold" | "scrapped" | "unknown">,
+  ) => {
     navigate({
       to: "/manage/meters",
       search: (prev) => ({
-        tab: prev.tab ?? undefined,
-        add: prev.add ? true : undefined,
-        meter_id: prev.meter_id ?? undefined,
-        activity_id: prev.activity_id ?? undefined,
-        q: prev.q ?? undefined,
-        filters: filters.length ? filters : undefined,
+        ...(prev as any),
+        filters: filters.length ? filters : ["installed"],
       }),
     });
   };
@@ -154,7 +106,7 @@ export const MetersView = () => {
           <MeterSelection
             onMeterSelection={handleMeterSelection}
             setMeterAddMode={handleMeterAddMode}
-            currentTabIndex={currentTabIndex}
+            currentTabIndex={tabToIndex(currentTab)}
             onTabChange={handleTabChange}
             meterSearchQuery={meterSearchQuery}
             onSearchQueryChange={handleSearchQueryChange}

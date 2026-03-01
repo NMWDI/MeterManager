@@ -14,6 +14,9 @@ import {
 import { FormatListBulletedOutlined, Search } from "@mui/icons-material";
 import { MeterStatusNames } from "@/enums";
 import { CustomCardHeader, TabPanel } from "@/components";
+import { useMemo } from "react";
+
+type MeterFilterKey = "installed" | "stored" | "sold" | "scrapped" | "unknown";
 
 export const MeterSelection = ({
   onMeterSelection,
@@ -25,50 +28,38 @@ export const MeterSelection = ({
   meterFilterButtons,
   onFilterButtonsChange,
 }: {
-  onMeterSelection: Function;
-  setMeterAddMode: Function;
+  onMeterSelection: (meterId?: number) => void;
+  setMeterAddMode: (addMode: boolean) => void;
   currentTabIndex: number;
   onTabChange: (index: number) => void;
   meterSearchQuery: string;
   onSearchQueryChange: (query: string) => void;
-  meterFilterButtons: string[];
-  onFilterButtonsChange: (filters: string[]) => void;
+  meterFilterButtons: MeterFilterKey[];
+  onFilterButtonsChange: (filters: MeterFilterKey[]) => void;
 }) => {
   const handleTabChange = (_: React.SyntheticEvent, newTabIndex: number) =>
     onTabChange(newTabIndex);
 
   const handleFilterSelect = (
     _: React.MouseEvent<HTMLElement>,
-    newFilters: string[],
+    newFilters: MeterFilterKey[],
   ) => {
-    if (newFilters.length === 0) {
-      newFilters.push("installed");
-    }
-
-    onFilterButtonsChange(newFilters);
+    onFilterButtonsChange(newFilters.length ? newFilters : ["installed"]);
   };
 
-  const meterFilters: MeterStatusNames[] = (() => {
-    // Update the meterFilters based on the selected filter buttons
-    let updatedMeterFilters: MeterStatusNames[] = [];
-    if (meterFilterButtons.includes("installed")) {
-      updatedMeterFilters.push(MeterStatusNames.Installed);
-    }
-    if (meterFilterButtons.includes("stored")) {
-      updatedMeterFilters.push(MeterStatusNames.Warehouse);
-    }
-    if (meterFilterButtons.includes("sold")) {
-      updatedMeterFilters.push(MeterStatusNames.Sold);
-    }
-    if (meterFilterButtons.includes("scrapped")) {
-      updatedMeterFilters.push(MeterStatusNames.Scrapped);
-      updatedMeterFilters.push(MeterStatusNames.Returned);
-    }
-    if (meterFilterButtons.includes("unknown")) {
-      updatedMeterFilters.push(MeterStatusNames.Unknown);
-    }
-    return updatedMeterFilters;
-  })();
+  const meterFilters: MeterStatusNames[] = useMemo(() => {
+    const out: MeterStatusNames[] = [];
+    if (meterFilterButtons.includes("installed"))
+      out.push(MeterStatusNames.Installed);
+    if (meterFilterButtons.includes("stored"))
+      out.push(MeterStatusNames.Warehouse);
+    if (meterFilterButtons.includes("sold")) out.push(MeterStatusNames.Sold);
+    if (meterFilterButtons.includes("scrapped"))
+      out.push(MeterStatusNames.Scrapped, MeterStatusNames.Returned);
+    if (meterFilterButtons.includes("unknown"))
+      out.push(MeterStatusNames.Unknown);
+    return out;
+  }, [meterFilterButtons]);
 
   return (
     <Card sx={{ height: "100%" }}>

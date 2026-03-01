@@ -14,14 +14,16 @@ import { CustomCardHeader } from "@/components";
 export const MeterHistoryTable = ({
   onHistoryItemSelection,
   selectedMeterHistory,
+  isLoading,
+  selectedActivityId,
+  selectedObservationId,
 }: {
-  onHistoryItemSelection: Function;
+  onHistoryItemSelection: (item: MeterHistoryDTO) => void;
   selectedMeterHistory: MeterHistoryDTO[] | undefined;
+  isLoading: boolean;
+  selectedActivityId?: number;
+  selectedObservationId?: number;
 }) => {
-  const handleRowSelect = (rowDetails: any) => {
-    onHistoryItemSelection(rowDetails.row);
-  };
-
   const columns: GridColDef[] = [
     {
       field: "date",
@@ -67,6 +69,24 @@ export const MeterHistoryTable = ({
     },
   ];
 
+  const rows = Array.isArray(selectedMeterHistory) ? selectedMeterHistory : [];
+
+  // Stable row id (so selection works)
+  const getRowId = (row: MeterHistoryDTO) => {
+    if (row.history_type === MeterHistoryType.Activity) {
+      return `act-${row.history_item.id}`;
+    }
+    return `obs-${row.history_item.id}`; // if observations have id; adjust if not
+  };
+
+  // Selection model derived from URL activity_id
+  const rowSelectionModel =
+    selectedActivityId !== undefined
+      ? [`act-${selectedActivityId}`]
+      : selectedObservationId !== undefined
+        ? [`obs-${selectedObservationId}`]
+        : [];
+
   return (
     <Card>
       <CustomCardHeader title="Meter History" icon={HistoryIcon} />
@@ -74,8 +94,14 @@ export const MeterHistoryTable = ({
         <DataGrid
           sx={{ height: "100%", border: "none" }}
           columns={columns}
-          rows={Array.isArray(selectedMeterHistory) ? selectedMeterHistory : []}
-          onRowClick={handleRowSelect}
+          rows={rows}
+          getRowId={getRowId}
+          loading={isLoading}
+          rowSelectionModel={rowSelectionModel}
+          disableRowSelectionOnClick={false}
+          onRowClick={(params) => {
+            onHistoryItemSelection(params.row as MeterHistoryDTO);
+          }}
         />
       </CardContent>
     </Card>

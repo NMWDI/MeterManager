@@ -478,7 +478,7 @@ export const WorkOrdersTable = () => {
           </Stack>
         </Stack>
       </Box>
-      <Box sx={{ height: 675, width: "100%", overflowX: "auto" }}>
+      <Box sx={{ height: 600, width: "100%", overflowX: "auto" }}>
         <DataGrid
           rows={rows}
           loading={loading}

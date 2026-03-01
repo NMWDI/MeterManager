@@ -3,7 +3,7 @@ import { useForm, SubmitHandler } from "react-hook-form";
 import { useAuthUser } from "react-auth-kit";
 import { enqueueSnackbar } from "notistack";
 import { Grid, Card, CardContent, Stack, Button } from "@mui/material";
-import { Save, InfoOutlined } from "@mui/icons-material";
+import { Save, Biotech } from "@mui/icons-material";
 import {
   PatchObservationForm,
   PatchObservationSubmit,
@@ -118,7 +118,7 @@ export const SelectedObservationDetails = ({
     <Card>
       <CustomCardHeader
         title={`Observation ID: ${selectedObservation.observation_id}`}
-        icon={InfoOutlined}
+        icon={Biotech}
       />
       <CardContent>
         <Grid container spacing={2}>

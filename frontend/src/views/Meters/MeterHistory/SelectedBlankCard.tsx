@@ -1,16 +1,26 @@
-import { Grid, Card, CardContent } from "@mui/material";
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import { Card, CardContent, Typography } from "@mui/material";
 import { CustomCardHeader } from "@/components";
+import { ArrowBack, NewReleases } from "@mui/icons-material";
 
-// A blank card to display when no history item is selected
 export const SelectedBlankCard = () => {
   return (
-    <Card sx={{ height: "100%" }}>
-      <CustomCardHeader title="Selected Details" icon={InfoOutlinedIcon} />
-      <CardContent>
-        <Grid container item xs={10}>
-          Select a history item to view details
-        </Grid>
+    <Card>
+      <CustomCardHeader title="Selected Details" icon={NewReleases} />
+      <CardContent
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 2,
+          pt: 3,
+          pb: 6,
+          color: "text.secondary",
+        }}
+      >
+        <ArrowBack sx={{ fontSize: 28 }} />
+        <Typography variant="h5">
+          Select an activity or observation to view its details.
+        </Typography>
       </CardContent>
     </Card>
   );

@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { useAuthUser } from "react-auth-kit";
 import { Grid, Card, CardContent, Stack, Button } from "@mui/material";
-import { Save, InfoOutlined } from "@mui/icons-material";
+import { Save, Construction } from "@mui/icons-material";
 import {
   PatchActivityForm,
   PatchActivitySubmit,
@@ -116,7 +116,7 @@ export const SelectedActivityDetails = ({
     <Card>
       <CustomCardHeader
         title={`Activity ID: ${selectedActivity.activity_id}`}
-        icon={InfoOutlined}
+        icon={Construction}
       />
       <CardContent>
         <Grid container spacing={2}>

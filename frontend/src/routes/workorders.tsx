@@ -67,7 +67,9 @@ const numberListSchema = z.preprocess((val) => {
 
 export const Route = createFileRoute("/workorders")({
   validateSearch: z.object({
-    status: statusListSchema.default(["Open", "Review"]),
+    status: statusListSchema
+      .catch([WorkOrderStatus.Open, WorkOrderStatus.Review])
+      .default([WorkOrderStatus.Open, WorkOrderStatus.Review]),
     assigned_user_id: assignedUserIdSchema, // no default -> stays undefined when not set
     q: qSchema, // no default -> stays undefined when not set
     work_order_id: numberListSchema,
