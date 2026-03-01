@@ -61,6 +61,8 @@ export const Create = ({
     setWorkOrderTitle("");
   };
 
+  const canSave = Boolean(workOrderMeter) && workOrderTitle.trim().length > 0;
+
   return (
     <Dialog
       open={open}
@@ -73,8 +75,8 @@ export const Create = ({
       <DialogContent dividers>
         <Stack spacing={2}>
           <DialogContentText>
-            To create a new work order, please select a meter and title. Other
-            fields can be edited as needed after creation.
+            Select a meter and enter a title to create the work order. You can
+            update the remaining details after it’s created.
           </DialogContentText>
           <MeterSelection
             selectedMeter={workOrderMeter}
@@ -83,6 +85,7 @@ export const Create = ({
           />
           <TextField
             autoFocus
+            required
             size="small"
             margin="dense"
             id="title"
@@ -107,9 +110,10 @@ export const Create = ({
       >
         <Button onClick={handleCancel}>Cancel</Button>
         <Button
-          onClick={handleSubmit}
           variant="contained"
           color="success"
+          onClick={handleSubmit}
+          disabled={!canSave}
           sx={{
             flexShrink: 0,
             width: { xs: "100%", sm: "auto" },

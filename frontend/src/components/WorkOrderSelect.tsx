@@ -48,7 +48,9 @@ export default function WorkOrderSelect({
   setSelectedWorkOrderID,
   option_filters,
 }: WorkOrderSelectProps) {
-  const workOrderList = useGetWorkOrders([WorkOrderStatus["Open"]]);
+  const workOrderList = useGetWorkOrders({
+    filter_by_status: [WorkOrderStatus.Open],
+  });
   const [filteredWorkOrders, setFilteredWorkOrders] = useState<WorkOrder[]>([]);
 
   useEffect(() => {

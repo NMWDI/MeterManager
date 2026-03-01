@@ -1,15 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
-import { Delete, Add, Handyman } from "@mui/icons-material";
+import { useEffect, useState } from "react";
+import { Delete, Add, Handyman, Clear } from "@mui/icons-material";
 import {
   DataGrid,
   GridColDef,
   GridRowModel,
   GridRenderCellParams,
   GridRowId,
-  GridFilterItem,
 } from "@mui/x-data-grid";
 import { useAuthUser } from "react-auth-kit";
-import { Link, useNavigate, useSearch } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import {
   useGetWorkOrders,
   useUpdateWorkOrder,
@@ -18,122 +17,153 @@ import {
   useCreateWorkOrder,
 } from "@/service/ApiServiceNew";
 import { WorkOrderStatus } from "@/enums";
-import { Box, Button, IconButton, Stack } from "@mui/material";
+import {
+  Autocomplete,
+  Box,
+  Button,
+  IconButton,
+  Stack,
+  TextField,
+} from "@mui/material";
 import { GridFooterWithButton } from "@/components";
 import { Create } from "@/components/Modals/WorkOrders";
-import { MeterActivity, NewWorkOrder, SecurityScope } from "@/interfaces";
-import { Route } from "@/routes/workorders";
+import { MeterActivity, NewWorkOrder } from "@/interfaces";
 import { useSnackbar } from "notistack";
+import { Route } from "@/routes/workorders";
+
+const STATUS_OPTIONS: WorkOrderStatus[] = [
+  WorkOrderStatus.Open,
+  WorkOrderStatus.Review,
+  WorkOrderStatus.Closed,
+];
 
 export const WorkOrdersTable = () => {
-  const navigate = useNavigate();
-  const { page, pageSize } = Route.useSearch();
-  const search = useSearch({ from: "/workorders" });
-
   const { enqueueSnackbar } = useSnackbar();
 
-  const workOrderIdFilter = useMemo(() => {
-    return search.work_order_id?.length ? search.work_order_id : null;
-  }, [search.work_order_id]);
+  const navigate = useNavigate();
+  const search = Route.useSearch();
+  const { status, assigned_user_id, q, work_order_id, page, pageSize } = search;
 
-  const [workOrderFilters, setWorkOrderFilters] = useState<WorkOrderStatus[]>([
-    WorkOrderStatus.Open,
-    WorkOrderStatus.Review,
+  const authUser = useAuthUser();
+  const user = authUser();
+  const currentUserId: number | undefined = user?.id;
+
+  const hasAdminScope =
+    user?.user_role.security_scopes
+      .map((s: any) => s.scope_string)
+      .includes("admin") ?? false;
+
+  const userList = useGetUserList();
+
+  const getUserFromID = (id: number | undefined) =>
+    userList.data?.find((u) => u.id === id)?.full_name ?? "";
+
+  const getUserIDfromName = (name: string) =>
+    userList.data?.find((u) => u.full_name === name)?.id ?? undefined;
+
+  // Helper to update URL search
+  const setSearch = (updater: (prev: typeof search) => any) => {
+    navigate({
+      to: "/workorders",
+      search: (prev) => updater(prev as any),
+      replace: true,
+    });
+  };
+
+  useEffect(() => {
+    if (!user) return;
+
+    // If deep-linking by ID(s), do not override
+    if (work_order_id?.length) {
+      navigate({
+        to: "/workorders",
+        search: (prev) => ({
+          ...prev,
+          status: STATUS_OPTIONS,
+        }),
+        replace: true,
+      });
+      return;
+    }
+
+    // Only techs get forced assigned filter
+    const needsTechAssignedDefault =
+      !hasAdminScope && currentUserId && !assigned_user_id;
+
+    if (!needsTechAssignedDefault) return;
+
+    navigate({
+      to: "/workorders",
+      search: (prev) => ({
+        ...prev,
+        assigned_user_id: currentUserId,
+        page: 0,
+      }),
+      replace: true,
+    });
+  }, [
+    user,
+    hasAdminScope,
+    currentUserId,
+    assigned_user_id,
+    work_order_id,
+    navigate,
   ]);
-  const workOrderList = useGetWorkOrders(workOrderFilters, {
-    refetchInterval: false,
-  });
+
+  // Local input state for q (so typing doesn't spam URL)
+  const [qInput, setQInput] = useState(q ?? "");
+  useEffect(() => setQInput(q ?? ""), [q]);
+
+  const workOrderList = useGetWorkOrders(
+    {
+      filter_by_status: status ?? [
+        WorkOrderStatus.Open,
+        WorkOrderStatus.Review,
+      ],
+      work_order_id,
+      assigned_user_id,
+      q,
+    },
+    { refetchInterval: false },
+  );
+
   const updateWorkOrder = useUpdateWorkOrder();
   const deleteWorkOrder = useDeleteWorkOrder(() =>
     console.log("Work order deleted"),
   );
   const createWorkOrder = useCreateWorkOrder();
-  const userList = useGetUserList();
 
   const [isNewWorkOrderModalOpen, setIsNewWorkOrderModalOpen] =
     useState<boolean>(false);
 
-  const displayedRows = useMemo(() => {
-    const rows = workOrderList.data ?? [];
-    if (!workOrderIdFilter) return rows;
-    const set = new Set(workOrderIdFilter);
-    return rows.filter((r: any) => set.has(r.work_order_id));
-  }, [workOrderList.data, workOrderIdFilter]);
-
-  //Current user needed for various changes to UI based on user role
-  const authUser = useAuthUser();
-  const hasAdminScope = authUser()
-    ?.user_role.security_scopes.map(
-      (scope: SecurityScope) => scope.scope_string,
-    )
-    .includes("admin");
-
-  const getUserFromID = (id: number | undefined) => {
-    return userList.data?.find((user) => user.id === id)?.full_name ?? "";
-  };
-
-  const getUserIDfromName = (name: string) => {
-    return userList.data?.find((user) => user.full_name === name)?.id ?? 0;
-  };
-
-  const current_user_name = getUserFromID(authUser()?.id);
-  var initialFilter: GridFilterItem[] = []; //No filter if admin
-  var status_options = ["Open", "Review", "Closed"];
-
-  //Change a few defaults depending on if admin or not
-  if (!hasAdminScope) {
-    initialFilter = [
-      { field: "assigned_user_id", operator: "is", value: current_user_name },
-    ];
-    status_options = ["Open", "Review"];
-  } else {
-    //Filter by Status
-    //Unlike with the technicians, this filters on the frontend in case the admin wants to see all work orders
-    initialFilter = [{ field: "status", operator: "not", value: "Closed" }];
-  }
-
-  //Update list of work orders if technician level to only show open and review.
-  //useEffect prevents this from running on every render
-  useEffect(() => {
-    if (hasAdminScope) {
-      setWorkOrderFilters([
-        WorkOrderStatus.Open,
-        WorkOrderStatus.Review,
-        WorkOrderStatus.Closed,
-      ]);
-    } else {
-      setWorkOrderFilters([WorkOrderStatus.Open, WorkOrderStatus.Review]);
-    }
-  }, [hasAdminScope]); // Dependency array ensures this runs only when hasAdminScope changes
-
-  const handleRowUpdate = (
+  const handleRowUpdate = async (
     updatedRow: GridRowModel,
     originalRow: GridRowModel,
   ): Promise<GridRowModel> => {
-    //Determine what field has changed and update the work order
     const updatedField = Object.keys(updatedRow).find(
       (key) => updatedRow[key] !== originalRow[key],
     );
-    let field_data = null;
+    if (!updatedField) return originalRow;
 
-    //If field is assigned_user_id, convert the name to an id
+    let field_data: any;
+
     if (updatedField === "assigned_user_id") {
       field_data = getUserIDfromName(updatedRow.assigned_user_id as string);
     } else {
       field_data = updatedRow[updatedField as string];
     }
 
-    const work_order_update = {
+    return updateWorkOrder.mutateAsync({
       work_order_id: updatedRow.work_order_id,
-      [updatedField as string]: field_data,
-    };
-
-    //Create a promise to update the work order
-    return updateWorkOrder.mutateAsync(work_order_update);
+      [updatedField]: field_data,
+    });
   };
 
   const handleProcessRowUpdateError = (error: Error): void => {
-    console.error("Error updating work order", error);
+    console.error(error);
+    enqueueSnackbar(error?.message || "Failed to update work order.", {
+      variant: "error",
+    });
   };
 
   const handleDeleteClick = (id: GridRowId) => {
@@ -143,10 +173,8 @@ export const WorkOrdersTable = () => {
       });
       return;
     }
-
-    if (!window.confirm(`Are you sure you want to delete work order ${id}?`)) {
+    if (!window.confirm(`Are you sure you want to delete work order ${id}?`))
       return;
-    }
 
     deleteWorkOrder.mutate(id, {
       onSuccess: () => {
@@ -164,9 +192,21 @@ export const WorkOrdersTable = () => {
   };
 
   const handleNewWorkOrder = (newWorkOrder: NewWorkOrder) => {
-    createWorkOrder.mutateAsync(newWorkOrder).then(() => {
-      workOrderList.refetch();
-    });
+    createWorkOrder
+      .mutateAsync(newWorkOrder)
+      .then(() => workOrderList.refetch());
+  };
+
+  const clearFilters = () => {
+    setQInput("");
+    setSearch((prev) => ({
+      ...prev,
+      page: 0,
+      q: undefined,
+      work_order_id: undefined,
+      status: [WorkOrderStatus.Open, WorkOrderStatus.Review],
+      assigned_user_id: hasAdminScope ? undefined : currentUserId,
+    }));
   };
 
   const columns: GridColDef<any>[] = [
@@ -235,7 +275,7 @@ export const WorkOrdersTable = () => {
       flex: 1,
       minWidth: 125,
       type: "singleSelect",
-      valueOptions: status_options,
+      valueOptions: STATUS_OPTIONS,
       editable: true,
     },
     { field: "notes", headerName: "Notes", width: 300, editable: true },
@@ -358,78 +398,149 @@ export const WorkOrdersTable = () => {
     },
   ];
 
+  const rows = workOrderList.data ?? [];
+  const loading = workOrderList.isLoading || workOrderList.isFetching;
+
   return (
-    <Box sx={{ height: 700, width: "100%", overflowX: "auto" }}>
-      <DataGrid
-        key={
-          workOrderIdFilter?.length
-            ? `woids-${workOrderIdFilter.join(",")}`
-            : `default-${hasAdminScope ? "admin" : "tech"}`
-        }
-        rows={displayedRows ?? []}
-        getRowHeight={() => "auto"}
-        getRowId={(row) => row.work_order_id}
-        columns={columns}
-        disableColumnResize={false}
-        filterModel={workOrderIdFilter?.length ? { items: [] } : undefined}
-        initialState={{
-          pagination: { paginationModel: { page: 0, pageSize: 25 } },
-          columns: {
-            columnVisibilityModel: {
-              work_order_id: false,
-              creator: hasAdminScope,
-              associated_activities: hasAdminScope,
-              assigned_user_id: hasAdminScope,
+    <Box sx={{ width: "100%", overflowX: "auto" }}>
+      <Box sx={{ mb: 1.5 }}>
+        <Stack
+          direction={{ xs: "column", md: "row" }}
+          spacing={2}
+          py={1}
+          alignItems="flex-start"
+        >
+          <Autocomplete
+            multiple
+            size="small"
+            disableCloseOnSelect
+            options={STATUS_OPTIONS}
+            value={status ?? [WorkOrderStatus.Open, WorkOrderStatus.Review]}
+            onChange={(_, value) =>
+              setSearch((p) => ({
+                ...p,
+                status: value.length ? value : [WorkOrderStatus.Open],
+                page: 0,
+              }))
+            }
+            sx={{ minWidth: 260 }}
+            renderInput={(params) => <TextField {...params} label="Status" />}
+          />
+          <Autocomplete
+            size="small"
+            disabled={!hasAdminScope}
+            options={userList.data?.map((u) => u.full_name) ?? []}
+            value={assigned_user_id ? getUserFromID(assigned_user_id) : null}
+            onChange={(_, name) => {
+              const id = name ? getUserIDfromName(name) : undefined;
+              setSearch((p) => ({ ...p, assigned_user_id: id, page: 0 }));
+            }}
+            sx={{ minWidth: 260 }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label={
+                  hasAdminScope
+                    ? "Assigned technician"
+                    : "Assigned (admin only)"
+                }
+              />
+            )}
+          />
+
+          <TextField
+            size="small"
+            label="Search"
+            value={qInput}
+            onChange={(e) => setQInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                const next = qInput.trim();
+                setSearch((p) => ({ ...p, q: next || undefined, page: 0 }));
+              }
+            }}
+            sx={{ minWidth: 260 }}
+            helperText="Press Enter to apply"
+          />
+
+          <Stack direction="row" spacing={1} sx={{ ml: "auto" }}>
+            <Button
+              sx={{
+                height: 40,
+                minHeight: 40,
+              }}
+              variant="outlined"
+              startIcon={<Clear />}
+              onClick={clearFilters}
+            >
+              Clear
+            </Button>
+          </Stack>
+        </Stack>
+      </Box>
+      <Box sx={{ height: 675, width: "100%", overflowX: "auto" }}>
+        <DataGrid
+          rows={rows}
+          loading={loading}
+          getRowHeight={() => "auto"}
+          getRowId={(row) => row.work_order_id}
+          columns={columns}
+          initialState={{
+            pagination: { paginationModel: { page: 0, pageSize: 25 } },
+            columns: {
+              columnVisibilityModel: {
+                work_order_id: false,
+                creator: hasAdminScope,
+                associated_activities: hasAdminScope,
+                assigned_user_id: hasAdminScope,
+              },
             },
-          },
-          ...(workOrderIdFilter?.length
-            ? {} // NO default filter when URL param exists
-            : { filter: { filterModel: { items: initialFilter } } }),
-        }}
-        pagination
-        pageSizeOptions={[10, 25, 50, 100]}
-        paginationModel={{ page, pageSize }}
-        onPaginationModelChange={(m) => {
-          navigate({
-            to: "/workorders",
-            search: (prev) => ({
-              work_order_id: prev.work_order_id ?? undefined,
-              pageSize: m.pageSize,
-              page: m.pageSize !== prev.pageSize ? 0 : m.page,
-            }),
-            replace: true,
-          });
-        }}
-        processRowUpdate={handleRowUpdate}
-        onProcessRowUpdateError={handleProcessRowUpdateError}
-        slots={{ footer: GridFooterWithButton }}
-        slotProps={{
-          footer: {
-            button: hasAdminScope && (
-              <Stack
-                direction={{ xs: "column", sm: "row" }}
-                spacing={1}
-                sx={{
-                  ml: { xs: 0, sm: 1 },
-                  mt: { xs: 1, sm: 0 },
-                  width: "100%",
-                }}
-                alignItems={{ xs: "stretch", sm: "center" }}
-              >
-                <Button
-                  variant="contained"
-                  size="small"
-                  onClick={() => setIsNewWorkOrderModalOpen(true)}
-                  sx={{ flexShrink: 0, width: { xs: "100%", sm: "auto" } }}
-                  startIcon={<Add fontSize="small" />}
+          }}
+          pagination
+          pageSizeOptions={[10, 25, 50, 100]}
+          paginationModel={{ page, pageSize }}
+          onPaginationModelChange={(m) => {
+            navigate({
+              to: "/workorders",
+              search: (prev) => ({
+                ...prev,
+                pageSize: m.pageSize,
+                page: m.pageSize !== prev.pageSize ? 0 : m.page,
+              }),
+              replace: true,
+            });
+          }}
+          processRowUpdate={handleRowUpdate}
+          onProcessRowUpdateError={handleProcessRowUpdateError}
+          slots={{ footer: GridFooterWithButton }}
+          slotProps={{
+            footer: {
+              button: hasAdminScope && (
+                <Stack
+                  direction={{ xs: "column", sm: "row" }}
+                  spacing={1}
+                  sx={{
+                    ml: { xs: 0, sm: 1 },
+                    mt: { xs: 1, sm: 0 },
+                    width: "100%",
+                  }}
+                  alignItems={{ xs: "stretch", sm: "center" }}
                 >
-                  Create
-                </Button>
-              </Stack>
-            ),
-          },
-        }}
-      />
+                  <Button
+                    variant="contained"
+                    size="small"
+                    onClick={() => setIsNewWorkOrderModalOpen(true)}
+                    sx={{ flexShrink: 0, width: { xs: "100%", sm: "auto" } }}
+                    startIcon={<Add fontSize="small" />}
+                  >
+                    Create
+                  </Button>
+                </Stack>
+              ),
+            },
+          }}
+        />
+      </Box>
       <Create
         open={isNewWorkOrderModalOpen}
         onClose={() => setIsNewWorkOrderModalOpen(false)}

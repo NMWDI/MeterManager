@@ -577,7 +577,13 @@ export function useGetST2WaterLevels(datastreamID: number | undefined) {
 }
 
 export function useGetWorkOrders(
-  status_filter: WorkOrderStatus[],
+  params: {
+    filter_by_status: WorkOrderStatus[];
+    start_date?: string; // ISO date string (YYYY-MM-DD)
+    work_order_id?: number[];
+    assigned_user_id?: number;
+    q?: string;
+  },
   options?: UseQueryOptions<WorkOrder[], Error>,
 ) {
   const route = "work_orders";
@@ -585,16 +591,19 @@ export function useGetWorkOrders(
   const navigate = useNavigate();
   const signOut = useSignOut();
 
+  // normalize params so queryKey is stable (order of arrays matters)
+  const normalized = {
+    ...params,
+    filter_by_status: [...(params.filter_by_status ?? [])].sort(),
+    work_order_id: params.work_order_id
+      ? [...params.work_order_id].sort((a, b) => a - b)
+      : undefined,
+    q: params.q?.trim() || undefined,
+  };
+
   return useQuery<WorkOrder[], Error>({
-    queryKey: [route, { status_filter: status_filter.sort() }],
-    queryFn: () =>
-      GETFetch(
-        route,
-        { filter_by_status: status_filter },
-        authHeader(),
-        signOut,
-        navigate,
-      ),
+    queryKey: [route, normalized],
+    queryFn: () => GETFetch(route, normalized, authHeader(), signOut, navigate),
     ...options,
   });
 }

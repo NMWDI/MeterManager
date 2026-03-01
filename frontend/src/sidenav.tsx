@@ -43,11 +43,17 @@ export default function Sidenav({
   const hasAdminScope = scopes.has("admin");
   const userId = authUser()?.id;
   const [workOrderCount, setWorkOrderCount] = useState(0);
-  const openWorkOrdersQuery = useGetWorkOrders([WorkOrderStatus.Open], {
-    refetchInterval: 45_000,
-    refetchIntervalInBackground: true,
-    enabled: hasReadScope && !!authUser(),
-  });
+
+  const openWorkOrdersQuery = useGetWorkOrders(
+    {
+      filter_by_status: [WorkOrderStatus.Open],
+    },
+    {
+      refetchInterval: 45_000,
+      refetchIntervalInBackground: true,
+      enabled: hasReadScope && !!authUser(),
+    },
+  );
 
   useEffect(() => {
     if (openWorkOrdersQuery.data && userId) {
