@@ -1,6 +1,8 @@
 import { Card, CardContent } from "@mui/material";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
-import HistoryIcon from "@mui/icons-material/History";
+import { useNavigate } from "@tanstack/react-router";
+import { Route } from "@/routes/manage/meters";
+import { History } from "@mui/icons-material";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
@@ -24,6 +26,9 @@ export const MeterHistoryTable = ({
   selectedActivityId?: number;
   selectedObservationId?: number;
 }) => {
+  const search = Route.useSearch();
+  const navigate = useNavigate();
+
   const columns: GridColDef[] = [
     {
       field: "date",
@@ -89,7 +94,7 @@ export const MeterHistoryTable = ({
 
   return (
     <Card>
-      <CustomCardHeader title="Meter History" icon={HistoryIcon} />
+      <CustomCardHeader title="Meter History" icon={History} />
       <CardContent sx={{ height: "550px" }}>
         <DataGrid
           sx={{ height: "100%", border: "none" }}
@@ -97,6 +102,20 @@ export const MeterHistoryTable = ({
           rows={rows}
           getRowId={getRowId}
           loading={isLoading}
+          pagination
+          paginationModel={{ page: search.h_page, pageSize: search.h_pageSize }}
+          pageSizeOptions={[10, 25, 50, 100]}
+          onPaginationModelChange={(m) => {
+            navigate({
+              to: "/manage/meters",
+              search: (prev) => ({
+                ...(prev as any),
+                h_pageSize: m.pageSize,
+                h_page: m.pageSize !== (prev as any).h_pageSize ? 0 : m.page,
+              }),
+              replace: true,
+            });
+          }}
           rowSelectionModel={rowSelectionModel}
           disableRowSelectionOnClick={false}
           onRowClick={(params) => {

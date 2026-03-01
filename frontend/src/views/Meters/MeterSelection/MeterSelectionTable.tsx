@@ -4,6 +4,8 @@ import { Box, Button, Stack } from "@mui/material";
 import { DataGrid, GridSortModel, GridColDef } from "@mui/x-data-grid";
 import { Add } from "@mui/icons-material";
 import { useAuthUser } from "react-auth-kit";
+import { useNavigate } from "@tanstack/react-router";
+import { Route } from "@/routes/manage/meters";
 import { MeterListQueryParams, SecurityScope } from "@/interfaces";
 import { SortDirection, MeterSortByField, MeterStatusNames } from "@/enums";
 import { useGetMeterList } from "@/service/ApiServiceNew";
@@ -22,7 +24,11 @@ export const MeterSelectionTable = ({
   setMeterAddMode,
   meterStatusFilter,
 }: MeterSelectionTableProps) => {
+  const search = Route.useSearch();
+  const navigate = useNavigate();
+
   const [meterSearchQueryDebounced] = useDebounce(meterSearchQuery, 250);
+
   const [meterListQueryParams, setMeterListQueryParams] =
     useState<MeterListQueryParams>({
       search_string: "",
@@ -32,11 +38,8 @@ export const MeterSelectionTable = ({
       limit: 25,
       offset: 0,
     });
-  const [gridSortModel, setGridSortModel] = useState<GridSortModel>();
-  const [paginationModel, setPaginationModel] = useState({
-    pageSize: 25,
-    page: 0,
-  });
+
+  const [gridSortModel, setGridSortModel] = useState<GridSortModel>([]);
   const [gridRowCount, setGridRowCount] = useState<number>(100);
 
   const authUser = useAuthUser();
@@ -85,15 +88,16 @@ export const MeterSelectionTable = ({
         MeterSortByField.SerialNumber,
       sort_direction:
         (gridSortModel?.[0]?.sort as SortDirection) ?? SortDirection.Ascending,
-      limit: paginationModel.pageSize,
-      offset: paginationModel.page * paginationModel.pageSize,
+      limit: search.m_pageSize,
+      offset: search.m_page * search.m_pageSize,
     };
     setMeterListQueryParams(newParams);
   }, [
     meterSearchQueryDebounced,
     gridSortModel,
-    paginationModel,
     meterStatusFilter,
+    search.m_page,
+    search.m_pageSize,
   ]);
 
   useEffect(() => {
@@ -110,13 +114,26 @@ export const MeterSelectionTable = ({
         rows={meterList.data?.items ?? []}
         loading={meterList.isPreviousData || meterList.isLoading}
         columns={meterTableColumns}
-        sortingMode="server"
-        onSortModelChange={setGridSortModel}
         onRowClick={(selectedRow) => onMeterSelection(selectedRow.row.id)}
         keepNonExistentRowsSelected
+        sortingMode="server"
+        sortModel={gridSortModel}
+        onSortModelChange={setGridSortModel}
+        pagination
         paginationMode="server"
-        paginationModel={paginationModel}
-        onPaginationModelChange={setPaginationModel}
+        paginationModel={{ page: search.m_page, pageSize: search.m_pageSize }}
+        pageSizeOptions={[10, 25, 50, 100]}
+        onPaginationModelChange={(m) => {
+          navigate({
+            to: "/manage/meters",
+            search: (prev) => ({
+              ...(prev as any),
+              m_pageSize: m.pageSize,
+              m_page: m.pageSize !== (prev as any).m_pageSize ? 0 : m.page,
+            }),
+            replace: true,
+          });
+        }}
         rowCount={gridRowCount}
         disableColumnMenu={true}
         slots={{ footer: GridFooterWithButton }}

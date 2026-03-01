@@ -71,6 +71,9 @@ const tabSchema = z
   )
   .catch("list");
 
+const pageSchema = z.coerce.number().int().min(0).catch(0);
+const pageSizeSchema = z.coerce.number().int().min(10).max(200).catch(25);
+
 export const Route = createFileRoute("/manage/meters")({
   validateSearch: z.object({
     meter_id: intPosOptional,
@@ -80,6 +83,12 @@ export const Route = createFileRoute("/manage/meters")({
     tab: tabSchema.catch("list").default("list"),
     q: qSchema,
     filters: filtersSchema,
+    // all meters list pagination
+    m_page: pageSchema,
+    m_pageSize: pageSizeSchema,
+    // meter history pagination
+    h_page: pageSchema,
+    h_pageSize: pageSizeSchema,
   }),
   component: () => (
     <ProtectedRoute requiredScopes={["read"]}>

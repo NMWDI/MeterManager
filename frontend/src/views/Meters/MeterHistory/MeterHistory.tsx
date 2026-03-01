@@ -178,8 +178,16 @@ export const MeterHistory = ({
     return observation_details;
   }
 
+  const hasMeter = Boolean(search.meter_id);
+  const hasSelection =
+    Boolean(search.activity_id) || Boolean(search.observation_id);
+
   const getDetailsCard = (historyItem?: MeterHistoryDTO): JSX.Element => {
-    if (!historyItem) return <SelectedBlankCard />;
+    if (!hasMeter) return <></>;
+
+    if (!hasSelection) return <SelectedBlankCard />;
+
+    if (!historyItem) return <SelectedBlankCard isLoading={!historyItem} />;
 
     if (historyItem.history_type === MeterHistoryType.Activity) {
       return (
