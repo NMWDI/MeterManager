@@ -1,7 +1,7 @@
 from fastapi import Depends, APIRouter, Query, File, UploadFile, Form
 from fastapi.exceptions import HTTPException
 from fastapi.responses import StreamingResponse
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, undefer
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select, text, or_
 from datetime import datetime
@@ -622,7 +622,11 @@ def get_activity_types(
     tags=["Activities"],
 )
 def get_users(db: Session = Depends(get_db)):
-    return db.scalars(select(Users).where(Users.disabled == False)).all()
+    return db.scalars(
+        select(Users)
+        .options(undefer(Users.user_role_id))
+        .where(Users.disabled == False)
+    ).all()
 
 
 @activity_router.get(

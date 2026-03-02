@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useAuthHeader } from "react-auth-kit";
 import { ArrowBack, PictureAsPdf, Plumbing } from "@mui/icons-material";
 import {
@@ -13,11 +13,12 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
 import { useMutation, useQuery } from "react-query";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
+import { Route } from "@/routes/reports/maintenance";
 import dayjs, { Dayjs } from "dayjs";
 import { PieChart } from "@mui/x-charts";
 import {
@@ -33,18 +34,14 @@ import {
   ControlledTextbox,
   CustomCardHeader,
 } from "@/components";
-import { API_URL } from "@/config";
+import { API_URL, ROLE_IDS } from "@/config";
+import { User } from "@/interfaces";
 
-interface User {
-  full_name: string;
-  id: number;
-}
-
-const ALL_TECHNICIANS_ID = -1;
-
-const allTechniciansOption: User = {
-  id: ALL_TECHNICIANS_ID,
-  full_name: "All Technicians",
+type FormValues = {
+  from: Dayjs;
+  to: Dayjs;
+  techicians: User[]; // keep your existing form name
+  trss: string;
 };
 
 const schema = yup.object().shape({
@@ -72,12 +69,20 @@ const schema = yup.object().shape({
 const defaultSchema = {
   from: dayjs().startOf("month"),
   to: dayjs().endOf("month"),
-  techicians: [{ ...allTechniciansOption }],
+  techicians: [],
   trss: "",
 };
 
+const isoToDayjs = (s?: string, fallback?: Dayjs) =>
+  s ? dayjs(s, "YYYY-MM-DD") : (fallback ?? dayjs());
+
 export const MaintenanceReportView = () => {
+  const navigate = useNavigate();
+  const search = Route.useSearch();
   const authHeader = useAuthHeader();
+
+  const hydratedRef = useRef(false);
+
   const techiciansQuery = useQuery({
     queryKey: ["users"],
     queryFn: async () => {
@@ -97,42 +102,119 @@ export const MaintenanceReportView = () => {
     refetchOnReconnect: false,
   });
 
+  const technicianOptions = useMemo(() => {
+    return techiciansQuery.data ?? [];
+  }, [techiciansQuery.data]);
+
+  // URL -> RHF default values (technicians are hydrated after users load)
+  const defaultValues = useMemo<FormValues>(() => {
+    const fallbackFrom = dayjs().startOf("month");
+    const fallbackTo = dayjs().endOf("month");
+
+    return {
+      from: isoToDayjs(search.from, fallbackFrom),
+      to: isoToDayjs(search.to, fallbackTo),
+      techicians: [], // hydrate from search.technicians once we have users
+      trss: search.trss ?? "",
+    };
+  }, [search.from, search.to, search.trss]);
+
   const { control, reset, setValue, watch } = useForm({
     resolver: yupResolver(schema),
     defaultValues: defaultSchema,
   });
+
+  // keep form in sync if URL changes (back/forward)
+  useEffect(() => {
+    reset(defaultValues);
+  }, [defaultValues, reset]);
+
+  // hydrate selected techs from URL ids AFTER users load
+  useEffect(() => {
+    const users = techiciansQuery.data;
+    if (!users) return;
+
+    const ids = new Set(search.technicians ?? []);
+    let selected = users.filter((u: User) => ids.has(u.id));
+
+    // if no ids provided, default to "all techs"
+    if (selected.length === 0)
+      selected = users?.filter(
+        (u: User) => u?.user_role_id === ROLE_IDS.TECHNICIAN,
+      );
+
+    setValue("techicians", selected, {
+      shouldDirty: false,
+      shouldValidate: true,
+    });
+
+    hydratedRef.current = true;
+  }, [techiciansQuery.data, search.technicians, setValue]);
+
+  const setSearch = (updater: (prev: typeof search) => any) => {
+    navigate({
+      to: "/reports/maintenance",
+      search: (prev) => updater(prev as any),
+      replace: true,
+    });
+  };
 
   const from = watch("from");
   const to = watch("to");
   const technicians = watch("techicians");
   const trss = watch("trss");
 
-  const technicianOptions = useMemo(() => {
-    const base = techiciansQuery.data ?? [];
-    return [...base, allTechniciansOption];
-  }, [techiciansQuery.data]);
+  // push form -> URL (but only after hydration so we don't wipe URL on refresh)
+  useEffect(() => {
+    if (!hydratedRef.current) return;
+
+    setSearch((prev) => ({
+      ...(prev as any),
+      from: from?.format("YYYY-MM-DD"),
+      to: to?.format("YYYY-MM-DD"),
+      trss: trss?.trim() || undefined,
+      technicians: (technicians ?? []).map((t) => t.id),
+      page: 0, // reset paging on filter changes
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    from?.valueOf(),
+    to?.valueOf(),
+    trss,
+    (technicians ?? []).map((t) => t.id).join(","),
+  ]);
 
   const dataQuery = useQuery({
     queryKey: [
       "maintenance",
       {
-        from: from?.format("YYYY-MM-DD"),
-        to: to?.format("YYYY-MM-DD"),
-        trss: trss ?? "",
-        technicians: technicians?.map((t) => t.id) ?? [],
+        from: search.from,
+        to: search.to,
+        trss: search.trss ?? "",
+        technicians: search.technicians ?? [],
+        offset: search.page * search.pageSize,
+        limit: search.pageSize,
       },
     ],
     queryFn: async () => {
       const queryParams = new URLSearchParams();
-      queryParams.set("from_date", from?.format("YYYY-MM-DD"));
-      queryParams.set("to_date", to?.format("YYYY-MM-DD"));
-      queryParams.set("trss", trss ?? "");
+      queryParams.set(
+        "from_date",
+        search.from ?? dayjs().startOf("month").format("YYYY-MM-DD"),
+      );
+      queryParams.set(
+        "to_date",
+        search.to ?? dayjs().endOf("month").format("YYYY-MM-DD"),
+      );
+      queryParams.set("trss", search.trss ?? "");
 
-      technicians
-        ?.map((t) => t.id)
-        .forEach((id) => {
-          queryParams.append("technicians", id.toString());
-        });
+      (search.technicians ?? []).forEach((id) =>
+        queryParams.append("technicians", id.toString()),
+      );
+
+      // if your API supports pagination:
+      queryParams.set("offset", String(search.page * search.pageSize));
+      queryParams.set("limit", String(search.pageSize));
 
       const response = await fetch(
         `${API_URL}/maintenance?${queryParams.toString()}`,
@@ -140,16 +222,13 @@ export const MaintenanceReportView = () => {
           headers: { Authorization: authHeader() },
         },
       );
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch maintenance data");
-      }
-
+      if (!response.ok) throw new Error("Failed to fetch maintenance data");
       return response.json();
     },
-    staleTime: 1000 * 60 * 60 * 24,
-    cacheTime: 1000 * 60 * 60 * 24,
-    enabled: Boolean(from && to && technicians && technicians.length > 0),
+    enabled: Boolean(
+      search.from && search.to && (search.technicians?.length ?? 0) > 0,
+    ),
+    keepPreviousData: true,
   });
 
   const numberOfRepairsPieChartData = useMemo(() => {
@@ -363,16 +442,17 @@ export const MaintenanceReportView = () => {
                   option?.id === value?.id
                 }
                 onChange={(_: React.SyntheticEvent, selected: User[]) => {
-                  const isSelectingAll = selected.some(
-                    (tech) => tech.id === ALL_TECHNICIANS_ID,
-                  );
-                  const allTechs = techiciansQuery.data ?? [];
+                  setValue("techicians", selected, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  });
 
-                  if (isSelectingAll) {
-                    // Set all real users as selected, excluding the synthetic "All Technicians"
-                    setValue("techicians", allTechs);
-                  } else {
-                    setValue("techicians", selected);
+                  if (hydratedRef.current) {
+                    setSearch((prev) => ({
+                      ...(prev as any),
+                      technicians: selected.map((t) => t.id),
+                      page: 0,
+                    }));
                   }
                 }}
                 renderInput={(params: Parameters<typeof TextField>[0]) => {
@@ -488,18 +568,56 @@ export const MaintenanceReportView = () => {
             <DataGrid
               rows={tableRows ?? []}
               columns={columns}
+              loading={dataQuery.isLoading}
               disableColumnMenu
               hideFooterSelectedRowCount
-              pageSizeOptions={[5, 10, 25]}
-              initialState={{
-                pagination: {
-                  paginationModel: { pageSize: 5, page: 0 },
-                },
+              pagination
+              paginationModel={{ page: search.page, pageSize: search.pageSize }}
+              pageSizeOptions={[5, 10, 25, 50, 100]}
+              onPaginationModelChange={(m) => {
+                navigate({
+                  to: "/reports/maintenance",
+                  search: (prev) => ({
+                    ...(prev as any),
+                    pageSize: m.pageSize,
+                    page: m.pageSize !== (prev as any).pageSize ? 0 : m.page,
+                  }),
+                  replace: true,
+                });
               }}
+              rowCount={dataQuery.data?.total ?? tableRows.length}
             />
           </Grid>
           <Grid item xs={12}>
-            <Button onClick={() => reset()}>Reset</Button>
+            <Button
+              onClick={() => {
+                reset({
+                  from: dayjs().startOf("month"),
+                  to: dayjs().endOf("month"),
+                  techicians:
+                    techiciansQuery?.data?.filter(
+                      (t: User) => t?.user_role_id === ROLE_IDS.TECHNICIAN,
+                    ) ?? [],
+                  trss: "",
+                });
+
+                navigate({
+                  to: "/reports/maintenance",
+                  search: (prev) => ({
+                    ...(prev as any),
+                    from: dayjs().startOf("month").format("YYYY-MM-DD"),
+                    to: dayjs().endOf("month").format("YYYY-MM-DD"),
+                    trss: undefined,
+                    technicians: [],
+                    page: 0,
+                    pageSize: 5,
+                  }),
+                  replace: true,
+                });
+              }}
+            >
+              Reset
+            </Button>
           </Grid>
         </CardContent>
       </Card>
