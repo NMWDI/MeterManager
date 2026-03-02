@@ -1,5 +1,5 @@
 /** @jsxImportSource @emotion/react */
-import { useMemo, useEffect } from "react";
+import { useMemo, useEffect, useRef } from "react";
 import { ArrowBack, PictureAsPdf, MonitorHeart } from "@mui/icons-material";
 import {
   Box,
@@ -26,14 +26,13 @@ import {
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import { LineChart } from "@mui/x-charts";
 import { css } from "@emotion/react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useAuthHeader } from "react-auth-kit";
 import { Controller, useForm } from "react-hook-form";
 import { useMutation, useQuery } from "react-query";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import dayjs, { Dayjs } from "dayjs";
-
 import {
   ControlledDatepicker,
   ControlledAutocomplete,
@@ -45,15 +44,28 @@ import { ReportAveragesResponse } from "@/interfaces/ReportAveragesResponse";
 import { useFetchWithAuth } from "@/hooks";
 import { separateAndSortMonitoredWells } from "@/utils";
 import { API_URL } from "@/config";
+import { Route } from "@/routes/reports/monitoringwells";
 
-const schema = yup.object().shape({
-  from: yup.mixed<Dayjs>().nullable().required("From date is required"),
+type FormValues = {
+  from: Dayjs;
+  to: Dayjs;
+  wells: (MonitoredWell & { group?: string | null })[];
+  isAveragingAllWells: boolean;
+  isComparingTo1970Average: boolean;
+  comparisonYear: number | null;
+};
+
+const schema = yup.object({
+  from: yup
+    .mixed<Dayjs>()
+    .test("is-dayjs", "From date is required", (v) => dayjs.isDayjs(v))
+    .required(),
   to: yup
     .mixed<Dayjs>()
-    .nullable()
-    .required("To date is required")
+    .test("is-dayjs", "To date is required", (v) => dayjs.isDayjs(v))
+    .required()
     .test("is-after", "'To' date must be after 'From'", function (value) {
-      const { from } = this.parent;
+      const { from } = this.parent as FormValues;
       return !from || !value || dayjs(value).isAfter(dayjs(from));
     }),
   wells: yup
@@ -70,13 +82,19 @@ const schema = yup.object().shape({
         group: yup.string().nullable(),
       }),
     )
-    .min(1, "At least one Well is required"),
+    .min(1, "At least one Well is required")
+    .required(),
   isAveragingAllWells: yup.boolean().required(),
   isComparingTo1970Average: yup.boolean().required(),
-  comparisonYear: yup.number().nullable(),
+  comparisonYear: yup.number().nullable().default(null),
 });
 
-const defaultSchema = {
+const isoToDayjs = (s?: string, fallback?: Dayjs) =>
+  s ? dayjs(s, "YYYY-MM-DD") : (fallback ?? dayjs());
+const dayjsToIso = (d?: dayjs.Dayjs | null) =>
+  d ? d.format("YYYY-MM-DD") : undefined;
+
+const hardResetFormValues: FormValues = {
   from: dayjs().startOf("month"),
   to: dayjs().endOf("month"),
   wells: [],
@@ -85,7 +103,40 @@ const defaultSchema = {
   comparisonYear: null,
 };
 
+const hardResetSearch = {
+  from: hardResetFormValues.from.format("YYYY-MM-DD"),
+  to: hardResetFormValues.to.format("YYYY-MM-DD"),
+  well_ids: [] as number[],
+  avgAll: false,
+  cmp1970: false,
+  cmpYear: undefined as number | undefined,
+  m_page: 0,
+  m_pageSize: 5,
+  a_page: 0,
+  a_pageSize: 5,
+};
+
 export const MonitoringWellsReportView = () => {
+  const navigate = useNavigate();
+  const search = Route.useSearch();
+
+  const hydratedRef = useRef(false);
+
+  // URL -> form defaults
+  const defaultValues = useMemo<FormValues>(() => {
+    const fallbackFrom = dayjs().startOf("month");
+    const fallbackTo = dayjs().endOf("month");
+
+    return {
+      from: isoToDayjs(search.from, fallbackFrom),
+      to: isoToDayjs(search.to, fallbackTo),
+      wells: [], // hydrate later
+      isAveragingAllWells: search.avgAll,
+      isComparingTo1970Average: search.cmp1970,
+      comparisonYear: search.cmpYear ?? null,
+    };
+  }, [search.from, search.to, search.avgAll, search.cmp1970, search.cmpYear]);
+
   const theme = useTheme();
   const baseStyle = css`
   font-weight: 500;
@@ -137,29 +188,82 @@ export const MonitoringWellsReportView = () => {
     select: (res) => res.items,
   });
 
-  const { control, reset, watch, setValue } = useForm({
-    resolver: yupResolver(schema),
-    defaultValues: defaultSchema,
+  const { control, reset, watch, setValue } = useForm<FormValues>({
+    resolver: yupResolver(schema) as any,
+    defaultValues,
   });
 
-  const wells = watch("wells");
-  const wellIds = useMemo(() => wells?.map((w) => w.id) ?? [], [wells]);
+  useEffect(() => {
+    if (!monitoredWellsQuery.data) return;
+
+    const idSet = new Set(search.well_ids ?? []);
+    const selected = groupedWells.filter((w) => idSet.has(w.id));
+
+    setValue("wells", selected, { shouldDirty: false, shouldValidate: true });
+
+    // mark hydrated AFTER we apply the URL -> form
+    hydratedRef.current = true;
+  }, [monitoredWellsQuery.data, search.well_ids, setValue]);
+
+  const setSearch = (updater: (prev: typeof search) => any) => {
+    navigate({
+      to: "/reports/monitoringwells",
+      search: (prev) => updater(prev as any),
+      replace: true,
+    });
+  };
 
   const from = watch("from");
   const to = watch("to");
 
-  const isAveragingAllWells = watch("isAveragingAllWells");
-  const isComparingTo1970Average = watch("isComparingTo1970Average");
-  const comparisonYear = watch("comparisonYear");
+  useEffect(() => {
+    const fromIso = dayjsToIso(from);
+    const toIso = dayjsToIso(to);
+
+    setSearch((prev) => ({
+      ...(prev as any),
+      from: fromIso ?? prev.from,
+      to: toIso ?? prev.to,
+      // reset paginations when filters change
+      m_page: 0,
+      a_page: 0,
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [from?.valueOf(), to?.valueOf()]);
+
+  const wells = watch("wells");
+  const wellIds = useMemo(() => wells?.map((w) => w.id) ?? [], [wells]);
 
   useEffect(() => {
-    if ((wells?.length ?? 0) < 2 && isAveragingAllWells) {
-      setValue("isAveragingAllWells", false, {
-        shouldDirty: true,
-        shouldValidate: true,
-      });
-    }
-  }, [wells, isAveragingAllWells, setValue]);
+    // Don't overwrite URL before we've hydrated from it
+    if (!hydratedRef.current) return;
+
+    setSearch((prev) => ({
+      ...(prev as any),
+      well_ids: wellIds.length ? wellIds : [],
+      m_page: 0,
+      a_page: 0,
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wellIds.join(",")]);
+
+  const avgAll = watch("isAveragingAllWells");
+  const cmp1970 = watch("isComparingTo1970Average");
+  const cmpYear = watch("comparisonYear");
+
+  useEffect(() => {
+    if (!hydratedRef.current) return;
+
+    setSearch((prev) => ({
+      ...(prev as any),
+      avgAll: !!avgAll,
+      cmp1970: !!cmp1970,
+      cmpYear: cmpYear ? Number(cmpYear) : undefined,
+      m_page: 0,
+      a_page: 0,
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [avgAll, cmp1970, cmpYear]);
 
   const manualMeasurementsQuery = useQuery<WellMeasurementDTO[], Error>({
     queryKey: [
@@ -167,17 +271,17 @@ export const MonitoringWellsReportView = () => {
       wellIds,
       from,
       to,
-      isAveragingAllWells,
-      isComparingTo1970Average,
-      comparisonYear,
+      avgAll,
+      cmp1970,
+      cmpYear,
     ],
     queryFn: () => {
       const searchParams = new URLSearchParams({
         from_date: from?.format("YYYY-MM-DD"),
         to_date: to?.format("YYYY-MM-DD"),
-        isAveragingAllWells: isAveragingAllWells.toString(),
-        isComparingTo1970Average: isComparingTo1970Average.toString(),
-        comparisonYear: comparisonYear ? comparisonYear.toString() : "",
+        isAveragingAllWells: avgAll.toString(),
+        isComparingTo1970Average: cmp1970.toString(),
+        comparisonYear: cmpYear ? cmpYear.toString() : "",
       });
 
       wellIds.forEach((id: number) => {
@@ -426,9 +530,9 @@ export const MonitoringWellsReportView = () => {
       from,
       to,
       wellIds,
-      isAveragingAllWells,
-      isComparingTo1970Average,
-      comparisonYear: comparisonYear ? comparisonYear.toString() : "",
+      isAveragingAllWells: avgAll,
+      isComparingTo1970Average: cmp1970,
+      comparisonYear: cmpYear ? cmpYear.toString() : "",
     });
   };
 
@@ -607,7 +711,14 @@ export const MonitoringWellsReportView = () => {
                       control={
                         <Switch
                           checked={!!value}
-                          onChange={(e) => onChange(e.target.checked)}
+                          onChange={(e) => {
+                            const next = e.target.checked;
+
+                            // Only prevent enabling when <2 wells.
+                            if (next && (wells?.length ?? 0) < 2) return;
+
+                            onChange(next);
+                          }}
                         />
                       }
                       label="Average DTWs across all wells"
@@ -676,38 +787,55 @@ export const MonitoringWellsReportView = () => {
                   Depth of Water over Time
                 </Typography>
                 <Box sx={{ width: "100%", height: 550 }}>
-                  <LineChart
-                    xAxis={[
-                      {
-                        data: allTimestamps,
-                        scaleType: "time",
-                        valueFormatter: (value) => {
-                          const date = dayjs(value);
-                          const isMidnight =
-                            date.hour() === 0 && date.minute() === 0;
-                          return isMidnight
-                            ? date.format("MMM D, YYYY")
-                            : date.format("MMM D, YYYY HH:mm");
+                  {series.length === 0 ? (
+                    <Box
+                      sx={{
+                        width: "100%",
+                        height: 550,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "text.secondary",
+                      }}
+                    >
+                      {wellIds.length === 0 ? (
+                        <Typography>
+                          Select at least one well to display data.
+                        </Typography>
+                      ) : (
+                        <Typography>No data to display.</Typography>
+                      )}
+                    </Box>
+                  ) : (
+                    <LineChart
+                      xAxis={[
+                        {
+                          data: allTimestamps,
+                          scaleType: "time",
+                          valueFormatter: (value) => {
+                            const date = dayjs(value);
+                            const isMidnight =
+                              date.hour() === 0 && date.minute() === 0;
+                            return isMidnight
+                              ? date.format("MMM D, YYYY")
+                              : date.format("MMM D, YYYY HH:mm");
+                          },
                         },
-                      },
-                    ]}
-                    yAxis={[
-                      {
-                        reverse: true,
-                      },
-                    ]}
-                    series={series}
-                    slotProps={{
-                      legend: {
-                        direction: "horizontal",
-                        position: {
-                          vertical: "bottom",
-                          horizontal: "center",
+                      ]}
+                      yAxis={[{ reverse: true }]}
+                      series={series}
+                      slotProps={{
+                        legend: {
+                          direction: "horizontal",
+                          position: {
+                            vertical: "bottom",
+                            horizontal: "center",
+                          },
                         },
-                      },
-                    }}
-                    sx={{ width: "100%", height: "100%" }}
-                  />
+                      }}
+                      sx={{ width: "100%", height: "100%" }}
+                    />
+                  )}
                 </Box>
               </Box>
             </Grid>
@@ -719,11 +847,23 @@ export const MonitoringWellsReportView = () => {
               disableColumnMenu
               disableRowSelectionOnClick
               hideFooterSelectedRowCount
-              pageSizeOptions={[5, 10, 25]}
-              initialState={{
-                pagination: {
-                  paginationModel: { pageSize: 5, page: 0 },
-                },
+              pagination
+              paginationModel={{
+                page: search.m_page,
+                pageSize: search.m_pageSize,
+              }}
+              pageSizeOptions={[5, 10, 25, 50]}
+              onPaginationModelChange={(m) => {
+                navigate({
+                  to: "/reports/monitoringwells",
+                  search: (prev) => ({
+                    ...(prev as any),
+                    m_pageSize: m.pageSize,
+                    m_page:
+                      m.pageSize !== (prev as any).m_pageSize ? 0 : m.page,
+                  }),
+                  replace: true,
+                });
               }}
             />
           </Grid>
@@ -767,18 +907,48 @@ export const MonitoringWellsReportView = () => {
                   disableColumnMenu
                   disableRowSelectionOnClick
                   hideFooterSelectedRowCount
-                  pageSizeOptions={[5, 10, 25]}
-                  initialState={{
-                    pagination: {
-                      paginationModel: { pageSize: 5, page: 0 },
-                    },
+                  pagination
+                  paginationModel={{
+                    page: search.a_page,
+                    pageSize: search.a_pageSize,
+                  }}
+                  pageSizeOptions={[5, 10, 25, 50]}
+                  onPaginationModelChange={(m) => {
+                    navigate({
+                      to: "/reports/monitoringwells",
+                      search: (prev) => ({
+                        ...(prev as any),
+                        a_pageSize: m.pageSize,
+                        a_page:
+                          m.pageSize !== (prev as any).a_pageSize ? 0 : m.page,
+                      }),
+                      replace: true,
+                    });
                   }}
                 />
               </Box>
             )}
           </Grid>
           <Grid item xs={12}>
-            <Button onClick={() => reset()}>Reset</Button>
+            <Button
+              onClick={() => {
+                reset(hardResetFormValues, {
+                  keepDirty: false,
+                  keepTouched: false,
+                });
+
+                navigate({
+                  to: "/reports/monitoringwells",
+                  search: (prev) => ({
+                    ...(prev as any),
+                    ...hardResetSearch,
+                  }),
+                  replace: true,
+                });
+              }}
+            >
+              Reset
+            </Button>
           </Grid>
         </CardContent>
       </Card>
