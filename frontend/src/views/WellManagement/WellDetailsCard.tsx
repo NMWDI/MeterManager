@@ -271,16 +271,14 @@ export const WellDetailsCard = ({
           <Grid container item xs={12} spacing={2}>
             <Grid item xs={12}>
               <Typography
-                textAlign="center"
                 variant="h4"
                 sx={{
-                  color: "#292929",
-                  fontWeight: "500",
+                  color: "text.primary",
                   marginBottom: 0,
-                  fontSize: 20,
+                  fontSize: 18,
                   textTransform: "uppercase",
+                  fontWeight: 600,
                 }}
-                fontWeight={600}
               >
                 Well Location
               </Typography>
