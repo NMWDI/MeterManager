@@ -104,6 +104,7 @@ export const Table = ({
           navigate({
             to: "/chlorides",
             search: (prev) => ({
+              ...(prev as any),
               regionId: prev.regionId ?? undefined,
               page: m.page,
               pageSize: m.pageSize,

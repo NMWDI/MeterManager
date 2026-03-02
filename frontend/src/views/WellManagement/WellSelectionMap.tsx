@@ -3,7 +3,6 @@ import { useDebounce } from "use-debounce";
 import { LayersControl, MapContainer, Marker, Tooltip } from "react-leaflet";
 import { Box, Typography } from "@mui/material";
 import { useNavigate } from "@tanstack/react-router";
-import { Route } from "@/routes/manage/wells";
 import { useGetWellLocations } from "@/service";
 import { Well } from "@/interfaces";
 import {

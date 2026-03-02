@@ -94,6 +94,7 @@ export const Table = ({
           navigate({
             to: "/monitoringwells",
             search: (prev) => ({
+              ...(prev as any),
               wellId: prev.wellId ?? undefined,
               page: m.page,
               pageSize: m.pageSize,
