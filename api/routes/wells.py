@@ -56,6 +56,28 @@ def get_well_status_types(
 
 
 @public_well_router.get(
+    "/wells/{well_id}",
+    response_model=well_schemas.WellResponse,
+    tags=["Wells"],
+)
+def get_well_by_id(well_id: int, db: Session = Depends(get_db)):
+    stmt = (
+        select(Wells)
+        .options(
+            joinedload(Wells.location),
+            joinedload(Wells.use_type),
+            joinedload(Wells.meters),
+            joinedload(Wells.well_status),
+        )
+        .where(Wells.id == well_id)
+    )
+    well = db.scalars(stmt).first()
+    if not well:
+        raise HTTPException(status_code=404, detail="Well not found")
+    return well
+
+
+@public_well_router.get(
     "/wells",
     response_model=LimitOffsetPage[well_schemas.WellResponse],
     tags=["Wells"],

@@ -115,6 +115,8 @@ function DMSInput({ dimension_type, value, onChange }: DMSInputProps) {
       value={dms_string}
       onChange={handleUpdate}
       onBlur={handleBlur}
+      fullWidth
+      size="small"
       InputProps={{
         inputComponent: DMSFormatCustom as any,
       }}

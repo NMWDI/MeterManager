@@ -421,6 +421,26 @@ export function useGetPropertyTypes() {
   );
 }
 
+export function useGetWellById(well_id?: number) {
+  const route = "wells";
+  const authHeader = useAuthHeader();
+  const navigate = useNavigate();
+  const signOut = useSignOut();
+
+  return useQuery<Well, Error>(
+    [route, "detail", well_id],
+    () =>
+      GETFetch(
+        `${route}/${well_id}`,
+        undefined,
+        authHeader(),
+        signOut,
+        navigate,
+      ),
+    { enabled: !!well_id },
+  );
+}
+
 export function useGetWells(params: WellListQueryParams | undefined) {
   const route = "wells";
   const authHeader = useAuthHeader();

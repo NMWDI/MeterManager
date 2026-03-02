@@ -2,6 +2,8 @@ import { useEffect } from "react";
 import { useDebounce } from "use-debounce";
 import { LayersControl, MapContainer, Marker, Tooltip } from "react-leaflet";
 import { Box, Typography } from "@mui/material";
+import { useNavigate } from "@tanstack/react-router";
+import { Route } from "@/routes/manage/wells";
 import { useGetWellLocations } from "@/service";
 import { Well } from "@/interfaces";
 import {
@@ -21,12 +23,12 @@ import MarkerClusterGroup from "@changey/react-leaflet-markercluster";
 import "@changey/react-leaflet-markercluster/dist/styles.min.css";
 
 export default function WellSelectionMap({
-  setSelectedWell,
   wellSearchQueryProp,
 }: {
   wellSearchQueryProp: string;
-  setSelectedWell: Function;
 }) {
+  const navigate = useNavigate();
+
   const [wellSearchDebounced] = useDebounce(wellSearchQueryProp, 250);
   const wellQuery = useGetWellLocations(wellSearchDebounced);
 
@@ -37,6 +39,19 @@ export default function WellSelectionMap({
   }, [wellQuery.hasNextPage, wellQuery.isFetchingNextPage]);
 
   const wellMarkers = wellQuery.data?.pages.flat() ?? [];
+
+  const handleSelectWell = (well: Well) => {
+    navigate({
+      to: "/manage/wells",
+      search: (prev) => ({
+        ...(prev as any),
+        well_id: well.id,
+        add: false,
+        tab: "map",
+      }),
+      replace: true,
+    });
+  };
 
   return (
     <>
@@ -96,7 +111,7 @@ export default function WellSelectionMap({
                         well.location?.longitude ?? 0,
                       ]}
                       eventHandlers={{
-                        click: () => setSelectedWell(well),
+                        click: () => handleSelectWell(well),
                       }}
                       icon={getWellIcon(well)}
                     >

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Card,
   CardContent,
@@ -10,23 +10,45 @@ import {
   InputAdornment,
 } from "@mui/material";
 import { FormatListBulletedOutlined } from "@mui/icons-material";
+import { useNavigate } from "@tanstack/react-router";
 import { Search } from "@mui/icons-material";
+import { Route } from "@/routes/manage/wells";
 import { CustomCardHeader, TabPanel } from "@/components";
 
-import WellSelectionTable from "./WellSelectionTable";
-import WellSelectionMap from "./WellSelectionMap";
+import WellSelectionTable from "@/views/WellManagement/WellSelectionTable";
+import WellSelectionMap from "@/views/WellManagement/WellSelectionMap";
 
-export const WellsTable = ({
-  setSelectedWell,
-  setWellAddMode,
-}: {
-  setSelectedWell: Function;
-  setWellAddMode: Function;
-}) => {
-  const [wellSearchQuery, setWellSearchQuery] = useState<string>("");
-  const [currentTabIndex, setCurrentTabIndex] = useState(0);
-  const handleTabChange = (_: React.SyntheticEvent, newTabIndex: number) =>
-    setCurrentTabIndex(newTabIndex);
+const tabToIndex = (tab: "list" | "map") => (tab === "list" ? 0 : 1);
+const indexToTab = (i: number): "list" | "map" => (i === 1 ? "map" : "list");
+
+export const WellsTable = () => {
+  const navigate = useNavigate();
+  const search = Route.useSearch();
+
+  const [qInput, setQInput] = useState(search.q ?? "");
+  useEffect(() => setQInput(search.q ?? ""), [search.q]);
+
+  const currentTabIndex = tabToIndex(search.tab);
+  const handleTabChange = (_: React.SyntheticEvent, newTabIndex: number) => {
+    navigate({
+      to: "/manage/wells",
+      search: (prev) => ({ ...(prev as any), tab: indexToTab(newTabIndex) }),
+      replace: true,
+    });
+  };
+
+  const applySearch = (value: string) => {
+    const next = value.trim();
+    navigate({
+      to: "/manage/wells",
+      search: (prev) => ({
+        ...(prev as any),
+        q: next || undefined,
+        page: 0, // reset paging on new search
+      }),
+      replace: true,
+    });
+  };
 
   return (
     <Card
@@ -60,8 +82,12 @@ export const WellsTable = ({
               placeholder="Search Wells..."
               variant="outlined"
               size="small"
-              value={wellSearchQuery}
-              onChange={(event: any) => setWellSearchQuery(event.target.value)}
+              value={qInput}
+              onChange={(e) => setQInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") applySearch(qInput);
+              }}
+              helperText="Press Enter to apply"
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -74,17 +100,10 @@ export const WellsTable = ({
         </Grid>
         <Box sx={{ height: "fit-content" }}>
           <TabPanel currentTabIndex={currentTabIndex} tabIndex={0}>
-            <WellSelectionTable
-              setSelectedWell={setSelectedWell}
-              wellSearchQueryProp={wellSearchQuery}
-              setWellAddMode={setWellAddMode}
-            />
+            <WellSelectionTable wellSearchQueryProp={search.q ?? ""} />
           </TabPanel>
           <TabPanel currentTabIndex={currentTabIndex} tabIndex={1}>
-            <WellSelectionMap
-              setSelectedWell={setSelectedWell}
-              wellSearchQueryProp={wellSearchQuery}
-            />
+            <WellSelectionMap wellSearchQueryProp={search.q ?? ""} />
           </TabPanel>
         </Box>
       </CardContent>

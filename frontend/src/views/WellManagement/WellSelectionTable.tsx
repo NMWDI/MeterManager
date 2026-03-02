@@ -1,10 +1,12 @@
-import { useEffect, useState, ReactNode } from "react";
+import { useEffect, useState, ReactNode, useMemo } from "react";
 import { Link } from "@tanstack/react-router";
 import { DataGrid, GridColDef, GridSortModel } from "@mui/x-data-grid";
 import { useDebounce } from "use-debounce";
 import { useAuthUser } from "react-auth-kit";
 import { Box, Button, Stack } from "@mui/material";
 import { Add } from "@mui/icons-material";
+import { useNavigate } from "@tanstack/react-router";
+import { Route } from "@/routes/manage/wells";
 import { SecurityScope, Well, WellListQueryParams } from "@/interfaces";
 import { useGetWells } from "@/service";
 import { SortDirection, WellSortByField } from "@/enums";
@@ -18,25 +20,31 @@ declare module "@mui/x-data-grid" {
 }
 
 export default function WellSelectionTable({
-  setSelectedWell,
   wellSearchQueryProp,
-  setWellAddMode,
 }: {
-  setSelectedWell: Function;
-  setWellAddMode: Function;
   wellSearchQueryProp: string;
 }) {
+  const navigate = useNavigate();
+  const search = Route.useSearch();
+
   const [wellSearchQueryDebounced] = useDebounce(wellSearchQueryProp, 250);
-  const [wellListQueryParams, setWellListQueryParams] =
-    useState<WellListQueryParams>();
   const [gridSortModel, setGridSortModel] = useState<GridSortModel>();
-  const [paginationModel, setPaginationModel] = useState({
-    pageSize: 25,
-    page: 0,
-  });
   const [gridRowCount, setGridRowCount] = useState<number>(100);
 
-  const wellsList = useGetWells(wellListQueryParams);
+  const queryParams = useMemo<WellListQueryParams>(
+    () => ({
+      search_string: wellSearchQueryDebounced || undefined,
+      sort_by:
+        (gridSortModel?.[0]?.field as WellSortByField) ?? WellSortByField.Name,
+      sort_direction:
+        (gridSortModel?.[0]?.sort as SortDirection) ?? SortDirection.Ascending,
+      limit: search.pageSize,
+      offset: search.page * search.pageSize,
+    }),
+    [wellSearchQueryDebounced, gridSortModel, search.page, search.pageSize],
+  );
+
+  const wellsList = useGetWells(queryParams);
 
   const authUser = useAuthUser();
   const hasAdminScope = authUser()
@@ -111,19 +119,6 @@ export default function WellSelectionTable({
       },
     },
   ];
-  // Filter rows based on query params
-  useEffect(() => {
-    const newParams = {
-      search_string: wellSearchQueryDebounced,
-      sort_by: gridSortModel?.at(0)?.field ?? WellSortByField.Name,
-      sort_direction:
-        (gridSortModel?.at(0)?.sort as SortDirection) ??
-        SortDirection.Ascending,
-      limit: paginationModel.pageSize,
-      offset: paginationModel.page * paginationModel.pageSize,
-    };
-    setWellListQueryParams(newParams);
-  }, [wellSearchQueryDebounced, gridSortModel, paginationModel]);
 
   useEffect(() => {
     setGridRowCount(wellsList.data?.total ?? 0); // Update the well count when new list is recieved from API
@@ -137,22 +132,44 @@ export default function WellSelectionTable({
       <DataGrid
         sx={{ border: "none" }}
         rows={wellsList.data?.items ?? []}
+        getRowId={(row) => row.id}
+        rowSelectionModel={search.well_id ? [search.well_id] : []}
         loading={wellsList.isPreviousData || wellsList.isLoading}
         columns={cols}
         sortingMode="server"
-        paginationMode="server"
         disableColumnMenu
         keepNonExistentRowsSelected
         onRowClick={(selectedRow) => {
-          setSelectedWell(
-            wellsList.data?.items.find(
-              (well: Well) => well.id == selectedRow.row.id,
-            ),
+          const well = wellsList.data?.items.find(
+            (well: Well) => well.id == selectedRow.row.id,
           );
+
+          navigate({
+            to: "/manage/wells",
+            search: (prev) => ({
+              ...(prev as any),
+              well_id: well?.id,
+              add: false,
+            }),
+            replace: true,
+          });
         }}
         onSortModelChange={setGridSortModel}
-        paginationModel={paginationModel}
-        onPaginationModelChange={setPaginationModel}
+        pagination
+        paginationMode="server"
+        paginationModel={{ page: search.page, pageSize: search.pageSize }}
+        pageSizeOptions={[10, 25, 50, 100]}
+        onPaginationModelChange={(m) => {
+          navigate({
+            to: "/manage/wells",
+            search: (prev) => ({
+              ...(prev as any),
+              pageSize: m.pageSize,
+              page: m.pageSize !== (prev as any).pageSize ? 0 : m.page,
+            }),
+            replace: true,
+          });
+        }}
         rowCount={gridRowCount}
         slots={{ footer: GridFooterWithButton }}
         slotProps={{
@@ -171,7 +188,17 @@ export default function WellSelectionTable({
                 <Button
                   variant="contained"
                   size="small"
-                  onClick={() => setWellAddMode(true)}
+                  onClick={() =>
+                    navigate({
+                      to: "/manage/wells",
+                      search: (prev) => ({
+                        ...(prev as any),
+                        add: true,
+                        well_id: undefined,
+                      }),
+                      replace: true,
+                    })
+                  }
                   sx={{ flexShrink: 0, width: { xs: "100%", sm: "auto" } }}
                 >
                   <Add fontSize="small" sx={{ mr: 0.5 }} />

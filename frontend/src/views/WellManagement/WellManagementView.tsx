@@ -1,32 +1,25 @@
-import { useEffect, useState } from "react";
 import { Grid } from "@mui/material";
+import { Route } from "@/routes/manage/wells";
 import { BackgroundBox } from "@/components";
-import { Well } from "@/interfaces";
 
-import { WellsTable } from "./WellsTable";
-import { WellDetailsCard } from "./WellDetailsCard";
+import { WellDetailsCard } from "@/views/WellManagement/WellDetailsCard";
+import { WellsTable } from "@/views/WellManagement/WellsTable";
+import { useGetWellById } from "@/service";
 
 export const WellManagementView = () => {
-  const [wellAddMode, setWellAddMode] = useState<boolean>(true);
-  const [selectedWell, setSelectedWell] = useState<Well>();
-
-  useEffect(() => {
-    if (selectedWell) setWellAddMode(false);
-  }, [selectedWell]);
+  const search = Route.useSearch();
+  const selectedWellQuery = useGetWellById(search.well_id);
 
   return (
     <BackgroundBox>
       <Grid container spacing={2}>
         <Grid item xs={12} lg={7}>
-          <WellsTable
-            setSelectedWell={setSelectedWell}
-            setWellAddMode={setWellAddMode}
-          />
+          <WellsTable />
         </Grid>
         <Grid item xs={12} lg={5}>
           <WellDetailsCard
-            selectedWell={selectedWell}
-            wellAddMode={wellAddMode}
+            selectedWell={selectedWellQuery?.data}
+            wellAddMode={search.add}
           />
         </Grid>
       </Grid>

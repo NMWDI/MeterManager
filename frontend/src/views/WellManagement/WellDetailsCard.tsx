@@ -10,6 +10,7 @@ import {
   FormControlLabel,
   Grid,
   Stack,
+  Typography,
 } from "@mui/material";
 import { Add, Edit, Save, SaveAs } from "@mui/icons-material";
 import { useAuthUser } from "react-auth-kit";
@@ -269,11 +270,20 @@ export const WellDetailsCard = ({
           </Grid>
           <Grid container item xs={12} spacing={2}>
             <Grid item xs={12}>
-              <h4
-                style={{ color: "#292929", fontWeight: "500", marginBottom: 0 }}
+              <Typography
+                textAlign="center"
+                variant="h4"
+                sx={{
+                  color: "#292929",
+                  fontWeight: "500",
+                  marginBottom: 0,
+                  fontSize: 20,
+                  textTransform: "uppercase",
+                }}
+                fontWeight={600}
               >
                 Well Location
-              </h4>
+              </Typography>
             </Grid>
             <Grid item xs={6}>
               <ControlledDMS
