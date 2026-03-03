@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Delete, Add, Handyman, Clear } from "@mui/icons-material";
 import {
   DataGrid,
@@ -27,9 +27,13 @@ import {
 } from "@mui/material";
 import { GridFooterWithButton } from "@/components";
 import { Create } from "@/components/Modals/WorkOrders";
-import { MeterActivity, NewWorkOrder } from "@/interfaces";
+import { MeterActivity, NewWorkOrder, User } from "@/interfaces";
 import { useSnackbar } from "notistack";
 import { Route } from "@/routes/workorders";
+import {
+  getRoleLabel,
+  sortUsersByRoleThenName,
+} from "@/utils/UserRoleGrouping";
 
 const STATUS_OPTIONS: WorkOrderStatus[] = [
   WorkOrderStatus.Open,
@@ -54,6 +58,10 @@ export const WorkOrdersTable = () => {
       .includes("admin") ?? false;
 
   const userList = useGetUserList();
+
+  const sortedUsers = useMemo<User[]>(() => {
+    return sortUsersByRoleThenName((userList.data ?? []) as User[]);
+  }, [userList.data]);
 
   const getUserFromID = (id: number | undefined) =>
     userList.data?.find((u) => u.id === id)?.full_name ?? "";
@@ -315,7 +323,7 @@ export const WorkOrdersTable = () => {
       minWidth: 200,
       valueGetter: (id: number) => getUserFromID(id),
       type: "singleSelect",
-      valueOptions: userList.data?.map((user) => user.full_name) ?? [],
+      valueOptions: sortedUsers.map((user) => user.full_name),
       editable: hasAdminScope,
     },
     {
@@ -426,28 +434,43 @@ export const WorkOrdersTable = () => {
             sx={{ minWidth: 260 }}
             renderInput={(params) => <TextField {...params} label="Status" />}
           />
-          <Autocomplete
-            size="small"
-            disabled={!hasAdminScope}
-            options={userList.data?.map((u) => u.full_name) ?? []}
-            value={assigned_user_id ? getUserFromID(assigned_user_id) : null}
-            onChange={(_, name) => {
-              const id = name ? getUserIDfromName(name) : undefined;
-              setSearch((p) => ({ ...p, assigned_user_id: id, page: 0 }));
-            }}
-            sx={{ minWidth: 260 }}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label={
-                  hasAdminScope
-                    ? "Assigned technician"
-                    : "Assigned (admin only)"
-                }
-              />
-            )}
-          />
-
+          {hasAdminScope && (
+            <Autocomplete
+              size="small"
+              disabled={!hasAdminScope}
+              options={sortedUsers}
+              groupBy={(option: User) => getRoleLabel(option)}
+              getOptionLabel={(option: User) => option.full_name ?? ""}
+              isOptionEqualToValue={(option: User, value: User) =>
+                option.id === value.id
+              }
+              value={
+                assigned_user_id
+                  ? (sortedUsers.find((u) => u.id === assigned_user_id) ?? null)
+                  : null
+              }
+              onChange={(_, user) => {
+                const id = user?.id;
+                setSearch((p) => ({ ...p, assigned_user_id: id, page: 0 }));
+              }}
+              sx={{ minWidth: 260 }}
+              renderOption={(props, option) => (
+                <li {...props} key={option.id}>
+                  {option.full_name}
+                </li>
+              )}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label={
+                    hasAdminScope
+                      ? "Assigned technician"
+                      : "Assigned (admin only)"
+                  }
+                />
+              )}
+            />
+          )}
           <TextField
             size="small"
             label="Search"

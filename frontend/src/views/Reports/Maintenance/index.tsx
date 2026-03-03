@@ -36,6 +36,7 @@ import {
 } from "@/components";
 import { API_URL, ROLE_IDS } from "@/config";
 import { User } from "@/interfaces";
+import { getRoleLabel, sortUsersByRoleThenName } from "@/utils/UserRoleGrouping";
 
 type FormValues = {
   from: Dayjs;
@@ -104,14 +105,7 @@ export const MaintenanceReportView = () => {
 
   const technicianOptions = useMemo<User[]>(() => {
     const users = (techiciansQuery.data ?? []) as User[];
-
-    return [...users].sort((a, b) => {
-      const ra = roleOrder[getRoleLabel(a)];
-      const rb = roleOrder[getRoleLabel(b)];
-      if (ra !== rb) return ra - rb;
-
-      return (a.full_name ?? "").localeCompare(b.full_name ?? "");
-    });
+    return sortUsersByRoleThenName(users);
   }, [techiciansQuery.data]);
 
   // URL -> RHF default values (technicians are hydrated after users load)
@@ -632,26 +626,4 @@ export const MaintenanceReportView = () => {
       </Card>
     </BackgroundBox>
   );
-};
-
-type RoleLabel = "Admin" | "Technician" | "OSE" | "Unknown";
-
-const getRoleLabel = (u: User): RoleLabel => {
-  switch (u.user_role_id) {
-    case ROLE_IDS.ADMIN:
-      return "Admin";
-    case ROLE_IDS.TECHNICIAN:
-      return "Technician";
-    case ROLE_IDS.OSE:
-      return "OSE";
-    default:
-      return "Unknown";
-  }
-};
-
-const roleOrder: Record<RoleLabel, number> = {
-  Admin: 2,
-  Technician: 1,
-  OSE: 3,
-  Unknown: 99,
 };
