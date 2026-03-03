@@ -102,8 +102,16 @@ export const MaintenanceReportView = () => {
     refetchOnReconnect: false,
   });
 
-  const technicianOptions = useMemo(() => {
-    return techiciansQuery.data ?? [];
+  const technicianOptions = useMemo<User[]>(() => {
+    const users = (techiciansQuery.data ?? []) as User[];
+
+    return [...users].sort((a, b) => {
+      const ra = roleOrder[getRoleLabel(a)];
+      const rb = roleOrder[getRoleLabel(b)];
+      if (ra !== rb) return ra - rb;
+
+      return (a.full_name ?? "").localeCompare(b.full_name ?? "");
+    });
   }, [techiciansQuery.data]);
 
   // URL -> RHF default values (technicians are hydrated after users load)
@@ -455,6 +463,7 @@ export const MaintenanceReportView = () => {
                     }));
                   }
                 }}
+                groupBy={(option: User) => getRoleLabel(option)}
                 renderInput={(params: Parameters<typeof TextField>[0]) => {
                   if (techiciansQuery.isLoading && params.inputProps) {
                     params.inputProps.value = "Loading...";
@@ -623,4 +632,26 @@ export const MaintenanceReportView = () => {
       </Card>
     </BackgroundBox>
   );
+};
+
+type RoleLabel = "Admin" | "Technician" | "OSE" | "Unknown";
+
+const getRoleLabel = (u: User): RoleLabel => {
+  switch (u.user_role_id) {
+    case ROLE_IDS.ADMIN:
+      return "Admin";
+    case ROLE_IDS.TECHNICIAN:
+      return "Technician";
+    case ROLE_IDS.OSE:
+      return "OSE";
+    default:
+      return "Unknown";
+  }
+};
+
+const roleOrder: Record<RoleLabel, number> = {
+  Admin: 2,
+  Technician: 1,
+  OSE: 3,
+  Unknown: 99,
 };
