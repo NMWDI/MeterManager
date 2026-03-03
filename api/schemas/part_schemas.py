@@ -70,6 +70,18 @@ class PartHistoryRow(ORMBase):
     total_after: int
 
 
+class PartHistoryUpdateRow(ORMBase):
+    ref_id: int
+    event_date: datetime
+    event_type: Literal["added", "used"]
+    note: str | None = None
+    delta: int
+
+
+class PartHistoryUpdateRequest(ORMBase):
+    rows: List[PartHistoryUpdateRow]
+
+
 class PartHistoryResponse(ORMBase):
     part_id: int
     part_number: str

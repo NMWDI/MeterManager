@@ -16,7 +16,6 @@ from api.models.main_models import (
     MeterTypeLU,
     meterRegisters,
     MeterActivities,
-    workOrders,
 )
 from api.schemas import part_schemas
 from api.session import get_db
@@ -34,6 +33,92 @@ templates = Environment(
 )
 
 part_router = APIRouter()
+
+
+def _build_part_history_response(part_id: int, db: Session) -> part_schemas.PartHistoryResponse:
+    part = db.scalars(select(Parts).where(Parts.id == part_id)).first()
+    if not part:
+        raise HTTPException(status_code=404, detail="Part not found")
+
+    added_q = select(
+        PartsAdded.id.label("ref_id"),
+        PartsAdded.part_id.label("part_id"),
+        PartsAdded.date.label("event_date"),
+        literal("added").label("event_type"),
+        PartsAdded.note.label("note"),
+        PartsAdded.count.label("delta"),
+        literal(None).label("work_order_id"),
+    ).where(PartsAdded.part_id == part_id)
+
+    used_q = (
+        select(
+            PartsUsed.id.label("ref_id"),
+            PartsUsed.part_id.label("part_id"),
+            MeterActivities.timestamp_start.label("event_date"),
+            literal("used").label("event_type"),
+            func.nullif(func.trim(MeterActivities.description), "").label("note"),
+            (-PartsUsed.count).label("delta"),
+            MeterActivities.work_order_id.label("work_order_id"),
+        )
+        .join(MeterActivities, MeterActivities.id == PartsUsed.meter_activity_id)
+        .where(PartsUsed.part_id == part_id)
+    )
+
+    events = union_all(added_q, used_q).subquery()
+
+    rows = db.execute(
+        select(
+            events.c.ref_id,
+            events.c.part_id,
+            events.c.event_date,
+            events.c.event_type,
+            events.c.note,
+            events.c.delta,
+            events.c.work_order_id,
+        ).order_by(events.c.event_date.asc(), events.c.ref_id.asc())
+    ).all()
+
+    running = int(part.initial_count)
+    history: list[part_schemas.PartHistoryRow] = [
+        part_schemas.PartHistoryRow(
+            row_id=f"initial-{part_id}",
+            part_id=part_id,
+            event_date=datetime.min,
+            event_type="initial",
+            ref_id=None,
+            note="Initial count",
+            delta=0,
+            total_after=running,
+            work_order_id=None,
+        )
+    ]
+
+    for ref_id, pid, event_date, event_type, note, delta, work_order_id in rows:
+        if not isinstance(event_date, datetime):
+            event_date = datetime.combine(event_date, time.min)
+
+        running += int(delta)
+        history.append(
+            part_schemas.PartHistoryRow(
+                row_id=f"{event_type}-{ref_id}",
+                part_id=pid,
+                event_date=event_date,
+                event_type=event_type,
+                ref_id=ref_id,
+                note=note,
+                delta=int(delta),
+                total_after=running,
+                work_order_id=work_order_id,
+            )
+        )
+
+    return part_schemas.PartHistoryResponse(
+        part_id=part.id,
+        part_number=part.part_number,
+        initial_count=part.initial_count,
+        current_count=running,
+        history=history,
+    )
 
 
 @part_router.get(
@@ -457,102 +542,87 @@ def add_parts(payload: part_schemas.PartsAddRequest, db: Session = Depends(get_d
     tags=["Parts"],
 )
 def get_part_history(part_id: int, db: Session = Depends(get_db)):
+    return _build_part_history_response(part_id, db)
+
+
+@part_router.patch(
+    "/parts/{part_id}/history",
+    response_model=part_schemas.PartHistoryResponse,
+    dependencies=[Depends(ScopedUser.Admin)],
+    tags=["Parts"],
+)
+def patch_part_history(
+    part_id: int,
+    payload: part_schemas.PartHistoryUpdateRequest,
+    db: Session = Depends(get_db),
+):
     part = db.scalars(select(Parts).where(Parts.id == part_id)).first()
     if not part:
         raise HTTPException(status_code=404, detail="Part not found")
 
-    # ADDED events (date is a DATE)
-    added_q = select(
-        PartsAdded.id.label("ref_id"),
-        PartsAdded.part_id.label("part_id"),
-        PartsAdded.date.label("event_date"),  # date
-        literal("added").label("event_type"),
-        PartsAdded.note.label("note"),
-        PartsAdded.count.label("delta"),
-        literal(None).label("work_order_id"),
-    ).where(PartsAdded.part_id == part_id)
+    for row in payload.rows:
+        normalized_note = row.note.strip() if row.note else None
+        if normalized_note == "":
+            normalized_note = None
 
-    # USED events (datetime comes from MeterActivities.timestamp_start)
-    used_q = (
-        select(
-            PartsUsed.id.label("ref_id"),
-            PartsUsed.part_id.label("part_id"),
-            MeterActivities.timestamp_start.label("event_date"),  # datetime
-            literal("used").label("event_type"),
-            func.coalesce(
-                func.nullif(func.trim(MeterActivities.description), ""),
-                func.nullif(func.trim(workOrders.description), ""),
-                func.nullif(func.trim(workOrders.notes), ""),
-                func.nullif(func.trim(workOrders.title), ""),
-            ).label("note"),
-            (-PartsUsed.count).label("delta"),
-            MeterActivities.work_order_id.label("work_order_id"),
-        )
-        .join(MeterActivities, MeterActivities.id == PartsUsed.meter_activity_id)
-        .outerjoin(
-            workOrders,
-            workOrders.id == MeterActivities.work_order_id,
-        )
-        .where(PartsUsed.part_id == part_id)
-    )
+        if row.event_type == "added":
+            if row.delta <= 0:
+                raise HTTPException(
+                    status_code=422,
+                    detail="Added parts rows must have a positive change.",
+                )
 
-    events = union_all(added_q, used_q).subquery()
+            added_row = db.scalars(
+                select(PartsAdded).where(
+                    PartsAdded.id == row.ref_id,
+                    PartsAdded.part_id == part_id,
+                )
+            ).first()
+            if not added_row:
+                raise HTTPException(status_code=404, detail="Parts added row not found.")
 
-    rows = db.execute(
-        select(
-            events.c.ref_id,
-            events.c.part_id,
-            events.c.event_date,
-            events.c.event_type,
-            events.c.note,
-            events.c.delta,
-            events.c.work_order_id,
-        ).order_by(events.c.event_date.asc(), events.c.ref_id.asc())
-    ).all()
+            added_row.count = row.delta
+            added_row.date = row.event_date.date()
+            added_row.note = normalized_note
+            continue
 
-    running = int(part.initial_count)
-
-    history: list[part_schemas.PartHistoryRow] = [
-        part_schemas.PartHistoryRow(
-            row_id=f"initial-{part_id}",
-            part_id=part_id,
-            event_date=datetime.min,
-            event_type="initial",
-            ref_id=None,
-            note="Initial count",
-            delta=0,
-            total_after=running,
-            work_order_id=None,
-        )
-    ]
-
-    for ref_id, pid, event_date, event_type, note, delta, work_order_id in rows:
-        # convert DATE -> DATETIME if needed
-        if not isinstance(event_date, datetime):
-            event_date = datetime.combine(event_date, time.min)
-
-        running += int(delta)
-
-        history.append(
-            part_schemas.PartHistoryRow(
-                row_id=f"{event_type}-{ref_id}",
-                part_id=pid,
-                event_date=event_date,
-                event_type=event_type,
-                ref_id=ref_id,
-                note=note,
-                delta=int(delta),
-                total_after=running,
-                work_order_id=work_order_id,
+        if row.delta >= 0:
+            raise HTTPException(
+                status_code=422,
+                detail="Work order rows must have a negative change.",
             )
-        )
 
-    current_count = running
+        parts_used_row = db.scalars(
+            select(PartsUsed).where(
+                PartsUsed.id == row.ref_id,
+                PartsUsed.part_id == part_id,
+            )
+        ).first()
+        if not parts_used_row:
+            raise HTTPException(status_code=404, detail="Parts used row not found.")
 
-    return part_schemas.PartHistoryResponse(
-        part_id=part.id,
-        part_number=part.part_number,
-        initial_count=part.initial_count,
-        current_count=current_count,
-        history=history,
-    )
+        activity = db.scalars(
+            select(MeterActivities).where(
+                MeterActivities.id == parts_used_row.meter_activity_id
+            )
+        ).first()
+        if not activity:
+            raise HTTPException(
+                status_code=404,
+                detail="Meter activity for parts used row not found.",
+            )
+
+        original_start = activity.timestamp_start
+        original_end = activity.timestamp_end
+        duration = original_end - original_start if original_end and original_start else None
+
+        parts_used_row.count = abs(row.delta)
+        activity.timestamp_start = row.event_date
+        activity.description = normalized_note
+        if duration is not None:
+            activity.timestamp_end = row.event_date + duration
+        else:
+            activity.timestamp_end = row.event_date
+
+    db.commit()
+    return _build_part_history_response(part_id, db)

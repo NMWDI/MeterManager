@@ -55,7 +55,10 @@ import { IncreaseQuantityPayload } from "@/interfaces";
 import { WorkOrderStatus } from "@/enums";
 import { API_URL } from "@/config";
 import { useNavigate } from "@tanstack/react-router";
-import { PartHistoryResponse } from "@/interfaces/PartHistoryResponse";
+import {
+  PartHistoryResponse,
+  UpdatePartHistoryPayload,
+} from "@/interfaces/PartHistoryResponse";
 
 // Date display util
 export function toGMT6String(date: Date) {
@@ -1728,4 +1731,60 @@ export function useGetPartHistory(partId?: string) {
       ),
     { enabled: !!partId, keepPreviousData: true },
   );
+}
+
+export function useUpdatePartHistory(
+  partId?: string,
+  onSuccess?: (response: PartHistoryResponse) => void,
+) {
+  const { enqueueSnackbar } = useSnackbar();
+  const authHeader = useAuthHeader();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: UpdatePartHistoryPayload) => {
+      if (!partId) {
+        throw new Error("Missing part id");
+      }
+
+      const response = await PATCHFetch(`parts/${partId}/history`, payload, authHeader());
+
+      if (!response.ok) {
+        let detail = "";
+        try {
+          const json = await response.json();
+          detail = json?.detail ? ` (${json.detail})` : "";
+        } catch {}
+
+        if (response.status === 404) {
+          enqueueSnackbar(`Part history row not found${detail}`, {
+            variant: "error",
+          });
+          throw new Error(`Part history row not found${detail}`);
+        }
+
+        if (response.status === 422) {
+          enqueueSnackbar(`Invalid history update${detail}`, {
+            variant: "error",
+          });
+          throw new Error(`Invalid history update${detail}`);
+        }
+
+        enqueueSnackbar(`Unknown error occurred! (${response.status})${detail}`, {
+          variant: "error",
+        });
+        throw new Error(`Unknown Error: ${response.status}${detail}`);
+      }
+
+      const responseJson: PartHistoryResponse = await response.json();
+
+      queryClient.setQueryData(["parts-history", partId], responseJson);
+      queryClient.invalidateQueries({ queryKey: ["parts"] });
+      queryClient.invalidateQueries({ queryKey: ["part"] });
+
+      onSuccess?.(responseJson);
+      return responseJson;
+    },
+    retry: 0,
+  });
 }

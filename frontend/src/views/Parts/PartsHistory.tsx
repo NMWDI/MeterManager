@@ -14,7 +14,7 @@ import {
   Snackbar,
   Alert,
 } from "@mui/material";
-import { ArrowBack, History, Save, Search } from "@mui/icons-material";
+import { ArrowBack, History, PlusOne, Save, Search } from "@mui/icons-material";
 import {
   DataGrid,
   GridColDef,
@@ -30,11 +30,22 @@ import {
   EventTypeChip,
   ControlledDatepicker,
   ControlledSelectNonObject,
+  IncreaseQuantityModal,
 } from "@/components";
-import { useGetPartHistory } from "@/service";
+import {
+  useAddParts,
+  useGetPartHistory,
+  useGetParts,
+  useUpdatePartHistory,
+} from "@/service";
 import { useForm } from "react-hook-form";
 import { DateTimePicker } from "@mui/x-date-pickers";
 import { Route } from "@/routes/manage/parts/$id/history";
+import {
+  EditablePartHistoryRow,
+  PartHistoryResponse,
+} from "@/interfaces/PartHistoryResponse";
+import { useSnackbar } from "notistack";
 
 type EventType = "initial" | "used" | "added" | "current";
 
@@ -72,15 +83,74 @@ const defaultSchema = {
   )[],
 };
 
+function recalculateRows(sourceRows: any[]) {
+  const initialRow = sourceRows.find((row) => row.event_type === "initial");
+  const currentRow = sourceRows.find((row) => row.event_type === "current");
+  const historyRows = sourceRows
+    .filter(
+      (row) => row.event_type !== "initial" && row.event_type !== "current",
+    )
+    .sort((a, b) => {
+      const dateDiff =
+        new Date(a.event_date).getTime() - new Date(b.event_date).getTime();
+      if (dateDiff !== 0) return dateDiff;
+      return Number(a.ref_id ?? 0) - Number(b.ref_id ?? 0);
+    });
+
+  let running = Number(initialRow?.total_after ?? 0);
+  const nextRows = initialRow ? [{ ...initialRow, total_after: running }] : [];
+
+  historyRows.forEach((row) => {
+    running += Number(row.delta ?? 0);
+    nextRows.push({ ...row, total_after: running });
+  });
+
+  if (currentRow) {
+    nextRows.push({ ...currentRow, total_after: running });
+  }
+
+  return nextRows;
+}
+
+function hydrateRows(data: PartHistoryResponse, partId?: string) {
+  const raw = data.history ?? [];
+  const currentRow =
+    data.current_count != null
+      ? {
+          row_id: `current-${partId ?? "unknown"}`,
+          part_id: Number(partId),
+          event_date: dayjs().toISOString(),
+          event_type: "current",
+          ref_id: null,
+          note: "Current count",
+          delta: 0,
+          total_after: data.current_count,
+          work_order_id: null,
+        }
+      : null;
+
+  return recalculateRows(currentRow ? [...raw, currentRow] : raw);
+}
+
 export const PartsHistory = () => {
   const { id } = useParams({ from: "/manage/parts/$id/history" });
   const navigate = useNavigate();
   const search = Route.useSearch();
   const history = useGetPartHistory(id);
+  const partsList = useGetParts();
+  const addParts = useAddParts();
+  const { enqueueSnackbar } = useSnackbar();
+  const updateHistory = useUpdatePartHistory(id, (response) => {
+    const nextRows = hydrateRows(response, id);
+    setRows(nextRows);
+    setOriginalRows(nextRows);
+    setHasChanges(false);
+  });
 
   const [rows, setRows] = useState<any[]>([]);
   const [originalRows, setOriginalRows] = useState<any[]>([]);
   const [hasChanges, setHasChanges] = useState(false);
+  const [increaseOpen, setIncreaseOpen] = useState(false);
   const [snackbar, setSnackbar] = useState<{
     message: string;
     severity: "success" | "error";
@@ -94,9 +164,7 @@ export const PartsHistory = () => {
   const defaultValues = useMemo<PartsHistoryFormValues>(
     () => ({
       from: search.from ? dayjs(search.from, "YYYY-MM-DD") : null,
-      to: search.to
-        ? dayjs(search.to, "YYYY-MM-DD")
-        : dayjs().endOf("month"),
+      to: search.to ? dayjs(search.to, "YYYY-MM-DD") : dayjs().endOf("month"),
       event_types: search.type,
     }),
     [search.from, search.to, search.type],
@@ -122,25 +190,9 @@ export const PartsHistory = () => {
   useEffect(() => {
     if (!history.data) return;
 
-    const raw = history.data.history ?? [];
-    const currentRow =
-      history.data.current_count != null
-        ? {
-            row_id: `current-${id ?? "unknown"}`,
-            part_id: Number(id),
-            event_date: dayjs().toISOString(),
-            event_type: "current",
-            ref_id: null,
-            note: "Current count",
-            delta: 0,
-            total_after: history.data.current_count,
-            work_order_id: null,
-          }
-        : null;
-
-    const withCurrent = currentRow ? [...raw, currentRow] : raw;
-    setRows(withCurrent);
-    setOriginalRows(withCurrent); // snapshot on load
+    const nextRows = hydrateRows(history.data, id);
+    setRows(nextRows);
+    setOriginalRows(nextRows);
     setHasChanges(false);
   }, [history.data, id]);
 
@@ -209,7 +261,17 @@ export const PartsHistory = () => {
     }
 
     setRows((prevRows) =>
-      prevRows.map((r) => (r.row_id === newRow.row_id ? { ...newRow } : r)),
+      recalculateRows(
+        prevRows.map((r) =>
+          r.row_id === newRow.row_id
+            ? {
+                ...newRow,
+                delta: Number(newRow.delta ?? 0),
+                note: newRow.note ?? null,
+              }
+            : r,
+        ),
+      ),
     );
 
     setHasChanges(true);
@@ -218,15 +280,44 @@ export const PartsHistory = () => {
 
   const handleSave = async () => {
     try {
-      // Example: await updatePartHistory(id, rows);
-      // For now, just simulate success
-      setOriginalRows(rows); // accept changes
-      setHasChanges(false);
+      const changedRows = rows
+        .filter(
+          (row) => row.event_type === "added" || row.event_type === "used",
+        )
+        .filter((row) => {
+          const originalRow = originalRows.find(
+            (candidate) => candidate.row_id === row.row_id,
+          );
+
+          if (!originalRow) return false;
+
+          return (
+            Number(originalRow.delta) !== Number(row.delta) ||
+            (originalRow.note ?? "") !== (row.note ?? "") ||
+            !dayjs(originalRow.event_date).isSame(dayjs(row.event_date))
+          );
+        })
+        .map(
+          (row): EditablePartHistoryRow => ({
+            ref_id: Number(row.ref_id),
+            event_type: row.event_type,
+            event_date: dayjs(row.event_date).toISOString(),
+            note: row.note ?? null,
+            delta: Number(row.delta),
+          }),
+        );
+
+      if (!changedRows.length) {
+        setHasChanges(false);
+        return;
+      }
+
+      await updateHistory.mutateAsync({ rows: changedRows });
       setSnackbar({
         message: "Changes saved successfully",
         severity: "success",
       });
-    } catch (err) {
+    } catch {
       setSnackbar({ message: "Failed to save changes", severity: "error" });
     }
   };
@@ -381,13 +472,37 @@ export const PartsHistory = () => {
         <CardContent>
           <Grid container spacing={2}>
             <Grid item xs={12}>
-              <Link to="/manage/parts">
-                <Tooltip title="Go back" placement="right">
-                  <IconButton aria-label="return to reports page">
-                    <ArrowBack />
-                  </IconButton>
-                </Tooltip>
-              </Link>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 2,
+                  flexWrap: "wrap",
+                }}
+              >
+                <Link to="/manage/parts">
+                  <Tooltip title="Go back" placement="right">
+                    <IconButton aria-label="return to reports page">
+                      <ArrowBack />
+                    </IconButton>
+                  </Tooltip>
+                </Link>
+                <Button
+                  variant="outlined"
+                  color="secondary"
+                  size="small"
+                  onClick={() => setIncreaseOpen(true)}
+                  disabled={
+                    partsList.isLoading ||
+                    !partsList.data ||
+                    partsList.data.length === 0
+                  }
+                  startIcon={<PlusOne fontSize="small" />}
+                >
+                  Increase Quantity
+                </Button>
+              </Box>
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
               <ControlledDatepicker
@@ -515,6 +630,7 @@ export const PartsHistory = () => {
                                 variant="contained"
                                 color="success"
                                 onClick={handleSave}
+                                disabled={updateHistory.isLoading}
                                 sx={{
                                   flexShrink: 0,
                                   width: { xs: "100%", sm: "auto" },
@@ -564,6 +680,32 @@ export const PartsHistory = () => {
           {snackbar?.message}
         </Alert>
       </Snackbar>
+      <IncreaseQuantityModal
+        open={increaseOpen}
+        onClose={() => setIncreaseOpen(false)}
+        parts={partsList.data ?? []}
+        defaultPartId={id ? Number(id) : undefined}
+        loading={addParts.isLoading}
+        onSubmit={(payload) => {
+          addParts.mutate(payload, {
+            onSuccess: async () => {
+              enqueueSnackbar("Quantity increase submitted successfully.", {
+                variant: "success",
+              });
+              setIncreaseOpen(false);
+              await Promise.all([partsList.refetch(), history.refetch()]);
+            },
+            onError: () => {
+              enqueueSnackbar(
+                "Failed to submit quantity increase. Please try again.",
+                {
+                  variant: "error",
+                },
+              );
+            },
+          });
+        }}
+      />
     </BackgroundBox>
   );
 };
