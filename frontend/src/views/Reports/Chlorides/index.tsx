@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { ArrowBack, PictureAsPdf, Science } from "@mui/icons-material";
 import { useMutation, useQuery } from "react-query";
 import dayjs, { Dayjs } from "dayjs";
@@ -23,12 +23,12 @@ import {
   Marker,
   Tooltip as MapTooltip,
 } from "react-leaflet";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import L from "leaflet";
-
+import { Route } from "@/routes/reports/chlorides";
 import { API_URL } from "@/config";
 import {
   ControlledDatepicker,
@@ -50,6 +50,11 @@ import { WellStatus } from "@/enums";
 import MarkerClusterGroup from "@changey/react-leaflet-markercluster";
 import "leaflet/dist/leaflet.css";
 import "@changey/react-leaflet-markercluster/dist/styles.min.css";
+
+type FormValues = {
+  from: Dayjs;
+  to: Dayjs;
+};
 
 const schema = yup.object().shape({
   from: yup.mixed<Dayjs>().nullable().required("From date is required"),
@@ -83,14 +88,55 @@ interface iChlorideReportNums {
   west: iMinMaxAvgMedCount;
 }
 
+const isoToDayjs = (s?: string, fallback?: Dayjs) =>
+  s ? dayjs(s, "YYYY-MM-DD") : (fallback ?? dayjs());
+
 export const ChloridesReportView = () => {
+  const navigate = useNavigate();
+  const search = Route.useSearch();
+
+  const defaultValues = useMemo<FormValues>(() => {
+    const fallbackFrom = dayjs().startOf("month");
+    const fallbackTo = dayjs().endOf("month");
+
+    return {
+      from: isoToDayjs(search.from, fallbackFrom),
+      to: isoToDayjs(search.to, fallbackTo),
+    };
+  }, [search.from, search.to]);
+
   const { control, reset, watch } = useForm({
     resolver: yupResolver(schema),
-    defaultValues: defaultSchema,
+    defaultValues,
   });
+
+  // If user hits back/forward or URL is edited, keep form in sync
+  useEffect(() => {
+    reset(defaultValues, { keepDirty: false, keepTouched: false });
+  }, [defaultValues, reset]);
 
   const from = watch("from");
   const to = watch("to");
+
+  const setSearch = (updater: (prev: typeof search) => any) => {
+    navigate({
+      to: "/reports/chlorides",
+      search: (prev) => updater(prev as any),
+      replace: true,
+    });
+  };
+
+  // form -> URL
+  useEffect(() => {
+    if (!from || !to) return;
+
+    setSearch((prev) => ({
+      ...(prev as any),
+      from: from.format("YYYY-MM-DD"),
+      to: to.format("YYYY-MM-DD"),
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [from?.valueOf(), to?.valueOf()]);
 
   const authHeader = useAuthHeader();
   const fetchWithAuth = useFetchWithAuth();
@@ -444,7 +490,27 @@ export const ChloridesReportView = () => {
           </Grid>
           <Grid container>
             <Grid item>
-              <Button onClick={() => reset()}>Reset</Button>
+              <Button
+                onClick={() => {
+                  const hardFrom = dayjs().startOf("month");
+                  const hardTo = dayjs().endOf("month");
+
+                  // update URL first
+                  navigate({
+                    to: "/reports/chlorides",
+                    search: (prev) => ({
+                      ...(prev as any),
+                      from: hardFrom.format("YYYY-MM-DD"),
+                      to: hardTo.format("YYYY-MM-DD"),
+                    }),
+                    replace: true,
+                  });
+
+                  reset({ from: hardFrom, to: hardTo });
+                }}
+              >
+                Reset
+              </Button>
             </Grid>
           </Grid>
         </CardContent>
