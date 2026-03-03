@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "@tanstack/react-router";
+import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import {
   Box,
   Card,
@@ -34,6 +34,7 @@ import {
 import { useGetPartHistory } from "@/service";
 import { useForm } from "react-hook-form";
 import { DateTimePicker } from "@mui/x-date-pickers";
+import { Route } from "@/routes/manage/parts/$id/history";
 
 type EventType = "initial" | "used" | "added" | "current";
 
@@ -73,8 +74,9 @@ const defaultSchema = {
 
 export const PartsHistory = () => {
   const { id } = useParams({ from: "/manage/parts/$id/history" });
+  const navigate = useNavigate();
+  const search = Route.useSearch();
   const history = useGetPartHistory(id);
-  const [search, setSearch] = useState("");
 
   const [rows, setRows] = useState<any[]>([]);
   const [originalRows, setOriginalRows] = useState<any[]>([]);
@@ -88,6 +90,30 @@ export const PartsHistory = () => {
     resolver: yupResolver(schema),
     defaultValues: defaultSchema,
   });
+
+  const defaultValues = useMemo<PartsHistoryFormValues>(
+    () => ({
+      from: search.from ? dayjs(search.from, "YYYY-MM-DD") : null,
+      to: search.to
+        ? dayjs(search.to, "YYYY-MM-DD")
+        : dayjs().endOf("month"),
+      event_types: search.type,
+    }),
+    [search.from, search.to, search.type],
+  );
+
+  useEffect(() => {
+    reset(defaultValues);
+  }, [defaultValues, reset]);
+
+  const setSearch = (updater: (prev: typeof search) => any) => {
+    navigate({
+      to: "/manage/parts/$id/history",
+      params: { id },
+      search: (prev) => updater(prev as typeof search),
+      replace: true,
+    });
+  };
 
   const from = watch("from");
   const to = watch("to");
@@ -119,7 +145,7 @@ export const PartsHistory = () => {
   }, [history.data, id]);
 
   const filteredRows = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = (search.q ?? "").trim().toLowerCase();
     const fromDate = from ? dayjs(from).startOf("day") : null;
     const toDate = to ? dayjs(to).endOf("day") : null;
     const selectedTypes = new Set((eventTypes ?? []) as string[]);
@@ -137,7 +163,31 @@ export const PartsHistory = () => {
       if (toDate && d.isAfter(toDate)) return false;
       return true;
     });
-  }, [rows, search, from, to, eventTypes]);
+  }, [rows, search.q, from, to, eventTypes]);
+
+  useEffect(() => {
+    const nextFrom = from ? from.format("YYYY-MM-DD") : undefined;
+    const nextTo = (to ?? dayjs().endOf("month")).format("YYYY-MM-DD");
+    const nextTypes = (eventTypes ?? defaultSchema.event_types) as EventType[];
+
+    setSearch((prev) => {
+      const sameFrom = prev.from === nextFrom;
+      const sameTo = prev.to === nextTo;
+      const sameTypes =
+        prev.type.length === nextTypes.length &&
+        prev.type.every((value, index) => value === nextTypes[index]);
+
+      if (sameFrom && sameTo && sameTypes) return prev;
+
+      return {
+        ...prev,
+        from: nextFrom,
+        to: nextTo,
+        type: nextTypes,
+        page: 0,
+      };
+    });
+  }, [from, to, eventTypes]);
 
   const processRowUpdate = useCallback((newRow: any, _oldRow: any) => {
     if (newRow.delta !== undefined && isNaN(Number(newRow.delta))) {
@@ -387,8 +437,14 @@ export const PartsHistory = () => {
               <TextField
                 size="small"
                 label="Search by Note"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                value={search.q ?? ""}
+                onChange={(e) =>
+                  setSearch((prev) => ({
+                    ...prev,
+                    q: e.target.value,
+                    page: 0,
+                  }))
+                }
                 sx={{ width: { xs: "100%", md: 360 } }}
                 InputProps={{
                   startAdornment: (
@@ -406,6 +462,19 @@ export const PartsHistory = () => {
                 getRowId={(row) => row.row_id}
                 loading={history.isLoading}
                 columns={cols}
+                pagination
+                paginationModel={{
+                  page: search.page,
+                  pageSize: search.pageSize,
+                }}
+                onPaginationModelChange={(model) =>
+                  setSearch((prev) => ({
+                    ...prev,
+                    pageSize: model.pageSize,
+                    page: model.pageSize !== prev.pageSize ? 0 : model.page,
+                  }))
+                }
+                pageSizeOptions={[10, 25, 50, 100]}
                 processRowUpdate={processRowUpdate}
                 disableRowSelectionOnClick
                 disableColumnMenu
@@ -465,7 +534,22 @@ export const PartsHistory = () => {
               />
             </Grid>
             <Grid item xs={12} justifyContent="space-around">
-              <Button onClick={() => reset(defaultSchema)}>Reset</Button>
+              <Button
+                onClick={() => {
+                  reset(defaultSchema);
+                  setSearch((prev) => ({
+                    ...prev,
+                    from: undefined,
+                    to: dayjs().endOf("month").format("YYYY-MM-DD"),
+                    type: [...defaultSchema.event_types],
+                    q: "",
+                    page: 0,
+                    pageSize: 25,
+                  }));
+                }}
+              >
+                Reset
+              </Button>
               {hasChanges && <Box display="flex" gap={2}></Box>}
             </Grid>
           </Grid>
