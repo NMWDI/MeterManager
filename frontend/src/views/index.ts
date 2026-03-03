@@ -7,6 +7,7 @@ export * from "./Meters";
 export * from "./NotFound";
 export * from "./Parts";
 export * from "./Reports";
+export * from "./RouteErrorView";
 export * from "./Settings";
 export * from "./UserManagement";
 export * from "./WellManagement";

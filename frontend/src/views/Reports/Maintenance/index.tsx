@@ -36,7 +36,10 @@ import {
 } from "@/components";
 import { API_URL, ROLE_IDS } from "@/config";
 import { User } from "@/interfaces";
-import { getRoleLabel, sortUsersByRoleThenName } from "@/utils/UserRoleGrouping";
+import {
+  getRoleLabel,
+  sortUsersByRoleThenName,
+} from "@/utils/UserRoleGrouping";
 
 type FormValues = {
   from: Dayjs;

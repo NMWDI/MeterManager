@@ -26,6 +26,7 @@ import { Route as ManageUsersRouteImport } from './routes/manage/users'
 import { Route as ManagePartsRouteImport } from './routes/manage/parts'
 import { Route as ManageMetersRouteImport } from './routes/manage/meters'
 import { Route as ManageBackupsRouteImport } from './routes/manage/backups'
+import { Route as InternalErrorPreviewRouteImport } from './routes/internal/error-preview'
 import { Route as ManagePartsIndexRouteImport } from './routes/manage/parts/index'
 import { Route as ManagePartsIdHistoryRouteImport } from './routes/manage/parts/$id/history'
 import { Route as ActivitiesActivity_idPhotosPhoto_file_nameRouteImport } from './routes/activities/$activity_id/photos/$photo_file_name'
@@ -115,6 +116,11 @@ const ManageBackupsRoute = ManageBackupsRouteImport.update({
   path: '/manage/backups',
   getParentRoute: () => rootRouteImport,
 } as any)
+const InternalErrorPreviewRoute = InternalErrorPreviewRouteImport.update({
+  id: '/internal/error-preview',
+  path: '/internal/error-preview',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ManagePartsIndexRoute = ManagePartsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -140,6 +146,7 @@ export interface FileRoutesByFullPath {
   '/monitoringwells': typeof MonitoringwellsRoute
   '/settings': typeof SettingsRoute
   '/workorders': typeof WorkordersRoute
+  '/internal/error-preview': typeof InternalErrorPreviewRoute
   '/manage/backups': typeof ManageBackupsRoute
   '/manage/meters': typeof ManageMetersRoute
   '/manage/parts': typeof ManagePartsRouteWithChildren
@@ -162,6 +169,7 @@ export interface FileRoutesByTo {
   '/monitoringwells': typeof MonitoringwellsRoute
   '/settings': typeof SettingsRoute
   '/workorders': typeof WorkordersRoute
+  '/internal/error-preview': typeof InternalErrorPreviewRoute
   '/manage/backups': typeof ManageBackupsRoute
   '/manage/meters': typeof ManageMetersRoute
   '/manage/users': typeof ManageUsersRoute
@@ -184,6 +192,7 @@ export interface FileRoutesById {
   '/monitoringwells': typeof MonitoringwellsRoute
   '/settings': typeof SettingsRoute
   '/workorders': typeof WorkordersRoute
+  '/internal/error-preview': typeof InternalErrorPreviewRoute
   '/manage/backups': typeof ManageBackupsRoute
   '/manage/meters': typeof ManageMetersRoute
   '/manage/parts': typeof ManagePartsRouteWithChildren
@@ -208,6 +217,7 @@ export interface FileRouteTypes {
     | '/monitoringwells'
     | '/settings'
     | '/workorders'
+    | '/internal/error-preview'
     | '/manage/backups'
     | '/manage/meters'
     | '/manage/parts'
@@ -230,6 +240,7 @@ export interface FileRouteTypes {
     | '/monitoringwells'
     | '/settings'
     | '/workorders'
+    | '/internal/error-preview'
     | '/manage/backups'
     | '/manage/meters'
     | '/manage/users'
@@ -251,6 +262,7 @@ export interface FileRouteTypes {
     | '/monitoringwells'
     | '/settings'
     | '/workorders'
+    | '/internal/error-preview'
     | '/manage/backups'
     | '/manage/meters'
     | '/manage/parts'
@@ -274,6 +286,7 @@ export interface RootRouteChildren {
   MonitoringwellsRoute: typeof MonitoringwellsRoute
   SettingsRoute: typeof SettingsRoute
   WorkordersRoute: typeof WorkordersRoute
+  InternalErrorPreviewRoute: typeof InternalErrorPreviewRoute
   ManageBackupsRoute: typeof ManageBackupsRoute
   ManageMetersRoute: typeof ManageMetersRoute
   ManagePartsRoute: typeof ManagePartsRouteWithChildren
@@ -407,6 +420,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ManageBackupsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/internal/error-preview': {
+      id: '/internal/error-preview'
+      path: '/internal/error-preview'
+      fullPath: '/internal/error-preview'
+      preLoaderRoute: typeof InternalErrorPreviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/manage/parts/': {
       id: '/manage/parts/'
       path: '/'
@@ -466,6 +486,7 @@ const rootRouteChildren: RootRouteChildren = {
   MonitoringwellsRoute: MonitoringwellsRoute,
   SettingsRoute: SettingsRoute,
   WorkordersRoute: WorkordersRoute,
+  InternalErrorPreviewRoute: InternalErrorPreviewRoute,
   ManageBackupsRoute: ManageBackupsRoute,
   ManageMetersRoute: ManageMetersRoute,
   ManagePartsRoute: ManagePartsRouteWithChildren,

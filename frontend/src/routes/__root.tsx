@@ -1,6 +1,14 @@
-import { createRootRoute, Outlet } from "@tanstack/react-router";
+import {
+  createRootRoute,
+  ErrorComponentProps,
+  Outlet,
+} from "@tanstack/react-router";
 import { AppLayout } from "@/AppLayout";
-import { NotFound } from "@/views";
+import { NotFound, RouteErrorView } from "@/views";
+
+const RootErrorComponent = ({ error, reset }: ErrorComponentProps) => {
+  return <RouteErrorView error={error} onRetry={reset} />;
+};
 
 export const Route = createRootRoute({
   component: () => (
@@ -8,5 +16,6 @@ export const Route = createRootRoute({
       <Outlet />
     </AppLayout>
   ),
+  errorComponent: RootErrorComponent,
   notFoundComponent: NotFound,
 });
