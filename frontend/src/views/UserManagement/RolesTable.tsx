@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import {
   Button,
@@ -10,27 +10,44 @@ import {
   TextField,
 } from "@mui/material";
 import { Search, Add, FormatListBulletedOutlined } from "@mui/icons-material";
+import { useNavigate } from "@tanstack/react-router";
 import { useGetRoles } from "@/service";
-import { UserRole } from "@/interfaces";
+import { Route } from "@/routes/manage/users";
 import { CustomCardHeader, GridFooterWithButton } from "@/components";
 
 export const RolesTable = ({
-  setSelectedRole,
-  setRoleAddMode,
+  onSelectRole,
+  onCreateRole,
 }: {
-  setSelectedRole: Function;
-  setRoleAddMode: Function;
+  onSelectRole: (id: number) => void;
+  onCreateRole: () => void;
 }) => {
   const rolesList = useGetRoles();
-  const [roleSearchQuery, setRoleSearchQuery] = useState<string>("");
-  const [filteredRows, setFilteredRows] = useState<UserRole[]>();
+  const navigate = useNavigate();
+  const search = Route.useSearch();
+
+  const setSearch = (updater: (prev: typeof search) => any) => {
+    navigate({
+      to: "/manage/users",
+      search: (prev) => updater(prev as any),
+      replace: true,
+    });
+  };
+
+  const filteredRows = useMemo(() => {
+    const q = (search.role_q ?? "").toLowerCase();
+
+    return (rolesList.data ?? []).filter((row) =>
+      row.name.toLowerCase().includes(q),
+    );
+  }, [rolesList.data, search.role_q]);
 
   const cols: GridColDef[] = [
-    { field: "name", headerName: "Role Name", width: 200 },
+    { field: "name", headerName: "Role Name", flex: 1 },
     {
       field: "security_scopes",
       headerName: "Permissions",
-      width: 600,
+      flex: 3,
       renderCell: (params: any) => {
         const maxChips = 5;
         const additional = params?.value.length - maxChips;
@@ -52,16 +69,6 @@ export const RolesTable = ({
     },
   ];
 
-  // Filter rows based on search. Cant use multiple filters w/o pro datagrid
-  useEffect(() => {
-    const psq = roleSearchQuery.toLowerCase();
-    let filtered = (rolesList.data ?? []).filter((row) =>
-      row.name.toLowerCase().includes(psq),
-    );
-
-    setFilteredRows(filtered);
-  }, [roleSearchQuery, rolesList.data]);
-
   return (
     <Card>
       <CustomCardHeader title="All Roles" icon={FormatListBulletedOutlined} />
@@ -81,8 +88,10 @@ export const RolesTable = ({
               placeholder="Search Roles..."
               variant="outlined"
               size="small"
-              value={roleSearchQuery}
-              onChange={(event: any) => setRoleSearchQuery(event.target.value)}
+              value={search.role_q ?? ""}
+              onChange={(event: any) =>
+                setSearch((prev) => ({ ...prev, role_q: event.target.value }))
+              }
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -96,16 +105,11 @@ export const RolesTable = ({
             <DataGrid
               sx={{ height: 550, border: "none" }}
               rows={filteredRows ?? []}
+              rowSelectionModel={search.role_id ? [search.role_id] : []}
               loading={rolesList.isLoading}
               columns={cols}
               disableColumnMenu
-              onRowClick={(selectedRow) => {
-                setSelectedRole(
-                  rolesList.data?.find(
-                    (role: UserRole) => role.id == selectedRow.row.id,
-                  ),
-                );
-              }}
+              onRowClick={(selectedRow) => onSelectRole(selectedRow.row.id)}
               slots={{ footer: GridFooterWithButton }}
               slotProps={{
                 footer: {
@@ -113,7 +117,7 @@ export const RolesTable = ({
                     <Button
                       variant="contained"
                       size="small"
-                      onClick={() => setRoleAddMode(true)}
+                      onClick={onCreateRole}
                       sx={{ flexShrink: 0, width: { xs: "100%", sm: "auto" } }}
                     >
                       <Add fontSize="small" sx={{ mr: 0.5 }} />

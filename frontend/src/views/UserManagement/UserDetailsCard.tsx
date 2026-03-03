@@ -28,6 +28,7 @@ import {
   useUpdateUser,
   useGetRoles,
   useUpdateUserPassword,
+  useGetUser,
 } from "@/service";
 import {
   ControlledTextbox,
@@ -93,12 +94,22 @@ const SetNewPasswordAccordion = ({
 };
 
 export const UserDetailsCard = ({
-  selectedUser,
+  userId,
   userAddMode,
 }: {
-  selectedUser?: User;
+  userId?: number;
   userAddMode: boolean;
 }) => {
+  const userQuery = useGetUser(userId!, { enabled: !!userId && !userAddMode });
+
+  useEffect(() => {
+    if (!userAddMode && userQuery.data) {
+      reset();
+      Object.entries(userQuery.data).forEach(([k, v]) => setValue(k as any, v));
+    }
+    if (userAddMode) reset();
+  }, [userAddMode, userQuery.data]);
+
   const rolesList = useGetRoles();
   const {
     handleSubmit,
@@ -153,15 +164,6 @@ export const UserDetailsCard = ({
     };
     updateUserPassword.mutate(updatedUserPassword);
   };
-
-  useEffect(() => {
-    if (selectedUser != undefined) {
-      reset();
-      Object.entries(selectedUser).forEach(([field, value]) => {
-        setValue(field as any, value);
-      });
-    }
-  }, [selectedUser]);
 
   useEffect(() => {
     if (userAddMode) reset();

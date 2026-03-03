@@ -113,6 +113,33 @@ def create_user(user: security_schemas.NewUser, db: Session = Depends(get_db)):
 
 
 @admin_router.get(
+    "/users/{id}",
+    response_model=security_schemas.User,
+    dependencies=[Depends(ScopedUser.Admin)],
+    tags=["Admin"],
+)
+def get_user_admin(id: int, db: Session = Depends(get_db)):
+    """
+    Admin-specific single user endpoint (includes username/email/role)
+    """
+    user = db.scalars(
+        select(Users)
+        .options(
+            undefer(Users.username),
+            undefer(Users.user_role_id),
+            undefer(Users.email),
+            joinedload(Users.user_role),
+        )
+        .where(Users.id == id)
+    ).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return user
+
+
+@admin_router.get(
     "/usersadmin",
     response_model=List[security_schemas.User],
     dependencies=[Depends(ScopedUser.Admin)],

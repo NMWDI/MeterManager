@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import {
   Button,
@@ -10,8 +10,9 @@ import {
   Typography,
 } from "@mui/material";
 import { Search, Add, FormatListBulletedOutlined } from "@mui/icons-material";
+import { useNavigate } from "@tanstack/react-router";
+import { Route } from "@/routes/manage/users";
 import { useGetUserAdminList } from "@/service";
-import { User } from "@/interfaces";
 import {
   CustomCardHeader,
   GridFooterWithButton,
@@ -21,17 +22,48 @@ import {
 } from "@/components";
 
 export const UsersTable = ({
-  setSelectedUser,
-  setUserAddMode,
+  onSelectUser,
+  onCreateUser,
 }: {
-  setSelectedUser: Function;
-  setUserAddMode: Function;
+  onSelectUser: (id: number) => void;
+  onCreateUser: () => void;
 }) => {
   const usersList = useGetUserAdminList();
-  const [userSearchQuery, setUserSearchQuery] = useState<string>("");
-  const [filteredRows, setFilteredRows] = useState<User[]>();
-  const [isActiveFilter, setIsActiveFilter] = useState<boolean>();
-  const [isTechnicianFilter, setIsTechnicianFilter] = useState<boolean>();
+  const navigate = useNavigate();
+  const search = Route.useSearch();
+
+  const setSearch = (updater: (prev: typeof search) => any) => {
+    navigate({
+      to: "/manage/users",
+      search: (prev) => updater(prev as any),
+      replace: true,
+    });
+  };
+
+  const filteredRows = useMemo(() => {
+    const q = (search.user_q ?? "").toLowerCase();
+
+    let rows = (usersList.data ?? []).filter(
+      (row) =>
+        row.full_name.toLowerCase().includes(q) ||
+        row.email?.toLowerCase().includes(q) ||
+        row.username?.toLowerCase().includes(q),
+    );
+
+    if (search.active !== "all") {
+      const wantActive = search.active === "true";
+      rows = rows.filter((row) => !row.disabled === wantActive);
+    }
+
+    if (search.tech !== "all") {
+      const wantTech = search.tech === "true";
+      rows = rows.filter(
+        (row) => (row.user_role?.name === "Technician") === wantTech,
+      );
+    }
+
+    return rows;
+  }, [usersList.data, search.user_q, search.active, search.tech]);
 
   const cols: GridColDef[] = [
     { field: "full_name", headerName: "Full Name", width: 200 },
@@ -54,24 +86,6 @@ export const UsersTable = ({
     { field: "redirect_page", headerName: "Redirect Page", width: 200 },
   ];
 
-  useEffect(() => {
-    const psq = userSearchQuery.toLowerCase();
-    let filtered = (usersList.data ?? []).filter(
-      (row) =>
-        row.full_name.toLowerCase().includes(psq) ||
-        row.email?.toLowerCase().includes(psq) ||
-        row.username?.toLowerCase().includes(psq),
-    );
-    if (isActiveFilter != undefined)
-      filtered = filtered.filter((row) => !row.disabled == isActiveFilter);
-    if (isTechnicianFilter != undefined)
-      filtered = filtered.filter(
-        (row) => (row?.user_role?.name == "Technician") == isTechnicianFilter,
-      );
-
-    setFilteredRows(filtered);
-  }, [userSearchQuery, usersList.data, isActiveFilter, isTechnicianFilter]);
-
   return (
     <Card>
       <CustomCardHeader title="All Users" icon={FormatListBulletedOutlined} />
@@ -92,8 +106,10 @@ export const UsersTable = ({
               placeholder="Search Users..."
               variant="outlined"
               size="small"
-              value={userSearchQuery}
-              onChange={(event: any) => setUserSearchQuery(event.target.value)}
+              value={search.user_q ?? ""}
+              onChange={(e) =>
+                setSearch((prev) => ({ ...prev, user_q: e.target.value }))
+              }
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -118,14 +134,22 @@ export const UsersTable = ({
             </Typography>
             <TristateToggle
               label="Active"
-              onToggle={(state: boolean | undefined) =>
-                setIsActiveFilter(state)
+              value={search.active}
+              onToggle={(next) =>
+                setSearch((prev) => ({
+                  ...prev,
+                  active: next,
+                }))
               }
             />
             <TristateToggle
               label="Technician User"
-              onToggle={(state: boolean | undefined) =>
-                setIsTechnicianFilter(state)
+              value={search.tech}
+              onToggle={(next) =>
+                setSearch((prev) => ({
+                  ...prev,
+                  tech: next,
+                }))
               }
             />
           </Grid>
@@ -134,16 +158,11 @@ export const UsersTable = ({
           <DataGrid
             sx={{ height: 550, border: "none" }}
             rows={filteredRows ?? []}
+            rowSelectionModel={search.user_id ? [search.user_id] : []}
             loading={usersList.isLoading}
             columns={cols}
             disableColumnMenu
-            onRowClick={(selectedRow) => {
-              setSelectedUser(
-                usersList.data?.find(
-                  (user: User) => user.id == selectedRow.row.id,
-                ),
-              );
-            }}
+            onRowClick={(r) => onSelectUser(r.row.id)}
             slots={{ footer: GridFooterWithButton }}
             slotProps={{
               footer: {
@@ -151,8 +170,7 @@ export const UsersTable = ({
                   <Button
                     variant="contained"
                     size="small"
-                    onClick={() => setUserAddMode(true)}
-                    sx={{ flexShrink: 0, width: { xs: "100%", sm: "auto" } }}
+                    onClick={onCreateUser}
                   >
                     <Add fontSize="small" sx={{ mr: 0.5 }} />
                     Create

@@ -1,44 +1,57 @@
-import { Chip } from "@mui/material";
-import { useEffect, useState } from "react";
+import { Chip, type ChipProps } from "@mui/material";
 
-export const TristateToggle = ({ label, onToggle }: any) => {
-  const [toggleState, setToggleState] = useState<boolean>();
+export type TriString = "all" | "true" | "false";
 
-  useEffect(() => {
-    onToggle(toggleState);
-  }, [toggleState]);
-
-  function getColor() {
-    switch (toggleState) {
-      case true:
+export const TristateToggle = ({
+  label,
+  value,
+  onToggle,
+}: {
+  label: string;
+  value: TriString;
+  onToggle: (value: TriString) => void;
+}) => {
+  const getColor = (): ChipProps["color"] | undefined => {
+    switch (value) {
+      case "true":
         return "success";
-      case false:
+      case "false":
         return "error";
       default:
         return undefined;
     }
-  }
+  };
 
-  function getLabel() {
-    switch (toggleState) {
-      case true:
-        return "Is " + label;
-      case false:
-        return "Is Not " + label;
+  const getLabel = () => {
+    switch (value) {
+      case "true":
+        return `Is ${label}`;
+      case "false":
+        return `Is Not ${label}`;
       default:
         return label;
     }
-  }
+  };
+
+  const nextValue = (v: TriString): TriString => {
+    switch (v) {
+      case "all":
+        return "true";
+      case "true":
+        return "false";
+      case "false":
+        return "all";
+    }
+  };
 
   return (
     <Chip
       sx={{ ml: 2 }}
       label={getLabel()}
       color={getColor()}
-      onDelete={
-        toggleState != undefined ? () => setToggleState(undefined) : undefined
-      }
-      onClick={() => setToggleState(!toggleState)}
+      variant={value === "all" ? "outlined" : "filled"}
+      onDelete={value === "all" ? undefined : () => onToggle("all")}
+      onClick={() => onToggle(nextValue(value))}
     />
   );
 };

@@ -1,53 +1,71 @@
 import { Grid } from "@mui/material";
-import { useEffect, useState } from "react";
-import { User, UserRole } from "@/interfaces";
 import { BackgroundBox } from "@/components";
+import { Route } from "@/routes/manage/users";
+import { useNavigate } from "@tanstack/react-router";
 
-import { UsersTable } from "./UsersTable";
-import { UserDetailsCard } from "./UserDetailsCard";
-import { RolesTable } from "./RolesTable";
-import { RoleDetailsCard } from "./RoleDetailsCard";
-import { PermissionsTable } from "./PermissionsTable";
+import { UsersTable } from "@/views/UserManagement/UsersTable";
+import { UserDetailsCard } from "@/views/UserManagement/UserDetailsCard";
+import { RolesTable } from "@/views/UserManagement/RolesTable";
+import { RoleDetailsCard } from "@/views/UserManagement/RoleDetailsCard";
+import { PermissionsTable } from "@/views/UserManagement/PermissionsTable";
 
 export const UserManagementView = () => {
-  const [selectedUser, setSelectedUser] = useState<User>();
-  const [userAddMode, setUserAddMode] = useState<boolean>(true);
-  const [selectedRole, setSelectedRole] = useState<UserRole>();
-  const [roleAddMode, setRoleAddMode] = useState<boolean>(true);
+  const navigate = useNavigate();
+  const search = Route.useSearch();
 
-  useEffect(() => {
-    if (selectedUser) setUserAddMode(false);
-  }, [selectedUser]);
-
-  useEffect(() => {
-    if (selectedRole) setRoleAddMode(false);
-  }, [selectedRole]);
+  const setSearch = (updater: (prev: typeof search) => any) => {
+    navigate({
+      to: "/manage/users",
+      search: (prev) => updater(prev as any),
+      replace: true,
+    });
+  };
 
   return (
     <BackgroundBox>
       <Grid container spacing={2}>
         <Grid item xs={12} lg={8}>
           <UsersTable
-            setSelectedUser={setSelectedUser}
-            setUserAddMode={setUserAddMode}
+            onSelectUser={(id: number) =>
+              setSearch((prev) => ({
+                ...prev,
+                user_id: id,
+                user_add: false,
+              }))
+            }
+            onCreateUser={() =>
+              setSearch((prev) => ({
+                ...prev,
+                user_id: undefined,
+                user_add: true,
+              }))
+            }
           />
         </Grid>
         <Grid item xs={12} lg={4}>
           <UserDetailsCard
-            selectedUser={selectedUser}
-            userAddMode={userAddMode}
+            userId={search.user_id}
+            userAddMode={search.user_add}
           />
         </Grid>
         <Grid item xs={12} lg={8}>
           <RolesTable
-            setSelectedRole={setSelectedRole}
-            setRoleAddMode={setRoleAddMode}
+            onSelectRole={(id: number) =>
+              setSearch((prev) => ({ ...prev, role_id: id, role_add: false }))
+            }
+            onCreateRole={() =>
+              setSearch((prev) => ({
+                ...prev,
+                role_id: undefined,
+                role_add: true,
+              }))
+            }
           />
         </Grid>
         <Grid item xs={12} lg={4}>
           <RoleDetailsCard
-            selectedRole={selectedRole}
-            roleAddMode={roleAddMode}
+            roleId={search.role_id}
+            roleAddMode={search.role_add}
           />
         </Grid>
         <Grid item xs={12} lg={8}>

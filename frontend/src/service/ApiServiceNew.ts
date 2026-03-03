@@ -366,6 +366,19 @@ export function useGetUserList() {
   );
 }
 
+export function useGetUser(id: number, options = {}) {
+  const route = "users";
+  const authHeader = useAuthHeader();
+  const navigate = useNavigate();
+  const signOut = useSignOut();
+
+  return useQuery<User[], Error>(
+    [route],
+    () => GETFetch(`${route}/${id}`, null, authHeader(), signOut, navigate),
+    options,
+  );
+}
+
 export function useGetActivityTypeList() {
   const route = "activity_types";
   const authHeader = useAuthHeader();

@@ -29,6 +29,7 @@ import {
   IncreaseQuantityModal,
   IsTrueChip,
   TristateToggle,
+  TriString,
 } from "@/components";
 
 export const PartsTable = ({
@@ -167,7 +168,16 @@ export const PartsTable = ({
             </Typography>
             <TristateToggle
               label="In Use"
-              onToggle={(state: boolean | undefined) => setInUseFilter(state)}
+              value="all"
+              onToggle={(state: TriString) =>
+                setInUseFilter(
+                  state === "true"
+                    ? true
+                    : state === "false"
+                      ? false
+                      : undefined,
+                )
+              }
             />
             <TristateToggle
               label="Commonly Used"

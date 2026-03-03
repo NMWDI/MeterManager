@@ -20,7 +20,12 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { enqueueSnackbar } from "notistack";
 import { useFieldArray } from "react-hook-form";
 
-import { useCreateRole, useGetSecurityScopes, useUpdateRole } from "@/service";
+import {
+  useCreateRole,
+  useGetRoles,
+  useGetSecurityScopes,
+  useUpdateRole,
+} from "@/service";
 import { ControlledTextbox, CustomCardHeader } from "@/components";
 import { SecurityScope, UserRole } from "@/interfaces";
 
@@ -29,12 +34,12 @@ const RoleResolverSchema: Yup.ObjectSchema<any> = Yup.object().shape({
 });
 
 interface RoleDetailsCardProps {
-  selectedRole: UserRole | undefined;
+  roleId?: number;
   roleAddMode: boolean;
 }
 
 export const RoleDetailsCard = ({
-  selectedRole,
+  roleId,
   roleAddMode,
 }: RoleDetailsCardProps) => {
   const {
@@ -54,6 +59,9 @@ export const RoleDetailsCard = ({
   });
 
   const securityScopeList = useGetSecurityScopes();
+  const rolesList = useGetRoles();
+
+  const selectedRole = rolesList.data?.find((role) => role.id === roleId);
 
   function onSuccessfulUpdate() {
     enqueueSnackbar("Successfully Updated Role!", { variant: "success" });
@@ -71,18 +79,23 @@ export const RoleDetailsCard = ({
 
   // Populate the form with the selected role's details
   useEffect(() => {
+    if (roleAddMode) {
+      reset();
+      return;
+    }
+
     if (selectedRole != undefined) {
       reset();
       Object.entries(selectedRole).forEach(([field, value]) => {
         setValue(field as any, value);
       });
+      return;
     }
-  }, [selectedRole]);
 
-  // Empty the form if entering role add mode
-  useEffect(() => {
-    if (roleAddMode) reset();
-  }, [roleAddMode]);
+    if (roleId == undefined) {
+      reset();
+    }
+  }, [roleAddMode, roleId, reset, selectedRole, setValue]);
 
   function removeSecurityScope(securityScopeIndex: number) {
     remove(securityScopeIndex);
