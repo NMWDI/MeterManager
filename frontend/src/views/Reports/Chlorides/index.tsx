@@ -68,11 +68,6 @@ const schema = yup.object().shape({
     }),
 });
 
-const defaultSchema = {
-  from: dayjs().startOf("month"),
-  to: dayjs().endOf("month"),
-};
-
 interface iMinMaxAvgMedCount {
   min?: number;
   max?: number;
