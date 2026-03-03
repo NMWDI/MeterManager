@@ -10,8 +10,14 @@ import {
   Alert,
   Stack,
   Grid,
+  InputAdornment,
+  IconButton,
 } from "@mui/material";
-import { Login as LoginIcon } from "@mui/icons-material";
+import {
+  Login as LoginIcon,
+  Visibility,
+  VisibilityOff,
+} from "@mui/icons-material";
 import { enqueueSnackbar } from "notistack";
 import { SecurityScope } from "@/interfaces";
 import { API_URL } from "@/config";
@@ -21,6 +27,7 @@ export const Login = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const signIn = useSignIn();
   const isAuthenticated = useIsAuthenticated();
@@ -127,9 +134,21 @@ export const Login = () => {
                 required
                 fullWidth
                 label="Password"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 name="password"
                 onChange={(e) => setPassword(e.target.value)}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        edge="end"
+                        onClick={() => setShowPassword((show) => !show)}
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
               />
             </Stack>
             <Grid container justifyContent="flex-end">

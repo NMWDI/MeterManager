@@ -22,10 +22,12 @@ import {
   Skeleton,
   IconButton,
   Stack,
+  InputAdornment,
 } from "@mui/material";
 import SettingsIcon from "@mui/icons-material/Settings";
 import { useAuthUser, useSignIn } from "react-auth-kit";
 import { Check, Close, Delete, Edit, ExpandMore } from "@mui/icons-material";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { useMutation, useQuery, useQueryClient } from "react-query";
 import {
   BackgroundBox,
@@ -50,7 +52,10 @@ const redirectSchema = yup.object().shape({
 
 const passwordSchema = yup.object().shape({
   currentPassword: yup.string().required("Current password is required"),
-  newPassword: yup.string().required("New password is required"),
+  newPassword: yup
+    .string()
+    .min(8, "New password must be at least 8 characters")
+    .required("New password is required"),
   confirmPassword: yup
     .string()
     .oneOf([yup.ref("newPassword")], "Passwords must match")
@@ -72,6 +77,11 @@ export const Settings = () => {
   const hasAdminScope = scopes.has("admin");
 
   const [isEditing, setIsEditing] = useState(false);
+  const [avatarFiles, setAvatarFiles] = useState<File[]>([]);
+  const [avatarUploadKey, setAvatarUploadKey] = useState(0);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const {
     control: displayNameControl,
@@ -185,20 +195,31 @@ export const Settings = () => {
       currentPassword: string;
       newPassword: string;
     }) => {
-      const res = await fetch("/settings/password_reset", {
+      return await fetchWithAuth({
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("_auth")}`,
+        route: "/settings/password_reset",
+        body: {
+          current_password: data.currentPassword,
+          new_password: data.newPassword,
         },
-        body: JSON.stringify(data),
       });
-      if (!res.ok) throw new Error("Password reset failed");
-      return await res.json();
     },
     onSuccess: () => {
-      enqueueSnackbar("Password reset request submitted.", {
+      enqueueSnackbar("Password updated successfully.", {
         variant: "success",
+      });
+      passwordReset({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+      setShowCurrentPassword(false);
+      setShowNewPassword(false);
+      setShowConfirmPassword(false);
+    },
+    onError: (error: Error) => {
+      enqueueSnackbar(error.message || "Failed to update password.", {
+        variant: "error",
       });
     },
   });
@@ -206,6 +227,7 @@ export const Settings = () => {
   const {
     control: passwordControl,
     handleSubmit: handlePasswordSubmit,
+    reset: passwordReset,
     formState: { errors: passwordErrors },
   } = useForm({
     resolver: yupResolver(passwordSchema),
@@ -221,6 +243,84 @@ export const Settings = () => {
       currentPassword: data.currentPassword,
       newPassword: data.newPassword,
     });
+  };
+
+  const avatarMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append("avatar", file);
+
+      return await fetchWithAuth({
+        method: "POST",
+        route: "/settings/avatar",
+        body: formData,
+      });
+    },
+    onSuccess: (responseJson: { avatar_img: string }) => {
+      enqueueSnackbar("Avatar updated successfully.", {
+        variant: "success",
+      });
+      setAvatarFiles([]);
+      setAvatarUploadKey((current) => current + 1);
+
+      if (user) {
+        signIn({
+          token: localStorage.getItem("_auth")!,
+          expiresIn: 300,
+          tokenType: "bearer",
+          authState: {
+            ...user,
+            avatar_img: responseJson.avatar_img,
+          },
+        });
+      }
+    },
+    onError: () => {
+      enqueueSnackbar("Failed to update avatar.", { variant: "error" });
+    },
+  });
+
+  const clearAvatarMutation = useMutation({
+    mutationFn: async () => {
+      return await fetchWithAuth({
+        method: "DELETE",
+        route: "/settings/avatar",
+      });
+    },
+    onSuccess: () => {
+      enqueueSnackbar("Avatar removed successfully.", {
+        variant: "success",
+      });
+      setAvatarFiles([]);
+      setAvatarUploadKey((current) => current + 1);
+
+      if (user) {
+        signIn({
+          token: localStorage.getItem("_auth")!,
+          expiresIn: 300,
+          tokenType: "bearer",
+          authState: {
+            ...user,
+            avatar_img: null,
+          },
+        });
+      }
+    },
+    onError: () => {
+      enqueueSnackbar("Failed to remove avatar.", { variant: "error" });
+    },
+  });
+
+  const onAvatarSubmit = () => {
+    const file = avatarFiles[0];
+    if (!file) {
+      enqueueSnackbar("Select an image before saving your avatar.", {
+        variant: "warning",
+      });
+      return;
+    }
+
+    avatarMutation.mutate(file);
   };
 
   return (
@@ -364,7 +464,7 @@ export const Settings = () => {
           </Typography>
           <Grid container spacing={2}>
             <Grid item xs={12}>
-              <Accordion disabled>
+              <Accordion>
                 <AccordionSummary expandIcon={<ExpandMore />}>
                   <Typography component="span">Avatar Configuration</Typography>
                 </AccordionSummary>
@@ -376,19 +476,35 @@ export const Settings = () => {
                     justifyContent="center"
                   >
                     <Grid item xs={12} md={6} p={2}>
-                      <ImageUploadWithPreview fileLimit={1} />
+                      <ImageUploadWithPreview
+                        key={avatarUploadKey}
+                        fileLimit={1}
+                        onFilesChange={setAvatarFiles}
+                      />
                     </Grid>
                     <Grid item xs={12} md={6} p={2}>
-                      <Box
-                        py={2}
-                        display="flex"
-                        justifyContent={{ sx: "start", md: "end" }}
-                      >
+                      <Box py={2} display="flex" gap={2} justifyContent="end">
+                        <Button
+                          variant="contained"
+                          onClick={onAvatarSubmit}
+                          disabled={
+                            avatarFiles.length === 0 ||
+                            avatarMutation.isLoading ||
+                            clearAvatarMutation.isLoading
+                          }
+                        >
+                          Save Avatar
+                        </Button>
                         <Button
                           variant="outlined"
                           color="error"
                           startIcon={<Delete fontSize="small" />}
-                          disabled={!user?.avatar_img}
+                          disabled={
+                            !user?.avatar_img ||
+                            avatarMutation.isLoading ||
+                            clearAvatarMutation.isLoading
+                          }
+                          onClick={() => clearAvatarMutation.mutate()}
                         >
                           Remove Avatar
                         </Button>
@@ -584,7 +700,7 @@ export const Settings = () => {
                   </Grid>
                 </AccordionDetails>
               </Accordion>
-              <Accordion disabled>
+              <Accordion>
                 <AccordionSummary expandIcon={<ExpandMore />}>
                   <Typography component="span">Password Reset</Typography>
                 </AccordionSummary>
@@ -600,14 +716,33 @@ export const Settings = () => {
                               render={({ field }) => (
                                 <TextField
                                   {...field}
-                                  type="password"
+                                  type={showCurrentPassword ? "text" : "password"}
                                   fullWidth
                                   size="small"
                                   label="Current Password"
+                                  disabled={passwordMutation.isLoading}
                                   error={!!passwordErrors.currentPassword}
                                   helperText={
                                     passwordErrors.currentPassword?.message
                                   }
+                                  InputProps={{
+                                    endAdornment: (
+                                      <InputAdornment position="end">
+                                        <IconButton
+                                          edge="end"
+                                          onClick={() =>
+                                            setShowCurrentPassword((show) => !show)
+                                          }
+                                        >
+                                          {showCurrentPassword ? (
+                                            <VisibilityOff />
+                                          ) : (
+                                            <Visibility />
+                                          )}
+                                        </IconButton>
+                                      </InputAdornment>
+                                    ),
+                                  }}
                                 />
                               )}
                             />
@@ -619,14 +754,33 @@ export const Settings = () => {
                               render={({ field }) => (
                                 <TextField
                                   {...field}
-                                  type="password"
+                                  type={showNewPassword ? "text" : "password"}
                                   fullWidth
                                   size="small"
                                   label="New Password"
+                                  disabled={passwordMutation.isLoading}
                                   error={!!passwordErrors.newPassword}
                                   helperText={
                                     passwordErrors.newPassword?.message
                                   }
+                                  InputProps={{
+                                    endAdornment: (
+                                      <InputAdornment position="end">
+                                        <IconButton
+                                          edge="end"
+                                          onClick={() =>
+                                            setShowNewPassword((show) => !show)
+                                          }
+                                        >
+                                          {showNewPassword ? (
+                                            <VisibilityOff />
+                                          ) : (
+                                            <Visibility />
+                                          )}
+                                        </IconButton>
+                                      </InputAdornment>
+                                    ),
+                                  }}
                                 />
                               )}
                             />
@@ -638,14 +792,33 @@ export const Settings = () => {
                               render={({ field }) => (
                                 <TextField
                                   {...field}
-                                  type="password"
+                                  type={showConfirmPassword ? "text" : "password"}
                                   fullWidth
                                   size="small"
                                   label="Confirm Password"
+                                  disabled={passwordMutation.isLoading}
                                   error={!!passwordErrors.confirmPassword}
                                   helperText={
                                     passwordErrors.confirmPassword?.message
                                   }
+                                  InputProps={{
+                                    endAdornment: (
+                                      <InputAdornment position="end">
+                                        <IconButton
+                                          edge="end"
+                                          onClick={() =>
+                                            setShowConfirmPassword((show) => !show)
+                                          }
+                                        >
+                                          {showConfirmPassword ? (
+                                            <VisibilityOff />
+                                          ) : (
+                                            <Visibility />
+                                          )}
+                                        </IconButton>
+                                      </InputAdornment>
+                                    ),
+                                  }}
                                 />
                               )}
                             />

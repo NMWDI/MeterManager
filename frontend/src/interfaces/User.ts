@@ -10,5 +10,7 @@ export interface User {
   disabled: boolean;
   user_role_id?: number;
   user_role?: UserRole;
+  redirect_page?: string;
+  avatar_img?: string | null;
   password?: string;
 }
