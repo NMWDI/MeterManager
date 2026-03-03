@@ -108,7 +108,11 @@ export const UsersTable = ({
               size="small"
               value={search.user_q ?? ""}
               onChange={(e) =>
-                setSearch((prev) => ({ ...prev, user_q: e.target.value }))
+                setSearch((prev) => ({
+                  ...prev,
+                  user_q: e.target.value,
+                  u_page: 0,
+                }))
               }
               InputProps={{
                 startAdornment: (
@@ -139,6 +143,7 @@ export const UsersTable = ({
                 setSearch((prev) => ({
                   ...prev,
                   active: next,
+                  u_page: 0,
                 }))
               }
             />
@@ -149,6 +154,7 @@ export const UsersTable = ({
                 setSearch((prev) => ({
                   ...prev,
                   tech: next,
+                  u_page: 0,
                 }))
               }
             />
@@ -158,6 +164,19 @@ export const UsersTable = ({
           <DataGrid
             sx={{ height: 550, border: "none" }}
             rows={filteredRows ?? []}
+            pagination
+            paginationModel={{
+              page: search.u_page,
+              pageSize: search.u_pageSize,
+            }}
+            onPaginationModelChange={(model) =>
+              setSearch((prev) => ({
+                ...prev,
+                u_pageSize: model.pageSize,
+                u_page: model.pageSize !== prev.u_pageSize ? 0 : model.page,
+              }))
+            }
+            pageSizeOptions={[10, 25, 50, 100]}
             rowSelectionModel={search.user_id ? [search.user_id] : []}
             loading={usersList.isLoading}
             columns={cols}

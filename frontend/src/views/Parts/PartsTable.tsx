@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import {
   Box,
@@ -20,33 +20,38 @@ import {
   History,
 } from "@mui/icons-material";
 import { useSnackbar } from "notistack";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useGetParts, useAddParts } from "@/service";
-import { Part } from "@/interfaces";
+import { Route } from "@/routes/manage/parts/index";
 import {
   CustomCardHeader,
   GridFooterWithButton,
   IncreaseQuantityModal,
   IsTrueChip,
   TristateToggle,
-  TriString,
 } from "@/components";
 
 export const PartsTable = ({
-  setSelectedPartID,
-  setPartAddMode,
+  onSelectPart,
+  onCreatePart,
 }: {
-  setSelectedPartID: Function;
-  setPartAddMode: Function;
+  onSelectPart: (id: number) => void;
+  onCreatePart: () => void;
 }) => {
   const partsList = useGetParts();
   const addParts = useAddParts();
-  const [partSearchQuery, setPartSearchQuery] = useState<string>("");
-  const [filteredRows, setFilteredRows] = useState<Part[]>();
-  const [inUseFilter, setInUseFilter] = useState<boolean>();
-  const [commonlyUsedFilter, setCommonlyUsedFilter] = useState<boolean>();
+  const navigate = useNavigate();
+  const search = Route.useSearch();
   const [increaseOpen, setIncreaseOpen] = useState(false);
   const { enqueueSnackbar } = useSnackbar();
+
+  const setSearch = (updater: (prev: typeof search) => any) => {
+    navigate({
+      to: "/manage/parts",
+      search: (prev) => updater(prev as any),
+      replace: true,
+    });
+  };
 
   const cols: GridColDef[] = [
     { field: "part_number", headerName: "Part Number", width: 150 },
@@ -103,24 +108,32 @@ export const PartsTable = ({
     },
   ];
 
-  // Filter rows based on search. Cant use multiple filters w/o pro datagrid
-  useEffect(() => {
-    const psq = partSearchQuery.toLowerCase();
-    let filtered = (partsList.data ?? []).filter(
+  const filteredRows = useMemo(() => {
+    const q = (search.part_q ?? "").toLowerCase();
+    let rows = (partsList.data ?? []).filter(
       (row) =>
-        row.part_number.toLowerCase().includes(psq) ||
-        row.description?.toLowerCase().includes(psq) ||
-        row.part_type?.name.toLowerCase().includes(psq),
+        row.part_number.toLowerCase().includes(q) ||
+        row.description?.toLowerCase().includes(q) ||
+        row.part_type?.name.toLowerCase().includes(q),
     );
-    if (inUseFilter != undefined)
-      filtered = filtered.filter((row) => row.in_use == inUseFilter);
-    if (commonlyUsedFilter != undefined)
-      filtered = filtered.filter(
-        (row) => row.commonly_used == commonlyUsedFilter,
-      );
 
-    setFilteredRows(filtered);
-  }, [partSearchQuery, partsList.data, inUseFilter, commonlyUsedFilter]);
+    if (search.part_in_use !== "all") {
+      const wantInUse = search.part_in_use === "true";
+      rows = rows.filter((row) => row.in_use === wantInUse);
+    }
+
+    if (search.part_commonly_used !== "all") {
+      const wantCommonlyUsed = search.part_commonly_used === "true";
+      rows = rows.filter((row) => row.commonly_used === wantCommonlyUsed);
+    }
+
+    return rows;
+  }, [
+    partsList.data,
+    search.part_q,
+    search.part_in_use,
+    search.part_commonly_used,
+  ]);
 
   return (
     <Card>
@@ -142,8 +155,14 @@ export const PartsTable = ({
               placeholder="Search Parts..."
               variant="outlined"
               size="small"
-              value={partSearchQuery}
-              onChange={(event: any) => setPartSearchQuery(event.target.value)}
+              value={search.part_q ?? ""}
+              onChange={(event: any) =>
+                setSearch((prev) => ({
+                  ...prev,
+                  part_q: event.target.value,
+                  p_page: 0,
+                }))
+              }
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -168,21 +187,24 @@ export const PartsTable = ({
             </Typography>
             <TristateToggle
               label="In Use"
-              value="all"
-              onToggle={(state: TriString) =>
-                setInUseFilter(
-                  state === "true"
-                    ? true
-                    : state === "false"
-                      ? false
-                      : undefined,
-                )
+              value={search.part_in_use}
+              onToggle={(next) =>
+                setSearch((prev) => ({
+                  ...prev,
+                  part_in_use: next,
+                  p_page: 0,
+                }))
               }
             />
             <TristateToggle
               label="Commonly Used"
-              onToggle={(state: boolean | undefined) =>
-                setCommonlyUsedFilter(state)
+              value={search.part_commonly_used}
+              onToggle={(next) =>
+                setSearch((prev) => ({
+                  ...prev,
+                  part_commonly_used: next,
+                  p_page: 0,
+                }))
               }
             />
           </Grid>
@@ -190,11 +212,26 @@ export const PartsTable = ({
             <DataGrid
               sx={{ height: 550, border: "none" }}
               rows={filteredRows ?? []}
+              pagination
+              paginationModel={{
+                page: search.p_page,
+                pageSize: search.p_pageSize,
+              }}
+              onPaginationModelChange={(model) =>
+                setSearch((prev) => ({
+                  ...prev,
+                  p_pageSize: model.pageSize,
+                  p_page:
+                    model.pageSize !== prev.p_pageSize ? 0 : model.page,
+                }))
+              }
+              pageSizeOptions={[10, 25, 50, 100]}
+              rowSelectionModel={search.part_id ? [search.part_id] : []}
               loading={partsList.isLoading}
               columns={cols}
               disableColumnMenu
               onRowClick={(selectedRow) => {
-                setSelectedPartID(selectedRow.row.id);
+                onSelectPart(selectedRow.row.id);
               }}
               slots={{ footer: GridFooterWithButton }}
               slotProps={{
@@ -213,7 +250,7 @@ export const PartsTable = ({
                       <Button
                         variant="contained"
                         size="small"
-                        onClick={() => setPartAddMode(true)}
+                        onClick={onCreatePart}
                         sx={{
                           flexShrink: 0,
                           width: { xs: "100%", sm: "auto" },

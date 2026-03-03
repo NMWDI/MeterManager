@@ -90,7 +90,11 @@ export const RolesTable = ({
               size="small"
               value={search.role_q ?? ""}
               onChange={(event: any) =>
-                setSearch((prev) => ({ ...prev, role_q: event.target.value }))
+                setSearch((prev) => ({
+                  ...prev,
+                  role_q: event.target.value,
+                  r_page: 0,
+                }))
               }
               InputProps={{
                 startAdornment: (
@@ -102,12 +106,25 @@ export const RolesTable = ({
             />
           </Grid>
           <Grid item xs={12}>
-            <DataGrid
-              sx={{ height: 550, border: "none" }}
-              rows={filteredRows ?? []}
-              rowSelectionModel={search.role_id ? [search.role_id] : []}
-              loading={rolesList.isLoading}
-              columns={cols}
+          <DataGrid
+            sx={{ height: 550, border: "none" }}
+            rows={filteredRows ?? []}
+            pagination
+            paginationModel={{
+              page: search.r_page,
+              pageSize: search.r_pageSize,
+            }}
+            onPaginationModelChange={(model) =>
+              setSearch((prev) => ({
+                ...prev,
+                r_pageSize: model.pageSize,
+                r_page: model.pageSize !== prev.r_pageSize ? 0 : model.page,
+              }))
+            }
+            pageSizeOptions={[10, 25, 50, 100]}
+            rowSelectionModel={search.role_id ? [search.role_id] : []}
+            loading={rolesList.isLoading}
+            columns={cols}
               disableColumnMenu
               onRowClick={(selectedRow) => onSelectRole(selectedRow.row.id)}
               slots={{ footer: GridFooterWithButton }}
