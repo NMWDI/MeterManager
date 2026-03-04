@@ -1,10 +1,10 @@
-import { LayersControl, TileLayer } from "react-leaflet"
+import { LayersControl, TileLayer } from "react-leaflet";
 
 export const SatelliteLayer = () => (
-  <LayersControl.BaseLayer name="Satellite">
+  <LayersControl.BaseLayer checked name="Satellite">
     <TileLayer
       url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-      attribution="Imagery © Esri, Earthstar Geographics"
+      attribution="Labels © Esri"
     />
   </LayersControl.BaseLayer>
-)
+);

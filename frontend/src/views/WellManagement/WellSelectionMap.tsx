@@ -6,9 +6,11 @@ import { useNavigate } from "@tanstack/react-router";
 import { useGetWellLocations } from "@/service";
 import { Well } from "@/interfaces";
 import {
+  BoundariesLayer,
   OpenStreetMapLayer,
   SatelliteLayer,
   SoutheastGuideLayer,
+  TransporationLayer,
   WellMapLegend,
 } from "@/components";
 import { BlueMapIcon, RedMapIcon, BlackMapIcon } from "@/components/MapIcons";
@@ -121,6 +123,8 @@ export default function WellSelectionMap({
                   ))}
               </MarkerClusterGroup>
               <WellMapLegend />
+              <TransporationLayer />
+              <BoundariesLayer />
             </LayersControl.Overlay>
           </LayersControl>
         </MapContainer>
