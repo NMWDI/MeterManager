@@ -112,7 +112,7 @@ function writeMapCache<T>(queryKey: readonly unknown[], data: T) {
   window.localStorage.setItem(storageKey, JSON.stringify(value));
 }
 
-function clearStoredMapCaches() {
+export function clearSavedQueryLocalStorage() {
   if (typeof window === "undefined") return;
 
   const keysToRemove: string[] = [];
@@ -129,7 +129,7 @@ function clearStoredMapCaches() {
 function invalidateMapDataCaches(
   queryClient: ReturnType<typeof useQueryClient>,
 ) {
-  clearStoredMapCaches();
+  clearSavedQueryLocalStorage();
   MAP_QUERY_ROUTES.forEach((route) => {
     queryClient.removeQueries(route);
     queryClient.invalidateQueries(route);

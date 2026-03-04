@@ -39,6 +39,7 @@ import {
 import { navConfig } from "@/constants";
 import { useFetchWithAuth } from "@/hooks";
 import { SecurityScope } from "@/interfaces";
+import { clearSavedQueryLocalStorage } from "@/service";
 
 const redirectOptions = {
   public: navConfig.filter((item) => !item.role),
@@ -82,6 +83,7 @@ export const Settings = () => {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isClearingCachedData, setIsClearingCachedData] = useState(false);
 
   const {
     control: displayNameControl,
@@ -321,6 +323,24 @@ export const Settings = () => {
     }
 
     avatarMutation.mutate(file);
+  };
+
+  const handleClearCachedData = () => {
+    setIsClearingCachedData(true);
+
+    try {
+      clearSavedQueryLocalStorage();
+      queryClient.clear();
+      enqueueSnackbar("Saved cache cleared.", {
+        variant: "success",
+      });
+    } catch {
+      enqueueSnackbar("Failed to clear cached data.", {
+        variant: "error",
+      });
+    } finally {
+      setIsClearingCachedData(false);
+    }
   };
 
   return (
@@ -716,7 +736,9 @@ export const Settings = () => {
                               render={({ field }) => (
                                 <TextField
                                   {...field}
-                                  type={showCurrentPassword ? "text" : "password"}
+                                  type={
+                                    showCurrentPassword ? "text" : "password"
+                                  }
                                   fullWidth
                                   size="small"
                                   label="Current Password"
@@ -731,7 +753,9 @@ export const Settings = () => {
                                         <IconButton
                                           edge="end"
                                           onClick={() =>
-                                            setShowCurrentPassword((show) => !show)
+                                            setShowCurrentPassword(
+                                              (show) => !show,
+                                            )
                                           }
                                         >
                                           {showCurrentPassword ? (
@@ -792,7 +816,9 @@ export const Settings = () => {
                               render={({ field }) => (
                                 <TextField
                                   {...field}
-                                  type={showConfirmPassword ? "text" : "password"}
+                                  type={
+                                    showConfirmPassword ? "text" : "password"
+                                  }
                                   fullWidth
                                   size="small"
                                   label="Confirm Password"
@@ -807,7 +833,9 @@ export const Settings = () => {
                                         <IconButton
                                           edge="end"
                                           onClick={() =>
-                                            setShowConfirmPassword((show) => !show)
+                                            setShowConfirmPassword(
+                                              (show) => !show,
+                                            )
                                           }
                                         >
                                           {showConfirmPassword ? (
@@ -836,6 +864,37 @@ export const Settings = () => {
                       </form>
                     </Grid>
                   </Grid>
+                </AccordionDetails>
+              </Accordion>
+            </Grid>
+          </Grid>
+          <Typography variant="h5" gutterBottom py={2}>
+            Cached Data
+          </Typography>
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <Accordion>
+                <AccordionSummary expandIcon={<ExpandMore />}>
+                  <Typography component="span">Clear Saved Cache</Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Stack spacing={2}>
+                    <Typography variant="body2" color="text.secondary">
+                      Clears stored app data so pages load fresh information the
+                      next time you open them.
+                    </Typography>
+                    <Box display="flex" justifyContent="flex-end">
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        startIcon={<Delete fontSize="small" />}
+                        disabled={isClearingCachedData}
+                        onClick={handleClearCachedData}
+                      >
+                        Clear Cache
+                      </Button>
+                    </Box>
+                  </Stack>
                 </AccordionDetails>
               </Accordion>
             </Grid>
