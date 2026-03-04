@@ -1,4 +1,5 @@
 import {
+  InfiniteData,
   useInfiniteQuery,
   useMutation,
   useQuery,
@@ -59,6 +60,81 @@ import {
   PartHistoryResponse,
   UpdatePartHistoryPayload,
 } from "@/interfaces/PartHistoryResponse";
+
+// Cashe for up to 48 hours
+const MAP_CACHE_TTL_MS = 1000 * 60 * 60 * 24 * 2;
+const MAP_CACHE_PREFIX = "wmdb:map-cache:";
+const MAP_QUERY_ROUTES = ["meters_locations", "well_locations"] as const;
+
+type StoredMapCache<T> = {
+  data: T;
+  updatedAt: number;
+};
+
+function getMapCacheStorageKey(queryKey: readonly unknown[]) {
+  return `${MAP_CACHE_PREFIX}${JSON.stringify(queryKey)}`;
+}
+
+function readMapCache<T>(queryKey: readonly unknown[]) {
+  if (typeof window === "undefined") return undefined;
+
+  const storageKey = getMapCacheStorageKey(queryKey);
+  const rawValue = window.localStorage.getItem(storageKey);
+  if (!rawValue) return undefined;
+
+  try {
+    const parsed = JSON.parse(rawValue) as StoredMapCache<T>;
+    if (
+      !parsed ||
+      typeof parsed.updatedAt !== "number" ||
+      Date.now() - parsed.updatedAt > MAP_CACHE_TTL_MS
+    ) {
+      window.localStorage.removeItem(storageKey);
+      return undefined;
+    }
+
+    return parsed;
+  } catch {
+    window.localStorage.removeItem(storageKey);
+    return undefined;
+  }
+}
+
+function writeMapCache<T>(queryKey: readonly unknown[], data: T) {
+  if (typeof window === "undefined") return;
+
+  const storageKey = getMapCacheStorageKey(queryKey);
+  const value: StoredMapCache<T> = {
+    data,
+    updatedAt: Date.now(),
+  };
+
+  window.localStorage.setItem(storageKey, JSON.stringify(value));
+}
+
+function clearStoredMapCaches() {
+  if (typeof window === "undefined") return;
+
+  const keysToRemove: string[] = [];
+  for (let i = 0; i < window.localStorage.length; i++) {
+    const key = window.localStorage.key(i);
+    if (key?.startsWith(MAP_CACHE_PREFIX)) {
+      keysToRemove.push(key);
+    }
+  }
+
+  keysToRemove.forEach((key) => window.localStorage.removeItem(key));
+}
+
+function invalidateMapDataCaches(
+  queryClient: ReturnType<typeof useQueryClient>,
+) {
+  clearStoredMapCaches();
+  MAP_QUERY_ROUTES.forEach((route) => {
+    queryClient.removeQueries(route);
+    queryClient.invalidateQueries(route);
+  });
+}
 
 // Date display util
 export function toGMT6String(date: Date) {
@@ -249,9 +325,11 @@ export function useGetMeterLocations(searchstring: string | undefined) {
   const authHeader = useAuthHeader();
   const navigate = useNavigate();
   const signOut = useSignOut();
+  const queryKey = [route, searchstring] as const;
+  const cachedData = readMapCache<MeterMapDTO[]>(queryKey);
 
   return useQuery<MeterMapDTO[], Error>({
-    queryKey: [route, searchstring],
+    queryKey,
     queryFn: () =>
       GETFetch(
         route,
@@ -260,8 +338,11 @@ export function useGetMeterLocations(searchstring: string | undefined) {
         signOut,
         navigate,
       ),
-    staleTime: 1000 * 60 * 60 * 24, // 24 hours
-    cacheTime: 1000 * 60 * 60 * 24, // keep in memory for 24 hours
+    initialData: cachedData?.data,
+    initialDataUpdatedAt: cachedData?.updatedAt,
+    onSuccess: (data) => writeMapCache(queryKey, data),
+    staleTime: MAP_CACHE_TTL_MS,
+    cacheTime: MAP_CACHE_TTL_MS,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     refetchOnReconnect: false,
@@ -479,9 +560,11 @@ export function useGetWellLocations(
   const navigate = useNavigate();
   const signOut = useSignOut();
   const PAGE_SIZE = 500;
+  const queryKey = [route, searchstring, has_chloride_group] as const;
+  const cachedData = readMapCache<InfiniteData<Well[]>>(queryKey);
 
   return useInfiniteQuery<Well[], Error>({
-    queryKey: [route, searchstring, has_chloride_group],
+    queryKey,
     queryFn: async ({ pageParam = 0 }) => {
       return GETFetch(
         route,
@@ -501,8 +584,11 @@ export function useGetWellLocations(
       if (!lastPage || lastPage.length < PAGE_SIZE) return undefined;
       return allPages.length * PAGE_SIZE; // next offset
     },
-    staleTime: 1000 * 60 * 60 * 24,
-    cacheTime: 1000 * 60 * 60 * 24,
+    initialData: cachedData?.data,
+    initialDataUpdatedAt: cachedData?.updatedAt,
+    onSuccess: (data) => writeMapCache(queryKey, data),
+    staleTime: MAP_CACHE_TTL_MS,
+    cacheTime: MAP_CACHE_TTL_MS,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     refetchOnReconnect: false,
@@ -732,6 +818,7 @@ export function useCreateWell(onSuccess: Function) {
   const { enqueueSnackbar } = useSnackbar();
   const route = "wells";
   const authHeader = useAuthHeader();
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (new_well: SubmitWellCreate) => {
@@ -756,6 +843,7 @@ export function useCreateWell(onSuccess: Function) {
       } else {
         onSuccess();
         const responseJson = await response.json();
+        invalidateMapDataCaches(queryClient);
         return responseJson;
       }
     },
@@ -829,6 +917,7 @@ export function useUpdateWell(onSuccess: Function) {
       } else {
         onSuccess();
         const responseJson = await response.json();
+        invalidateMapDataCaches(queryClient);
 
         // Since query data will be based on params, iterate through all possible queries of this route
         const wellsQueries = queryClient.getQueryCache().findAll("wells");
@@ -995,6 +1084,7 @@ export function useCreateMeter(onSuccess: Function) {
   const { enqueueSnackbar } = useSnackbar();
   const route = "meters";
   const authHeader = useAuthHeader();
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (meter: Meter) => {
@@ -1020,6 +1110,7 @@ export function useCreateMeter(onSuccess: Function) {
         onSuccess();
 
         const responseJson = await response.json();
+        invalidateMapDataCaches(queryClient);
         return responseJson;
       }
     },
@@ -1152,6 +1243,7 @@ export function useUpdateMeter(onSuccess: Function) {
         onSuccess();
 
         const responseJson = await response.json();
+        invalidateMapDataCaches(queryClient);
 
         // Since query data will be based on params, iterate through all possible queries of this route
         const meterQueries = queryClient.getQueryCache().findAll("meters");
@@ -1747,7 +1839,11 @@ export function useUpdatePartHistory(
         throw new Error("Missing part id");
       }
 
-      const response = await PATCHFetch(`parts/${partId}/history`, payload, authHeader());
+      const response = await PATCHFetch(
+        `parts/${partId}/history`,
+        payload,
+        authHeader(),
+      );
 
       if (!response.ok) {
         let detail = "";
@@ -1770,9 +1866,12 @@ export function useUpdatePartHistory(
           throw new Error(`Invalid history update${detail}`);
         }
 
-        enqueueSnackbar(`Unknown error occurred! (${response.status})${detail}`, {
-          variant: "error",
-        });
+        enqueueSnackbar(
+          `Unknown error occurred! (${response.status})${detail}`,
+          {
+            variant: "error",
+          },
+        );
         throw new Error(`Unknown Error: ${response.status}${detail}`);
       }
 
