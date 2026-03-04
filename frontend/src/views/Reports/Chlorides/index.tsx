@@ -35,16 +35,27 @@ import {
   CustomCardHeader,
   BackgroundBox,
   DirectionCard,
+  MapUrlStateSync,
   SoutheastGuideLayer,
   SatelliteLayer,
   OpenStreetMapLayer,
   WellMapLegend,
+  TransporationLayer,
+  BoundariesLayer,
 } from "@/components";
 import { RedMapIcon, BlackMapIcon } from "@/components/MapIcons";
 import { useFetchWithAuth } from "@/hooks";
 import { useGetWellLocations } from "@/service";
 import { Well } from "@/interfaces";
 import { WellStatus } from "@/enums";
+import {
+  DEFAULT_MAP_CENTER,
+  DEFAULT_MAP_ZOOM,
+  getMapLayersControlKey,
+  normalizeMapBaseLayer,
+  normalizeMapOverlayNames,
+  parseMapView,
+} from "@/utils";
 
 // @ts-ignore
 import MarkerClusterGroup from "@changey/react-leaflet-markercluster";
@@ -86,9 +97,33 @@ interface iChlorideReportNums {
 const isoToDayjs = (s?: string, fallback?: Dayjs) =>
   s ? dayjs(s, "YYYY-MM-DD") : (fallback ?? dayjs());
 
+const BASE_LAYER_NAMES = ["Satellite", "OpenStreetMap"] as const;
+const OVERLAY_NAMES = [
+  "Wells",
+  "Clorides Report Region Guide",
+  "Transportation",
+  "Boundaries and Places",
+] as const;
+const DEFAULT_BASE_LAYER = "OpenStreetMap";
+const DEFAULT_OVERLAYS = ["Clorides Report Region Guide", "Wells"];
+
 export const ChloridesReportView = () => {
   const navigate = useNavigate();
   const search = Route.useSearch();
+  const mapBaseLayer = normalizeMapBaseLayer(
+    search.mapBase,
+    BASE_LAYER_NAMES,
+    DEFAULT_BASE_LAYER,
+  );
+  const mapOverlayNames = normalizeMapOverlayNames(
+    search.mapOverlays,
+    OVERLAY_NAMES,
+    DEFAULT_OVERLAYS,
+  );
+  const mapView = parseMapView(search, {
+    center: DEFAULT_MAP_CENTER,
+    zoom: DEFAULT_MAP_ZOOM,
+  });
 
   const defaultValues = useMemo<FormValues>(() => {
     const fallbackFrom = dayjs().startOf("month");
@@ -362,19 +397,39 @@ export const ChloridesReportView = () => {
                 }}
               >
                 <MapContainer
-                  center={[33, -104.0]}
-                  zoom={8}
+                  center={mapView.center}
+                  zoom={mapView.zoom}
                   style={{ height: "100%", width: "100%" }}
                   maxZoom={18}
                 >
-                  <LayersControl position="topleft">
+                  <MapUrlStateSync
+                    allowedBaseLayers={BASE_LAYER_NAMES}
+                    allowedOverlays={OVERLAY_NAMES}
+                    defaultBaseLayer={DEFAULT_BASE_LAYER}
+                    defaultOverlays={DEFAULT_OVERLAYS}
+                    search={search}
+                    setSearch={setSearch}
+                  />
+                  <LayersControl
+                    key={getMapLayersControlKey(mapBaseLayer, mapOverlayNames)}
+                    position="topleft"
+                  >
                     {/* Base Layers */}
-                    <SatelliteLayer />
-                    <OpenStreetMapLayer />
-                    <SoutheastGuideLayer />
+                    <SatelliteLayer checked={mapBaseLayer === "Satellite"} />
+                    <OpenStreetMapLayer
+                      checked={mapBaseLayer === "OpenStreetMap"}
+                    />
+                    <SoutheastGuideLayer
+                      checked={mapOverlayNames.includes(
+                        "Clorides Report Region Guide",
+                      )}
+                    />
 
                     {/* Wells Cluster Overlay */}
-                    <LayersControl.Overlay name="Wells" checked>
+                    <LayersControl.Overlay
+                      checked={mapOverlayNames.includes("Wells")}
+                      name="Wells"
+                    >
                       <MarkerClusterGroup
                         chunkedLoading
                         maxClusterRadius={35}
@@ -420,6 +475,14 @@ export const ChloridesReportView = () => {
                           ))}
                       </MarkerClusterGroup>
                     </LayersControl.Overlay>
+                    <TransporationLayer
+                      checked={mapOverlayNames.includes("Transportation")}
+                    />
+                    <BoundariesLayer
+                      checked={mapOverlayNames.includes(
+                        "Boundaries and Places",
+                      )}
+                    />
                   </LayersControl>
                   <WellMapLegend />
                 </MapContainer>

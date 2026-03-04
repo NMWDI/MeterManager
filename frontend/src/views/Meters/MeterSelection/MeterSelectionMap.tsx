@@ -22,6 +22,7 @@ import icon from "leaflet/dist/images/marker-icon.png";
 import iconShadow from "leaflet/dist/images/marker-shadow.png";
 import { useGetMeterLocations } from "@/service";
 import { Box, Typography } from "@mui/material";
+import { useNavigate } from "@tanstack/react-router";
 
 // @ts-ignore
 import MarkerClusterGroup from "@changey/react-leaflet-markercluster";
@@ -29,8 +30,31 @@ import {
   OpenStreetMapLayer,
   SatelliteLayer,
   MeterMapColorLegend,
+  TransporationLayer,
+  BoundariesLayer,
+  MapUrlStateSync,
 } from "@/components";
-import { getMeterMarkerColor } from "@/utils";
+import {
+  DEFAULT_MAP_CENTER,
+  DEFAULT_MAP_ZOOM,
+  getMapLayersControlKey,
+  getMeterMarkerColor,
+  normalizeMapBaseLayer,
+  normalizeMapOverlayNames,
+  parseMapView,
+} from "@/utils";
+import { Route } from "@/routes/manage/meters";
+
+const BASE_LAYER_NAMES = ["Satellite", "OpenStreetMap"] as const;
+const OVERLAY_NAMES = [
+  "Meters",
+  "Section",
+  "Township Range",
+  "Transportation",
+  "Boundaries and Places",
+] as const;
+const DEFAULT_BASE_LAYER = "OpenStreetMap";
+const DEFAULT_OVERLAYS = ["Meters"];
 
 const DefaultIcon = L.icon({ iconUrl: icon, shadowUrl: iconShadow });
 L.Marker.prototype.options.icon = DefaultIcon;
@@ -46,8 +70,31 @@ export default function MeterSelectionMap({
   meterSearch: string;
   onMeterSelection: Function;
 }) {
+  const search = Route.useSearch();
+  const navigate = useNavigate();
   const [meterSearchDebounced] = useDebounce(meterSearch, 250);
   const meterMarkers = useGetMeterLocations(meterSearchDebounced);
+  const mapBaseLayer = normalizeMapBaseLayer(
+    search.mapBase,
+    BASE_LAYER_NAMES,
+    DEFAULT_BASE_LAYER,
+  );
+  const mapOverlayNames = normalizeMapOverlayNames(
+    search.mapOverlays,
+    OVERLAY_NAMES,
+    DEFAULT_OVERLAYS,
+  );
+  const mapView = parseMapView(search, {
+    center: DEFAULT_MAP_CENTER,
+    zoom: DEFAULT_MAP_ZOOM,
+  });
+  const setSearch = (updater: (prev: typeof search) => typeof search) => {
+    navigate({
+      to: "/manage/meters",
+      search: (prev) => updater(prev as typeof search),
+      replace: true,
+    });
+  };
 
   return (
     <>
@@ -61,18 +108,32 @@ export default function MeterSelectionMap({
         }}
       >
         <MapContainer
-          center={[33, -104.0]}
-          zoom={8}
+          center={mapView.center}
+          zoom={mapView.zoom}
           style={{ height: "100%", width: "100%" }}
           maxZoom={18}
         >
-          <LayersControl position="topleft">
+          <MapUrlStateSync
+            allowedBaseLayers={BASE_LAYER_NAMES}
+            allowedOverlays={OVERLAY_NAMES}
+            defaultBaseLayer={DEFAULT_BASE_LAYER}
+            defaultOverlays={DEFAULT_OVERLAYS}
+            search={search}
+            setSearch={setSearch}
+          />
+          <LayersControl
+            key={getMapLayersControlKey(mapBaseLayer, mapOverlayNames)}
+            position="topleft"
+          >
             {/* Base Layers */}
-            <SatelliteLayer />
-            <OpenStreetMapLayer />
+            <SatelliteLayer checked={mapBaseLayer === "Satellite"} />
+            <OpenStreetMapLayer checked={mapBaseLayer === "OpenStreetMap"} />
 
             {/* Markers Cluster Overlay */}
-            <LayersControl.Overlay name="Meters" checked>
+            <LayersControl.Overlay
+              checked={mapOverlayNames.includes("Meters")}
+              name="Meters"
+            >
               <MarkerClusterGroup
                 chunkedLoading
                 maxClusterRadius={35}
@@ -127,7 +188,10 @@ export default function MeterSelectionMap({
             </LayersControl.Overlay>
 
             {/* Section GeoJSON */}
-            <LayersControl.Overlay name="Section">
+            <LayersControl.Overlay
+              checked={mapOverlayNames.includes("Section")}
+              name="Section"
+            >
               <Pane name="section_overlay" style={{ zIndex: 600 }}>
                 <GeoJSON
                   data={ssData}
@@ -142,7 +206,10 @@ export default function MeterSelectionMap({
             </LayersControl.Overlay>
 
             {/* Township/Range GeoJSON */}
-            <LayersControl.Overlay name="Township Range">
+            <LayersControl.Overlay
+              checked={mapOverlayNames.includes("Township Range")}
+              name="Township Range"
+            >
               <Pane name="township_range_overlay" style={{ zIndex: 625 }}>
                 <GeoJSON
                   data={trData}
@@ -163,6 +230,12 @@ export default function MeterSelectionMap({
                 />
               </Pane>
             </LayersControl.Overlay>
+            <TransporationLayer
+              checked={mapOverlayNames.includes("Transportation")}
+            />
+            <BoundariesLayer
+              checked={mapOverlayNames.includes("Boundaries and Places")}
+            />
           </LayersControl>
           <MeterMapColorLegend />
         </MapContainer>

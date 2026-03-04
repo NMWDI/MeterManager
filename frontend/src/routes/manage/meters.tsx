@@ -2,6 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { MetersView } from "@/views";
 import { ProtectedRoute } from "@/ProtectedRoute";
+import {
+  mapBaseLayerSchema,
+  mapLatSchema,
+  mapLngSchema,
+  mapOverlayNamesSchema,
+  mapZoomSchema,
+} from "@/utils";
 
 const intPosOptional = z.preprocess((val) => {
   if (val === undefined || val === null || val === "") return undefined;
@@ -89,6 +96,11 @@ export const Route = createFileRoute("/manage/meters")({
     // meter history pagination
     h_page: pageSchema,
     h_pageSize: pageSizeSchema,
+    mapBase: mapBaseLayerSchema.catch("OpenStreetMap").default("OpenStreetMap"),
+    mapOverlays: mapOverlayNamesSchema,
+    mapLat: mapLatSchema,
+    mapLng: mapLngSchema,
+    mapZoom: mapZoomSchema,
   }),
   component: () => (
     <ProtectedRoute requiredScopes={["read"]}>

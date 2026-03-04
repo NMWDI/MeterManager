@@ -3,10 +3,12 @@ import { useDebounce } from "use-debounce";
 import { LayersControl, MapContainer, Marker, Tooltip } from "react-leaflet";
 import { Box, Typography } from "@mui/material";
 import { useNavigate } from "@tanstack/react-router";
+import { Route } from "@/routes/manage/wells";
 import { useGetWellLocations } from "@/service";
 import { Well } from "@/interfaces";
 import {
   BoundariesLayer,
+  MapUrlStateSync,
   OpenStreetMapLayer,
   SatelliteLayer,
   SoutheastGuideLayer,
@@ -23,15 +25,57 @@ import "leaflet/dist/leaflet.css";
 import MarkerClusterGroup from "@changey/react-leaflet-markercluster";
 import "@changey/react-leaflet-markercluster/dist/styles.min.css";
 
+import {
+  DEFAULT_MAP_CENTER,
+  DEFAULT_MAP_ZOOM,
+  getMapLayersControlKey,
+  normalizeMapBaseLayer,
+  normalizeMapOverlayNames,
+  parseMapView,
+} from "@/utils";
+
+const BASE_LAYER_NAMES = ["Satellite", "OpenStreetMap"] as const;
+const OVERLAY_NAMES = [
+  "Wells",
+  "Clorides Report Region Guide",
+  "Transportation",
+  "Boundaries and Places",
+] as const;
+const DEFAULT_BASE_LAYER = "OpenStreetMap";
+const DEFAULT_OVERLAYS = ["Clorides Report Region Guide", "Wells"];
+
 export default function WellSelectionMap({
   wellSearchQueryProp,
 }: {
   wellSearchQueryProp: string;
 }) {
   const navigate = useNavigate();
+  const search = Route.useSearch();
 
   const [wellSearchDebounced] = useDebounce(wellSearchQueryProp, 250);
   const wellQuery = useGetWellLocations(wellSearchDebounced);
+  const mapBaseLayer = normalizeMapBaseLayer(
+    search.mapBase,
+    BASE_LAYER_NAMES,
+    DEFAULT_BASE_LAYER,
+  );
+  const mapOverlayNames = normalizeMapOverlayNames(
+    search.mapOverlays,
+    OVERLAY_NAMES,
+    DEFAULT_OVERLAYS,
+  );
+  const mapView = parseMapView(search, {
+    center: DEFAULT_MAP_CENTER,
+    zoom: DEFAULT_MAP_ZOOM,
+  });
+
+  const setSearch = (updater: (prev: typeof search) => typeof search) => {
+    navigate({
+      to: "/manage/wells",
+      search: (prev) => updater(prev as typeof search),
+      replace: true,
+    });
+  };
 
   useEffect(() => {
     if (wellQuery.hasNextPage && !wellQuery.isFetchingNextPage) {
@@ -66,19 +110,35 @@ export default function WellSelectionMap({
         }}
       >
         <MapContainer
-          center={[33, -104.0]}
-          zoom={8}
+          center={mapView.center}
+          zoom={mapView.zoom}
           style={{ height: "100%", width: "100%", minHeight: 500 }}
           maxZoom={18}
         >
-          <LayersControl position="topleft">
+          <MapUrlStateSync
+            allowedBaseLayers={BASE_LAYER_NAMES}
+            allowedOverlays={OVERLAY_NAMES}
+            defaultBaseLayer={DEFAULT_BASE_LAYER}
+            defaultOverlays={DEFAULT_OVERLAYS}
+            search={search}
+            setSearch={setSearch}
+          />
+          <LayersControl
+            key={getMapLayersControlKey(mapBaseLayer, mapOverlayNames)}
+            position="topleft"
+          >
             {/* Base Layers */}
-            <SatelliteLayer />
-            <OpenStreetMapLayer />
-            <SoutheastGuideLayer />
+            <SatelliteLayer checked={mapBaseLayer === "Satellite"} />
+            <OpenStreetMapLayer checked={mapBaseLayer === "OpenStreetMap"} />
+            <SoutheastGuideLayer
+              checked={mapOverlayNames.includes("Clorides Report Region Guide")}
+            />
 
             {/* Wells Cluster Overlay */}
-            <LayersControl.Overlay name="Wells" checked>
+            <LayersControl.Overlay
+              checked={mapOverlayNames.includes("Wells")}
+              name="Wells"
+            >
               <MarkerClusterGroup
                 chunkedLoading
                 maxClusterRadius={35}
@@ -122,11 +182,15 @@ export default function WellSelectionMap({
                     </Marker>
                   ))}
               </MarkerClusterGroup>
-              <WellMapLegend />
-              <TransporationLayer />
-              <BoundariesLayer />
             </LayersControl.Overlay>
+            <TransporationLayer
+              checked={mapOverlayNames.includes("Transportation")}
+            />
+            <BoundariesLayer
+              checked={mapOverlayNames.includes("Boundaries and Places")}
+            />
           </LayersControl>
+          <WellMapLegend />
         </MapContainer>
       </Box>
       {/* Loading first page */}

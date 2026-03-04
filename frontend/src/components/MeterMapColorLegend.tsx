@@ -13,11 +13,11 @@ export const MeterMapColorLegend = () => {
       const div = L.DomUtil.create("div", "info legend");
 
       div.style.background = "white";
-      div.style.padding = "10px";
+      div.style.padding = "8px";
       div.style.borderRadius = "8px";
       div.style.boxShadow = "0 2px 6px rgba(0,0,0,0.3)";
       div.style.fontSize = "14px";
-      div.style.lineHeight = "18px";
+      div.style.lineHeight = "14px";
 
       const title = L.DomUtil.create("h4", "", div);
       title.textContent = "PM Season";
@@ -27,7 +27,7 @@ export const MeterMapColorLegend = () => {
         const row = L.DomUtil.create("div", "", div);
         row.style.display = "flex";
         row.style.alignItems = "center";
-        row.style.marginBottom = "6px";
+        row.style.marginBottom = "5px";
 
         const colorBox = L.DomUtil.create("div", "", row);
         colorBox.style.width = "20px";
