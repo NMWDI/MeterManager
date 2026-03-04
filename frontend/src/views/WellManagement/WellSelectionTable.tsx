@@ -98,7 +98,11 @@ export default function WellSelectionTable({
       renderCell: (params) => {
         const meters = params.value as Well["meters"];
         const links = meters.map((meter, index) => (
-          <span key={meter.id}>
+          <span
+            key={meter.id}
+            onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
             <Link
               to="/manage/meters"
               search={(prev) => ({

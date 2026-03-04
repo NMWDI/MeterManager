@@ -57,11 +57,11 @@ export const Plot = ({
   );
 
   return (
-    <Box sx={{ height: 600, width: "100%" }}>
+    <Box sx={{ height: { xs: 300, sm: 400, md: 500, lg: 600 }, width: "100%" }}>
       {isLoading ? (
         <Box
           sx={{
-            height: 600,
+            height: { xs: 300, sm: 400, md: 500, lg: 600 },
             width: "100%",
             display: "flex",
             justifyContent: "center",
