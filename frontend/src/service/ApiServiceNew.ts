@@ -10,6 +10,7 @@ import { useAuthHeader, useSignOut } from "react-auth-kit";
 import { enqueueSnackbar, useSnackbar } from "notistack";
 import {
   ActivityTypeLU,
+  HomeSummary,
   MeterListDTO,
   MeterListQueryParams,
   MeterTypeLU,
@@ -356,6 +357,17 @@ export function useGetMeterTypeList() {
   const signOut = useSignOut();
 
   return useQuery<MeterTypeLU[], Error>([route], () =>
+    GETFetch(route, null, authHeader(), signOut, navigate),
+  );
+}
+
+export function useGetHomeSummary() {
+  const route = "maintenance/home_summary";
+  const authHeader = useAuthHeader();
+  const navigate = useNavigate();
+  const signOut = useSignOut();
+
+  return useQuery<HomeSummary, Error>([route], () =>
     GETFetch(route, null, authHeader(), signOut, navigate),
   );
 }

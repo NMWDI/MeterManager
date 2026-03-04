@@ -6,6 +6,7 @@ export * from "./BaseWell";
 export * from "./CreateUser";
 export * from "./DeviceAttributes";
 export * from "./DevicePayload";
+export * from "./HomeSummary";
 export * from "./IncreaseQuantityPayload";
 export * from "./LandOwner";
 export * from "./Location";

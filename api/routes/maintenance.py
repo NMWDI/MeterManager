@@ -1,4 +1,5 @@
 from fastapi import Depends, APIRouter, Query
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import List
@@ -14,6 +15,8 @@ from api.models.main_models import (
     MeterActivities,
     ActivityTypeLU,
     Locations,
+    workOrders,
+    workOrderStatusLU,
 )
 from api.session import get_db
 from api.enums import ScopedUser
@@ -32,7 +35,8 @@ templates = Environment(
     autoescape=select_autoescape(["html", "xml"]),
 )
 
-maintenance_router = APIRouter()
+authenticated_maintenance_router = APIRouter()
+public_maintenance_router = APIRouter()
 
 
 class MeterSummary(BaseModel):
@@ -55,7 +59,50 @@ class MaintenanceSummaryResponse(BaseModel):
     table_rows: List[MaintenanceRow]
 
 
-@maintenance_router.get(
+class HomeSummaryResponse(BaseModel):
+    completed_work_orders: int
+    repairs_processed: int
+    reinstallations_processed: int
+    preventative_maintenance_processed: int
+
+
+@public_maintenance_router.get(
+    "/maintenance/home_summary",
+    tags=["Maintenance"],
+    response_model=HomeSummaryResponse,
+)
+def get_home_summary(db: Session = Depends(get_db)):
+    completed_work_orders = (
+        db.query(func.count(workOrders.id))
+        .join(workOrderStatusLU, workOrderStatusLU.id == workOrders.status_id)
+        .filter(workOrderStatusLU.name == "Closed")
+        .scalar()
+        or 0
+    )
+
+    activity_counts = dict(
+        db.query(ActivityTypeLU.name, func.count(MeterActivities.id))
+        .join(MeterActivities, MeterActivities.activity_type_id == ActivityTypeLU.id)
+        .filter(
+            ActivityTypeLU.name.in_(
+                ["Repair", "Re-install", "Preventative Maintenance"]
+            )
+        )
+        .group_by(ActivityTypeLU.name)
+        .all()
+    )
+
+    return {
+        "completed_work_orders": completed_work_orders,
+        "repairs_processed": activity_counts.get("Repair", 0),
+        "reinstallations_processed": activity_counts.get("Re-install", 0),
+        "preventative_maintenance_processed": activity_counts.get(
+            "Preventative Maintenance", 0
+        ),
+    }
+
+
+@authenticated_maintenance_router.get(
     "/maintenance",
     tags=["Maintenance"],
     response_model=MaintenanceSummaryResponse,
@@ -171,7 +218,7 @@ def get_maintenance_summary(
     }
 
 
-@maintenance_router.get(
+@authenticated_maintenance_router.get(
     "/maintenance/pdf",
     tags=["Maintenance"],
     dependencies=[Depends(ScopedUser.Read)],
