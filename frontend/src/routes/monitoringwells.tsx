@@ -39,13 +39,18 @@ import { MonitorHeart } from "@mui/icons-material";
 import { CreateModal, UpdateModal } from "@/components/Modals/MonitoredWell";
 import { CustomCardHeader, BackgroundBox } from "@/components";
 import { Table, Plot } from "@/views/MonitoringWells";
+import { optionalPositiveInt, pageParam, routeSearchHydrator } from "@/utils";
+
+const searchSchema = z.object({
+  wellId: optionalPositiveInt.catch(undefined).default(undefined),
+  page: pageParam(0, 0),
+  pageSize: pageParam(25, 10),
+});
 
 export const Route = createFileRoute("/monitoringwells")({
-  validateSearch: z.object({
-    wellId: z.coerce.number().int().positive().optional(),
-    page: z.coerce.number().int().min(0).catch(0),
-    pageSize: z.coerce.number().int().min(10).max(200).catch(25),
-  }),
+  validateSearch: searchSchema,
+  beforeLoad: ({ search, location }) =>
+    routeSearchHydrator(location.pathname, search, location.searchStr),
   component: MonitoringWells,
 });
 

@@ -39,7 +39,7 @@ export function ReportsNavItem({
     }
     e.stopPropagation();
     setOpen(false);
-    navigate({ to: "/reports" });
+    navigate({ to: "/reports", search: {} });
   };
 
   return (

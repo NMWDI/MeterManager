@@ -7,9 +7,9 @@ import { SnackbarProvider } from "notistack";
 import { router } from "./router";
 import { ErrorMessageProvider } from "./contexts/ErrorMessageContext";
 
-export const App = () => {
-  const queryClient = new QueryClient();
+const queryClient = new QueryClient();
 
+export const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -24,7 +24,7 @@ export const App = () => {
             cookieSecure={window.location.protocol === "https:"}
           >
             <ErrorMessageProvider>
-              <RouterProvider router={router} />
+              <RouterProvider router={router} context={{ queryClient }} />
             </ErrorMessageProvider>
           </AuthProvider>
         </SnackbarProvider>

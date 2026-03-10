@@ -3,40 +3,17 @@ import { z } from "zod";
 import { WellManagementView } from "@/views";
 import { ProtectedRoute } from "@/ProtectedRoute";
 import {
+  booleanParam,
   mapBaseLayerSchema,
   mapLatSchema,
   mapLngSchema,
   mapOverlayNamesSchema,
   mapZoomSchema,
+  optionalPositiveInt,
+  optionalTrimmedString,
+  pageParam,
+  routeSearchHydrator,
 } from "@/utils";
-
-const intPosOptional = z.preprocess((val) => {
-  if (val === undefined || val === null || val === "") return undefined;
-  const raw = Array.isArray(val) ? val[0] : val;
-  const n = Number(raw);
-  return Number.isInteger(n) && n > 0 ? n : undefined;
-}, z.number().int().positive().optional());
-
-const booleanDefaultTrue = z
-  .preprocess((val) => {
-    if (val === undefined || val === null || val === "") return undefined;
-    const raw = Array.isArray(val) ? val[0] : val;
-
-    if (raw === true || raw === "true" || raw === "1" || raw === 1) return true;
-    if (raw === false || raw === "false" || raw === "0" || raw === 0)
-      return false;
-
-    return undefined;
-  }, z.boolean().optional())
-  .catch(true)
-  .default(true);
-
-const qSchema = z.preprocess((val) => {
-  if (val === undefined || val === null) return undefined;
-  const raw = Array.isArray(val) ? val[0] : val;
-  const s = String(raw).trim();
-  return s.length ? s : undefined;
-}, z.string().optional());
 
 const tabSchema = z
   .preprocess(
@@ -51,24 +28,26 @@ const tabSchema = z
   .catch("list")
   .default("list");
 
+const searchSchema = z
+  .object({
+    tab: tabSchema,
+    add: booleanParam(true),
+    q: optionalTrimmedString.catch("").default(""),
+    well_id: optionalPositiveInt.catch(undefined).default(undefined),
+    page: pageParam(0, 0),
+    pageSize: pageParam(25, 10),
+    mapBase: mapBaseLayerSchema.catch("OpenStreetMap").default("OpenStreetMap"),
+    mapOverlays: mapOverlayNamesSchema,
+    mapLat: mapLatSchema,
+    mapLng: mapLngSchema,
+    mapZoom: mapZoomSchema,
+  })
+  .passthrough();
+
 export const Route = createFileRoute("/manage/wells")({
-  validateSearch: z
-    .object({
-      tab: tabSchema,
-      add: booleanDefaultTrue,
-      q: qSchema,
-      well_id: intPosOptional,
-      page: z.coerce.number().int().min(0).catch(0),
-      pageSize: z.coerce.number().int().min(10).max(200).catch(25),
-      mapBase: mapBaseLayerSchema
-        .catch("OpenStreetMap")
-        .default("OpenStreetMap"),
-      mapOverlays: mapOverlayNamesSchema,
-      mapLat: mapLatSchema,
-      mapLng: mapLngSchema,
-      mapZoom: mapZoomSchema,
-    })
-    .passthrough(),
+  validateSearch: searchSchema,
+  beforeLoad: ({ search, location }) =>
+    routeSearchHydrator(location.pathname, search, location.searchStr),
   component: () => (
     <ProtectedRoute requiredScopes={["read"]}>
       <WellManagementView />

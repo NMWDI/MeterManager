@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
+import dayjs from "dayjs";
 import {
   Box,
   Button,
@@ -81,6 +82,13 @@ export const PartsTable = ({
           <Link
             to="/manage/parts/$id/history"
             params={{ id: String(params.row.id) }}
+            search={{
+              to: dayjs().endOf("month").format("YYYY-MM-DD"),
+              type: ["initial", "used", "added", "current"],
+              q: "",
+              page: 0,
+              pageSize: 25,
+            }}
             style={{ display: "inline-flex" }}
             onMouseDown={(e: any) => e.stopPropagation()}
             onClick={(e: any) => e.stopPropagation()}

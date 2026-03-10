@@ -28,15 +28,24 @@ import {
 } from "@/interfaces";
 import { useFetchWithAuth } from "@/hooks";
 import { BackgroundBox, CustomCardHeader } from "@/components";
-import { emptyToNull } from "@/utils";
+import {
+  emptyToNull,
+  optionalPositiveInt,
+  pageParam,
+  routeSearchHydrator,
+} from "@/utils";
 import { Table, Plot } from "@/views/Chlorides";
 
+const searchSchema = z.object({
+  regionId: optionalPositiveInt.catch(undefined).default(undefined),
+  page: pageParam(0, 0),
+  pageSize: pageParam(25, 10),
+});
+
 export const Route = createFileRoute("/chlorides")({
-  validateSearch: z.object({
-    regionId: z.coerce.number().int().positive().optional(),
-    page: z.coerce.number().int().min(0).catch(0),
-    pageSize: z.coerce.number().int().min(10).max(200).catch(25),
-  }),
+  validateSearch: searchSchema,
+  beforeLoad: ({ search, location }) =>
+    routeSearchHydrator(location.pathname, search, location.searchStr),
   component: Chlorides,
 });
 

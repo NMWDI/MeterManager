@@ -3,23 +3,34 @@ import { z } from "zod";
 import dayjs from "dayjs";
 import { PartsHistory } from "@/views";
 import { ProtectedRoute } from "@/ProtectedRoute";
-
-const dateSchema = z
-  .preprocess((val) => {
-    if (val == null || val === "") return undefined;
-    const raw = Array.isArray(val) ? val[0] : val;
-    const s = String(raw).trim();
-    return dayjs(s, "YYYY-MM-DD", true).isValid() ? s : undefined;
-  }, z.string().optional())
-  .catch(undefined);
+import { API_URL } from "@/config";
+import {
+  dayjsDateParam,
+  pageParam,
+} from "@/utils";
+import { PartHistoryResponse } from "@/interfaces/PartHistoryResponse";
 
 const eventTypeValues = ["initial", "used", "added", "current"] as const;
+const defaultEventTypes: [
+  (typeof eventTypeValues)[number],
+  ...(typeof eventTypeValues)[number][],
+] = ["initial", "used", "added", "current"];
 
 const eventTypesSchema = z
   .preprocess((val) => {
     if (val == null || val === "") return undefined;
 
-    const raw = Array.isArray(val) ? val : [val];
+    let rawValue = val;
+    if (typeof rawValue === "string") {
+      try {
+        const parsed = JSON.parse(rawValue);
+        if (Array.isArray(parsed)) rawValue = parsed;
+      } catch {
+        // keep raw string and process as CSV
+      }
+    }
+
+    const raw = Array.isArray(rawValue) ? rawValue : [rawValue];
     const values = raw
       .flatMap((v) => (typeof v === "string" ? v.split(",") : [v]))
       .map((v) => String(v).trim())
@@ -28,23 +39,48 @@ const eventTypesSchema = z
           eventTypeValues.includes(v as (typeof eventTypeValues)[number]),
       );
 
-    return Array.from(new Set(values));
-  }, z.array(z.enum(eventTypeValues)).optional())
-  .catch([...eventTypeValues])
-  .default([...eventTypeValues]);
+    const set = new Set(values);
+    return eventTypeValues.filter((type) => set.has(type));
+  }, z.array(z.enum(eventTypeValues)).nonempty().optional())
+  .catch(defaultEventTypes)
+  .default(defaultEventTypes);
 
-const pageSchema = z.coerce.number().int().min(0).catch(0).default(0);
-const pageSizeSchema = z.coerce.number().int().min(10).max(200).catch(25).default(25);
+const searchSchema = z.object({
+  from: dayjsDateParam.catch(undefined).default(undefined),
+  to: dayjsDateParam
+    .catch(dayjs().endOf("month").format("YYYY-MM-DD"))
+    .default(dayjs().endOf("month").format("YYYY-MM-DD")),
+  type: eventTypesSchema,
+  q: z.string().catch("").default(""),
+  page: pageParam(0, 0),
+  pageSize: pageParam(25, 10),
+});
 
 export const Route = createFileRoute("/manage/parts/$id/history")({
-  validateSearch: z.object({
-    from: dateSchema.optional().catch(undefined),
-    to: dateSchema.default(dayjs().endOf("month").format("YYYY-MM-DD")),
-    type: eventTypesSchema,
-    q: z.string().optional().catch("").default(""),
-    page: pageSchema,
-    pageSize: pageSizeSchema,
-  }),
+  validateSearch: searchSchema,
+  loader: async ({ params, context }) => {
+    if (typeof window === "undefined") return null;
+
+    const token = window.localStorage.getItem("_auth");
+    if (!token) return null;
+
+    await context.queryClient.prefetchQuery(
+      ["parts-history", params.id],
+      async () => {
+        const response = await fetch(`${API_URL}/parts/${params.id}/history`, {
+          headers: { Authorization: `bearer ${token}` },
+        });
+
+        if (!response.ok) {
+          throw new Error(response.status.toString());
+        }
+
+        return (await response.json()) as PartHistoryResponse;
+      },
+    );
+
+    return null;
+  },
   component: () => (
     <ProtectedRoute requiredScopes={["admin"]}>
       <PartsHistory />

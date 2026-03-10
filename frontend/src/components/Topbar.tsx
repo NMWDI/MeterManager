@@ -49,7 +49,7 @@ export const Topbar = ({
   };
 
   const fullSignOut = () => {
-    navigate({ to: "/" });
+    navigate({ to: "/", search: {} });
     localStorage.removeItem("loggedIn");
     signOut();
   };
@@ -94,7 +94,7 @@ export const Topbar = ({
                   xl: "1.625remrem",
                 },
               }}
-              onClick={() => navigate({ to: "/" })}
+              onClick={() => navigate({ to: "/", search: {} })}
             >
               Meter Manager
             </Typography>
@@ -138,7 +138,7 @@ export const Topbar = ({
               <Divider />
               <MenuItem
                 onClick={() => {
-                  navigate({ to: "/settings" });
+                  navigate({ to: "/settings", search: {} });
                   handleMenuClose();
                 }}
               >
@@ -164,7 +164,7 @@ export const Topbar = ({
         ) : (
           <Button
             size="small"
-            onClick={() => navigate({ to: "/login" })}
+            onClick={() => navigate({ to: "/login", search: {} })}
             sx={{
               textTransform: "uppercase",
               fontFamily: "monospace",

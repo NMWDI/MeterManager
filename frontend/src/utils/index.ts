@@ -9,3 +9,4 @@ export * from "./GetRoleColor";
 export * from "./MemoryUtils";
 export * from "./MonitoredWellsUtils";
 export * from "./NumberDataFormatter";
+export * from "./RouteSearch";

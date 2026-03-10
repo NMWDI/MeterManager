@@ -1,32 +1,36 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { z } from "zod";
+import dayjs from "dayjs";
 import { ChloridesReportView } from "@/views/Reports/Chlorides";
 import { ProtectedRoute } from "@/ProtectedRoute";
 import {
+  isoDateParam,
   mapBaseLayerSchema,
   mapLatSchema,
   mapLngSchema,
   mapOverlayNamesSchema,
   mapZoomSchema,
+  routeSearchHydrator,
 } from "@/utils";
+import { z } from "zod";
 
-const isoDate = z.preprocess((val) => {
-  const raw = Array.isArray(val) ? val[0] : val;
-  if (raw == null || raw === "") return undefined;
-  const s = String(raw).trim();
-  return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : undefined;
-}, z.string().optional());
+const searchSchema = z.object({
+  from: isoDateParam
+    .catch(dayjs().startOf("month").format("YYYY-MM-DD"))
+    .default(dayjs().startOf("month").format("YYYY-MM-DD")),
+  to: isoDateParam
+    .catch(dayjs().endOf("month").format("YYYY-MM-DD"))
+    .default(dayjs().endOf("month").format("YYYY-MM-DD")),
+  mapBase: mapBaseLayerSchema.catch("OpenStreetMap").default("OpenStreetMap"),
+  mapOverlays: mapOverlayNamesSchema,
+  mapLat: mapLatSchema,
+  mapLng: mapLngSchema,
+  mapZoom: mapZoomSchema,
+});
 
 export const Route = createFileRoute("/reports/chlorides")({
-  validateSearch: z.object({
-    from: isoDate.catch(undefined),
-    to: isoDate.catch(undefined),
-    mapBase: mapBaseLayerSchema.catch("OpenStreetMap").default("OpenStreetMap"),
-    mapOverlays: mapOverlayNamesSchema,
-    mapLat: mapLatSchema,
-    mapLng: mapLngSchema,
-    mapZoom: mapZoomSchema,
-  }),
+  validateSearch: searchSchema,
+  beforeLoad: ({ search, location }) =>
+    routeSearchHydrator(location.pathname, search, location.searchStr),
   component: () => (
     <ProtectedRoute requiredScopes={["read"]}>
       <ChloridesReportView />

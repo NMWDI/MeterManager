@@ -3,32 +3,17 @@ import { z } from "zod";
 import { MetersView } from "@/views";
 import { ProtectedRoute } from "@/ProtectedRoute";
 import {
+  booleanParam,
   mapBaseLayerSchema,
   mapLatSchema,
   mapLngSchema,
   mapOverlayNamesSchema,
   mapZoomSchema,
+  optionalPositiveInt,
+  optionalTrimmedString,
+  pageParam,
+  routeSearchHydrator,
 } from "@/utils";
-
-const intPosOptional = z.preprocess((val) => {
-  if (val === undefined || val === null || val === "") return undefined;
-  const raw = Array.isArray(val) ? val[0] : val;
-  const n = Number(raw);
-  return Number.isInteger(n) && n > 0 ? n : undefined;
-}, z.number().int().positive().optional());
-
-const booleanDefaultTrue = z
-  .preprocess((val) => {
-    if (val === undefined || val === null || val === "") return undefined;
-    const raw = Array.isArray(val) ? val[0] : val;
-
-    if (raw === true || raw === "true" || raw === "1" || raw === 1) return true;
-    if (raw === false || raw === "false" || raw === "0" || raw === 0)
-      return false;
-
-    return undefined;
-  }, z.boolean().optional())
-  .default(true);
 
 const meterFilterEnum = z.enum([
   "installed",
@@ -60,13 +45,6 @@ const filtersSchema = z
   }, z.array(meterFilterEnum).optional())
   .default(["installed"]);
 
-const qSchema = z.preprocess((val) => {
-  if (val === undefined || val === null) return undefined;
-  const raw = Array.isArray(val) ? val[0] : val;
-  const s = String(raw).trim();
-  return s.length ? s : undefined;
-}, z.string().optional());
-
 const tabSchema = z
   .preprocess(
     (val) => {
@@ -78,30 +56,31 @@ const tabSchema = z
   )
   .catch("list");
 
-const pageSchema = z.coerce.number().int().min(0).catch(0);
-const pageSizeSchema = z.coerce.number().int().min(10).max(200).catch(25);
+const searchSchema = z.object({
+  meter_id: optionalPositiveInt.catch(undefined).default(undefined),
+  activity_id: optionalPositiveInt.catch(undefined).default(undefined),
+  observation_id: optionalPositiveInt.catch(undefined).default(undefined),
+  add: booleanParam(true),
+  tab: tabSchema.default("list"),
+  q: optionalTrimmedString.catch("").default(""),
+  filters: filtersSchema,
+  // all meters list pagination
+  m_page: pageParam(0, 0),
+  m_pageSize: pageParam(25, 10),
+  // meter history pagination
+  h_page: pageParam(0, 0),
+  h_pageSize: pageParam(25, 10),
+  mapBase: mapBaseLayerSchema.catch("OpenStreetMap").default("OpenStreetMap"),
+  mapOverlays: mapOverlayNamesSchema,
+  mapLat: mapLatSchema,
+  mapLng: mapLngSchema,
+  mapZoom: mapZoomSchema,
+});
 
 export const Route = createFileRoute("/manage/meters")({
-  validateSearch: z.object({
-    meter_id: intPosOptional,
-    activity_id: intPosOptional,
-    observation_id: intPosOptional,
-    add: booleanDefaultTrue,
-    tab: tabSchema.catch("list").default("list"),
-    q: qSchema,
-    filters: filtersSchema,
-    // all meters list pagination
-    m_page: pageSchema,
-    m_pageSize: pageSizeSchema,
-    // meter history pagination
-    h_page: pageSchema,
-    h_pageSize: pageSizeSchema,
-    mapBase: mapBaseLayerSchema.catch("OpenStreetMap").default("OpenStreetMap"),
-    mapOverlays: mapOverlayNamesSchema,
-    mapLat: mapLatSchema,
-    mapLng: mapLngSchema,
-    mapZoom: mapZoomSchema,
-  }),
+  validateSearch: searchSchema,
+  beforeLoad: ({ search, location }) =>
+    routeSearchHydrator(location.pathname, search, location.searchStr),
   component: () => (
     <ProtectedRoute requiredScopes={["read"]}>
       <MetersView />

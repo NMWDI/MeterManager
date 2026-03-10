@@ -114,7 +114,7 @@ export default function Sidenav({
               xl: "1.625remrem",
             },
           }}
-          onClick={() => navigate({ to: "/" })}
+          onClick={() => navigate({ to: "/", search: {} })}
         >
           Meter Manager
         </Typography>

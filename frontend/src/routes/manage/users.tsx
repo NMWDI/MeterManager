@@ -2,27 +2,34 @@ import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { UserManagementView } from "@/views";
 import { ProtectedRoute } from "@/ProtectedRoute";
+import {
+  booleanParam,
+  optionalPositiveInt,
+  pageParam,
+  routeSearchHydrator,
+  triStateParam,
+} from "@/utils";
 
-const tri = z.enum(["all", "true", "false"]).catch("all");
-const pageSchema = z.coerce.number().int().min(0).catch(0);
-const pageSizeSchema = z.coerce.number().int().min(10).max(200).catch(25);
+const searchSchema = z.object({
+  user_id: optionalPositiveInt.catch(undefined).default(undefined),
+  user_add: booleanParam(true),
+  user_q: z.string().catch("").default(""),
+  active: triStateParam("true"),
+  tech: triStateParam("all"),
+  u_page: pageParam(0, 0),
+  u_pageSize: pageParam(25, 10),
+
+  role_id: optionalPositiveInt.catch(undefined).default(undefined),
+  role_add: booleanParam(true),
+  role_q: z.string().catch("").default(""),
+  r_page: pageParam(0, 0),
+  r_pageSize: pageParam(25, 10),
+});
 
 export const Route = createFileRoute("/manage/users")({
-  validateSearch: z.object({
-    user_id: z.number().optional(),
-    user_add: z.boolean().catch(true).default(true),
-    user_q: z.string().optional().default(""),
-    active: tri.default("true"),
-    tech: tri.default("all"),
-    u_page: pageSchema,
-    u_pageSize: pageSizeSchema,
-
-    role_id: z.number().optional(),
-    role_add: z.boolean().catch(true).default(true),
-    role_q: z.string().optional().default(""),
-    r_page: pageSchema,
-    r_pageSize: pageSizeSchema,
-  }),
+  validateSearch: searchSchema,
+  beforeLoad: ({ search, location }) =>
+    routeSearchHydrator(location.pathname, search, location.searchStr),
   component: () => (
     <ProtectedRoute requiredScopes={["admin"]}>
       <UserManagementView />

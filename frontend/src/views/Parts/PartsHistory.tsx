@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import {
   Box,
@@ -48,6 +48,7 @@ import {
 import { useSnackbar } from "notistack";
 
 type EventType = "initial" | "used" | "added" | "current";
+const EVENT_TYPE_ORDER: EventType[] = ["initial", "used", "added", "current"];
 
 type PartsHistoryFormValues = {
   from?: Dayjs | null;
@@ -75,13 +76,18 @@ const schema = yup.object().shape({
 const defaultSchema = {
   from: null,
   to: dayjs().endOf("month"),
-  event_types: ["initial", "used", "added", "current"] as (
-    | "initial"
-    | "used"
-    | "added"
-    | "current"
-  )[],
+  event_types: [...EVENT_TYPE_ORDER] as EventType[],
 };
+
+function normalizeEventTypes(input: unknown): EventType[] {
+  const values = Array.isArray(input) ? input : [];
+  const set = new Set(values);
+  return EVENT_TYPE_ORDER.filter((type) => set.has(type));
+}
+
+function sameStringArray(a: string[], b: string[]) {
+  return a.length === b.length && a.every((value, index) => value === b[index]);
+}
 
 function recalculateRows(sourceRows: any[]) {
   const initialRow = sourceRows.find((row) => row.event_type === "initial");
@@ -155,23 +161,31 @@ export const PartsHistory = () => {
     message: string;
     severity: "success" | "error";
   } | null>(null);
+  const isApplyingSearchToFormRef = useRef(false);
 
   const { control, watch, reset } = useForm<PartsHistoryFormValues>({
     resolver: yupResolver(schema),
     defaultValues: defaultSchema,
   });
 
-  const defaultValues = useMemo<PartsHistoryFormValues>(
-    () => ({
+  const defaultValues = useMemo<PartsHistoryFormValues>(() => {
+    const normalizedTypes = normalizeEventTypes(search.type);
+    return {
       from: search.from ? dayjs(search.from, "YYYY-MM-DD") : null,
       to: search.to ? dayjs(search.to, "YYYY-MM-DD") : dayjs().endOf("month"),
-      event_types: search.type,
-    }),
-    [search.from, search.to, search.type],
-  );
+      event_types:
+        normalizedTypes.length > 0
+          ? normalizedTypes
+          : defaultSchema.event_types,
+    };
+  }, [search.from, search.to, search.type]);
 
   useEffect(() => {
+    isApplyingSearchToFormRef.current = true;
     reset(defaultValues);
+    queueMicrotask(() => {
+      isApplyingSearchToFormRef.current = false;
+    });
   }, [defaultValues, reset]);
 
   const setSearch = (updater: (prev: typeof search) => any) => {
@@ -218,28 +232,34 @@ export const PartsHistory = () => {
   }, [rows, search.q, from, to, eventTypes]);
 
   useEffect(() => {
+    if (isApplyingSearchToFormRef.current) return;
+
     const nextFrom = from ? from.format("YYYY-MM-DD") : undefined;
     const nextTo = (to ?? dayjs().endOf("month")).format("YYYY-MM-DD");
-    const nextTypes = (eventTypes ?? defaultSchema.event_types) as EventType[];
+    const nextTypes = normalizeEventTypes(
+      eventTypes ?? defaultSchema.event_types,
+    );
+    const currentTypes = normalizeEventTypes(search.type);
 
-    setSearch((prev) => {
-      const sameFrom = prev.from === nextFrom;
-      const sameTo = prev.to === nextTo;
-      const sameTypes =
-        prev.type.length === nextTypes.length &&
-        prev.type.every((value, index) => value === nextTypes[index]);
+    const sameFrom = search.from === nextFrom;
+    const sameTo = search.to === nextTo;
+    const sameTypes = sameStringArray(currentTypes, nextTypes);
 
-      if (sameFrom && sameTo && sameTypes) return prev;
+    if (sameFrom && sameTo && sameTypes) return;
 
-      return {
-        ...prev,
+    navigate({
+      to: "/manage/parts/$id/history",
+      params: { id },
+      search: (prev) => ({
+        ...(prev as typeof search),
         from: nextFrom,
         to: nextTo,
         type: nextTypes,
         page: 0,
-      };
+      }),
+      replace: true,
     });
-  }, [from, to, eventTypes]);
+  }, [from, to, eventTypes, id, navigate, search.from, search.to, search.type]);
 
   const processRowUpdate = useCallback((newRow: any, _oldRow: any) => {
     if (newRow.delta !== undefined && isNaN(Number(newRow.delta))) {
@@ -481,7 +501,7 @@ export const PartsHistory = () => {
                   flexWrap: "wrap",
                 }}
               >
-                <Link to="/manage/parts">
+                <Link to="/manage/parts" search={{}}>
                   <Tooltip title="Go back" placement="right">
                     <IconButton aria-label="return to reports page">
                       <ArrowBack />
