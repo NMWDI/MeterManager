@@ -34,6 +34,7 @@ import {
   SidebarMenu,
   SidebarMenuSub,
   SidebarTooltip,
+  TOPBAR_HEIGHT,
 } from "@/components/ui/sidebar";
 import pvacdLogo from "@/img/pvacd_logo.png";
 
@@ -61,7 +62,11 @@ function SidebarNavButton({
   trailing,
 }: NavButtonProps) {
   const active = route ? useIsActiveRoute(route) : false;
-  const iconNode = Icon ? <Icon fontSize="small" /> : <TableView fontSize="small" />;
+  const iconNode = Icon ? (
+    <Icon fontSize="small" />
+  ) : (
+    <TableView fontSize="small" />
+  );
   const content = (
     <ButtonBase
       onClick={onClick}
@@ -74,13 +79,17 @@ function SidebarNavButton({
         py: collapsed ? 0 : 0.625,
         minHeight: collapsed ? 44 : 40,
         borderRadius: collapsed ? "12px" : "12px",
-        border: active ? "1px solid rgba(25, 118, 210, 0.18)" : "1px solid transparent",
+        border: active
+          ? "1px solid rgba(25, 118, 210, 0.18)"
+          : "1px solid transparent",
         backgroundColor: active ? "rgba(37, 99, 235, 0.08)" : "transparent",
         color: disabled ? "text.disabled" : "text.primary",
         transition:
           "background-color 150ms ease, border-color 150ms ease, transform 150ms ease",
         "&:hover": {
-          backgroundColor: active ? "rgba(37, 99, 235, 0.12)" : "rgba(15, 23, 42, 0.04)",
+          backgroundColor: active
+            ? "rgba(37, 99, 235, 0.12)"
+            : "rgba(15, 23, 42, 0.04)",
         },
       }}
     >
@@ -125,7 +134,11 @@ function SidebarNavButton({
     </ButtonBase>
   );
 
-  return collapsed ? <SidebarTooltip title={label}>{content}</SidebarTooltip> : content;
+  return collapsed ? (
+    <SidebarTooltip title={label}>{content}</SidebarTooltip>
+  ) : (
+    content
+  );
 }
 
 function ReportsSidebarButton({
@@ -141,8 +154,18 @@ function ReportsSidebarButton({
       route="/reports"
       onClick={() => setOpen((prev) => !prev)}
       trailing={
-        <Box sx={{ display: "grid", placeItems: "center", color: "text.secondary" }}>
-          {open ? <ExpandLess fontSize="small" /> : <ExpandMore fontSize="small" />}
+        <Box
+          sx={{
+            display: "grid",
+            placeItems: "center",
+            color: "text.secondary",
+          }}
+        >
+          {open ? (
+            <ExpandLess fontSize="small" />
+          ) : (
+            <ExpandMore fontSize="small" />
+          )}
         </Box>
       }
       icon={Assessment}
@@ -225,6 +248,7 @@ export default function Sidenav({
       open={open}
       width={drawerWidth}
       onClose={onClose}
+      onOpen={onOpen}
       onWidthChange={onWidthChange}
     >
       {isCollapsedDesktop ? (
@@ -234,12 +258,10 @@ export default function Sidenav({
               justifyContent: "center",
               px: 1,
               py: 1,
+              height: TOPBAR_HEIGHT,
             }}
           >
-            <SidebarHeaderCloseButton
-              onClick={onOpen}
-              direction="right"
-            />
+            <SidebarHeaderCloseButton onClick={onOpen} direction="right" />
           </SidebarHeader>
           <SidebarContent
             sx={{
@@ -266,11 +288,6 @@ export default function Sidenav({
               })
               .map((item, index) => (
                 <Box key={`${item.path}-${index}`} sx={{ width: "100%" }}>
-                  {index > 0 &&
-                  item.role === "Technician" &&
-                  visibleCollapsedItems[index - 1]?.role !== "Technician" ? (
-                    <Divider sx={{ my: 0.5 }} />
-                  ) : null}
                   <SidebarNavButton
                     route={item.path}
                     label={item.label}
@@ -287,7 +304,13 @@ export default function Sidenav({
         </>
       ) : (
         <>
-          <SidebarHeader>
+          <SidebarHeader
+            sx={{
+              px: 1,
+              py: 1,
+              height: TOPBAR_HEIGHT,
+            }}
+          >
             <ButtonBase
               onClick={() => handleNavigate("/")}
               sx={{
@@ -307,34 +330,9 @@ export default function Sidenav({
                   width: 36,
                   height: 36,
                   borderRadius: 2,
-                  objectFit: "cover",
+                  objectFit: "scale-down",
                 }}
               />
-              <Box sx={{ minWidth: 0 }}>
-                <Typography
-                  variant="overline"
-                  sx={{
-                    display: "block",
-                    lineHeight: 1.1,
-                    color: "primary.main",
-                    fontWeight: 700,
-                    letterSpacing: "0.12em",
-                  }}
-                >
-                  Water Manager
-                </Typography>
-                <Typography
-                  variant="h6"
-                  noWrap
-                  sx={{
-                    color: "darkblue",
-                    fontWeight: 800,
-                    lineHeight: 1.15,
-                  }}
-                >
-                  Meter Manager
-                </Typography>
-              </Box>
             </ButtonBase>
             {isDesktop ? <SidebarHeaderCloseButton onClick={onClose} /> : null}
           </SidebarHeader>
@@ -367,7 +365,9 @@ export default function Sidenav({
                 </SidebarGroupLabel>
                 <SidebarMenu>
                   {navConfig
-                    .filter((item) => item.role === "Technician" && !item.parent)
+                    .filter(
+                      (item) => item.role === "Technician" && !item.parent,
+                    )
                     .map((item) => (
                       <SidebarNavButton
                         key={item.path}
@@ -375,7 +375,9 @@ export default function Sidenav({
                         label={item.label}
                         icon={item.icon}
                         badgeContent={
-                          item.path === "/workorders" ? workOrderCount : undefined
+                          item.path === "/workorders"
+                            ? workOrderCount
+                            : undefined
                         }
                         onClick={() => handleNavigate(item.path)}
                       />

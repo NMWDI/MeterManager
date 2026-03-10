@@ -1,5 +1,4 @@
 import {
-  Home as HomeIcon,
   FormatListBulletedOutlined,
   ScreenshotMonitor,
   Construction,
@@ -23,7 +22,6 @@ type NavItem = {
 };
 
 export const navConfig: NavItem[] = [
-  { path: "/", label: "Home", icon: HomeIcon },
   { path: "/chlorides", label: "Chlorides", icon: Science },
   { path: "/monitoringwells", label: "Monitoring Wells", icon: MonitorHeart },
 

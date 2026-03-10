@@ -2,6 +2,7 @@ import {
   Box,
   BoxProps,
   IconButton,
+  alpha,
   SxProps,
   Theme,
   Tooltip,
@@ -11,15 +12,21 @@ import {
   useMediaQuery,
   useTheme,
 } from "@mui/material";
-import { ChevronLeft, ChevronRight, DragIndicator } from "@mui/icons-material";
-import { MouseEvent as ReactMouseEvent, ReactNode, useEffect, useRef } from "react";
+import { ChevronLeft, ChevronRight } from "@mui/icons-material";
+import {
+  MouseEvent as ReactMouseEvent,
+  ReactNode,
+  useEffect,
+  useRef,
+} from "react";
 
 export const DESKTOP_MIN_WIDTH = 240;
 export const DESKTOP_MAX_WIDTH = 420;
 export const DESKTOP_COLLAPSED_WIDTH = 76;
+export const DESKTOP_AUTO_COLLAPSE_WIDTH = 176;
 export const TOPBAR_HEIGHT = {
-  xs: "56px",
-  sm: "64px",
+  xs: "40px",
+  sm: "44px",
 };
 
 const panelSurfaceSx: SxProps<Theme> = {
@@ -61,6 +68,7 @@ export function Sidebar({
   width,
   collapsedWidth = DESKTOP_COLLAPSED_WIDTH,
   onClose,
+  onOpen,
   onWidthChange,
   children,
 }: {
@@ -68,6 +76,7 @@ export function Sidebar({
   width: number;
   collapsedWidth?: number;
   onClose: () => void;
+  onOpen: () => void;
   onWidthChange: (width: number) => void;
   children: ReactNode;
 }) {
@@ -78,7 +87,7 @@ export function Sidebar({
   );
 
   useEffect(() => {
-    if (!isDesktop || !open) {
+    if (!isDesktop) {
       return undefined;
     }
 
@@ -90,7 +99,23 @@ export function Sidebar({
       const nextWidth =
         resizeStateRef.current.startWidth +
         (event.clientX - resizeStateRef.current.startX);
+      const isExpandingFromCollapsed = !open && nextWidth > collapsedWidth;
 
+      if (isExpandingFromCollapsed) {
+        onOpen();
+        onWidthChange(
+          Math.min(DESKTOP_MAX_WIDTH, Math.max(DESKTOP_MIN_WIDTH, nextWidth)),
+        );
+        return;
+      }
+
+      if (nextWidth <= DESKTOP_AUTO_COLLAPSE_WIDTH) {
+        resizeStateRef.current = null;
+        onClose();
+        return;
+      }
+
+      onOpen();
       onWidthChange(
         Math.min(DESKTOP_MAX_WIDTH, Math.max(DESKTOP_MIN_WIDTH, nextWidth)),
       );
@@ -107,13 +132,13 @@ export function Sidebar({
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [isDesktop, onWidthChange, open]);
+  }, [collapsedWidth, isDesktop, onClose, onOpen, onWidthChange, open]);
 
-  const handleResizeStart = (event: ReactMouseEvent<HTMLButtonElement>) => {
+  const handleResizeStart = (event: ReactMouseEvent<HTMLDivElement>) => {
     event.preventDefault();
     resizeStateRef.current = {
       startX: event.clientX,
-      startWidth: width,
+      startWidth: open ? width : collapsedWidth,
     };
   };
 
@@ -141,31 +166,36 @@ export function Sidebar({
         >
           {children}
         </Box>
-        {open ? (
-          <IconButton
-            aria-label="Resize sidebar"
-            onMouseDown={handleResizeStart}
-            sx={{
+        <Box
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize sidebar"
+          onMouseDown={handleResizeStart}
+          sx={{
+            position: "absolute",
+            top: 0,
+            right: -6,
+            width: 12,
+            height: "100%",
+            cursor: "col-resize",
+            zIndex: 1,
+            "&::before": {
+              content: '""',
               position: "absolute",
-              top: "50%",
-              right: -18,
-              transform: "translateY(-50%)",
-              width: 24,
-              height: 72,
+              top: 0,
+              bottom: 0,
+              left: "50%",
+              width: 2,
+              transform: "translateX(-50%)",
               borderRadius: 999,
-              border: "1px solid",
-              borderColor: "divider",
-              backgroundColor: "background.paper",
-              color: "text.secondary",
-              boxShadow: "0 10px 30px rgba(15, 23, 42, 0.12)",
-              "&:hover": {
-                backgroundColor: "grey.100",
-              },
-            }}
-          >
-            <DragIndicator fontSize="small" />
-          </IconButton>
-        ) : null}
+              backgroundColor: "transparent",
+              transition: "background-color 150ms ease",
+            },
+            "&:hover::before": {
+              backgroundColor: alpha(theme.palette.primary.main, 0.28),
+            },
+          }}
+        />
       </Box>
     );
   }

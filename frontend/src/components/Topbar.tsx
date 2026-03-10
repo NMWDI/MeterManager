@@ -117,20 +117,11 @@ export const Topbar = ({
                 cursor: "pointer",
                 fontWeight: 800,
                 lineHeight: 1.1,
-                fontSize: { xs: "1rem", sm: "1.1rem", md: "1.2rem" },
+                fontSize: { xs: "1.1rem", sm: "1.2rem", md: "1.3rem" },
               }}
               onClick={() => navigate({ to: "/", search: {} })}
             >
               Meter Manager
-            </Typography>
-            <Typography
-              variant="caption"
-              sx={{
-                display: { xs: "none", sm: "block" },
-                color: "text.secondary",
-              }}
-            >
-              Water manager operations console
             </Typography>
           </Box>
         </Box>

@@ -38,7 +38,12 @@ export const AppLayout = ({ children }: { children: JSX.Element }) => {
         drawerWidth={sidebarWidth}
         onClose={() => setDrawerOpen(false)}
         onOpen={() => setDrawerOpen(true)}
-        onWidthChange={setSidebarWidth}
+        onWidthChange={(width) => {
+          setSidebarWidth(width);
+          if (!drawerOpen) {
+            setDrawerOpen(true);
+          }
+        }}
       />
       <SidebarInset
         component="main"
