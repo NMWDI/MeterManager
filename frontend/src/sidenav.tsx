@@ -35,7 +35,16 @@ import {
   SidebarTooltip,
   TOPBAR_HEIGHT,
 } from "@/components/ui/sidebar";
-import pvacdLogo from "@/img/pvacd_logo.png";
+
+const reportsMenuOpenStorageKey = "wmdb.sidebar.reports.open";
+
+const readStoredReportsMenuOpen = () => {
+  if (typeof window === "undefined") return true;
+
+  const raw = window.localStorage.getItem(reportsMenuOpenStorageKey);
+  if (raw === null) return true;
+  return raw === "true";
+};
 
 type NavButtonProps = {
   route?: string;
@@ -187,7 +196,9 @@ export default function Sidenav({
 }) {
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
-  const [openReportsMenu, setOpenReportsMenu] = useState(true);
+  const [openReportsMenu, setOpenReportsMenu] = useState(
+    readStoredReportsMenuOpen,
+  );
   const navigate = useNavigate();
   const authUser = useAuthUser();
 
@@ -222,6 +233,22 @@ export default function Sidenav({
       );
     }
   }, [openWorkOrdersQuery.data, userId]);
+
+  useEffect(() => {
+    if (!isDesktop) {
+      return;
+    }
+
+    setOpenReportsMenu(readStoredReportsMenuOpen());
+  }, [isDesktop]);
+
+  useEffect(() => {
+    if (!isDesktop || typeof window === "undefined") return;
+    window.localStorage.setItem(
+      reportsMenuOpenStorageKey,
+      String(openReportsMenu),
+    );
+  }, [isDesktop, openReportsMenu]);
 
   const visibleCollapsedItems = useMemo(
     () => [
@@ -320,19 +347,7 @@ export default function Sidenav({
                 pr: 1,
                 textAlign: "left",
               }}
-            >
-              <Box
-                component="img"
-                src={pvacdLogo}
-                alt="Meter Manager"
-                sx={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 2,
-                  objectFit: "scale-down",
-                }}
-              />
-            </ButtonBase>
+            ></ButtonBase>
             <SidebarHeaderCloseButton onClick={onClose} mobile={!isDesktop} />
           </SidebarHeader>
 

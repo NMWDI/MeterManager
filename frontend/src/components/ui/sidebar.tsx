@@ -18,14 +18,12 @@ import {
   ReactNode,
   useEffect,
   useRef,
-  useState,
 } from "react";
-import pvacdLogo from "@/img/pvacd_logo.png";
 
 export const DESKTOP_MIN_WIDTH = 240;
 export const DESKTOP_MAX_WIDTH = 420;
-export const DESKTOP_COLLAPSED_WIDTH = 76;
-export const DESKTOP_AUTO_COLLAPSE_WIDTH = 176;
+export const DESKTOP_COLLAPSED_WIDTH = 70;
+export const DESKTOP_AUTO_COLLAPSE_WIDTH = 170;
 export const TOPBAR_HEIGHT = {
   xs: "40px",
   sm: "44px",
@@ -269,29 +267,11 @@ export function SidebarHeaderCloseButton({
   direction?: "left" | "right";
   mobile?: boolean;
 }) {
-  const [showChevron, setShowChevron] = useState(false);
-  const hoverTimer = useRef<NodeJS.Timeout | null>(null);
-
-  const handleMouseEnter = () => {
-    hoverTimer.current = setTimeout(() => {
-      setShowChevron(true);
-    }, 350); // delay in ms
-  };
-
-  const handleMouseLeave = () => {
-    if (hoverTimer.current) {
-      clearTimeout(hoverTimer.current);
-    }
-    setShowChevron(false);
-  };
-
   return (
     <IconButton
       aria-label="Close sidebar"
       onClick={onClick}
       size={mobile ? "medium" : "small"}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
       sx={{
         color: "darkblue",
         transition: "all 0.2s ease",
@@ -303,20 +283,8 @@ export function SidebarHeaderCloseButton({
     >
       {direction === "left" ? (
         <ChevronLeft fontSize="small" />
-      ) : showChevron ? (
-        <ChevronRight fontSize="small" />
       ) : (
-        <Box
-          component="img"
-          src={pvacdLogo}
-          alt="Meter Manager"
-          sx={{
-            width: 28,
-            height: 28,
-            borderRadius: 2,
-            objectFit: "contain",
-          }}
-        />
+        <ChevronRight fontSize="small" />
       )}
     </IconButton>
   );
