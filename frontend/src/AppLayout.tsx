@@ -1,36 +1,66 @@
-import { useState } from "react";
-import { Box } from "@mui/material";
+import { useEffect, useState } from "react";
+import { Box, useMediaQuery, useTheme } from "@mui/material";
 import { Topbar } from "@/components";
+import {
+  DESKTOP_COLLAPSED_WIDTH,
+  SidebarInset,
+  TOPBAR_HEIGHT,
+} from "@/components/ui/sidebar";
 import Sidenav from "./sidenav";
 
-const drawerWidth = 250;
+const defaultSidebarWidth = 280;
 
 export const AppLayout = ({ children }: { children: JSX.Element }) => {
+  const theme = useTheme();
+  const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(defaultSidebarWidth);
+
+  useEffect(() => {
+    setDrawerOpen(isDesktop);
+  }, [isDesktop]);
+
+  const effectiveSidebarWidth = isDesktop
+    ? drawerOpen
+      ? sidebarWidth
+      : DESKTOP_COLLAPSED_WIDTH
+    : 0;
 
   return (
-    <Box sx={{ display: "flex", flexGrow: 1, overflow: "hidden" }}>
+    <Box sx={{ display: "flex", flexGrow: 1, minHeight: "100vh", bgcolor: "#f8fafc" }}>
       <Topbar
         open={drawerOpen}
-        onMenuClick={() => setDrawerOpen(!drawerOpen)}
+        sidebarWidth={sidebarWidth}
+        onMenuClick={() => setDrawerOpen((prev) => !prev)}
       />
       <Sidenav
         open={drawerOpen}
-        drawerWidth={drawerWidth}
+        drawerWidth={sidebarWidth}
         onClose={() => setDrawerOpen(false)}
+        onOpen={() => setDrawerOpen(true)}
+        onWidthChange={setSidebarWidth}
       />
-      <Box
+      <SidebarInset
         component="main"
         sx={{
-          flexGrow: 1,
-          flexShrink: 1,
-          minWidth: 0,
-          p: 3,
-          mt: 8,
+          minHeight: "100vh",
+          ml: isDesktop ? `${effectiveSidebarWidth}px` : 0,
+          mt: TOPBAR_HEIGHT,
+          width: isDesktop
+            ? `calc(100% - ${effectiveSidebarWidth}px)`
+            : "100%",
+          transition: "margin-left 180ms ease, width 180ms ease",
         }}
       >
-        {children}
-      </Box>
+        <Box
+          sx={{
+            minWidth: 0,
+            p: { xs: 2, sm: 3 },
+          }}
+        >
+          {children}
+        </Box>
+      </SidebarInset>
     </Box>
   );
 };

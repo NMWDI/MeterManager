@@ -1,35 +1,42 @@
-import { useState, MouseEvent } from "react";
+import { MouseEvent, useState } from "react";
 import {
   AppBar,
-  Toolbar,
-  Typography,
-  IconButton,
   Avatar,
+  Box,
+  Button,
+  Divider,
+  IconButton,
+  ListItemIcon,
   Menu,
   MenuItem,
-  Button,
-  Box,
-  Divider,
-  ListItemIcon,
-  useTheme,
+  Toolbar,
+  Typography,
   useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
+import { Login, Logout, Settings } from "@mui/icons-material";
 import { useNavigate } from "@tanstack/react-router";
 import { useAuthUser, useSignOut } from "react-auth-kit";
-import { Login, Logout, Settings } from "@mui/icons-material";
 import { RoleChip, TopbarUserButton } from "./index";
+import {
+  DESKTOP_COLLAPSED_WIDTH,
+  TOPBAR_HEIGHT,
+} from "@/components/ui/sidebar";
 
 export const Topbar = ({
   open,
+  sidebarWidth,
   onMenuClick,
   sx,
 }: {
   open: boolean;
+  sidebarWidth: number;
   onMenuClick: () => void;
   sx?: any;
 }) => {
   const theme = useTheme();
+  const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
   const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
   const navigate = useNavigate();
   const signOut = useSignOut();
@@ -39,6 +46,11 @@ export const Topbar = ({
 
   const role: string = authUser()?.user_role?.name;
   const isLoggedIn = !!authUser();
+  const effectiveSidebarWidth = isDesktop
+    ? open
+      ? sidebarWidth
+      : DESKTOP_COLLAPSED_WIDTH
+    : 0;
 
   const handleMenuOpen = (event: MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -57,48 +69,70 @@ export const Topbar = ({
   return (
     <AppBar
       position="fixed"
+      elevation={0}
       sx={{
         ...sx,
-        backgroundColor: "white",
+        width: isDesktop ? `calc(100% - ${effectiveSidebarWidth}px)` : "100%",
+        ml: isDesktop ? `${effectiveSidebarWidth}px` : 0,
+        backgroundColor: "rgba(255, 255, 255, 0.88)",
+        borderBottom: "1px solid",
+        borderColor: "divider",
+        backdropFilter: "blur(14px)",
+        boxShadow: "0 10px 30px rgba(15, 23, 42, 0.06)",
+        transition: "width 180ms ease, margin-left 180ms ease",
       }}
     >
       <Toolbar
         sx={{
           justifyContent: "space-between",
-          minHeight: { xs: 45, sm: 47.5 },
-          py: { xs: 0, sm: 0.5 },
+          minHeight: TOPBAR_HEIGHT,
+          px: { xs: 1.25, sm: 2 },
+          py: { xs: 0.75, sm: 1 },
         }}
       >
-        <Box sx={{ display: "flex", alignItems: "center" }}>
-          <IconButton
-            edge="start"
-            color="inherit"
-            onClick={onMenuClick}
-            sx={{ mr: 1, color: "darkblue" }}
-          >
-            <MenuIcon />
-          </IconButton>
-          {!open ? (
+        <Box sx={{ display: "flex", alignItems: "center", minWidth: 0 }}>
+          {!isDesktop ? (
+            <IconButton
+              edge="start"
+              color="inherit"
+              onClick={onMenuClick}
+              sx={{
+                mr: 1,
+                color: "darkblue",
+                border: "1px solid",
+                borderColor: "divider",
+                borderRadius: 3,
+              }}
+            >
+              <MenuIcon />
+            </IconButton>
+          ) : null}
+
+          <Box sx={{ ml: isDesktop ? 0 : 0.5, minWidth: 0 }}>
             <Typography
               variant="h6"
               noWrap
               sx={{
                 color: "darkblue",
                 cursor: "pointer",
-                fontWeight: "bold",
-                ml: 1,
-                fontSize: {
-                  sx: "1rem",
-                  md: "1.25rem",
-                  lg: "1.5rem",
-                  xl: "1.625remrem",
-                },
+                fontWeight: 800,
+                lineHeight: 1.1,
+                fontSize: { xs: "1rem", sm: "1.1rem", md: "1.2rem" },
               }}
               onClick={() => navigate({ to: "/", search: {} })}
             >
               Meter Manager
             </Typography>
-          ) : null}
+            <Typography
+              variant="caption"
+              sx={{
+                display: { xs: "none", sm: "block" },
+                color: "text.secondary",
+              }}
+            >
+              Water manager operations console
+            </Typography>
+          </Box>
         </Box>
 
         {isLoggedIn ? (
