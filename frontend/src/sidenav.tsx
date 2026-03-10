@@ -5,7 +5,6 @@ import {
   Box,
   ButtonBase,
   Collapse,
-  Divider,
   Typography,
   useMediaQuery,
   useTheme,
@@ -306,7 +305,7 @@ export default function Sidenav({
         <>
           <SidebarHeader
             sx={{
-              px: 1,
+              px: { xs: 1.25, sm: 2 },
               py: 1,
               height: TOPBAR_HEIGHT,
             }}
@@ -334,7 +333,7 @@ export default function Sidenav({
                 }}
               />
             </ButtonBase>
-            {isDesktop ? <SidebarHeaderCloseButton onClick={onClose} /> : null}
+            <SidebarHeaderCloseButton onClick={onClose} mobile={!isDesktop} />
           </SidebarHeader>
 
           <SidebarContent>

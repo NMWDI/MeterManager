@@ -18,7 +18,9 @@ import {
   ReactNode,
   useEffect,
   useRef,
+  useState,
 } from "react";
+import pvacdLogo from "@/img/pvacd_logo.png";
 
 export const DESKTOP_MIN_WIDTH = 240;
 export const DESKTOP_MAX_WIDTH = 420;
@@ -96,15 +98,17 @@ export function Sidebar({
         return;
       }
 
-      const nextWidth =
-        resizeStateRef.current.startWidth +
-        (event.clientX - resizeStateRef.current.startX);
-      const isExpandingFromCollapsed = !open && nextWidth > collapsedWidth;
+      const dragDelta = event.clientX - resizeStateRef.current.startX;
+      const nextWidth = resizeStateRef.current.startWidth + dragDelta;
+      const isExpandingFromCollapsed = !open && dragDelta > 0;
 
       if (isExpandingFromCollapsed) {
         onOpen();
         onWidthChange(
-          Math.min(DESKTOP_MAX_WIDTH, Math.max(DESKTOP_MIN_WIDTH, nextWidth)),
+          Math.min(
+            DESKTOP_MAX_WIDTH,
+            Math.max(DESKTOP_MIN_WIDTH, width + dragDelta),
+          ),
         );
         return;
       }
@@ -259,26 +263,60 @@ export function SidebarHeader({ children, sx, ...props }: BoxProps) {
 export function SidebarHeaderCloseButton({
   onClick,
   direction = "left",
+  mobile = false,
 }: {
   onClick: () => void;
   direction?: "left" | "right";
+  mobile?: boolean;
 }) {
+  const [showChevron, setShowChevron] = useState(false);
+  const hoverTimer = useRef<NodeJS.Timeout | null>(null);
+
+  const handleMouseEnter = () => {
+    hoverTimer.current = setTimeout(() => {
+      setShowChevron(true);
+    }, 350); // delay in ms
+  };
+
+  const handleMouseLeave = () => {
+    if (hoverTimer.current) {
+      clearTimeout(hoverTimer.current);
+    }
+    setShowChevron(false);
+  };
+
   return (
     <IconButton
       aria-label="Close sidebar"
       onClick={onClick}
-      size="small"
+      size={mobile ? "medium" : "small"}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       sx={{
         color: "darkblue",
-        border: "1px solid",
-        borderColor: "divider",
-        backgroundColor: "rgba(255,255,255,0.75)",
+        transition: "all 0.2s ease",
+        ...(mobile && {
+          width: 44,
+          height: 44,
+        }),
       }}
     >
       {direction === "left" ? (
         <ChevronLeft fontSize="small" />
-      ) : (
+      ) : showChevron ? (
         <ChevronRight fontSize="small" />
+      ) : (
+        <Box
+          component="img"
+          src={pvacdLogo}
+          alt="Meter Manager"
+          sx={{
+            width: 28,
+            height: 28,
+            borderRadius: 2,
+            objectFit: "contain",
+          }}
+        />
       )}
     </IconButton>
   );

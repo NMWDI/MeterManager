@@ -15,6 +15,7 @@ import {
   useTheme,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
+import CloseIcon from "@mui/icons-material/Close";
 import { Login, Logout, Settings } from "@mui/icons-material";
 import { useNavigate } from "@tanstack/react-router";
 import { useAuthUser, useSignOut } from "react-auth-kit";
@@ -98,17 +99,25 @@ export const Topbar = ({
               onClick={onMenuClick}
               sx={{
                 mr: 1,
+                ml: 0.5,
                 color: "darkblue",
                 border: "1px solid",
                 borderColor: "divider",
                 borderRadius: 3,
+                width: 44,
+                height: 44,
               }}
             >
-              <MenuIcon />
+              {open ? <CloseIcon /> : <MenuIcon />}
             </IconButton>
           ) : null}
 
-          <Box sx={{ ml: isDesktop ? 0 : 0.5, minWidth: 0 }}>
+          <Box
+            sx={{
+              ml: isDesktop ? 0 : 0.5,
+              minWidth: 0,
+            }}
+          >
             <Typography
               variant="h6"
               noWrap
