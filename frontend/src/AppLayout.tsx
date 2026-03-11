@@ -37,6 +37,7 @@ export const AppLayout = ({ children }: { children: JSX.Element }) => {
   const [sidebarWidth, setSidebarWidth] = useState(readStoredSidebarWidth);
   const authUser = useAuthUser();
   const isLoggedIn = !!authUser();
+  const shouldRenderSidebar = !isDesktop || isLoggedIn;
   const shouldShowDesktopSidebar = isDesktop && isLoggedIn;
 
   useEffect(() => {
@@ -78,7 +79,7 @@ export const AppLayout = ({ children }: { children: JSX.Element }) => {
         sidebarWidth={sidebarWidth}
         onMenuClick={() => setDrawerOpen((prev) => !prev)}
       />
-      {shouldShowDesktopSidebar ? (
+      {shouldRenderSidebar ? (
         <Sidenav
           open={drawerOpen}
           drawerWidth={sidebarWidth}

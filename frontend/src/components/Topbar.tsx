@@ -46,11 +46,12 @@ export const Topbar = ({
 
   const role: string = authUser()?.user_role?.name;
   const isLoggedIn = !!authUser();
-  const effectiveSidebarWidth = isDesktop && isLoggedIn
-    ? open
-      ? sidebarWidth
-      : DESKTOP_COLLAPSED_WIDTH
-    : 0;
+  const effectiveSidebarWidth =
+    isDesktop && isLoggedIn
+      ? open
+        ? sidebarWidth
+        : DESKTOP_COLLAPSED_WIDTH
+      : 0;
 
   const handleMenuOpen = (event: MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
