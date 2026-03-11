@@ -1,21 +1,23 @@
 import {
   Box,
+  Button,
   Card,
   CardContent,
   CardMedia,
   Grid,
-  List,
-  ListItem,
-  ListItemText,
   Skeleton,
   Stack,
   Typography,
 } from "@mui/material";
+import { Link } from "@tanstack/react-router";
 import HomeIcon from "@mui/icons-material/Home";
+import ArrowOutwardIcon from "@mui/icons-material/ArrowOutward";
 import AssignmentTurnedInOutlinedIcon from "@mui/icons-material/AssignmentTurnedInOutlined";
 import AutorenewOutlinedIcon from "@mui/icons-material/AutorenewOutlined";
 import BuildCircleOutlinedIcon from "@mui/icons-material/BuildCircleOutlined";
 import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
+import MonitorHeartIcon from "@mui/icons-material/MonitorHeart";
+import ScienceIcon from "@mui/icons-material/Science";
 import { BackgroundBox, CustomCardHeader } from "@/components";
 import pvacd_logo from "@/img/pvacd_logo.png";
 import meter_field from "@/img/meter_field.jpg";
@@ -52,25 +54,29 @@ const statCards = [
   },
 ] as const;
 
+const publicLinks = [
+  {
+    title: "Chlorides",
+    description:
+      "Browse chloride measurements by region and review recent sampling data.",
+    to: "/chlorides",
+    icon: ScienceIcon,
+    accent:
+      "linear-gradient(135deg, rgba(16, 76, 129, 0.12) 0%, rgba(24, 197, 244, 0.22) 100%)",
+  },
+  {
+    title: "Monitoring Wells",
+    description:
+      "Explore monitoring well readings, trends, and public well data in one place.",
+    to: "/monitoringwells",
+    icon: MonitorHeartIcon,
+    accent:
+      "linear-gradient(135deg, rgba(31, 77, 58, 0.12) 0%, rgba(105, 181, 93, 0.22) 100%)",
+  },
+] as const;
+
 export const Home = () => {
   const summaryQuery = useGetHomeSummary();
-
-  const versionHistory = [
-    "V0.2.1 - ",
-    "V0.2.0 - Add report functional with PDF download",
-    "V0.1.52 - Deploy chlorides for admin testing",
-    "V0.1.51 - Improved monitoring well page",
-    "V0.1.50 - Fix wells map bug and update register if part used",
-    "V0.1.49 - Add outside recorder wells to monitoring page",
-    "V0.1.48 - Change well owner to be meter water users",
-    "V0.1.47 - Add TRSS grids to meter map and fixed meter register save bug",
-    "V0.1.46 - Change how data is displayed in Wells table",
-    "V0.1.45 - Color code meter markers on map by last PM",
-    "V0.1.44 - Fix bug in continuous monitoring well data and added data to OSE endpoint",
-    'V0.1.43 - Fix navigation from work orders to activity, add OSE endpoint for "data issues"',
-    "V0.1.42 - Fix pagination, add 'uninstall and hold'",
-    "V0.1.41 - Add UI for water source on wells and some other minor changes",
-  ];
 
   return (
     <BackgroundBox>
@@ -231,24 +237,92 @@ export const Home = () => {
                   }}
                 >
                   <CardContent>
-                    <Stack spacing={1} alignItems="flex-start" textAlign="left">
+                    <Stack spacing={2} alignItems="flex-start" textAlign="left">
                       <Typography variant="overline" color="text.secondary">
-                        Release Notes
+                        Public Data
                       </Typography>
-                      <Typography variant="h5" sx={{ fontWeight: 700 }}>
-                        Version History
+                      <Typography variant="body1" color="text.secondary">
+                        Access public measurements and well monitoring data.
                       </Typography>
-                      <List dense sx={{ width: "100%" }}>
-                        {versionHistory.map((version) => (
-                          <ListItem
-                            key={version}
-                            disablePadding
-                            sx={{ py: 0.25 }}
-                          >
-                            <ListItemText primary={version} />
-                          </ListItem>
-                        ))}
-                      </List>
+                      <Stack spacing={1.5} sx={{ width: "100%" }}>
+                        {publicLinks.map((item) => {
+                          const Icon = item.icon;
+
+                          return (
+                            <Card
+                              key={item.title}
+                              variant="outlined"
+                              sx={{
+                                borderRadius: 3,
+                                borderColor: "rgba(15, 23, 42, 0.08)",
+                                background: item.accent,
+                                transition:
+                                  "transform 160ms ease, box-shadow 160ms ease",
+                                "&:hover": {
+                                  transform: "translateY(-2px)",
+                                  boxShadow:
+                                    "0 14px 32px rgba(15, 23, 42, 0.10)",
+                                },
+                              }}
+                            >
+                              <CardContent>
+                                <Stack spacing={1.5}>
+                                  <Stack
+                                    direction="row"
+                                    spacing={1.5}
+                                    alignItems="center"
+                                  >
+                                    <Box
+                                      sx={{
+                                        width: 44,
+                                        height: 44,
+                                        borderRadius: 2.5,
+                                        display: "grid",
+                                        placeItems: "center",
+                                        bgcolor: "rgba(255,255,255,0.78)",
+                                        color: "#0b3c6d",
+                                      }}
+                                    >
+                                      <Icon />
+                                    </Box>
+                                    <Typography
+                                      variant="h6"
+                                      sx={{ fontWeight: 700 }}
+                                    >
+                                      {item.title}
+                                    </Typography>
+                                  </Stack>
+                                  <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                  >
+                                    {item.description}
+                                  </Typography>
+                                  <Box>
+                                    <Button
+                                      component={Link}
+                                      to={item.to}
+                                      variant="contained"
+                                      endIcon={
+                                        <ArrowOutwardIcon fontSize="small" />
+                                      }
+                                      sx={{
+                                        borderRadius: 999,
+                                        px: 2,
+                                        textTransform: "none",
+                                        fontWeight: 700,
+                                        boxShadow: "none",
+                                      }}
+                                    >
+                                      Open {item.title}
+                                    </Button>
+                                  </Box>
+                                </Stack>
+                              </CardContent>
+                            </Card>
+                          );
+                        })}
+                      </Stack>
                     </Stack>
                   </CardContent>
                 </Card>
