@@ -66,7 +66,7 @@ export const AppLayout = ({ children }: { children: JSX.Element }) => {
         display: "flex",
         flexGrow: 1,
         minHeight: "100vh",
-        bgcolor: "#f8fafc",
+        bgcolor: "#a5adb5",
       }}
     >
       <Topbar

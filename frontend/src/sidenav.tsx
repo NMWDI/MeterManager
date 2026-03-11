@@ -5,6 +5,7 @@ import {
   Box,
   ButtonBase,
   Collapse,
+  Divider,
   Typography,
   useMediaQuery,
   useTheme,
@@ -291,12 +292,12 @@ export default function Sidenav({
           </SidebarHeader>
           <SidebarContent
             sx={{
-              px: 1,
-              py: 1.25,
+              mt: 1,
+              p: 1,
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              gap: 0.75,
+              gap: 0.5,
             }}
           >
             {visibleCollapsedItems
@@ -367,16 +368,8 @@ export default function Sidenav({
                     />
                   ))}
               </SidebarMenu>
-            </SidebarGroup>
 
-            {hasReadScope ? (
-              <SidebarGroup>
-                <SidebarGroupLabel>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <RoleChip role="Technician" />
-                    <span>Pages</span>
-                  </Box>
-                </SidebarGroupLabel>
+              {hasReadScope ? (
                 <SidebarMenu>
                   {navConfig
                     .filter(
@@ -417,17 +410,9 @@ export default function Sidenav({
                     </SidebarMenuSub>
                   </Collapse>
                 </SidebarMenu>
-              </SidebarGroup>
-            ) : null}
+              ) : null}
 
-            {hasAdminScope ? (
-              <SidebarGroup sx={{ mb: 0 }}>
-                <SidebarGroupLabel>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <RoleChip role="Admin" />
-                    <span>Pages</span>
-                  </Box>
-                </SidebarGroupLabel>
+              {hasAdminScope ? (
                 <SidebarMenu>
                   {navConfig
                     .filter((item) => item.role === "Admin")
@@ -441,8 +426,8 @@ export default function Sidenav({
                       />
                     ))}
                 </SidebarMenu>
-              </SidebarGroup>
-            ) : null}
+              ) : null}
+            </SidebarGroup>
           </SidebarContent>
         </>
       )}

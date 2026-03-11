@@ -1,11 +1,4 @@
-import {
-  Avatar,
-  Button,
-  ButtonProps,
-  useTheme,
-  useMediaQuery,
-  IconButton,
-} from "@mui/material";
+import { Avatar, ButtonProps, useTheme, IconButton } from "@mui/material";
 import { Badge, Engineering, Face } from "@mui/icons-material";
 import { getRoleColor } from "@/utils";
 
@@ -20,7 +13,6 @@ export const TopbarUserButton = ({
   src?: string;
 } & ButtonProps) => {
   const theme = useTheme();
-  const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
   const buttonColor = getRoleColor(role);
 
   const primary = theme.palette.primary;
@@ -49,15 +41,15 @@ export const TopbarUserButton = ({
     OSE: warning.contrastText,
   };
 
-  return isSmallScreen ? (
+  return (
     <IconButton
       size="small"
       color={buttonColor}
       sx={{
         ...buttonProps.sx,
+        width: { xs: 35, md: 40 },
+        height: { xs: 35, md: 40 },
         bgcolor: buttonColor,
-        width: 44,
-        height: 44,
         "&:hover": {
           bgcolor: buttonColor,
           opacity: 0.85,
@@ -68,8 +60,8 @@ export const TopbarUserButton = ({
     >
       <Avatar
         sx={{
-          width: 30,
-          height: 30,
+          width: { xs: 35, md: 40 },
+          height: { xs: 35, md: 40 },
           bgcolor: roleBgColor[role],
           borderColor: roleBorderColor[role],
           borderStyle: "solid",
@@ -80,36 +72,5 @@ export const TopbarUserButton = ({
         {src ? null : renderRoleIcon()}
       </Avatar>
     </IconButton>
-  ) : (
-    <Button
-      color={buttonColor}
-      variant="contained"
-      size="small"
-      sx={{
-        ...buttonProps.sx,
-        textTransform: "uppercase",
-        fontFamily: "monospace",
-        fontWeight: "bolder",
-        color: "white",
-        m: undefined,
-      }}
-      {...buttonProps}
-    >
-      {display_name ?? "Username"}
-      <Avatar
-        sx={{
-          width: 30,
-          height: 30,
-          ml: 1,
-          bgcolor: roleBgColor[role],
-          borderColor: roleBorderColor[role],
-          borderStyle: "solid",
-          borderWidth: "2px",
-        }}
-        src={src}
-      >
-        {src ? null : renderRoleIcon()}
-      </Avatar>
-    </Button>
   );
 };

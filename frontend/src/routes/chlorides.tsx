@@ -35,6 +35,7 @@ import {
   routeSearchHydrator,
 } from "@/utils";
 import { Table, Plot } from "@/views/Chlorides";
+import { BgColor } from "@/constants";
 
 const searchSchema = z.object({
   regionId: optionalPositiveInt.catch(undefined).default(undefined),
@@ -232,7 +233,7 @@ function Chlorides() {
 
   return (
     <BackgroundBox>
-      <Card sx={{ height: "fit-content" }}>
+      <Card sx={{ height: "fit-content", bgcolor: BgColor }}>
         <CustomCardHeader title="Chlorides" icon={Science} />
         <CardContent>
           {error && (

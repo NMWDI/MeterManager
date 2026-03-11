@@ -1,7 +1,6 @@
 import { MouseEvent, useState } from "react";
 import {
   AppBar,
-  Avatar,
   Box,
   Button,
   Divider,
@@ -16,7 +15,7 @@ import {
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import CloseIcon from "@mui/icons-material/Close";
-import { Login, Logout, Settings } from "@mui/icons-material";
+import { Logout, Settings } from "@mui/icons-material";
 import { useNavigate } from "@tanstack/react-router";
 import { useAuthUser, useSignOut } from "react-auth-kit";
 import { RoleChip, TopbarUserButton } from "./index";
@@ -24,6 +23,7 @@ import {
   DESKTOP_COLLAPSED_WIDTH,
   TOPBAR_HEIGHT,
 } from "@/components/ui/sidebar";
+import { BgColor } from "@/constants";
 
 export const Topbar = ({
   open,
@@ -38,7 +38,6 @@ export const Topbar = ({
 }) => {
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
-  const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
   const navigate = useNavigate();
   const signOut = useSignOut();
   const authUser = useAuthUser();
@@ -75,7 +74,7 @@ export const Topbar = ({
         ...sx,
         width: isDesktop ? `calc(100% - ${effectiveSidebarWidth}px)` : "100%",
         ml: isDesktop ? `${effectiveSidebarWidth}px` : 0,
-        backgroundColor: "rgba(255, 255, 255, 0.88)",
+        backgroundColor: BgColor,
         borderBottom: "1px solid",
         borderColor: "divider",
         backdropFilter: "blur(14px)",
@@ -179,7 +178,7 @@ export const Topbar = ({
                 <ListItemIcon>
                   <Settings fontSize="small" />
                 </ListItemIcon>
-                <Typography variant="body1">Account Settings</Typography>
+                <Typography variant="body1">Settings</Typography>
               </MenuItem>
 
               <MenuItem
@@ -211,19 +210,6 @@ export const Topbar = ({
             }}
           >
             Login
-            {!isSmallScreen && (
-              <Avatar
-                sx={{
-                  width: 30,
-                  height: 30,
-                  ml: 1,
-                  bgcolor: "rgb(89,90,182)",
-                  border: "2px solid #e0e0e0",
-                }}
-              >
-                <Login fontSize="small" />
-              </Avatar>
-            )}
           </Button>
         )}
       </Toolbar>

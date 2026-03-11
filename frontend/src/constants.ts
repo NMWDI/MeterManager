@@ -12,6 +12,8 @@ import {
 import { SvgIconProps } from "@mui/material";
 import { ComponentType } from "react";
 
+export const BgColor = "#F8FAFC";
+
 type NavItem = {
   path: string;
   label: string;

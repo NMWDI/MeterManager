@@ -19,6 +19,7 @@ import {
   useEffect,
   useRef,
 } from "react";
+import { BgColor } from "@/constants";
 
 export const DESKTOP_MIN_WIDTH = 240;
 export const DESKTOP_MAX_WIDTH = 420;
@@ -36,8 +37,7 @@ const panelSurfaceSx: SxProps<Theme> = {
   overflow: "hidden",
   borderRight: "1px solid",
   borderColor: "divider",
-  background:
-    "linear-gradient(180deg, rgba(248,250,252,0.98) 0%, rgba(255,255,255,0.96) 100%)",
+  backgroundColor: BgColor,
   boxShadow: "0 20px 45px rgba(15, 23, 42, 0.08)",
   backdropFilter: "blur(12px)",
 };
@@ -248,8 +248,7 @@ export function SidebarHeader({ children, sx, ...props }: BoxProps) {
         py: 1.5,
         borderBottom: "1px solid",
         borderColor: "divider",
-        background:
-          "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(248,250,252,0.92) 100%)",
+        backgroundColor: BgColor,
         ...sx,
       }}
     >
