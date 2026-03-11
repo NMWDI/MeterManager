@@ -5,7 +5,6 @@ import {
   Box,
   ButtonBase,
   Collapse,
-  Divider,
   Typography,
   useMediaQuery,
   useTheme,
@@ -18,7 +17,6 @@ import {
   ExpandMore,
   TableView,
 } from "@mui/icons-material";
-import { RoleChip } from "@/components";
 import { useIsActiveRoute } from "@/hooks";
 import { useGetWorkOrders } from "@/service";
 import { WorkOrderStatus } from "@/enums";

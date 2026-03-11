@@ -3,6 +3,7 @@ import { Box, useMediaQuery, useTheme } from "@mui/material";
 import { Topbar } from "@/components";
 import { DESKTOP_COLLAPSED_WIDTH, SidebarInset } from "@/components/ui/sidebar";
 import Sidenav from "./sidenav";
+import { useAuthUser } from "react-auth-kit";
 
 const defaultSidebarWidth = 280;
 const sidebarOpenStorageKey = "wmdb.sidebar.open";
@@ -34,6 +35,9 @@ export const AppLayout = ({ children }: { children: JSX.Element }) => {
   const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
   const [drawerOpen, setDrawerOpen] = useState(readStoredSidebarOpen);
   const [sidebarWidth, setSidebarWidth] = useState(readStoredSidebarWidth);
+  const authUser = useAuthUser();
+  const isLoggedIn = !!authUser();
+  const shouldShowDesktopSidebar = isDesktop && isLoggedIn;
 
   useEffect(() => {
     if (!isDesktop) {
@@ -54,7 +58,7 @@ export const AppLayout = ({ children }: { children: JSX.Element }) => {
     window.localStorage.setItem(sidebarWidthStorageKey, String(sidebarWidth));
   }, [sidebarWidth]);
 
-  const effectiveSidebarWidth = isDesktop
+  const effectiveSidebarWidth = shouldShowDesktopSidebar
     ? drawerOpen
       ? sidebarWidth
       : DESKTOP_COLLAPSED_WIDTH
@@ -74,25 +78,30 @@ export const AppLayout = ({ children }: { children: JSX.Element }) => {
         sidebarWidth={sidebarWidth}
         onMenuClick={() => setDrawerOpen((prev) => !prev)}
       />
-      <Sidenav
-        open={drawerOpen}
-        drawerWidth={sidebarWidth}
-        onClose={() => setDrawerOpen(false)}
-        onOpen={() => setDrawerOpen(true)}
-        onWidthChange={(width) => {
-          setSidebarWidth(width);
-          if (!drawerOpen) {
-            setDrawerOpen(true);
-          }
-        }}
-      />
+      {shouldShowDesktopSidebar ? (
+        <Sidenav
+          open={drawerOpen}
+          drawerWidth={sidebarWidth}
+          onClose={() => setDrawerOpen(false)}
+          onOpen={() => setDrawerOpen(true)}
+          onWidthChange={(width) => {
+            setSidebarWidth(width);
+            if (!drawerOpen) {
+              setDrawerOpen(true);
+            }
+          }}
+        />
+      ) : null}
+
       <SidebarInset
         component="main"
         sx={{
           minHeight: "100vh",
-          ml: isDesktop ? `${effectiveSidebarWidth}px` : 0,
+          ml: shouldShowDesktopSidebar ? `${effectiveSidebarWidth}px` : 0,
           mt: "4rem",
-          width: isDesktop ? `calc(100% - ${effectiveSidebarWidth}px)` : "100%",
+          width: shouldShowDesktopSidebar
+            ? `calc(100% - ${effectiveSidebarWidth}px)`
+            : "100%",
           transition: "margin-left 180ms ease, width 180ms ease",
         }}
       >

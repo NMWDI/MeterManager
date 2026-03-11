@@ -46,7 +46,7 @@ export const Topbar = ({
 
   const role: string = authUser()?.user_role?.name;
   const isLoggedIn = !!authUser();
-  const effectiveSidebarWidth = isDesktop
+  const effectiveSidebarWidth = isDesktop && isLoggedIn
     ? open
       ? sidebarWidth
       : DESKTOP_COLLAPSED_WIDTH
