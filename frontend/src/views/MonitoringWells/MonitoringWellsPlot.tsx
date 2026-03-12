@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Box, CircularProgress, Typography } from "@mui/material";
 import ReactPlot from "react-plotly.js";
-import { Data } from "plotly.js";
+import type { Data } from "plotly.js";
+import { PlotContextMenu } from "../../components/PlotContextMenu";
 
 export const Plot = ({
   manual_dates,
@@ -23,7 +24,22 @@ export const Plot = ({
   isContinuousLoading?: boolean;
 }) => {
   const plotContainerRef = useRef<HTMLDivElement | null>(null);
+  const plotRef = useRef<HTMLElement | null>(null);
   const [plotRevision, setPlotRevision] = useState(0);
+
+  const resetAxes = () => {
+    if (!plotRef.current) {
+      return;
+    }
+
+    const resetAxesButton = plotRef.current.querySelector<HTMLElement>(
+      '.modebar-btn[data-title="Reset axes"]',
+    );
+
+    if (resetAxesButton) {
+      resetAxesButton.click();
+    }
+  };
 
   const data: Partial<Data>[] = useMemo(
     () => {
@@ -98,7 +114,19 @@ export const Plot = ({
   }, []);
 
   return (
-    <Box sx={{ height: { xs: 300, sm: 400, md: 500, lg: 600 }, width: "100%" }}>
+    <Box
+      sx={{
+        height: { xs: 300, sm: 400, md: 500, lg: 600 },
+        width: "100%",
+        border: 1,
+        borderColor: "divider",
+        borderRadius: 1,
+        bgcolor: "background.paper",
+        overflow: "hidden",
+        p: 2,
+        boxSizing: "border-box",
+      }}
+    >
       {isLoading && !hasData ? (
         <Box
           sx={{
@@ -117,43 +145,56 @@ export const Plot = ({
         </Box>
       ) : (
         <Box sx={{ width: "100%", height: "100%" }}>
-          <Box ref={plotContainerRef} sx={{ width: "100%", height: "100%" }}>
-            <ReactPlot
-              data={data}
-              revision={plotRevision}
-              layout={{
-                autosize: true,
-                title: "Depth to Water Over Time",
-                titlefont: { size: 18 },
-                legend: {
-                  title: { text: "Datastreams", font: { size: 14 } },
-                  x: 1,
-                  y: 1,
-                  xanchor: "right",
-                  yanchor: "top",
-                  bordercolor: "grey", // Add border color
-                  borderwidth: 1, // Add border width
-                },
-                xaxis: { title: { text: "Date", font: { size: 16 } } },
-                yaxis: {
-                  autorange: "reversed",
-                  title: { text: "Depth to Water (ft)", font: { size: 16 } },
-                },
-                margin: { t: 40, b: 50, l: 60, r: 10 },
-              }}
-              config={{
-                displaylogo: false,
-                responsive: true,
-                modeBarButtonsToRemove: [
-                  "select2d",
-                  "lasso2d",
-                  "autoScale2d",
-                ],
-              }}
-              useResizeHandler
-              style={{ width: "100%", height: "100%" }}
-            />
-          </Box>
+          <PlotContextMenu
+            onResetAxes={resetAxes}
+          >
+            <Box
+              ref={plotContainerRef}
+              sx={{ width: "100%", height: "100%" }}
+            >
+              <ReactPlot
+                data={data}
+                revision={plotRevision}
+                layout={{
+                  autosize: true,
+                  title: "Depth to Water Over Time",
+                  titlefont: { size: 18 },
+                  legend: {
+                    title: { text: "Datastreams", font: { size: 14 } },
+                    x: 1,
+                    y: 1,
+                    xanchor: "right",
+                    yanchor: "top",
+                    bordercolor: "grey",
+                    borderwidth: 1,
+                  },
+                  xaxis: { title: { text: "Date", font: { size: 16 } } },
+                  yaxis: {
+                    autorange: "reversed" as unknown as boolean,
+                    title: { text: "Depth to Water (ft)", font: { size: 16 } },
+                  },
+                  margin: { t: 40, b: 50, l: 60, r: 10 },
+                }}
+                onInitialized={(_, graphDiv) => {
+                  plotRef.current = graphDiv;
+                }}
+                onUpdate={(_, graphDiv) => {
+                  plotRef.current = graphDiv;
+                }}
+                config={{
+                  displaylogo: false,
+                  responsive: true,
+                  modeBarButtonsToRemove: [
+                    "select2d",
+                    "lasso2d",
+                    "autoScale2d",
+                  ],
+                }}
+                useResizeHandler
+                style={{ width: "100%", height: "100%" }}
+              />
+            </Box>
+          </PlotContextMenu>
           {isContinuousLoading && (
             <Box
               sx={{
