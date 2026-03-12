@@ -15,7 +15,15 @@ import {
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import CloseIcon from "@mui/icons-material/Close";
-import { Logout, Settings } from "@mui/icons-material";
+import {
+  ExpandMore,
+  Home,
+  Logout,
+  MonitorHeart,
+  Public,
+  Science,
+  Settings,
+} from "@mui/icons-material";
 import { useNavigate } from "@tanstack/react-router";
 import { useAuthUser, useSignOut } from "react-auth-kit";
 import { RoleChip, TopbarUserButton } from "./index";
@@ -24,6 +32,7 @@ import {
   TOPBAR_HEIGHT,
 } from "@/components/ui/sidebar";
 import { BgColor } from "@/constants";
+import { useIsActiveRoute } from "@/hooks";
 
 export const Topbar = ({
   open,
@@ -41,11 +50,19 @@ export const Topbar = ({
   const navigate = useNavigate();
   const signOut = useSignOut();
   const authUser = useAuthUser();
+  const isHomeActive = useIsActiveRoute("/");
+  const isChloridesActive = useIsActiveRoute("/chlorides");
+  const isMonitoringWellsActive = useIsActiveRoute("/monitoringwells");
 
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [userMenuAnchorEl, setUserMenuAnchorEl] = useState<null | HTMLElement>(
+    null,
+  );
+  const [publicMenuAnchorEl, setPublicMenuAnchorEl] =
+    useState<null | HTMLElement>(null);
 
   const role: string = authUser()?.user_role?.name;
   const isLoggedIn = !!authUser();
+  const isPublicDataActive = isChloridesActive || isMonitoringWellsActive;
   const effectiveSidebarWidth =
     isDesktop && isLoggedIn
       ? open
@@ -54,11 +71,28 @@ export const Topbar = ({
       : 0;
 
   const handleMenuOpen = (event: MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
+    setUserMenuAnchorEl(event.currentTarget);
   };
 
   const handleMenuClose = () => {
-    setAnchorEl(null);
+    setUserMenuAnchorEl(null);
+  };
+
+  const handlePublicMenuOpen = (event: MouseEvent<HTMLElement>) => {
+    setPublicMenuAnchorEl(event.currentTarget);
+  };
+
+  const handlePublicMenuClose = () => {
+    setPublicMenuAnchorEl(null);
+  };
+
+  const handlePublicMenuToggle = (event: MouseEvent<HTMLElement>) => {
+    if (publicMenuAnchorEl) {
+      handlePublicMenuClose();
+      return;
+    }
+
+    handlePublicMenuOpen(event);
   };
 
   const fullSignOut = () => {
@@ -135,6 +169,108 @@ export const Topbar = ({
           </Box>
         </Box>
 
+        {isDesktop && !isLoggedIn ? (
+          <Box
+            sx={{
+              position: "absolute",
+              left: "50%",
+              transform: "translateX(-50%)",
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+            }}
+          >
+            <Button
+              color="inherit"
+              startIcon={<Home fontSize="small" />}
+              onClick={() => navigate({ to: "/", search: {} })}
+              sx={{
+                color: isHomeActive ? "darkblue" : "text.secondary",
+                fontWeight: 700,
+                textTransform: "none",
+                transition: "color 180ms ease",
+              }}
+            >
+              Home
+            </Button>
+            <Button
+              color="inherit"
+              startIcon={<Public fontSize="small" />}
+              endIcon={
+                <ExpandMore
+                  fontSize="small"
+                  sx={{
+                    transform: publicMenuAnchorEl
+                      ? "translateY(-1px) rotate(180deg)"
+                      : "translateY(1px) rotate(0deg)",
+                    transition:
+                      "transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1) 70ms",
+                  }}
+                />
+              }
+              onClick={handlePublicMenuToggle}
+              onMouseEnter={handlePublicMenuOpen}
+              sx={{
+                color: isPublicDataActive ? "darkblue" : "text.secondary",
+                fontWeight: 700,
+                textTransform: "none",
+                transition: "color 180ms ease",
+              }}
+            >
+              Public Data
+            </Button>
+            <Menu
+              anchorEl={publicMenuAnchorEl}
+              open={Boolean(publicMenuAnchorEl)}
+              onClose={handlePublicMenuClose}
+              anchorOrigin={{ horizontal: "center", vertical: "bottom" }}
+              transformOrigin={{ horizontal: "center", vertical: "top" }}
+              MenuListProps={{
+                onMouseLeave: handlePublicMenuClose,
+              }}
+            >
+              <MenuItem
+                selected={isChloridesActive}
+                onClick={() => {
+                  navigate({ to: "/chlorides", search: {} });
+                  handlePublicMenuClose();
+                }}
+                sx={{
+                  color: isChloridesActive ? "darkblue" : "text.primary",
+                  "& .MuiListItemIcon-root": {
+                    color: isChloridesActive ? "darkblue" : "action.active",
+                  },
+                }}
+              >
+                <ListItemIcon>
+                  <Science fontSize="small" />
+                </ListItemIcon>
+                <Typography variant="body1">Chlorides</Typography>
+              </MenuItem>
+              <MenuItem
+                selected={isMonitoringWellsActive}
+                onClick={() => {
+                  navigate({ to: "/monitoringwells", search: {} });
+                  handlePublicMenuClose();
+                }}
+                sx={{
+                  color: isMonitoringWellsActive ? "darkblue" : "text.primary",
+                  "& .MuiListItemIcon-root": {
+                    color: isMonitoringWellsActive
+                      ? "darkblue"
+                      : "action.active",
+                  },
+                }}
+              >
+                <ListItemIcon>
+                  <MonitorHeart fontSize="small" />
+                </ListItemIcon>
+                <Typography variant="body1">Monitoring Wells</Typography>
+              </MenuItem>
+            </Menu>
+          </Box>
+        ) : null}
+
         {isLoggedIn ? (
           <Box>
             <TopbarUserButton
@@ -144,8 +280,8 @@ export const Topbar = ({
               src={authUser()?.avatar_img}
             />
             <Menu
-              anchorEl={anchorEl}
-              open={Boolean(anchorEl)}
+              anchorEl={userMenuAnchorEl}
+              open={Boolean(userMenuAnchorEl)}
               onClose={handleMenuClose}
               transformOrigin={{ horizontal: "right", vertical: "top" }}
               anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
