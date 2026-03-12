@@ -1,4 +1,4 @@
-import { useId, useState, useMemo } from "react";
+import { useEffect, useId, useState, useMemo } from "react";
 import {
   FormControl,
   Select,
@@ -8,7 +8,6 @@ import {
   CardContent,
   ListSubheader,
   useTheme,
-  Grid,
   Alert,
   Button,
   AlertTitle,
@@ -37,7 +36,11 @@ import { useFetchWithAuth, useFetchST2 } from "@/hooks";
 import { getDataStreamId, separateAndSortMonitoredWells } from "@/utils";
 import { MonitorHeart } from "@mui/icons-material";
 import { CreateModal, UpdateModal } from "@/components/Modals/MonitoredWell";
-import { CustomCardHeader, BackgroundBox } from "@/components";
+import {
+  CustomCardHeader,
+  BackgroundBox,
+  ResizableSplitPanels,
+} from "@/components";
 import { Table, Plot } from "@/views/MonitoringWells";
 import { optionalPositiveInt, pageParam, routeSearchHydrator } from "@/utils";
 
@@ -45,7 +48,17 @@ const searchSchema = z.object({
   wellId: optionalPositiveInt.catch(undefined).default(undefined),
   page: pageParam(0, 0),
   pageSize: pageParam(25, 10),
+  split: z
+    .preprocess((val) => {
+      if (val === undefined || val === null || val === "") return undefined;
+      const n = Number(val);
+      return Number.isInteger(n) && n >= 35 && n <= 72 ? n : undefined;
+    }, z.number().int().min(35).max(72).optional())
+    .catch(undefined)
+    .default(undefined),
 });
+
+const MONITORING_WELLS_SPLIT_STORAGE_KEY = "monitoringwells-split-width";
 
 export const Route = createFileRoute("/monitoringwells")({
   validateSearch: searchSchema,
@@ -58,7 +71,7 @@ function MonitoringWells() {
   const theme = useTheme();
 
   const navigate = useNavigate();
-  const { wellId } = Route.useSearch();
+  const { wellId, split } = Route.useSearch();
   const queryClient = useQueryClient();
   const fetchWithAuth = useFetchWithAuth();
   const fetchSt2 = useFetchST2();
@@ -74,6 +87,33 @@ function MonitoringWells() {
 
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (split !== undefined) {
+      return;
+    }
+
+    const storedSplit = window.localStorage.getItem(
+      MONITORING_WELLS_SPLIT_STORAGE_KEY,
+    );
+    if (!storedSplit) {
+      return;
+    }
+
+    const parsedSplit = Number(storedSplit);
+    if (!Number.isInteger(parsedSplit) || parsedSplit < 35 || parsedSplit > 72) {
+      return;
+    }
+
+    navigate({
+      to: "/monitoringwells",
+      search: (prev) => ({
+        ...(prev as any),
+        split: parsedSplit,
+      }),
+      replace: true,
+    });
+  }, [navigate, split]);
 
   const authUser = useAuthUser();
   const isAdmin = authUser()?.user_role.security_scopes.some(
@@ -275,7 +315,10 @@ function MonitoringWells() {
                 const next = Number(e.target.value);
                 navigate({
                   to: "/monitoringwells",
-                  search: { wellId: next },
+                  search: (prev) => ({
+                    ...(prev as any),
+                    wellId: next,
+                  }),
                   replace: true,
                 });
               }}
@@ -350,12 +393,29 @@ function MonitoringWells() {
               ))}
             </Select>
           </FormControl>
-          <Grid container spacing={2} sx={{ mt: "1rem" }}>
-            <Grid item xs={12} lg={7}>
+          <ResizableSplitPanels
+            leftWidth={split}
+            onLeftWidthChange={(nextSplit) => {
+              const roundedSplit = Math.round(nextSplit);
+              window.localStorage.setItem(
+                MONITORING_WELLS_SPLIT_STORAGE_KEY,
+                roundedSplit.toString(),
+              );
+              navigate({
+                to: "/monitoringwells",
+                search: (prev) => ({
+                  ...(prev as any),
+                  split: roundedSplit,
+                }),
+                replace: true,
+              });
+            }}
+            left={
               <Plot
                 isLoading={
                   isLoadingManual || isLoadingSt2 || isLoadingJohnsonSensorData
                 }
+                isContinuousLoading={isLoadingSt2}
                 manual_dates={(Array.isArray(manualMeasurements)
                   ? manualMeasurements
                   : []
@@ -385,8 +445,8 @@ function MonitoringWells() {
                     : undefined
                 }
               />
-            </Grid>
-            <Grid item xs={12} lg={5}>
+            }
+            right={
               <Table
                 rows={manualMeasurements ?? []}
                 selectedWell={monitoredWellsQuery?.data?.find(
@@ -396,8 +456,8 @@ function MonitoringWells() {
                 onOpenModal={() => setIsNewModalOpen(true)}
                 onMeasurementSelect={handleMeasurementSelect}
               />
-            </Grid>
-          </Grid>
+            }
+          />
           {authUser() && (
             <>
               <CreateModal

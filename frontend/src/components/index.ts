@@ -23,6 +23,7 @@ export * from "./Modals";
 export * from "./NavLink";
 export * from "./ReportsNavItem";
 export * from "./RHControlled";
+export * from "./ResizableSplitPanels";
 export * from "./RoleChip";
 export * from "./StatCell";
 export * from "./StyledToggleButton";

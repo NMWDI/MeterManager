@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Box, CircularProgress, Typography } from "@mui/material";
 import ReactPlot from "react-plotly.js";
 import { Data } from "plotly.js";
@@ -11,6 +11,7 @@ export const Plot = ({
   sensor_dates,
   sensor_vals,
   isLoading,
+  isContinuousLoading = false,
 }: {
   manual_dates: Date[];
   manual_vals: number[];
@@ -19,33 +20,49 @@ export const Plot = ({
   sensor_dates?: Date[];
   sensor_vals?: number[];
   isLoading: boolean;
+  isContinuousLoading?: boolean;
 }) => {
+  const plotContainerRef = useRef<HTMLDivElement | null>(null);
+  const [plotRevision, setPlotRevision] = useState(0);
+
   const data: Partial<Data>[] = useMemo(
-    () => [
-      {
-        x: manual_dates,
-        y: manual_vals,
-        type: "scatter",
-        mode: "markers",
-        marker: { color: "red" },
-        name: "Manual",
-      },
-      {
-        x: logger_dates,
-        y: logger_vals,
-        type: "scatter",
-        marker: { color: "blue" },
-        name: "Continuous",
-      },
-      {
-        x: sensor_dates,
-        y: sensor_vals,
-        type: "scatter",
-        mode: "markers",
-        marker: { color: "purple" },
-        name: "Woodpecker Sensor",
-      },
-    ],
+    () => {
+      const traces: Partial<Data>[] = [];
+
+      if (manual_dates.length > 0) {
+        traces.push({
+          x: manual_dates,
+          y: manual_vals,
+          type: "scattergl",
+          mode: "markers",
+          marker: { color: "red" },
+          name: "Manual",
+        });
+      }
+
+      if (logger_dates.length > 0) {
+        traces.push({
+          x: logger_dates,
+          y: logger_vals,
+          type: "scattergl",
+          marker: { color: "blue" },
+          name: "Continuous",
+        });
+      }
+
+      if (sensor_dates && sensor_dates.length > 0) {
+        traces.push({
+          x: sensor_dates,
+          y: sensor_vals,
+          type: "scattergl",
+          mode: "markers",
+          marker: { color: "purple" },
+          name: "Woodpecker Sensor",
+        });
+      }
+
+      return traces;
+    },
     [
       manual_dates,
       manual_vals,
@@ -56,9 +73,33 @@ export const Plot = ({
     ],
   );
 
+  const hasData = data.length > 0;
+
+  useEffect(() => {
+    const container = plotContainerRef.current;
+    if (!container) {
+      return undefined;
+    }
+
+    let frame = 0;
+    const observer = new ResizeObserver(() => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        setPlotRevision((prev) => prev + 1);
+      });
+    });
+
+    observer.observe(container);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, []);
+
   return (
     <Box sx={{ height: { xs: 300, sm: 400, md: 500, lg: 600 }, width: "100%" }}>
-      {isLoading ? (
+      {isLoading && !hasData ? (
         <Box
           sx={{
             height: { xs: 300, sm: 400, md: 500, lg: 600 },
@@ -75,31 +116,68 @@ export const Plot = ({
           </Typography>
         </Box>
       ) : (
-        <ReactPlot
-          data={data}
-          layout={{
-            autosize: true,
-            title: "Depth to Water Over Time",
-            titlefont: { size: 18 },
-            legend: {
-              title: { text: "Datastreams", font: { size: 14 } },
-              x: 1,
-              y: 1,
-              xanchor: "right",
-              yanchor: "top",
-              bordercolor: "grey", // Add border color
-              borderwidth: 1, // Add border width
-            },
-            xaxis: { title: { text: "Date", font: { size: 16 } } },
-            yaxis: {
-              autorange: "reversed",
-              title: { text: "Depth to Water (ft)", font: { size: 16 } },
-            },
-            margin: { t: 40, b: 50, l: 60, r: 10 },
-          }}
-          useResizeHandler
-          style={{ width: "100%", height: "100%" }}
-        />
+        <Box sx={{ width: "100%", height: "100%" }}>
+          <Box ref={plotContainerRef} sx={{ width: "100%", height: "100%" }}>
+            <ReactPlot
+              data={data}
+              revision={plotRevision}
+              layout={{
+                autosize: true,
+                title: "Depth to Water Over Time",
+                titlefont: { size: 18 },
+                legend: {
+                  title: { text: "Datastreams", font: { size: 14 } },
+                  x: 1,
+                  y: 1,
+                  xanchor: "right",
+                  yanchor: "top",
+                  bordercolor: "grey", // Add border color
+                  borderwidth: 1, // Add border width
+                },
+                xaxis: { title: { text: "Date", font: { size: 16 } } },
+                yaxis: {
+                  autorange: "reversed",
+                  title: { text: "Depth to Water (ft)", font: { size: 16 } },
+                },
+                margin: { t: 40, b: 50, l: 60, r: 10 },
+              }}
+              config={{
+                displaylogo: false,
+                responsive: true,
+                modeBarButtonsToRemove: [
+                  "select2d",
+                  "lasso2d",
+                  "autoScale2d",
+                ],
+              }}
+              useResizeHandler
+              style={{ width: "100%", height: "100%" }}
+            />
+          </Box>
+          {isContinuousLoading && (
+            <Box
+              sx={{
+                mt: 2,
+                px: 2,
+                py: 1.5,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 1.5,
+              }}
+            >
+              <CircularProgress size={18} thickness={5} />
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ textAlign: "center" }}
+              >
+                Continuous data is still loading. More points will appear
+                automatically.
+              </Typography>
+            </Box>
+          )}
+        </Box>
       )}
     </Box>
   );

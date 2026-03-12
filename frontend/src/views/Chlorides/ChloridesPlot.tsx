@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Box, CircularProgress, Typography } from "@mui/material";
 import ReactPlot from "react-plotly.js";
 import { Data } from "plotly.js";
@@ -12,6 +12,9 @@ export const Plot = ({
   manual_vals: { value: number; well: string }[];
   isLoading: boolean;
 }) => {
+  const plotContainerRef = useRef<HTMLDivElement | null>(null);
+  const [plotRevision, setPlotRevision] = useState(0);
+
   const data: Partial<Data>[] = useMemo(() => {
     const wellData: Record<string, { x: Date[]; y: number[] }> = {};
 
@@ -26,16 +29,40 @@ export const Plot = ({
     return Object.entries(wellData).map(([well, { x, y }], index) => ({
       x,
       y,
-      type: "scatter",
+      type: "scattergl",
       mode: "markers",
       marker: { color: generateColorScale(index) },
       name: `Well ${well}`,
     }));
   }, [manual_dates, manual_vals]);
 
+  const hasData = data.length > 0;
+
+  useEffect(() => {
+    const container = plotContainerRef.current;
+    if (!container) {
+      return undefined;
+    }
+
+    let frame = 0;
+    const observer = new ResizeObserver(() => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        setPlotRevision((prev) => prev + 1);
+      });
+    });
+
+    observer.observe(container);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, []);
+
   return (
     <Box sx={{ height: { xs: 300, sm: 400, md: 500, lg: 600 }, width: "100%" }}>
-      {isLoading ? (
+      {isLoading && !hasData ? (
         <Box
           sx={{
             height: { xs: 300, sm: 400, md: 500, lg: 600 },
@@ -52,30 +79,42 @@ export const Plot = ({
           </Typography>
         </Box>
       ) : (
-        <ReactPlot
-          data={data}
-          layout={{
-            autosize: true,
-            title: "Chlorides Over Time",
-            titlefont: { size: 18 },
-            legend: {
-              title: { text: "Wells", font: { size: 14 } },
-              x: 1,
-              y: 1,
-              xanchor: "right",
-              yanchor: "top",
-              bordercolor: "grey", // Add border color
-              borderwidth: 1, // Add border width
-            },
-            xaxis: { title: { text: "Date", font: { size: 16 } } },
-            yaxis: {
-              title: { text: "Chlorides (ppm)", font: { size: 16 } },
-            },
-            margin: { t: 40, b: 50, l: 60, r: 10 },
-          }}
-          useResizeHandler
-          style={{ width: "100%", height: "100%" }}
-        />
+        <Box ref={plotContainerRef} sx={{ width: "100%", height: "100%" }}>
+          <ReactPlot
+            data={data}
+            revision={plotRevision}
+            layout={{
+              autosize: true,
+              title: "Chlorides Over Time",
+              titlefont: { size: 18 },
+              legend: {
+                title: { text: "Wells", font: { size: 14 } },
+                x: 1,
+                y: 1,
+                xanchor: "right",
+                yanchor: "top",
+                bordercolor: "grey", // Add border color
+                borderwidth: 1, // Add border width
+              },
+              xaxis: { title: { text: "Date", font: { size: 16 } } },
+              yaxis: {
+                title: { text: "Chlorides (ppm)", font: { size: 16 } },
+              },
+              margin: { t: 40, b: 50, l: 60, r: 10 },
+            }}
+            config={{
+              displaylogo: false,
+              responsive: true,
+              modeBarButtonsToRemove: [
+                "select2d",
+                "lasso2d",
+                "autoScale2d",
+              ],
+            }}
+            useResizeHandler
+            style={{ width: "100%", height: "100%" }}
+          />
+        </Box>
       )}
     </Box>
   );

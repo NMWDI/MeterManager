@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   FormControl,
@@ -10,7 +10,6 @@ import {
   Alert,
   Button,
   AlertTitle,
-  Grid,
 } from "@mui/material";
 import { Science } from "@mui/icons-material";
 import { useMutation, useQuery } from "react-query";
@@ -27,7 +26,11 @@ import {
   RegionMeasurementDTO,
 } from "@/interfaces";
 import { useFetchWithAuth } from "@/hooks";
-import { BackgroundBox, CustomCardHeader } from "@/components";
+import {
+  BackgroundBox,
+  CustomCardHeader,
+  ResizableSplitPanels,
+} from "@/components";
 import {
   emptyToNull,
   optionalPositiveInt,
@@ -35,13 +38,22 @@ import {
   routeSearchHydrator,
 } from "@/utils";
 import { Table, Plot } from "@/views/Chlorides";
-import { BgColor } from "@/constants";
 
 const searchSchema = z.object({
   regionId: optionalPositiveInt.catch(undefined).default(undefined),
   page: pageParam(0, 0),
   pageSize: pageParam(25, 10),
+  split: z
+    .preprocess((val) => {
+      if (val === undefined || val === null || val === "") return undefined;
+      const n = Number(val);
+      return Number.isInteger(n) && n >= 35 && n <= 72 ? n : undefined;
+    }, z.number().int().min(35).max(72).optional())
+    .catch(undefined)
+    .default(undefined),
 });
+
+const CHLORIDES_SPLIT_STORAGE_KEY = "chlorides-split-width";
 
 export const Route = createFileRoute("/chlorides")({
   validateSearch: searchSchema,
@@ -52,7 +64,7 @@ export const Route = createFileRoute("/chlorides")({
 
 function Chlorides() {
   const navigate = useNavigate();
-  const { regionId } = Route.useSearch();
+  const { regionId, split } = Route.useSearch();
   const { enqueueSnackbar } = useSnackbar();
   const fetchWithAuth = useFetchWithAuth();
   const uniqueSelectId = useId();
@@ -67,6 +79,37 @@ function Chlorides() {
 
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (split !== undefined) {
+      return;
+    }
+
+    const storedSplit = window.localStorage.getItem(
+      CHLORIDES_SPLIT_STORAGE_KEY,
+    );
+    if (!storedSplit) {
+      return;
+    }
+
+    const parsedSplit = Number(storedSplit);
+    if (
+      !Number.isInteger(parsedSplit) ||
+      parsedSplit < 35 ||
+      parsedSplit > 72
+    ) {
+      return;
+    }
+
+    navigate({
+      to: "/chlorides",
+      search: (prev) => ({
+        ...(prev as any),
+        split: parsedSplit,
+      }),
+      replace: true,
+    });
+  }, [navigate, split]);
 
   const authUser = useAuthUser();
   const isAdmin = authUser()?.user_role.security_scopes.some(
@@ -233,7 +276,7 @@ function Chlorides() {
 
   return (
     <BackgroundBox>
-      <Card sx={{ height: "fit-content", bgcolor: BgColor }}>
+      <Card sx={{ height: "fit-content" }}>
         <CustomCardHeader title="Chlorides" icon={Science} />
         <CardContent>
           {error && (
@@ -270,7 +313,10 @@ function Chlorides() {
                 const next = Number(e.target.value);
                 navigate({
                   to: "/chlorides",
-                  search: { regionId: next },
+                  search: (prev) => ({
+                    ...(prev as any),
+                    regionId: next,
+                  }),
                   replace: true,
                 });
               }}
@@ -291,8 +337,24 @@ function Chlorides() {
               ))}
             </Select>
           </FormControl>
-          <Grid container spacing={2} sx={{ mt: "1rem" }}>
-            <Grid item xs={12} lg={7}>
+          <ResizableSplitPanels
+            leftWidth={split}
+            onLeftWidthChange={(nextSplit) => {
+              const roundedSplit = Math.round(nextSplit);
+              window.localStorage.setItem(
+                CHLORIDES_SPLIT_STORAGE_KEY,
+                roundedSplit.toString(),
+              );
+              navigate({
+                to: "/chlorides",
+                search: (prev) => ({
+                  ...(prev as any),
+                  split: roundedSplit,
+                }),
+                replace: true,
+              });
+            }}
+            left={
               <Plot
                 isLoading={manualQuery.isLoading}
                 manual_dates={manualQuery?.data?.map((m) => m.timestamp) ?? []}
@@ -303,16 +365,16 @@ function Chlorides() {
                   })) ?? []
                 }
               />
-            </Grid>
-            <Grid item xs={12} lg={5}>
+            }
+            right={
               <Table
                 rows={manualQuery?.data ?? []}
                 isRegionSelected={!!regionId}
                 onOpenModal={() => setIsNewModalOpen(true)}
                 onMeasurementSelect={handleMeasurementSelect}
               />
-            </Grid>
-          </Grid>
+            }
+          />
           {authUser() && (
             <>
               <CreateModal
