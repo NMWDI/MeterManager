@@ -6,6 +6,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, ExpiredSignatureError
 from passlib.context import CryptContext
 from starlette import status
+from sqlalchemy import or_
 from sqlalchemy.orm import joinedload, undefer, Session
 from sqlalchemy.sql import select
 
@@ -40,8 +41,8 @@ expired_token_exception = HTTPException(
 
 
 # Return the current user if credentials were correct, False if not
-def authenticate_user(username: str, password: str, db: Session):
-    user = get_user(username, db)
+def authenticate_user(login_identifier: str, password: str, db: Session):
+    user = get_user_by_login(login_identifier, db)
     if not user:
         return False
     if not verify_password(password, user.hashed_password):
@@ -72,9 +73,8 @@ def get_password_hash(password):
     return pwd_context.hash(password)
 
 
-def get_user(username: str, db: Session) -> Users:
-    # Load User with all security scopes
-    user_stmt = (
+def get_user_query():
+    return (
         select(Users)
         .options(
             undefer(Users.hashed_password),
@@ -83,8 +83,22 @@ def get_user(username: str, db: Session) -> Users:
             undefer(Users.email),
             joinedload(Users.user_role).joinedload(UserRoles.security_scopes),
         )
-        .filter(Users.username == username)
     )
+
+
+def get_user_by_login(login_identifier: str, db: Session) -> Users:
+    # Allow login via either username or email.
+    user_stmt = get_user_query().filter(
+        or_(Users.username == login_identifier, Users.email == login_identifier)
+    )
+    dbuser = db.scalars(user_stmt).first()
+
+    if dbuser:
+        return dbuser
+
+
+def get_user(username: str, db: Session) -> Users:
+    user_stmt = get_user_query().filter(Users.username == username)
     dbuser = db.scalars(user_stmt).first()
 
     if dbuser:

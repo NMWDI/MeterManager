@@ -24,7 +24,7 @@ import { API_URL } from "@/config";
 import { CustomCardHeader } from "@/components";
 
 export const Login = () => {
-  const [username, setUsername] = useState("");
+  const [loginIdentifier, setLoginIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -38,7 +38,7 @@ export const Login = () => {
     event.preventDefault();
 
     const body = new FormData();
-    body.append("username", username);
+    body.append("username", loginIdentifier);
     body.append("password", password);
 
     fetch(`${API_URL}/token`, { method: "POST", body })
@@ -82,7 +82,7 @@ export const Login = () => {
           localStorage.setItem("loggedIn", "true");
           navigate({ to: data.user.redirect_page ?? "/" });
         } else {
-          setError("Invalid username or password. Please try again.");
+          setError("Invalid username, email, or password. Please try again.");
         }
       });
     } else {
@@ -122,12 +122,12 @@ export const Login = () => {
               sx={{ paddingTop: "1.5rem", paddingBottom: "1.5rem" }}
             >
               <TextField
-                value={username}
+                value={loginIdentifier}
                 required
                 fullWidth
-                label="Username"
+                label="Username or Email"
                 name="username"
-                onChange={(e) => setUsername(e.target.value)}
+                onChange={(e) => setLoginIdentifier(e.target.value)}
               />
               <TextField
                 value={password}

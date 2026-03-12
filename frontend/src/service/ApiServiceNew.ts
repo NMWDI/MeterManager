@@ -468,8 +468,8 @@ export function useGetUser(id: number, options = {}) {
   const navigate = useNavigate();
   const signOut = useSignOut();
 
-  return useQuery<User[], Error>(
-    [route],
+  return useQuery<User, Error>(
+    [route, id],
     () => GETFetch(`${route}/${id}`, null, authHeader(), signOut, navigate),
     options,
   );
