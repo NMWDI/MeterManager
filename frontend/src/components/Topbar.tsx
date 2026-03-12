@@ -275,7 +275,7 @@ export const Topbar = ({
           <Box>
             <TopbarUserButton
               role={role}
-              display_name={authUser()?.display_name ?? "Unknown"}
+              full_name={authUser()?.full_name ?? authUser()?.display_name ?? "Unknown"}
               onClick={handleMenuOpen}
               src={authUser()?.avatar_img}
             />

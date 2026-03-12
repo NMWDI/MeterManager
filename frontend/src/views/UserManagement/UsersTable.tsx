@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import {
+  Box,
   Button,
   Card,
   CardContent,
@@ -19,6 +20,7 @@ import {
   IsTrueChip,
   RoleChip,
   TristateToggle,
+  UserAvatar,
 } from "@/components";
 
 export const UsersTable = ({
@@ -66,6 +68,32 @@ export const UsersTable = ({
   }, [usersList.data, search.user_q, search.active, search.tech]);
 
   const cols: GridColDef[] = [
+    {
+      field: "avatar_img",
+      headerName: "Avatar",
+      width: 70,
+      sortable: false,
+      filterable: false,
+      renderCell: (params: any) => (
+        <Box
+          sx={{
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            gap: 2,
+            justifyContent: "start",
+            alignItems: "center",
+          }}
+        >
+          <UserAvatar
+            full_name={params.row.full_name}
+            role={params.row.user_role?.name}
+            src={params.row.avatar_img}
+            size={34}
+          />
+        </Box>
+      ),
+    },
     { field: "full_name", headerName: "Full Name", width: 200 },
     {
       field: "user_role",
