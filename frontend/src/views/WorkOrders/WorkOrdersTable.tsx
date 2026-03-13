@@ -492,26 +492,27 @@ export const WorkOrdersTable = () => {
               )}
               renderInput={(params) => {
                 const { InputProps, ...rest } = params;
+                const startAdornment = selectedAssignedUser ? (
+                  <>
+                    <UserAvatar
+                      full_name={selectedAssignedUser.full_name}
+                      role={getAvatarRole(selectedAssignedUser)}
+                      src={selectedAssignedUser.avatar_img ?? undefined}
+                      size={24}
+                      sx={{ mr: 1 }}
+                    />
+                    {InputProps.startAdornment}
+                  </>
+                ) : InputProps.startAdornment;
 
                 return (
                   <TextField
                     {...rest}
                     InputProps={{
                       ...InputProps,
-                      startAdornment: (
-                        <>
-                          {selectedAssignedUser ? (
-                            <UserAvatar
-                              full_name={selectedAssignedUser.full_name}
-                              role={getAvatarRole(selectedAssignedUser)}
-                              src={selectedAssignedUser.avatar_img ?? undefined}
-                              size={24}
-                              sx={{ mr: 1 }}
-                            />
-                          ) : null}
-                          {InputProps.startAdornment}
-                        </>
-                      ),
+                      ...(startAdornment
+                        ? { startAdornment }
+                        : {}),
                     }}
                     label={
                       hasAdminScope

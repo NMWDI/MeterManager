@@ -1,7 +1,13 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuthUser } from "react-auth-kit";
 import { Autocomplete, Box, Stack, TextField } from "@mui/material";
-import { Controller } from "react-hook-form";
+import {
+  Control,
+  Controller,
+  FieldValues,
+  Path,
+  UseFormSetValue,
+} from "react-hook-form";
 import { User } from "@/interfaces";
 import { useGetUserList } from "@/service";
 import { UserAvatar } from "@/components/UserAvatar";
@@ -13,21 +19,56 @@ import {
 const getAvatarRole = (user: User | null | undefined) =>
   user ? getRoleLabel(user) : undefined;
 
+const isUserLike = (value: unknown): value is User => {
+  if (typeof value !== "object" || value === null || !("id" in value)) {
+    return false;
+  }
+
+  return typeof value.id === "number" && Number.isFinite(value.id);
+};
+
+type ControlledUserSelectProps<TFieldValues extends FieldValues> = {
+  name: Path<TFieldValues>;
+  control: Control<TFieldValues>;
+  hideAndSelectCurrentUser?: boolean;
+  setValue?: UseFormSetValue<TFieldValues> | null;
+  label?: string;
+  error?: string;
+  helperText?: string;
+  disabled?: boolean;
+  sx?: object;
+};
+
 export const ControlledUserSelect = ({
   name,
   control,
   hideAndSelectCurrentUser = false,
   setValue = null,
   ...childProps
-}: any) => {
+}: ControlledUserSelectProps<FieldValues>) => {
   const [isCurrentUserSet, setIsCurrentUserSet] = useState<boolean>(false);
+  const currentUser = useAuthUser();
+  const userList = useGetUserList();
+  const users = useMemo(
+    () => sortUsersByRoleThenName(userList.data ?? []),
+    [userList.data],
+  );
+
+  useEffect(() => {
+    if (!hideAndSelectCurrentUser || isCurrentUserSet || !setValue) {
+      return;
+    }
+
+    const authenticatedUser = currentUser();
+    if (!authenticatedUser) {
+      return;
+    }
+
+    setValue(name, authenticatedUser);
+    setIsCurrentUserSet(true);
+  }, [currentUser, hideAndSelectCurrentUser, isCurrentUserSet, name, setValue]);
 
   if (!hideAndSelectCurrentUser) {
-    const userList = useGetUserList();
-    const users = useMemo(
-      () => sortUsersByRoleThenName(userList.data ?? []),
-      [userList.data],
-    );
     const {
       label = "User",
       error,
@@ -44,9 +85,10 @@ export const ControlledUserSelect = ({
         defaultValue={null}
         render={({ field }) => (
           (() => {
+            const fieldValue = isUserLike(field.value) ? field.value : null;
             const selectedUser =
-              users.find((user) => user.id === field.value?.id) ??
-              field.value ??
+              users.find((user) => user.id === fieldValue?.id) ??
+              fieldValue ??
               null;
 
             return (
@@ -80,6 +122,18 @@ export const ControlledUserSelect = ({
                 )}
                 renderInput={(params) => {
                   const { InputProps, ...rest } = params;
+                  const startAdornment = selectedUser ? (
+                    <>
+                      <UserAvatar
+                        full_name={selectedUser.full_name}
+                        role={getAvatarRole(selectedUser)}
+                        src={selectedUser.avatar_img ?? undefined}
+                        size={20}
+                        sx={{ mr: 0.75 }}
+                      />
+                      {InputProps.startAdornment}
+                    </>
+                  ) : InputProps.startAdornment;
 
                   return (
                     <TextField
@@ -89,20 +143,9 @@ export const ControlledUserSelect = ({
                       helperText={error ?? helperText}
                       InputProps={{
                         ...InputProps,
-                        startAdornment: (
-                          <>
-                            {selectedUser ? (
-                              <UserAvatar
-                                full_name={selectedUser.full_name}
-                                role={getAvatarRole(selectedUser)}
-                                src={selectedUser.avatar_img ?? undefined}
-                                size={20}
-                                sx={{ mr: 0.75 }}
-                              />
-                            ) : null}
-                            {InputProps.startAdornment}
-                          </>
-                        ),
+                        ...(startAdornment
+                          ? { startAdornment }
+                          : {}),
                       }}
                     />
                   );
@@ -114,11 +157,6 @@ export const ControlledUserSelect = ({
       />
     );
   } else {
-    if (!isCurrentUserSet) {
-      const currentUser = useAuthUser();
-      setValue(name, currentUser());
-      setIsCurrentUserSet(true);
-    }
     return null;
   }
 };
