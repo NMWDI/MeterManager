@@ -33,7 +33,6 @@ export function MeterActivitySelection({ control, errors, setValue }: any) {
           <ControlledUserSelect
             name="activity_details.user"
             control={control}
-            errors={errors}
             hideAndSelectCurrentUser={false} //Temporary disable of this admin feature
             setValue={setValue}
             error={errors?.activity_details?.user?.message}

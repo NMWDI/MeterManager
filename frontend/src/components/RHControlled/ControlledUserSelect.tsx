@@ -6,6 +6,8 @@ import {
   Controller,
   FieldValues,
   Path,
+  PathValue,
+  UseControllerProps,
   UseFormSetValue,
 } from "react-hook-form";
 import { User } from "@/interfaces";
@@ -27,6 +29,9 @@ const isUserLike = (value: unknown): value is User => {
   return typeof value.id === "number" && Number.isFinite(value.id);
 };
 
+const getUserId = (value: unknown): number | undefined =>
+  isUserLike(value) ? value.id : undefined;
+
 type ControlledUserSelectProps<TFieldValues extends FieldValues> = {
   name: Path<TFieldValues>;
   control: Control<TFieldValues>;
@@ -39,13 +44,13 @@ type ControlledUserSelectProps<TFieldValues extends FieldValues> = {
   sx?: object;
 };
 
-export const ControlledUserSelect = ({
+export const ControlledUserSelect = <TFieldValues extends FieldValues>({
   name,
   control,
   hideAndSelectCurrentUser = false,
   setValue = null,
   ...childProps
-}: ControlledUserSelectProps<FieldValues>) => {
+}: ControlledUserSelectProps<TFieldValues>) => {
   const [isCurrentUserSet, setIsCurrentUserSet] = useState<boolean>(false);
   const currentUser = useAuthUser();
   const userList = useGetUserList();
@@ -64,7 +69,7 @@ export const ControlledUserSelect = ({
       return;
     }
 
-    setValue(name, authenticatedUser);
+    setValue(name, authenticatedUser as PathValue<TFieldValues, Path<TFieldValues>>);
     setIsCurrentUserSet(true);
   }, [currentUser, hideAndSelectCurrentUser, isCurrentUserSet, name, setValue]);
 
@@ -82,12 +87,15 @@ export const ControlledUserSelect = ({
       <Controller
         name={name}
         control={control}
-        defaultValue={null}
+        defaultValue={null as UseControllerProps<TFieldValues>["defaultValue"]}
         render={({ field }) => (
           (() => {
-            const fieldValue = isUserLike(field.value) ? field.value : null;
-            const selectedUser =
-              users.find((user) => user.id === fieldValue?.id) ??
+            const fieldValueId = getUserId(field.value);
+            const fieldValue = isUserLike(field.value)
+              ? (field.value as User)
+              : null;
+            const selectedUser: User | null =
+              users.find((user) => user.id === fieldValueId) ??
               fieldValue ??
               null;
 

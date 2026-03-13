@@ -173,7 +173,7 @@ export const SelectedObservationDetails = ({
             <ControlledUserSelect
               name="submitting_user"
               control={control}
-              errors={""}
+              error=""
             />
           </Grid>
           <Grid item xs={12} lg={6}>
