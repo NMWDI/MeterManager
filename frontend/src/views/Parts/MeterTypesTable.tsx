@@ -10,7 +10,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { Search, Add, FormatListBulletedOutlined } from "@mui/icons-material";
+import { Search, Add, SpeedOutlined } from "@mui/icons-material";
 import { useNavigate } from "@tanstack/react-router";
 import { useGetMeterTypeList } from "@/service";
 import { Route } from "@/routes/manage/parts/index";
@@ -18,6 +18,7 @@ import {
   CustomCardHeader,
   GridFooterWithButton,
   IsTrueChip,
+  ManageBreadcrumbTitle,
   TristateToggle,
 } from "@/components";
 
@@ -78,10 +79,7 @@ export const MeterTypesTable = ({
 
   return (
     <Card>
-      <CustomCardHeader
-        title="All Meter Types"
-        icon={FormatListBulletedOutlined}
-      />
+      <CustomCardHeader title="Meter Types" icon={SpeedOutlined} />
       <CardContent>
         <Grid container spacing={2}>
           <Grid
@@ -155,8 +153,7 @@ export const MeterTypesTable = ({
               setSearch((prev) => ({
                 ...prev,
                 mt_pageSize: model.pageSize,
-                mt_page:
-                  model.pageSize !== prev.mt_pageSize ? 0 : model.page,
+                mt_page: model.pageSize !== prev.mt_pageSize ? 0 : model.page,
               }))
             }
             pageSizeOptions={[10, 25, 50, 100]}

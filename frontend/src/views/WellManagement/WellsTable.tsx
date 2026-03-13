@@ -9,11 +9,11 @@ import {
   Box,
   InputAdornment,
 } from "@mui/material";
-import { FormatListBulletedOutlined } from "@mui/icons-material";
+import { WaterDrop } from "@mui/icons-material";
 import { useNavigate } from "@tanstack/react-router";
 import { Search } from "@mui/icons-material";
 import { Route } from "@/routes/manage/wells";
-import { CustomCardHeader, TabPanel } from "@/components";
+import { CustomCardHeader, ManageBreadcrumbTitle, TabPanel } from "@/components";
 
 import WellSelectionTable from "@/views/WellManagement/WellSelectionTable";
 import WellSelectionMap from "@/views/WellManagement/WellSelectionMap";
@@ -59,7 +59,10 @@ export const WellsTable = () => {
         flexDirection: "column",
       }}
     >
-      <CustomCardHeader title="All Wells" icon={FormatListBulletedOutlined} />
+      <CustomCardHeader
+        title={<ManageBreadcrumbTitle current="Wells" />}
+        icon={WaterDrop}
+      />
       <CardContent>
         <Grid container justifyContent="space-between">
           <Grid item xs={6}>

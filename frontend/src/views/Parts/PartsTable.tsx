@@ -17,8 +17,8 @@ import {
   PlusOne,
   Search,
   Add,
-  FormatListBulletedOutlined,
   History,
+  Build,
 } from "@mui/icons-material";
 import { useSnackbar } from "notistack";
 import { Link, useNavigate } from "@tanstack/react-router";
@@ -29,6 +29,7 @@ import {
   GridFooterWithButton,
   IncreaseQuantityModal,
   IsTrueChip,
+  ManageBreadcrumbTitle,
   TristateToggle,
 } from "@/components";
 
@@ -145,7 +146,10 @@ export const PartsTable = ({
 
   return (
     <Card>
-      <CustomCardHeader title="All Parts" icon={FormatListBulletedOutlined} />
+      <CustomCardHeader
+        title={<ManageBreadcrumbTitle current="Parts" />}
+        icon={Build}
+      />
       <CardContent>
         <Grid container spacing={2}>
           <Grid

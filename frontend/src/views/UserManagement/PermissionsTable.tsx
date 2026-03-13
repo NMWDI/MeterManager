@@ -1,6 +1,6 @@
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import { Card, CardContent, Grid } from "@mui/material";
-import { FormatListBulletedOutlined } from "@mui/icons-material";
+import { VerifiedUserOutlined } from "@mui/icons-material";
 import { useGetSecurityScopes } from "@/service";
 import { CustomCardHeader } from "@/components";
 
@@ -18,10 +18,7 @@ export const PermissionsTable = () => {
 
   return (
     <Card>
-      <CustomCardHeader
-        title="All Permissions"
-        icon={FormatListBulletedOutlined}
-      />
+      <CustomCardHeader title="Permissions" icon={VerifiedUserOutlined} />
       <CardContent>
         <Grid container spacing={2}>
           <Grid item xs={12}>

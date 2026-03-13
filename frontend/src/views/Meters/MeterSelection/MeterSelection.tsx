@@ -11,9 +11,9 @@ import {
   ToggleButton,
   InputAdornment,
 } from "@mui/material";
-import { FormatListBulletedOutlined, Search } from "@mui/icons-material";
+import { Search, SpeedOutlined } from "@mui/icons-material";
 import { MeterStatusNames } from "@/enums";
-import { CustomCardHeader, TabPanel } from "@/components";
+import { CustomCardHeader, ManageBreadcrumbTitle, TabPanel } from "@/components";
 import { useMemo } from "react";
 
 type MeterFilterKey = "installed" | "stored" | "sold" | "scrapped" | "unknown";
@@ -63,7 +63,10 @@ export const MeterSelection = ({
 
   return (
     <Card sx={{ height: "100%" }}>
-      <CustomCardHeader title="All Meters" icon={FormatListBulletedOutlined} />
+      <CustomCardHeader
+        title={<ManageBreadcrumbTitle current="Meters" />}
+        icon={SpeedOutlined}
+      />
       <CardContent sx={{ height: "100%" }}>
         <Grid container justifyContent="space-between">
           <Grid item xs={6}>

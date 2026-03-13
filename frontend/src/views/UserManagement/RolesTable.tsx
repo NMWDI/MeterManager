@@ -9,7 +9,7 @@ import {
   InputAdornment,
   TextField,
 } from "@mui/material";
-import { Search, Add, FormatListBulletedOutlined } from "@mui/icons-material";
+import { Search, Add, AdminPanelSettingsOutlined } from "@mui/icons-material";
 import { useNavigate } from "@tanstack/react-router";
 import { useGetRoles } from "@/service";
 import { Route } from "@/routes/manage/users";
@@ -71,7 +71,7 @@ export const RolesTable = ({
 
   return (
     <Card>
-      <CustomCardHeader title="All Roles" icon={FormatListBulletedOutlined} />
+      <CustomCardHeader title="Roles" icon={AdminPanelSettingsOutlined} />
       <CardContent>
         <Grid container spacing={2}>
           <Grid
@@ -106,25 +106,25 @@ export const RolesTable = ({
             />
           </Grid>
           <Grid item xs={12}>
-          <DataGrid
-            sx={{ height: 550, border: "none" }}
-            rows={filteredRows ?? []}
-            pagination
-            paginationModel={{
-              page: search.r_page,
-              pageSize: search.r_pageSize,
-            }}
-            onPaginationModelChange={(model) =>
-              setSearch((prev) => ({
-                ...prev,
-                r_pageSize: model.pageSize,
-                r_page: model.pageSize !== prev.r_pageSize ? 0 : model.page,
-              }))
-            }
-            pageSizeOptions={[10, 25, 50, 100]}
-            rowSelectionModel={search.role_id ? [search.role_id] : []}
-            loading={rolesList.isLoading}
-            columns={cols}
+            <DataGrid
+              sx={{ height: 550, border: "none" }}
+              rows={filteredRows ?? []}
+              pagination
+              paginationModel={{
+                page: search.r_page,
+                pageSize: search.r_pageSize,
+              }}
+              onPaginationModelChange={(model) =>
+                setSearch((prev) => ({
+                  ...prev,
+                  r_pageSize: model.pageSize,
+                  r_page: model.pageSize !== prev.r_pageSize ? 0 : model.page,
+                }))
+              }
+              pageSizeOptions={[10, 25, 50, 100]}
+              rowSelectionModel={search.role_id ? [search.role_id] : []}
+              loading={rolesList.isLoading}
+              columns={cols}
               disableColumnMenu
               onRowClick={(selectedRow) => onSelectRole(selectedRow.row.id)}
               slots={{ footer: GridFooterWithButton }}

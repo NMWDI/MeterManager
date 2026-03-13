@@ -3,6 +3,7 @@ export * from "./Backups";
 export * from "./Home";
 export * from "./InsufficientPermView";
 export * from "./Login";
+export * from "./Manage";
 export * from "./Meters";
 export * from "./NotFound";
 export * from "./Notifications";

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Card, CardContent } from "@mui/material";
-import { FormatListBulletedOutlined } from "@mui/icons-material";
+import { AssignmentTurnedInOutlined } from "@mui/icons-material";
 import { z } from "zod";
 
 import { WorkOrderStatus } from "@/enums";
@@ -64,7 +64,7 @@ function WorkOrdersView() {
       <Card sx={{ height: "fit-content", overflowX: "auto" }}>
         <CustomCardHeader
           title="Work Orders"
-          icon={FormatListBulletedOutlined}
+          icon={AssignmentTurnedInOutlined}
         />
         <CardContent>
           <WorkOrdersTable />

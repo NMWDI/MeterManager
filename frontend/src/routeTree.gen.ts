@@ -18,6 +18,7 @@ import { Route as ChloridesRouteImport } from './routes/chlorides'
 import { Route as ActivitiesRouteImport } from './routes/activities'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ReportsIndexRouteImport } from './routes/reports/index'
+import { Route as ManageIndexRouteImport } from './routes/manage/index'
 import { Route as ReportsPartsusedRouteImport } from './routes/reports/partsused'
 import { Route as ReportsMonitoringwellsRouteImport } from './routes/reports/monitoringwells'
 import { Route as ReportsMaintenanceRouteImport } from './routes/reports/maintenance'
@@ -75,6 +76,11 @@ const IndexRoute = IndexRouteImport.update({
 const ReportsIndexRoute = ReportsIndexRouteImport.update({
   id: '/reports/',
   path: '/reports/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ManageIndexRoute = ManageIndexRouteImport.update({
+  id: '/manage/',
+  path: '/manage/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReportsPartsusedRoute = ReportsPartsusedRouteImport.update({
@@ -163,6 +169,7 @@ export interface FileRoutesByFullPath {
   '/reports/maintenance': typeof ReportsMaintenanceRoute
   '/reports/monitoringwells': typeof ReportsMonitoringwellsRoute
   '/reports/partsused': typeof ReportsPartsusedRoute
+  '/manage/': typeof ManageIndexRoute
   '/reports/': typeof ReportsIndexRoute
   '/manage/parts/': typeof ManagePartsIndexRoute
   '/activities/$activity_id/photos/$photo_file_name': typeof ActivitiesActivity_idPhotosPhoto_file_nameRoute
@@ -186,6 +193,7 @@ export interface FileRoutesByTo {
   '/reports/maintenance': typeof ReportsMaintenanceRoute
   '/reports/monitoringwells': typeof ReportsMonitoringwellsRoute
   '/reports/partsused': typeof ReportsPartsusedRoute
+  '/manage': typeof ManageIndexRoute
   '/reports': typeof ReportsIndexRoute
   '/manage/parts': typeof ManagePartsIndexRoute
   '/activities/$activity_id/photos/$photo_file_name': typeof ActivitiesActivity_idPhotosPhoto_file_nameRoute
@@ -211,6 +219,7 @@ export interface FileRoutesById {
   '/reports/maintenance': typeof ReportsMaintenanceRoute
   '/reports/monitoringwells': typeof ReportsMonitoringwellsRoute
   '/reports/partsused': typeof ReportsPartsusedRoute
+  '/manage/': typeof ManageIndexRoute
   '/reports/': typeof ReportsIndexRoute
   '/manage/parts/': typeof ManagePartsIndexRoute
   '/activities/$activity_id/photos/$photo_file_name': typeof ActivitiesActivity_idPhotosPhoto_file_nameRoute
@@ -237,6 +246,7 @@ export interface FileRouteTypes {
     | '/reports/maintenance'
     | '/reports/monitoringwells'
     | '/reports/partsused'
+    | '/manage/'
     | '/reports/'
     | '/manage/parts/'
     | '/activities/$activity_id/photos/$photo_file_name'
@@ -260,6 +270,7 @@ export interface FileRouteTypes {
     | '/reports/maintenance'
     | '/reports/monitoringwells'
     | '/reports/partsused'
+    | '/manage'
     | '/reports'
     | '/manage/parts'
     | '/activities/$activity_id/photos/$photo_file_name'
@@ -284,6 +295,7 @@ export interface FileRouteTypes {
     | '/reports/maintenance'
     | '/reports/monitoringwells'
     | '/reports/partsused'
+    | '/manage/'
     | '/reports/'
     | '/manage/parts/'
     | '/activities/$activity_id/photos/$photo_file_name'
@@ -309,6 +321,7 @@ export interface RootRouteChildren {
   ReportsMaintenanceRoute: typeof ReportsMaintenanceRoute
   ReportsMonitoringwellsRoute: typeof ReportsMonitoringwellsRoute
   ReportsPartsusedRoute: typeof ReportsPartsusedRoute
+  ManageIndexRoute: typeof ManageIndexRoute
   ReportsIndexRoute: typeof ReportsIndexRoute
 }
 
@@ -375,6 +388,13 @@ declare module '@tanstack/react-router' {
       path: '/reports'
       fullPath: '/reports/'
       preLoaderRoute: typeof ReportsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/manage/': {
+      id: '/manage/'
+      path: '/manage'
+      fullPath: '/manage/'
+      preLoaderRoute: typeof ManageIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reports/partsused': {
@@ -517,6 +537,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReportsMaintenanceRoute: ReportsMaintenanceRoute,
   ReportsMonitoringwellsRoute: ReportsMonitoringwellsRoute,
   ReportsPartsusedRoute: ReportsPartsusedRoute,
+  ManageIndexRoute: ManageIndexRoute,
   ReportsIndexRoute: ReportsIndexRoute,
 }
 export const routeTree = rootRouteImport

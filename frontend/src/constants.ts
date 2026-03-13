@@ -1,8 +1,6 @@
 import {
-  FormatListBulletedOutlined,
-  Construction,
+  AssignmentTurnedInOutlined,
   MonitorHeart,
-  Plumbing,
   Build,
   Science,
   People,
@@ -12,6 +10,8 @@ import {
   BuildOutlined,
   ScienceOutlined,
   WaterDrop,
+  SpeedOutlined,
+  Engineering,
 } from "@mui/icons-material";
 import { SvgIconProps } from "@mui/material";
 import { ComponentType } from "react";
@@ -35,25 +35,25 @@ export const navConfig: NavItem[] = [
   {
     path: "/workorders",
     label: "Work Orders",
-    icon: FormatListBulletedOutlined,
+    icon: AssignmentTurnedInOutlined,
     role: "Technician",
   },
   {
     path: "/activities",
     label: "Activities",
-    icon: Construction,
+    icon: Engineering,
     role: "Technician",
   },
   {
     path: "/manage/meters",
     label: "Manage Meters",
-    icon: WaterDrop,
+    icon: SpeedOutlined,
     role: "Technician",
   },
   {
     path: "/manage/wells",
     label: "Manage Wells",
-    icon: Plumbing,
+    icon: WaterDrop,
     role: "Technician",
   },
 

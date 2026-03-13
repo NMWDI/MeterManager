@@ -16,7 +16,11 @@ import { Route } from "@/routes/manage/backups";
 import { useNavigate } from "@tanstack/react-router";
 import { BackupRow } from "@/interfaces/BackupRow";
 import { useFetchWithAuth } from "@/hooks";
-import { BackgroundBox, CustomCardHeader } from "@/components";
+import {
+  BackgroundBox,
+  CustomCardHeader,
+  ManageBreadcrumbTitle,
+} from "@/components";
 import { toYYYYMMDD, formatBytes } from "@/utils";
 
 export const BackupsView = () => {
@@ -142,7 +146,10 @@ export const BackupsView = () => {
   return (
     <BackgroundBox>
       <Card sx={{ height: "fit-content" }}>
-        <CustomCardHeader title="Backups" icon={Storage} />
+        <CustomCardHeader
+          title={<ManageBreadcrumbTitle current="Backups" />}
+          icon={Storage}
+        />
         <CardContent>
           {error && (
             <Alert

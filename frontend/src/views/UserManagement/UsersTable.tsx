@@ -10,7 +10,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { Search, Add, FormatListBulletedOutlined } from "@mui/icons-material";
+import { Search, Add, People } from "@mui/icons-material";
 import { useNavigate } from "@tanstack/react-router";
 import { Route } from "@/routes/manage/users";
 import { useGetUserAdminList } from "@/service";
@@ -18,6 +18,7 @@ import {
   CustomCardHeader,
   GridFooterWithButton,
   IsTrueChip,
+  ManageBreadcrumbTitle,
   RoleChip,
   TristateToggle,
   UserAvatar,
@@ -116,7 +117,10 @@ export const UsersTable = ({
 
   return (
     <Card>
-      <CustomCardHeader title="All Users" icon={FormatListBulletedOutlined} />
+      <CustomCardHeader
+        title={<ManageBreadcrumbTitle current="Users" />}
+        icon={People}
+      />
       <CardContent>
         <Grid container spacing={2}>
           <Grid

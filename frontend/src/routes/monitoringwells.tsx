@@ -101,7 +101,11 @@ function MonitoringWells() {
     }
 
     const parsedSplit = Number(storedSplit);
-    if (!Number.isInteger(parsedSplit) || parsedSplit < 35 || parsedSplit > 72) {
+    if (
+      !Number.isInteger(parsedSplit) ||
+      parsedSplit < 35 ||
+      parsedSplit > 72
+    ) {
       return;
     }
 
@@ -277,7 +281,7 @@ function MonitoringWells() {
   return (
     <BackgroundBox>
       <Card sx={{ height: "fit-content" }}>
-        <CustomCardHeader title="Monitored Well Values" icon={MonitorHeart} />
+        <CustomCardHeader title="Monitored Wells" icon={MonitorHeart} />
         <CardContent>
           {error && (
             <Alert
