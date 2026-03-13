@@ -5,6 +5,7 @@ export * from "./InsufficientPermView";
 export * from "./Login";
 export * from "./Meters";
 export * from "./NotFound";
+export * from "./Notifications";
 export * from "./Parts";
 export * from "./Reports";
 export * from "./RouteErrorView";

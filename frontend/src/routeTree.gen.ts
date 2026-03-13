@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WorkordersRouteImport } from './routes/workorders'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as MonitoringwellsRouteImport } from './routes/monitoringwells'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ChloridesRouteImport } from './routes/chlorides'
@@ -39,6 +40,11 @@ const WorkordersRoute = WorkordersRouteImport.update({
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotificationsRoute = NotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MonitoringwellsRoute = MonitoringwellsRouteImport.update({
@@ -144,6 +150,7 @@ export interface FileRoutesByFullPath {
   '/chlorides': typeof ChloridesRoute
   '/login': typeof LoginRoute
   '/monitoringwells': typeof MonitoringwellsRoute
+  '/notifications': typeof NotificationsRoute
   '/settings': typeof SettingsRoute
   '/workorders': typeof WorkordersRoute
   '/internal/error-preview': typeof InternalErrorPreviewRoute
@@ -167,6 +174,7 @@ export interface FileRoutesByTo {
   '/chlorides': typeof ChloridesRoute
   '/login': typeof LoginRoute
   '/monitoringwells': typeof MonitoringwellsRoute
+  '/notifications': typeof NotificationsRoute
   '/settings': typeof SettingsRoute
   '/workorders': typeof WorkordersRoute
   '/internal/error-preview': typeof InternalErrorPreviewRoute
@@ -190,6 +198,7 @@ export interface FileRoutesById {
   '/chlorides': typeof ChloridesRoute
   '/login': typeof LoginRoute
   '/monitoringwells': typeof MonitoringwellsRoute
+  '/notifications': typeof NotificationsRoute
   '/settings': typeof SettingsRoute
   '/workorders': typeof WorkordersRoute
   '/internal/error-preview': typeof InternalErrorPreviewRoute
@@ -215,6 +224,7 @@ export interface FileRouteTypes {
     | '/chlorides'
     | '/login'
     | '/monitoringwells'
+    | '/notifications'
     | '/settings'
     | '/workorders'
     | '/internal/error-preview'
@@ -238,6 +248,7 @@ export interface FileRouteTypes {
     | '/chlorides'
     | '/login'
     | '/monitoringwells'
+    | '/notifications'
     | '/settings'
     | '/workorders'
     | '/internal/error-preview'
@@ -260,6 +271,7 @@ export interface FileRouteTypes {
     | '/chlorides'
     | '/login'
     | '/monitoringwells'
+    | '/notifications'
     | '/settings'
     | '/workorders'
     | '/internal/error-preview'
@@ -284,6 +296,7 @@ export interface RootRouteChildren {
   ChloridesRoute: typeof ChloridesRoute
   LoginRoute: typeof LoginRoute
   MonitoringwellsRoute: typeof MonitoringwellsRoute
+  NotificationsRoute: typeof NotificationsRoute
   SettingsRoute: typeof SettingsRoute
   WorkordersRoute: typeof WorkordersRoute
   InternalErrorPreviewRoute: typeof InternalErrorPreviewRoute
@@ -313,6 +326,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notifications': {
+      id: '/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof NotificationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/monitoringwells': {
@@ -484,6 +504,7 @@ const rootRouteChildren: RootRouteChildren = {
   ChloridesRoute: ChloridesRoute,
   LoginRoute: LoginRoute,
   MonitoringwellsRoute: MonitoringwellsRoute,
+  NotificationsRoute: NotificationsRoute,
   SettingsRoute: SettingsRoute,
   WorkordersRoute: WorkordersRoute,
   InternalErrorPreviewRoute: InternalErrorPreviewRoute,

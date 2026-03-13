@@ -20,13 +20,14 @@ import {
   Home,
   Logout,
   MonitorHeart,
+  NotificationsOutlined,
   Public,
   Science,
   Settings,
 } from "@mui/icons-material";
 import { useNavigate } from "@tanstack/react-router";
 import { useAuthUser, useSignOut } from "react-auth-kit";
-import { RoleChip, TopbarUserButton } from "./index";
+import { TopbarUserButton, UserAvatar } from "@/components";
 import {
   DESKTOP_COLLAPSED_WIDTH,
   TOPBAR_HEIGHT,
@@ -53,6 +54,7 @@ export const Topbar = ({
   const isHomeActive = useIsActiveRoute("/");
   const isChloridesActive = useIsActiveRoute("/chlorides");
   const isMonitoringWellsActive = useIsActiveRoute("/monitoringwells");
+  const isNotificationsActive = useIsActiveRoute("/notifications");
 
   const [userMenuAnchorEl, setUserMenuAnchorEl] = useState<null | HTMLElement>(
     null,
@@ -61,6 +63,9 @@ export const Topbar = ({
     useState<null | HTMLElement>(null);
 
   const role: string = authUser()?.user_role?.name;
+  const fullName =
+    authUser()?.full_name ?? authUser()?.display_name ?? "Unknown";
+  const email = authUser()?.email ?? "No email available";
   const isLoggedIn = !!authUser();
   const isPublicDataActive = isChloridesActive || isMonitoringWellsActive;
   const effectiveSidebarWidth =
@@ -272,10 +277,33 @@ export const Topbar = ({
         ) : null}
 
         {isLoggedIn ? (
-          <Box>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+            <IconButton
+              size="small"
+              onClick={() => navigate({ to: "/notifications", search: {} })}
+              sx={{
+                width: { xs: 35, md: 40, lg: 44 },
+                height: { xs: 35, md: 40, lg: 44 },
+                color: isNotificationsActive ? "darkblue" : "text.secondary",
+                border: "1px solid",
+                borderColor: isNotificationsActive
+                  ? "rgba(0, 0, 139, 0.24)"
+                  : "divider",
+                bgcolor: isNotificationsActive
+                  ? "rgba(0, 0, 139, 0.08)"
+                  : "rgba(255, 255, 255, 0.76)",
+                "&:hover": {
+                  bgcolor: isNotificationsActive
+                    ? "rgba(0, 0, 139, 0.14)"
+                    : "rgba(15, 23, 42, 0.04)",
+                },
+              }}
+            >
+              <NotificationsOutlined fontSize="small" />
+            </IconButton>
             <TopbarUserButton
               role={role}
-              full_name={authUser()?.full_name ?? authUser()?.display_name ?? "Unknown"}
+              full_name={fullName}
               onClick={handleMenuOpen}
               src={authUser()?.avatar_img}
             />
@@ -285,25 +313,70 @@ export const Topbar = ({
               onClose={handleMenuClose}
               transformOrigin={{ horizontal: "right", vertical: "top" }}
               anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
+              slotProps={{
+                paper: {
+                  sx: {
+                    mt: 1,
+                    minWidth: 280,
+                    borderRadius: 3,
+                    border: "1px solid",
+                    borderColor: "divider",
+                    boxShadow: "0 18px 44px rgba(15, 23, 42, 0.14)",
+                  },
+                },
+              }}
+              MenuListProps={{
+                dense: true,
+                sx: {
+                  py: 0,
+                },
+              }}
             >
               <Box
                 sx={{
-                  px: 2,
-                  pt: 0.5,
-                  pb: 1.5,
+                  px: 1.5,
+                  py: 1.25,
                   display: "flex",
-                  alignItems: "center",
-                  gap: 1,
+                  alignItems: "flex-start",
+                  gap: 1.25,
                 }}
               >
-                <Typography
-                  variant="body2"
-                  fontWeight="bold"
-                  color="text.secondary"
+                <UserAvatar
+                  full_name={fullName}
+                  role={role}
+                  src={authUser()?.avatar_img}
+                  size={42}
+                  sx={{ flexShrink: 0 }}
+                />
+                <Box
+                  sx={{
+                    minWidth: 0,
+                    overflow: "hidden",
+                  }}
                 >
-                  Role:
-                </Typography>
-                <RoleChip role={role ?? "Unknown"} />
+                  <Typography
+                    sx={{
+                      fontWeight: 700,
+                      fontSize: "0.96rem",
+                      lineHeight: 1.2,
+                    }}
+                    noWrap
+                  >
+                    {fullName}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{
+                      display: "block",
+                      mt: 0.25,
+                      fontSize: "0.75rem",
+                    }}
+                    noWrap
+                  >
+                    {email}
+                  </Typography>
+                </Box>
               </Box>
               <Divider />
               <MenuItem
@@ -311,23 +384,43 @@ export const Topbar = ({
                   navigate({ to: "/settings", search: {} });
                   handleMenuClose();
                 }}
+                sx={{ minHeight: 36, gap: 1, px: 1.5 }}
               >
                 <ListItemIcon>
                   <Settings fontSize="small" />
                 </ListItemIcon>
-                <Typography variant="body1">Settings</Typography>
+                <Typography variant="body2" fontWeight={500}>
+                  Settings
+                </Typography>
               </MenuItem>
-
+              <MenuItem
+                onClick={() => {
+                  navigate({ to: "/notifications", search: {} });
+                  handleMenuClose();
+                }}
+                sx={{ minHeight: 36, gap: 1, px: 1.5 }}
+              >
+                <ListItemIcon>
+                  <NotificationsOutlined fontSize="small" />
+                </ListItemIcon>
+                <Typography variant="body2" fontWeight={500}>
+                  Notifications
+                </Typography>
+              </MenuItem>
+              <Divider />
               <MenuItem
                 onClick={() => {
                   fullSignOut();
                   handleMenuClose();
                 }}
+                sx={{ minHeight: 36, gap: 1, px: 1.5 }}
               >
                 <ListItemIcon>
                   <Logout fontSize="small" />
                 </ListItemIcon>
-                <Typography variant="body1">Logout</Typography>
+                <Typography variant="body2" fontWeight={500}>
+                  Log out
+                </Typography>
               </MenuItem>
             </Menu>
           </Box>

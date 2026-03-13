@@ -1,6 +1,6 @@
 import { ButtonProps, IconButton } from "@mui/material";
 import { getRoleColor } from "@/utils";
-import { UserAvatar } from "./UserAvatar";
+import { UserAvatar } from "@/components/UserAvatar";
 
 export const TopbarUserButton = ({
   full_name,
@@ -20,8 +20,8 @@ export const TopbarUserButton = ({
       color={buttonColor}
       sx={{
         ...buttonProps.sx,
-        width: { xs: 35, md: 40 },
-        height: { xs: 35, md: 40 },
+        width: { xs: 35, md: 40, lg: 44 },
+        height: { xs: 35, md: 40, lg: 44 },
         bgcolor: buttonColor,
         "&:hover": {
           bgcolor: buttonColor,
