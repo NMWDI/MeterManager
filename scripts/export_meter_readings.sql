@@ -14,6 +14,7 @@
 SELECT
   "Well Name",
   "RA Number",
+  "Well Depth (ft)",
   "Meter Reading Date",
   "Meter Reading Value",
   "Meter Reading Unit",
@@ -25,17 +26,18 @@ SELECT
   "Meter ID"
 FROM (
   SELECT
-    l.name                                   AS "Location Name",
-    w.name                                   AS "Well Name",
-    w.ra_number                              AS "RA Number",
-    to_char(mo."timestamp"::date, 'YYYY-MM-DD') AS "Meter Reading Date",
-    opt.name                                 AS "Parameter",
-    mo.value                                 AS "Meter Reading Value",
-    u.name_short                             AS "Meter Reading Unit",
-    l.latitude                               AS "Latitude",
-    l.longitude                              AS "Longitude",
-    ST_AsText(l.geom)                        AS "Location Geometry (WKT)",
-    mo.meter_id                              AS "Meter ID"
+    l.name                                       AS "Location Name",
+    w.name                                       AS "Well Name",
+    w.ra_number                                  AS "RA Number",
+    w.total_depth                                AS "Well Depth (ft)",
+    to_char(mo."timestamp"::date, 'YYYY-MM-DD')  AS "Meter Reading Date",
+    opt.name                                     AS "Parameter",
+    mo.value                                     AS "Meter Reading Value",
+    u.name_short                                 AS "Meter Reading Unit",
+    l.latitude                                   AS "Latitude",
+    l.longitude                                  AS "Longitude",
+    ST_AsText(l.geom)                            AS "Location Geometry (WKT)",
+    mo.meter_id                                  AS "Meter ID"
   FROM public."MeterObservations" mo
   JOIN public."Units" u
     ON u.id = mo.unit_id
