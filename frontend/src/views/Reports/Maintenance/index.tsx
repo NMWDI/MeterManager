@@ -33,6 +33,7 @@ import {
   ControlledTextbox,
   CustomCardHeader,
   ReportBreadcrumbTitle,
+  UserAvatar,
 } from "@/components";
 import { API_URL, ROLE_IDS } from "@/config";
 import { User } from "@/interfaces";
@@ -281,6 +282,12 @@ export const MaintenanceReportView = () => {
     );
   }, [dataQuery.data]);
 
+  const techniciansByName = useMemo(() => {
+    return new Map(
+      technicianOptions.map((user) => [user.full_name, user] as const),
+    );
+  }, [technicianOptions]);
+
   const columns: GridColDef[] = [
     {
       field: "date_time",
@@ -296,18 +303,59 @@ export const MaintenanceReportView = () => {
         return date.toLocaleString();
       }) as GridValueFormatter,
     },
-    { field: "technician", headerName: "Technician", flex: 1 },
+    {
+      field: "technician",
+      headerName: "Technician",
+      flex: 1,
+      renderCell: (params) => {
+        const technicianName = String(params.value ?? "");
+        const user = techniciansByName.get(technicianName);
+
+        return (
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              minWidth: 0,
+              height: "100%",
+            }}
+          >
+            <UserAvatar
+              full_name={technicianName}
+              role={user ? getRoleLabel(user) : undefined}
+              src={user?.avatar_img ?? undefined}
+              size={28}
+            />
+            <Box
+              component="span"
+              sx={{
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {technicianName}
+            </Box>
+          </Box>
+        );
+      },
+    },
     {
       field: "number_of_repairs",
       headerName: "Number of Repairs",
       type: "number",
       flex: 1,
+      align: "left",
+      headerAlign: "left",
     },
     {
       field: "number_of_pms",
       headerName: "Number of Preventative Maintenances",
       type: "number",
       flex: 1,
+      align: "left",
+      headerAlign: "left",
     },
     {
       field: "meter",
@@ -467,6 +515,25 @@ export const MaintenanceReportView = () => {
                   }
                 }}
                 groupBy={(option: User) => getRoleLabel(option)}
+                renderOption={(props: React.HTMLAttributes<HTMLLIElement>, option: User) => (
+                  <Box component="li" {...props} key={option.id}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                      }}
+                    >
+                      <UserAvatar
+                        full_name={option.full_name}
+                        role={getRoleLabel(option)}
+                        src={option.avatar_img ?? undefined}
+                        size={30}
+                      />
+                      <Box component="span">{option.full_name}</Box>
+                    </Box>
+                  </Box>
+                )}
                 renderInput={(params: Parameters<typeof TextField>[0]) => {
                   if (techiciansQuery.isLoading && params.inputProps) {
                     params.inputProps.value = "Loading...";
@@ -486,6 +553,14 @@ export const MaintenanceReportView = () => {
                     <Chip
                       key={option.id}
                       label={option.full_name}
+                      avatar={
+                        <UserAvatar
+                          full_name={option.full_name}
+                          role={getRoleLabel(option)}
+                          src={option.avatar_img ?? undefined}
+                          size={24}
+                        />
+                      }
                       {...getTagProps({ index })}
                     />
                   ))

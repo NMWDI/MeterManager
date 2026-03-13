@@ -228,6 +228,19 @@ export const PartsUsedReportView = () => {
     return partsQuery.data;
   }, [partsQuery.data, partTypes]);
 
+  const groupedFilteredParts = useMemo(() => {
+    return [...filteredParts].sort((a, b) => {
+      const typeCompare = (a.part_type?.name ?? "").localeCompare(
+        b.part_type?.name ?? "",
+      );
+      if (typeCompare !== 0) return typeCompare;
+
+      return `${a.part_number} ${a.description}`.localeCompare(
+        `${b.part_number} ${b.description}`,
+      );
+    });
+  }, [filteredParts]);
+
   useEffect(() => {
     if (!hydratedRef.current) return;
 
@@ -492,7 +505,8 @@ export const PartsUsedReportView = () => {
                     <Autocomplete
                       multiple
                       disableClearable
-                      options={filteredParts}
+                      options={groupedFilteredParts}
+                      groupBy={(option: Part) => option.part_type?.name ?? "Other"}
                       getOptionLabel={(option: Part) =>
                         `${option.part_number} ${option.description}`
                       }

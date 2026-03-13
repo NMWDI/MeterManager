@@ -4,7 +4,8 @@ import { User } from "@/interfaces";
 export type RoleLabel = "Admin" | "Technician" | "OSE" | "Unknown";
 
 export const getRoleLabel = (user: User): RoleLabel => {
-  switch (user.user_role_id) {
+  const roleId = user.user_role_id ?? user.user_role?.id;
+  switch (roleId) {
     case ROLE_IDS.ADMIN:
       return "Admin";
     case ROLE_IDS.TECHNICIAN:
@@ -12,7 +13,17 @@ export const getRoleLabel = (user: User): RoleLabel => {
     case ROLE_IDS.OSE:
       return "OSE";
     default:
-      return "Unknown";
+      switch (user.user_role?.name?.toLowerCase()) {
+        case "admin":
+          return "Admin";
+        case "technician":
+        case "tech":
+          return "Technician";
+        case "ose":
+          return "OSE";
+        default:
+          return "Unknown";
+      }
   }
 };
 
