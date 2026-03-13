@@ -25,7 +25,7 @@ import {
   Stack,
   TextField,
 } from "@mui/material";
-import { GridFooterWithButton } from "@/components";
+import { GridFooterWithButton, UserAvatar } from "@/components";
 import { Create } from "@/components/Modals/WorkOrders";
 import { MeterActivity, NewWorkOrder, User } from "@/interfaces";
 import { useSnackbar } from "notistack";
@@ -63,8 +63,14 @@ export const WorkOrdersTable = () => {
     return sortUsersByRoleThenName((userList.data ?? []) as User[]);
   }, [userList.data]);
 
+  const getUserByID = (id: number | undefined) =>
+    userList.data?.find((u) => u.id === id);
+
+  const getAvatarRole = (user: User | null | undefined) =>
+    user ? getRoleLabel(user) : undefined;
+
   const getUserFromID = (id: number | undefined) =>
-    userList.data?.find((u) => u.id === id)?.full_name ?? "";
+    getUserByID(id)?.full_name ?? "";
 
   const getUserIDfromName = (name: string) =>
     userList.data?.find((u) => u.full_name === name)?.id ?? undefined;
@@ -321,7 +327,25 @@ export const WorkOrdersTable = () => {
       headerName: "Technician Assigned",
       flex: 2,
       minWidth: 200,
+      cellClassName: "work-order-top-cell",
       valueGetter: (id: number) => getUserFromID(id),
+      renderCell: (params) => {
+        const assignedUser = getUserByID(params.row.assigned_user_id);
+
+        if (!assignedUser) return "";
+
+        return (
+          <Stack direction="row" spacing={1} alignItems="center">
+            <UserAvatar
+              full_name={assignedUser.full_name}
+              role={getAvatarRole(assignedUser)}
+              src={assignedUser.avatar_img ?? undefined}
+              size={34}
+            />
+            <Box component="span">{assignedUser.full_name}</Box>
+          </Stack>
+        );
+      },
       type: "singleSelect",
       valueOptions: sortedUsers.map((user) => user.full_name),
       editable: hasAdminScope,
@@ -354,6 +378,7 @@ export const WorkOrdersTable = () => {
       flex: 1,
       minWidth: 100,
       sortable: false,
+      cellClassName: "work-order-top-cell",
       renderCell: (params: GridRenderCellParams<any>) => {
         const isOpen = params.row.status === "Open";
 
@@ -361,9 +386,8 @@ export const WorkOrdersTable = () => {
           <Box
             display="flex"
             justifyContent="flex-end"
-            alignItems="center"
+            alignItems="flex-start"
             width="100%"
-            height="100%"
             gap={1}
           >
             {isOpen && (
@@ -408,6 +432,9 @@ export const WorkOrdersTable = () => {
 
   const rows = workOrderList.data ?? [];
   const loading = workOrderList.isLoading || workOrderList.isFetching;
+  const selectedAssignedUser = assigned_user_id
+    ? (sortedUsers.find((u) => u.id === assigned_user_id) ?? null)
+    : null;
 
   return (
     <Box sx={{ width: "100%", overflowX: "auto" }}>
@@ -444,11 +471,7 @@ export const WorkOrdersTable = () => {
               isOptionEqualToValue={(option: User, value: User) =>
                 option.id === value.id
               }
-              value={
-                assigned_user_id
-                  ? (sortedUsers.find((u) => u.id === assigned_user_id) ?? null)
-                  : null
-              }
+              value={selectedAssignedUser}
               onChange={(_, user) => {
                 const id = user?.id;
                 setSearch((p) => ({ ...p, assigned_user_id: id, page: 0 }));
@@ -456,19 +479,48 @@ export const WorkOrdersTable = () => {
               sx={{ minWidth: 260 }}
               renderOption={(props, option) => (
                 <li {...props} key={option.id}>
-                  {option.full_name}
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <UserAvatar
+                      full_name={option.full_name}
+                      role={getAvatarRole(option)}
+                      src={option.avatar_img ?? undefined}
+                      size={34}
+                    />
+                    <Box component="span">{option.full_name}</Box>
+                  </Stack>
                 </li>
               )}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label={
-                    hasAdminScope
-                      ? "Assigned technician"
-                      : "Assigned (admin only)"
-                  }
-                />
-              )}
+              renderInput={(params) => {
+                const { InputProps, ...rest } = params;
+
+                return (
+                  <TextField
+                    {...rest}
+                    InputProps={{
+                      ...InputProps,
+                      startAdornment: (
+                        <>
+                          {selectedAssignedUser ? (
+                            <UserAvatar
+                              full_name={selectedAssignedUser.full_name}
+                              role={getAvatarRole(selectedAssignedUser)}
+                              src={selectedAssignedUser.avatar_img ?? undefined}
+                              size={24}
+                              sx={{ mr: 1 }}
+                            />
+                          ) : null}
+                          {InputProps.startAdornment}
+                        </>
+                      ),
+                    }}
+                    label={
+                      hasAdminScope
+                        ? "Assigned technician"
+                        : "Assigned (admin only)"
+                    }
+                  />
+                );
+              }}
             />
           )}
           <TextField
@@ -503,6 +555,12 @@ export const WorkOrdersTable = () => {
       </Box>
       <Box sx={{ height: 600, width: "100%", overflowX: "auto" }}>
         <DataGrid
+          sx={{
+            "& .work-order-top-cell": {
+              alignItems: "flex-start",
+              py: 1,
+            },
+          }}
           rows={rows}
           loading={loading}
           getRowHeight={() => "auto"}
