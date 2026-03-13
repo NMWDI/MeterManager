@@ -1,5 +1,9 @@
 import { useEffect, useMemo } from "react";
-import { ArrowBack, PictureAsPdf, Science } from "@mui/icons-material";
+import {
+  ArrowBack,
+  PictureAsPdf,
+  ScienceOutlined,
+} from "@mui/icons-material";
 import { useMutation, useQuery } from "react-query";
 import dayjs, { Dayjs } from "dayjs";
 import { useAuthHeader } from "react-auth-kit";
@@ -36,6 +40,7 @@ import {
   BackgroundBox,
   DirectionCard,
   MapUrlStateSync,
+  ReportBreadcrumbTitle,
   SoutheastGuideLayer,
   SatelliteLayer,
   OpenStreetMapLayer,
@@ -237,7 +242,10 @@ export const ChloridesReportView = () => {
   return (
     <BackgroundBox>
       <Card sx={{ height: "fit-content" }}>
-        <CustomCardHeader title="Chlorides Report" icon={Science} />
+        <CustomCardHeader
+          title={<ReportBreadcrumbTitle current="Chlorides" />}
+          icon={ScienceOutlined}
+        />
         <CardContent>
           <Grid
             container

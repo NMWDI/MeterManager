@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useAuthHeader } from "react-auth-kit";
-import { ArrowBack, PictureAsPdf, Plumbing } from "@mui/icons-material";
+import {
+  ArrowBack,
+  ConstructionOutlined,
+  PictureAsPdf,
+} from "@mui/icons-material";
 import {
   Box,
   Button,
@@ -33,6 +37,7 @@ import {
   BackgroundBox,
   ControlledTextbox,
   CustomCardHeader,
+  ReportBreadcrumbTitle,
 } from "@/components";
 import { API_URL, ROLE_IDS } from "@/config";
 import { User } from "@/interfaces";
@@ -373,7 +378,10 @@ export const MaintenanceReportView = () => {
   return (
     <BackgroundBox>
       <Card sx={{ height: "fit-content" }}>
-        <CustomCardHeader title="Maintenance Report" icon={Plumbing} />
+        <CustomCardHeader
+          title={<ReportBreadcrumbTitle current="Maintenance" />}
+          icon={ConstructionOutlined}
+        />
         <CardContent>
           <Grid container justifyContent="space-between" alignContent="center">
             <Grid item>

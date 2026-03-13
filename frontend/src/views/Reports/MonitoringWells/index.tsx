@@ -1,6 +1,10 @@
 /** @jsxImportSource @emotion/react */
 import { useMemo, useEffect, useRef } from "react";
-import { ArrowBack, PictureAsPdf, MonitorHeart } from "@mui/icons-material";
+import {
+  ArrowBack,
+  PictureAsPdf,
+  MonitorHeartOutlined,
+} from "@mui/icons-material";
 import {
   Box,
   Button,
@@ -38,6 +42,7 @@ import {
   ControlledAutocomplete,
   BackgroundBox,
   CustomCardHeader,
+  ReportBreadcrumbTitle,
 } from "@/components";
 import { MonitoredWell, WellMeasurementDTO } from "@/interfaces";
 import { ReportAveragesResponse } from "@/interfaces/ReportAveragesResponse";
@@ -545,7 +550,10 @@ export const MonitoringWellsReportView = () => {
   return (
     <BackgroundBox>
       <Card sx={{ height: "fit-content" }}>
-        <CustomCardHeader title="Monitoring Wells Report" icon={MonitorHeart} />
+        <CustomCardHeader
+          title={<ReportBreadcrumbTitle current="Monitoring Wells" />}
+          icon={MonitorHeartOutlined}
+        />
         <CardContent>
           <Grid container justifyContent="space-between" alignContent="center">
             <Grid item>

@@ -1,9 +1,9 @@
 import {
-  Assessment,
-  Build,
-  MonitorHeart,
-  Plumbing,
-  Science,
+  AssessmentOutlined,
+  BuildOutlined,
+  ConstructionOutlined,
+  MonitorHeartOutlined,
+  ScienceOutlined,
 } from "@mui/icons-material";
 import { Box, Card, CardContent } from "@mui/material";
 import { BackgroundBox, CustomCardHeader, NavLink } from "@/components";
@@ -12,28 +12,28 @@ export const ReportsView = () => {
   return (
     <BackgroundBox>
       <Card sx={{ height: "fit-content" }}>
-        <CustomCardHeader title="Reports" icon={Assessment} />
+        <CustomCardHeader title="Reports" icon={AssessmentOutlined} />
         <CardContent>
           <Box sx={{ minWidth: "15rem", maxWidth: "15%" }} py={1}>
             <NavLink
+              route="/reports/chlorides"
+              label="Chlorides"
+              icon={ScienceOutlined}
+            />
+            <NavLink
               route="/reports/monitoringwells"
               label="Monitoring Wells"
-              icon={MonitorHeart}
+              icon={MonitorHeartOutlined}
             />
             <NavLink
               route="/reports/maintenance"
               label="Maintenance"
-              icon={Plumbing}
+              icon={ConstructionOutlined}
             />
             <NavLink
               route="/reports/partsused"
               label="Parts Used"
-              icon={Build}
-            />
-            <NavLink
-              route="/reports/chlorides"
-              label="Chlorides"
-              icon={Science}
+              icon={BuildOutlined}
             />
           </Box>
         </CardContent>

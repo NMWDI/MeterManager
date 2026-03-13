@@ -12,7 +12,7 @@ import {
 import { SvgIconProps } from "@mui/material/SvgIcon";
 import { useNavigate } from "@tanstack/react-router";
 import {
-  Assessment,
+  AssessmentOutlined,
   ExpandLess,
   ExpandMore,
   TableView,
@@ -175,7 +175,7 @@ function ReportsSidebarButton({
           )}
         </Box>
       }
-      icon={Assessment}
+      icon={AssessmentOutlined}
     />
   );
 }

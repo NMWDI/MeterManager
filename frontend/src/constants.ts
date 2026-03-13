@@ -1,6 +1,5 @@
 import {
   FormatListBulletedOutlined,
-  ScreenshotMonitor,
   Construction,
   MonitorHeart,
   Plumbing,
@@ -8,6 +7,11 @@ import {
   Science,
   People,
   Storage,
+  MonitorHeartOutlined,
+  ConstructionOutlined,
+  BuildOutlined,
+  ScienceOutlined,
+  WaterDrop,
 } from "@mui/icons-material";
 import { SvgIconProps } from "@mui/material";
 import { ComponentType } from "react";
@@ -43,7 +47,7 @@ export const navConfig: NavItem[] = [
   {
     path: "/manage/meters",
     label: "Manage Meters",
-    icon: ScreenshotMonitor,
+    icon: WaterDrop,
     role: "Technician",
   },
   {
@@ -55,30 +59,30 @@ export const navConfig: NavItem[] = [
 
   // Reports
   {
+    path: "/reports/chlorides",
+    label: "Chlorides",
+    icon: ScienceOutlined,
+    role: "Technician",
+    parent: "reports",
+  },
+  {
     path: "/reports/monitoringwells",
     label: "Monitoring Wells",
-    icon: MonitorHeart,
+    icon: MonitorHeartOutlined,
     role: "Technician",
     parent: "reports",
   },
   {
     path: "/reports/maintenance",
     label: "Maintenance",
-    icon: Construction,
+    icon: ConstructionOutlined,
     role: "Technician",
     parent: "reports",
   },
   {
     path: "/reports/partsused",
     label: "Parts Used",
-    icon: Build,
-    role: "Technician",
-    parent: "reports",
-  },
-  {
-    path: "/reports/chlorides",
-    label: "Chlorides",
-    icon: Science,
+    icon: BuildOutlined,
     role: "Technician",
     parent: "reports",
   },

@@ -22,6 +22,7 @@ export * from "./ModalBackgroundBox";
 export * from "./Modals";
 export * from "./NavLink";
 export * from "./ReportsNavItem";
+export * from "./ReportBreadcrumbTitle";
 export * from "./RHControlled";
 export * from "./ResizableSplitPanels";
 export * from "./RoleChip";

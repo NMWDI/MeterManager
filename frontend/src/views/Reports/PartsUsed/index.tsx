@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useAuthHeader } from "react-auth-kit";
-import { ArrowBack, Build, PictureAsPdf } from "@mui/icons-material";
+import {
+  ArrowBack,
+  BuildOutlined,
+  PictureAsPdf,
+} from "@mui/icons-material";
 import {
   Autocomplete,
   Button,
@@ -27,6 +31,7 @@ import {
   BackgroundBox,
   CustomCardHeader,
   ControlledSelect,
+  ReportBreadcrumbTitle,
 } from "@/components";
 import { Route } from "@/routes/reports/partsused";
 
@@ -396,7 +401,10 @@ export const PartsUsedReportView = () => {
   return (
     <BackgroundBox>
       <Card sx={{ height: "fit-content" }}>
-        <CustomCardHeader title="Parts Used Report" icon={Build} />
+        <CustomCardHeader
+          title={<ReportBreadcrumbTitle current="Parts Used" />}
+          icon={BuildOutlined}
+        />
         <CardContent>
           <Grid
             container

@@ -8,7 +8,7 @@ import {
 } from "@mui/material";
 
 type CustomCardHeaderProps = Omit<CardHeaderProps, "title"> & {
-  title?: string;
+  title?: React.ReactNode;
   icon?: React.ComponentType<SvgIconProps>;
 };
 

@@ -407,7 +407,12 @@ export const Topbar = ({
                   Notifications
                 </Typography>
               </MenuItem>
-              <Divider />
+              <Divider
+                sx={{
+                  mt: "0 !important",
+                  mb: "0 !important",
+                }}
+              />
               <MenuItem
                 onClick={() => {
                   fullSignOut();
