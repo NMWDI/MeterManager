@@ -1,20 +1,32 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import {
+  Link as RouterLink,
+  useNavigate,
+  useParams,
+} from "@tanstack/react-router";
+import {
+  Breadcrumbs,
   Box,
   Card,
   CardContent,
   Grid,
   Typography,
   TextField,
-  Tooltip,
-  IconButton,
   Button,
   InputAdornment,
   Snackbar,
   Alert,
+  Link as MuiLink,
 } from "@mui/material";
-import { ArrowBack, History, PlusOne, Save, Search } from "@mui/icons-material";
+import {
+  Build,
+  DashboardCustomizeOutlined,
+  History,
+  NavigateNext,
+  PlusOne,
+  Save,
+  Search,
+} from "@mui/icons-material";
 import {
   DataGrid,
   GridColDef,
@@ -31,6 +43,7 @@ import {
   ControlledDatepicker,
   ControlledSelectNonObject,
   IncreaseQuantityModal,
+  RouterMuiLink,
 } from "@/components";
 import {
   useAddParts,
@@ -137,6 +150,95 @@ function hydrateRows(data: PartHistoryResponse, partId?: string) {
 
   return recalculateRows(currentRow ? [...raw, currentRow] : raw);
 }
+
+const PartsHistoryBreadcrumbTitle = () => {
+  return (
+    <Breadcrumbs
+      aria-label="parts history breadcrumb"
+      separator={<NavigateNext fontSize="small" />}
+      sx={{
+        color: "inherit",
+        "& .MuiBreadcrumbs-ol": {
+          alignItems: "center",
+        },
+        "& .MuiBreadcrumbs-separator": {
+          display: "inline-flex",
+          alignItems: "center",
+          color: "rgba(255, 255, 255, 0.72)",
+          mx: 1,
+        },
+      }}
+    >
+      <MuiLink
+        component={RouterLink}
+        to="/manage"
+        underline="hover"
+        color="inherit"
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 0.75,
+          fontSize: "inherit",
+          fontWeight: 500,
+          lineHeight: 1,
+        }}
+      >
+        <DashboardCustomizeOutlined
+          sx={{ fontSize: "1.1rem", display: "block" }}
+        />
+        <Box component="span">Manage</Box>
+      </MuiLink>
+      <RouterMuiLink
+        to="/manage/parts"
+        search={{
+          part_id: undefined,
+          part_add: true,
+          part_q: "",
+          part_in_use: "true",
+          part_commonly_used: "all",
+          p_page: 0,
+          p_pageSize: 25,
+          meter_type_id: undefined,
+          meter_type_add: true,
+          meter_type_q: "",
+          meter_type_in_use: "true",
+          mt_page: 0,
+          mt_pageSize: 25,
+        }}
+        underline="hover"
+        color="inherit"
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 0.75,
+          fontSize: "inherit",
+          fontWeight: 500,
+          lineHeight: 1,
+          textDecoration: "none",
+          "&:hover": {
+            textDecoration: "underline",
+          },
+        }}
+      >
+        <Build sx={{ fontSize: "1.1rem", display: "block" }} />
+        <Box component="span">Parts</Box>
+      </RouterMuiLink>
+      <Typography
+        component="span"
+        color="inherit"
+        sx={{
+          display: "inline-flex",
+          alignItems: "center",
+          fontSize: "inherit",
+          fontWeight: 500,
+          lineHeight: 1,
+        }}
+      >
+        History
+      </Typography>
+    </Breadcrumbs>
+  );
+};
 
 export const PartsHistory = () => {
   const { id } = useParams({ from: "/manage/parts/$id/history" });
@@ -461,12 +563,12 @@ export const PartsHistory = () => {
       width: 140,
       renderCell: (params) =>
         params.value ? (
-          <Link
+          <RouterLink
             to="/workorders"
             search={{ work_order_id: [Number(params.value)] }}
           >
             WO {params.value}
-          </Link>
+          </RouterLink>
         ) : (
           "N/A"
         ),
@@ -488,42 +590,12 @@ export const PartsHistory = () => {
   return (
     <BackgroundBox>
       <Card sx={{ height: "fit-content" }}>
-        <CustomCardHeader title="Parts Count History" icon={History} />
+        <CustomCardHeader
+          title={<PartsHistoryBreadcrumbTitle />}
+          icon={History}
+        />
         <CardContent>
           <Grid container spacing={2}>
-            <Grid item xs={12}>
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 2,
-                  flexWrap: "wrap",
-                }}
-              >
-                <Link to="/manage/parts" search={{}}>
-                  <Tooltip title="Go back" placement="right">
-                    <IconButton aria-label="return to reports page">
-                      <ArrowBack />
-                    </IconButton>
-                  </Tooltip>
-                </Link>
-                <Button
-                  variant="outlined"
-                  color="secondary"
-                  size="small"
-                  onClick={() => setIncreaseOpen(true)}
-                  disabled={
-                    partsList.isLoading ||
-                    !partsList.data ||
-                    partsList.data.length === 0
-                  }
-                  startIcon={<PlusOne fontSize="small" />}
-                >
-                  Increase Quantity
-                </Button>
-              </Box>
-            </Grid>
             <Grid item xs={12} sm={6} md={3}>
               <ControlledDatepicker
                 sx={{ width: "100%" }}
@@ -669,24 +741,48 @@ export const PartsHistory = () => {
                 }}
               />
             </Grid>
-            <Grid item xs={12} justifyContent="space-around">
-              <Button
-                onClick={() => {
-                  reset(defaultSchema);
-                  setSearch((prev) => ({
-                    ...prev,
-                    from: undefined,
-                    to: dayjs().endOf("month").format("YYYY-MM-DD"),
-                    type: [...defaultSchema.event_types],
-                    q: "",
-                    page: 0,
-                    pageSize: 25,
-                  }));
+            <Grid item xs={12}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: { xs: "stretch", sm: "center" },
+                  justifyContent: "space-between",
+                  gap: 2,
+                  flexDirection: { xs: "column", sm: "row" },
                 }}
               >
-                Reset
-              </Button>
-              {hasChanges && <Box display="flex" gap={2}></Box>}
+                <Button
+                  onClick={() => {
+                    reset(defaultSchema);
+                    setSearch((prev) => ({
+                      ...prev,
+                      from: undefined,
+                      to: dayjs().endOf("month").format("YYYY-MM-DD"),
+                      type: [...defaultSchema.event_types],
+                      q: "",
+                      page: 0,
+                      pageSize: 25,
+                    }));
+                  }}
+                >
+                  Reset
+                </Button>
+                <Button
+                  variant="outlined"
+                  color="secondary"
+                  size="small"
+                  onClick={() => setIncreaseOpen(true)}
+                  disabled={
+                    partsList.isLoading ||
+                    !partsList.data ||
+                    partsList.data.length === 0
+                  }
+                  startIcon={<PlusOne fontSize="small" />}
+                  sx={{ alignSelf: { xs: "stretch", sm: "center" } }}
+                >
+                  Increase Quantity
+                </Button>
+              </Box>
             </Grid>
           </Grid>
         </CardContent>
