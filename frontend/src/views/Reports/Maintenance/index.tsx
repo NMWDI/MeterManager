@@ -1,10 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useAuthHeader } from "react-auth-kit";
-import {
-  ArrowBack,
-  ConstructionOutlined,
-  PictureAsPdf,
-} from "@mui/icons-material";
+import { ConstructionOutlined, PictureAsPdf } from "@mui/icons-material";
 import {
   Box,
   Button,
@@ -12,12 +8,11 @@ import {
   CardContent,
   Chip,
   Grid,
-  IconButton,
   TextField,
   Tooltip,
   Typography,
 } from "@mui/material";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
 import { useMutation, useQuery } from "react-query";
 import * as yup from "yup";
@@ -383,31 +378,6 @@ export const MaintenanceReportView = () => {
           icon={ConstructionOutlined}
         />
         <CardContent>
-          <Grid container justifyContent="space-between" alignContent="center">
-            <Grid item>
-              <Link to="/reports">
-                <Tooltip title="Go back" placement="right">
-                  <IconButton aria-label="return to reports page">
-                    <ArrowBack />
-                  </IconButton>
-                </Tooltip>
-              </Link>
-            </Grid>
-            <Grid item>
-              <Tooltip title="Export report as PDF" placement="left">
-                <IconButton
-                  aria-label="export report as pdf"
-                  onClick={handleDownloadMaintenancePDF}
-                  disabled={
-                    !technicians?.length ||
-                    downloadMaintenancePDFMutation.isLoading
-                  }
-                >
-                  <PictureAsPdf />
-                </IconButton>
-              </Tooltip>
-            </Grid>
-          </Grid>
           <Grid container spacing={2} padding={2}>
             <Grid item xs={12} sm={6} md={3}>
               <ControlledDatepicker
@@ -433,7 +403,7 @@ export const MaintenanceReportView = () => {
                 format="YYYY MMMM DD"
               />
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid item xs sx={{ flexGrow: 1 }}>
               <ControlledTextbox
                 sx={{ width: "100%" }}
                 size="small"
@@ -441,6 +411,34 @@ export const MaintenanceReportView = () => {
                 label="TRSS"
                 control={control}
               />
+            </Grid>
+            <Grid
+              item
+              xs={12}
+              sm={6}
+              md="auto"
+              sx={{
+                display: "flex",
+                justifyContent: { xs: "center", sm: "flex-end" },
+              }}
+            >
+              <Tooltip title="Export report as PDF" placement="top">
+                <span>
+                  <Button
+                    variant="outlined"
+                    startIcon={<PictureAsPdf />}
+                    aria-label="export report as pdf"
+                    onClick={handleDownloadMaintenancePDF}
+                    disabled={
+                      !technicians?.length ||
+                      downloadMaintenancePDFMutation.isLoading
+                    }
+                    sx={{ width: "fit-content", whiteSpace: "nowrap" }}
+                  >
+                    PDF
+                  </Button>
+                </span>
+              </Tooltip>
             </Grid>
             <Grid item xs={12}>
               <ControlledAutocomplete
@@ -578,7 +576,7 @@ export const MaintenanceReportView = () => {
               </Box>
             </Grid>
           </Grid>
-          <Grid item xs={12}>
+          <Grid item xs={12} px={2}>
             <DataGrid
               rows={tableRows ?? []}
               columns={columns}
@@ -602,7 +600,7 @@ export const MaintenanceReportView = () => {
               rowCount={dataQuery.data?.total ?? tableRows.length}
             />
           </Grid>
-          <Grid item xs={12}>
+          <Grid item xs={12} px={2}>
             <Button
               onClick={() => {
                 reset({

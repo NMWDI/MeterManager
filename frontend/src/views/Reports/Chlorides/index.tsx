@@ -1,9 +1,5 @@
 import { useEffect, useMemo } from "react";
-import {
-  ArrowBack,
-  PictureAsPdf,
-  ScienceOutlined,
-} from "@mui/icons-material";
+import { PictureAsPdf, ScienceOutlined } from "@mui/icons-material";
 import { useMutation, useQuery } from "react-query";
 import dayjs, { Dayjs } from "dayjs";
 import { useAuthHeader } from "react-auth-kit";
@@ -12,7 +8,6 @@ import {
   Card,
   CardContent,
   Grid,
-  IconButton,
   Tooltip,
   Typography,
   Alert,
@@ -27,7 +22,7 @@ import {
   Marker,
   Tooltip as MapTooltip,
 } from "react-leaflet";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -249,38 +244,10 @@ export const ChloridesReportView = () => {
         <CardContent>
           <Grid
             container
-            justifyContent="space-between"
-            alignContent="center"
-            paddingBottom={2}
-          >
-            <Grid item>
-              <Link to="/reports">
-                <Tooltip title="Go back" placement="right">
-                  <IconButton aria-label="return to reports page">
-                    <ArrowBack />
-                  </IconButton>
-                </Tooltip>
-              </Link>
-            </Grid>
-            <Grid item>
-              <Tooltip title="Export report as PDF" placement="left">
-                <IconButton
-                  aria-label="export report as pdf"
-                  onClick={handleDownloadPDF}
-                  disabled={downloadPDFMutation.isLoading}
-                >
-                  <PictureAsPdf />
-                </IconButton>
-              </Tooltip>
-            </Grid>
-          </Grid>
-          <Grid
-            container
             justifyContent="flex-start"
             alignContent="center"
             spacing={2}
-            paddingTop={2}
-            paddingBottom={2}
+            padding={2}
           >
             <Grid item xs={12} sm={6} md={3}>
               <ControlledDatepicker
@@ -305,6 +272,36 @@ export const ChloridesReportView = () => {
                 openTo="year"
                 format="YYYY MMMM DD"
               />
+            </Grid>
+            <Grid
+              item
+              xs={12}
+              md={6}
+              sx={{
+                display: "flex",
+                justifyContent: {
+                  xs: "center",
+                  md: "flex-end",
+                },
+              }}
+            >
+              <Tooltip title="Export report as PDF" placement="bottom">
+                <span>
+                  <Button
+                    variant="outlined"
+                    startIcon={<PictureAsPdf />}
+                    aria-label="export report as pdf"
+                    onClick={handleDownloadPDF}
+                    disabled={downloadPDFMutation.isLoading}
+                    sx={{
+                      width: { xs: "100%", sm: "fit-content" },
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    PDF
+                  </Button>
+                </span>
+              </Tooltip>
             </Grid>
           </Grid>
           <Grid
@@ -555,7 +552,7 @@ export const ChloridesReportView = () => {
             </Grid>
           </Grid>
           <Grid container>
-            <Grid item>
+            <Grid item px={2}>
               <Button
                 onClick={() => {
                   const hardFrom = dayjs().startOf("month");

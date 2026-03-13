@@ -1,10 +1,6 @@
 /** @jsxImportSource @emotion/react */
 import { useMemo, useEffect, useRef } from "react";
-import {
-  ArrowBack,
-  PictureAsPdf,
-  MonitorHeartOutlined,
-} from "@mui/icons-material";
+import { PictureAsPdf, MonitorHeartOutlined } from "@mui/icons-material";
 import {
   Box,
   Button,
@@ -16,7 +12,6 @@ import {
   FormGroup,
   FormHelperText,
   Grid,
-  IconButton,
   InputLabel,
   ListSubheader,
   MenuItem,
@@ -30,7 +25,7 @@ import {
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import { LineChart } from "@mui/x-charts";
 import { css } from "@emotion/react";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { useAuthHeader } from "react-auth-kit";
 import { Controller, useForm } from "react-hook-form";
 import { useMutation, useQuery } from "react-query";
@@ -555,35 +550,12 @@ export const MonitoringWellsReportView = () => {
           icon={MonitorHeartOutlined}
         />
         <CardContent>
-          <Grid container justifyContent="space-between" alignContent="center">
-            <Grid item>
-              <Link to="/reports">
-                <Tooltip title="Go back" placement="right">
-                  <IconButton aria-label="return to reports page">
-                    <ArrowBack />
-                  </IconButton>
-                </Tooltip>
-              </Link>
-            </Grid>
-            <Grid item>
-              <Tooltip title="Export report as PDF" placement="left">
-                <IconButton
-                  aria-label="export report as pdf"
-                  onClick={handleDownloadPDF}
-                  disabled={!wells?.length || downloadPDFMutation.isLoading}
-                >
-                  <PictureAsPdf />
-                </IconButton>
-              </Tooltip>
-            </Grid>
-          </Grid>
           <Grid
             container
             justifyContent="flex-start"
             alignContent="center"
             spacing={2}
-            paddingTop={2}
-            paddingBottom={2}
+            padding={2}
           >
             <Grid item xs={12} sm={6} md={3}>
               <ControlledDatepicker
@@ -608,6 +580,30 @@ export const MonitoringWellsReportView = () => {
                 openTo="year"
                 format="YYYY MMMM DD"
               />
+            </Grid>
+            <Grid
+              item
+              xs={12}
+              md={6}
+              sx={{
+                display: "flex",
+                justifyContent: { xs: "center", md: "flex-end" },
+              }}
+            >
+              <Tooltip title="Export report as PDF" placement="top">
+                <span>
+                  <Button
+                    variant="outlined"
+                    startIcon={<PictureAsPdf />}
+                    aria-label="export report as pdf"
+                    onClick={handleDownloadPDF}
+                    disabled={!wells?.length || downloadPDFMutation.isLoading}
+                    sx={{ width: "fit-content", whiteSpace: "nowrap" }}
+                  >
+                    PDF
+                  </Button>
+                </span>
+              </Tooltip>
             </Grid>
             <Grid item xs={12}>
               <ControlledAutocomplete
@@ -707,7 +703,7 @@ export const MonitoringWellsReportView = () => {
               />
             </Grid>
           </Grid>
-          <Grid container spacing={2}>
+          <Grid container spacing={2} paddingX={2}>
             <Grid item xs={12} md={4}>
               <FormGroup>
                 <Controller
@@ -848,7 +844,7 @@ export const MonitoringWellsReportView = () => {
               </Box>
             </Grid>
           </Grid>
-          <Grid item xs={12} py={1}>
+          <Grid item xs={12} py={1} px={2}>
             <DataGrid
               rows={tableRows ?? []}
               columns={columns}
@@ -875,7 +871,7 @@ export const MonitoringWellsReportView = () => {
               }}
             />
           </Grid>
-          <Grid item xs={12} py={1}>
+          <Grid item xs={12} py={1} px={2}>
             <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
               Report Averages ({bucketLabel})
             </Typography>
@@ -937,7 +933,7 @@ export const MonitoringWellsReportView = () => {
               </Box>
             )}
           </Grid>
-          <Grid item xs={12}>
+          <Grid item xs={12} px={2}>
             <Button
               onClick={() => {
                 reset(hardResetFormValues, {

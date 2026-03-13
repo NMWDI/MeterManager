@@ -1,10 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useAuthHeader } from "react-auth-kit";
-import {
-  ArrowBack,
-  BuildOutlined,
-  PictureAsPdf,
-} from "@mui/icons-material";
+import { BuildOutlined, PictureAsPdf } from "@mui/icons-material";
 import {
   Autocomplete,
   Button,
@@ -12,12 +8,11 @@ import {
   CardContent,
   FormControlLabel,
   Grid,
-  IconButton,
   Switch,
   TextField,
   Tooltip,
 } from "@mui/material";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { Controller, useForm } from "react-hook-form";
 import { useMutation, useQuery } from "react-query";
 import * as yup from "yup";
@@ -212,7 +207,13 @@ export const PartsUsedReportView = () => {
     });
 
     hydratedRef.current = true;
-  }, [partTypeOptions, partsQuery.data, search.part_types, search.parts, setValue]);
+  }, [
+    partTypeOptions,
+    partsQuery.data,
+    search.part_types,
+    search.parts,
+    setValue,
+  ]);
 
   const filteredParts = useMemo(() => {
     if (!partsQuery.data) return [];
@@ -408,35 +409,6 @@ export const PartsUsedReportView = () => {
         <CardContent>
           <Grid
             container
-            justifyContent="space-between"
-            alignContent="center"
-            paddingBottom={2}
-          >
-            <Grid item>
-              <Link to="/reports">
-                <Tooltip title="Go back" placement="right">
-                  <IconButton aria-label="return to reports page">
-                    <ArrowBack />
-                  </IconButton>
-                </Tooltip>
-              </Link>
-            </Grid>
-            <Grid item>
-              <Tooltip title="Export report as PDF" placement="left">
-                <IconButton
-                  aria-label="export report as pdf"
-                  onClick={handleDownloadPDF}
-                  disabled={
-                    !selectedPartIds.length || downloadPDFMutation.isLoading
-                  }
-                >
-                  <PictureAsPdf />
-                </IconButton>
-              </Tooltip>
-            </Grid>
-          </Grid>
-          <Grid
-            container
             justifyContent="flex-start"
             alignContent="center"
             spacing={2}
@@ -466,7 +438,7 @@ export const PartsUsedReportView = () => {
                 format="YYYY MMMM DD"
               />
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid item xs sx={{ flexGrow: 1 }}>
               <ControlledSelect
                 sx={{ width: "100%" }}
                 size="small"
@@ -478,6 +450,33 @@ export const PartsUsedReportView = () => {
                 options={partTypeOptions}
                 getOptionLabel={(option: any) => option.type.name}
               />
+            </Grid>
+            <Grid
+              item
+              xs={12}
+              sm={6}
+              md="auto"
+              sx={{
+                display: "flex",
+                justifyContent: { xs: "center", sm: "flex-end" },
+              }}
+            >
+              <Tooltip title="Export report as PDF" placement="top">
+                <span>
+                  <Button
+                    variant="outlined"
+                    startIcon={<PictureAsPdf />}
+                    aria-label="export report as pdf"
+                    onClick={handleDownloadPDF}
+                    disabled={
+                      !selectedPartIds.length || downloadPDFMutation.isLoading
+                    }
+                    sx={{ width: "fit-content", whiteSpace: "nowrap" }}
+                  >
+                    PDF
+                  </Button>
+                </span>
+              </Tooltip>
             </Grid>
             <Grid item xs={12}>
               <Controller
@@ -562,7 +561,7 @@ export const PartsUsedReportView = () => {
               }
             />
           </Grid>
-          <Grid item xs={12}>
+          <Grid item xs={12} px={2}>
             <Button
               onClick={() => {
                 reset(defaultSchema);

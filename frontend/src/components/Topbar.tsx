@@ -279,6 +279,7 @@ export const Topbar = ({
         {isLoggedIn ? (
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
             <IconButton
+              disabled
               size="small"
               onClick={() => navigate({ to: "/notifications", search: {} })}
               sx={{
@@ -394,6 +395,7 @@ export const Topbar = ({
                 </Typography>
               </MenuItem>
               <MenuItem
+                disabled
                 onClick={() => {
                   navigate({ to: "/notifications", search: {} });
                   handleMenuClose();
