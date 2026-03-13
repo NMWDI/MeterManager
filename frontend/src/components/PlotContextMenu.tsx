@@ -6,12 +6,18 @@ type ContextMenuPosition = {
   mouseY: number;
 };
 
+type PlotDragMode = "pan" | "zoom";
+
 export const PlotContextMenu = ({
   children,
   onResetAxes,
+  dragMode,
+  onToggleDragMode,
 }: {
   children: ReactNode;
   onResetAxes: () => void;
+  dragMode?: PlotDragMode;
+  onToggleDragMode?: () => void;
 }) => {
   const [contextMenu, setContextMenu] = useState<ContextMenuPosition | null>(
     null,
@@ -32,6 +38,11 @@ export const PlotContextMenu = ({
   const handleResetAxes = () => {
     handleClose();
     onResetAxes();
+  };
+
+  const handleToggleDragMode = () => {
+    handleClose();
+    onToggleDragMode?.();
   };
 
   return (
@@ -65,6 +76,19 @@ export const PlotContextMenu = ({
             : undefined
         }
       >
+        {dragMode && onToggleDragMode && (
+          <MenuItem
+            onClick={handleToggleDragMode}
+            sx={{
+              px: 1.5,
+              py: 0.75,
+              fontSize: 14,
+              fontWeight: 500,
+            }}
+          >
+            Switch to {dragMode === "pan" ? "zoom" : "pan"}
+          </MenuItem>
+        )}
         <MenuItem
           onClick={handleResetAxes}
           sx={{

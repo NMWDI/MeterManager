@@ -16,6 +16,7 @@ export const Plot = ({
   const plotContainerRef = useRef<HTMLDivElement | null>(null);
   const plotRef = useRef<HTMLElement | null>(null);
   const [plotRevision, setPlotRevision] = useState(0);
+  const [dragMode, setDragMode] = useState<"pan" | "zoom">("pan");
 
   const resetAxes = () => {
     if (!plotRef.current) {
@@ -49,6 +50,8 @@ export const Plot = ({
       mode: "markers",
       marker: { color: generateColorScale(index) },
       name: `Well ${well}`,
+      hovertemplate:
+        "Date: %{x|%B %-d, %Y}<br>Value: %{y} ppm<extra>%{fullData.name}</extra>",
     }));
   }, [manual_dates, manual_vals]);
 
@@ -109,6 +112,10 @@ export const Plot = ({
       ) : (
         <PlotContextMenu
           onResetAxes={resetAxes}
+          dragMode={dragMode}
+          onToggleDragMode={() =>
+            setDragMode((prev) => (prev === "pan" ? "zoom" : "pan"))
+          }
         >
           <Box
             ref={plotContainerRef}
@@ -119,6 +126,8 @@ export const Plot = ({
               revision={plotRevision}
               layout={{
                 autosize: true,
+                dragmode: dragMode,
+                uirevision: "chlorides-plot",
                 title: "Chlorides Over Time",
                 titlefont: { size: 18 },
                 legend: {
