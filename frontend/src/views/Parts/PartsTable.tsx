@@ -243,6 +243,11 @@ export const PartsTable = ({
               columns={cols}
               disableColumnMenu
               onRowClick={(selectedRow) => {
+                if (search.part_id === selectedRow.row.id) {
+                  onCreatePart();
+                  return;
+                }
+
                 onSelectPart(selectedRow.row.id);
               }}
               slots={{ footer: GridFooterWithButton }}

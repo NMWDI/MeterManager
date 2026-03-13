@@ -144,6 +144,19 @@ export default function WellSelectionTable({
         disableColumnMenu
         keepNonExistentRowsSelected
         onRowClick={(selectedRow) => {
+          if (search.well_id === selectedRow.row.id) {
+            navigate({
+              to: "/manage/wells",
+              search: (prev) => ({
+                ...(prev as any),
+                add: true,
+                well_id: undefined,
+              }),
+              replace: true,
+            });
+            return;
+          }
+
           const well = wellsList.data?.items.find(
             (well: Well) => well.id == selectedRow.row.id,
           );

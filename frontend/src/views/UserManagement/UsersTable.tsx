@@ -213,7 +213,14 @@ export const UsersTable = ({
             loading={usersList.isLoading}
             columns={cols}
             disableColumnMenu
-            onRowClick={(r) => onSelectUser(r.row.id)}
+            onRowClick={(r) => {
+              if (search.user_id === r.row.id) {
+                onCreateUser();
+                return;
+              }
+
+              onSelectUser(r.row.id);
+            }}
             slots={{ footer: GridFooterWithButton }}
             slotProps={{
               footer: {

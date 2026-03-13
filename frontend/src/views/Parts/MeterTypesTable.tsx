@@ -18,7 +18,6 @@ import {
   CustomCardHeader,
   GridFooterWithButton,
   IsTrueChip,
-  ManageBreadcrumbTitle,
   TristateToggle,
 } from "@/components";
 
@@ -164,6 +163,11 @@ export const MeterTypesTable = ({
             columns={cols}
             disableColumnMenu
             onRowClick={(selectedRow) => {
+              if (search.meter_type_id === selectedRow.row.id) {
+                onCreateMeterType();
+                return;
+              }
+
               onSelectMeterType(selectedRow.row.id);
             }}
             slots={{ footer: GridFooterWithButton }}

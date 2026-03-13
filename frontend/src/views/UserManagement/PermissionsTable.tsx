@@ -29,6 +29,7 @@ export const PermissionsTable = () => {
               columns={cols}
               disableColumnMenu
               disableColumnFilter
+              disableRowSelectionOnClick
               hideFooter
             />
           </Grid>

@@ -126,7 +126,14 @@ export const RolesTable = ({
               loading={rolesList.isLoading}
               columns={cols}
               disableColumnMenu
-              onRowClick={(selectedRow) => onSelectRole(selectedRow.row.id)}
+              onRowClick={(selectedRow) => {
+                if (search.role_id === selectedRow.row.id) {
+                  onCreateRole();
+                  return;
+                }
+
+                onSelectRole(selectedRow.row.id);
+              }}
               slots={{ footer: GridFooterWithButton }}
               slotProps={{
                 footer: {

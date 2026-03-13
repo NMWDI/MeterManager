@@ -114,7 +114,15 @@ export const MeterSelectionTable = ({
         rows={meterList.data?.items ?? []}
         loading={meterList.isPreviousData || meterList.isLoading}
         columns={meterTableColumns}
-        onRowClick={(selectedRow) => onMeterSelection(selectedRow.row.id)}
+        rowSelectionModel={search.meter_id ? [search.meter_id] : []}
+        onRowClick={(selectedRow) => {
+          if (search.meter_id === selectedRow.row.id) {
+            setMeterAddMode(true);
+            return;
+          }
+
+          onMeterSelection(selectedRow.row.id);
+        }}
         keepNonExistentRowsSelected
         sortingMode="server"
         sortModel={gridSortModel}
