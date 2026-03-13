@@ -22,6 +22,7 @@ import {
   Build,
   DashboardCustomizeOutlined,
   History,
+  InfoOutlined,
   NavigateNext,
   PlusOne,
   Save,
@@ -151,7 +152,13 @@ function hydrateRows(data: PartHistoryResponse, partId?: string) {
   return recalculateRows(currentRow ? [...raw, currentRow] : raw);
 }
 
-const PartsHistoryBreadcrumbTitle = () => {
+const PartsHistoryBreadcrumbTitle = ({
+  partNumber = "",
+  partId,
+}: {
+  partId?: string;
+  partNumber?: string;
+}) => {
   return (
     <Breadcrumbs
       aria-label="parts history breadcrumb"
@@ -223,6 +230,43 @@ const PartsHistoryBreadcrumbTitle = () => {
         <Build sx={{ fontSize: "1.1rem", display: "block" }} />
         <Box component="span">Parts</Box>
       </RouterMuiLink>
+      {partNumber && partId && (
+        <RouterMuiLink
+          to="/manage/parts"
+          search={{
+            part_id: Number(partId),
+            part_add: true,
+            part_q: "",
+            part_in_use: "true",
+            part_commonly_used: "all",
+            p_page: 0,
+            p_pageSize: 25,
+            meter_type_id: undefined,
+            meter_type_add: true,
+            meter_type_q: "",
+            meter_type_in_use: "true",
+            mt_page: 0,
+            mt_pageSize: 25,
+          }}
+          underline="hover"
+          color="inherit"
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 0.75,
+            fontSize: "inherit",
+            fontWeight: 500,
+            lineHeight: 1,
+            textDecoration: "none",
+            "&:hover": {
+              textDecoration: "underline",
+            },
+          }}
+        >
+          <InfoOutlined sx={{ fontSize: "1.1rem", display: "block" }} />
+          <Box component="span">{partNumber}</Box>
+        </RouterMuiLink>
+      )}
       <Typography
         component="span"
         color="inherit"
@@ -591,12 +635,17 @@ export const PartsHistory = () => {
     <BackgroundBox>
       <Card sx={{ height: "fit-content" }}>
         <CustomCardHeader
-          title={<PartsHistoryBreadcrumbTitle />}
+          title={
+            <PartsHistoryBreadcrumbTitle
+              partId={id}
+              partNumber={history?.data?.part_number}
+            />
+          }
           icon={History}
         />
         <CardContent>
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item xs={12} md={6} lg={3}>
               <ControlledDatepicker
                 sx={{ width: "100%" }}
                 size="small"
@@ -608,7 +657,7 @@ export const PartsHistory = () => {
                 format="YYYY MMMM DD"
               />
             </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item xs={12} md={6} lg={3}>
               <ControlledDatepicker
                 sx={{ width: "100%" }}
                 size="small"
@@ -620,7 +669,7 @@ export const PartsHistory = () => {
                 format="YYYY MMMM DD"
               />
             </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item xs={12} md={6} lg={3}>
               <ControlledSelectNonObject
                 sx={{ width: "100%" }}
                 size="small"
@@ -640,7 +689,7 @@ export const PartsHistory = () => {
                 }
               />
             </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item xs={12} md={6} lg={3}>
               <TextField
                 size="small"
                 label="Search by Note"
@@ -652,7 +701,7 @@ export const PartsHistory = () => {
                     page: 0,
                   }))
                 }
-                sx={{ width: { xs: "100%", md: 360 } }}
+                sx={{ width: "100%" }}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
