@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { PictureAsPdf, ScienceOutlined } from "@mui/icons-material";
 import { useMutation, useQuery } from "react-query";
 import dayjs, { Dayjs } from "dayjs";
@@ -34,6 +34,7 @@ import {
   CustomCardHeader,
   BackgroundBox,
   DirectionCard,
+  MapFullscreenToggle,
   MapUrlStateSync,
   ReportBreadcrumbTitle,
   SoutheastGuideLayer,
@@ -110,6 +111,7 @@ const DEFAULT_OVERLAYS = ["Clorides Report Region Guide", "Wells"];
 export const ChloridesReportView = () => {
   const navigate = useNavigate();
   const search = Route.useSearch();
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapBaseLayer = normalizeMapBaseLayer(
     search.mapBase,
     BASE_LAYER_NAMES,
@@ -393,11 +395,17 @@ export const ChloridesReportView = () => {
             </Grid>
             <Grid item xs={12} md={6}>
               <Box
+                ref={mapContainerRef}
                 sx={{
                   height: { xs: 360, md: "100%" },
                   minHeight: 360,
                   borderRadius: 2,
                   overflow: "hidden",
+                  position: "relative",
+                  "&:fullscreen": {
+                    borderRadius: 0,
+                    minHeight: "100vh",
+                  },
                   "& .leaflet-container": { height: "100%", width: "100%" },
                 }}
               >
@@ -489,6 +497,7 @@ export const ChloridesReportView = () => {
                       )}
                     />
                   </LayersControl>
+                  <MapFullscreenToggle containerRef={mapContainerRef} />
                   <WellMapLegend />
                 </MapContainer>
               </Box>

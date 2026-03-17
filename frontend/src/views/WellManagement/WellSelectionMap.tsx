@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useDebounce } from "use-debounce";
 import { LayersControl, MapContainer, Marker, Tooltip } from "react-leaflet";
 import { Box, Typography } from "@mui/material";
@@ -12,6 +12,7 @@ import {
   OpenStreetMapLayer,
   SatelliteLayer,
   SoutheastGuideLayer,
+  MapFullscreenToggle,
   TransporationLayer,
   WellMapLegend,
 } from "@/components";
@@ -51,6 +52,7 @@ export default function WellSelectionMap({
 }) {
   const navigate = useNavigate();
   const search = Route.useSearch();
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
 
   const [wellSearchDebounced] = useDebounce(wellSearchQueryProp, 250);
   const wellQuery = useGetWellLocations(wellSearchDebounced);
@@ -101,11 +103,17 @@ export default function WellSelectionMap({
   return (
     <>
       <Box
+        ref={mapContainerRef}
         sx={{
           borderRadius: 2,
           overflow: "hidden",
           height: "100%",
           minHeight: 500,
+          position: "relative",
+          "&:fullscreen": {
+            borderRadius: 0,
+            minHeight: "100vh",
+          },
           "& .leaflet-container": { height: "100%", width: "100%" },
         }}
       >
@@ -190,6 +198,7 @@ export default function WellSelectionMap({
               checked={mapOverlayNames.includes("Boundaries and Places")}
             />
           </LayersControl>
+          <MapFullscreenToggle containerRef={mapContainerRef} />
           <WellMapLegend />
         </MapContainer>
       </Box>

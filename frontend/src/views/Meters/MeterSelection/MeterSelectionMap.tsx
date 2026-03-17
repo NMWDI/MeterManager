@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { useDebounce } from "use-debounce";
 import {
   MapContainer,
@@ -29,6 +30,7 @@ import MarkerClusterGroup from "@changey/react-leaflet-markercluster";
 import {
   OpenStreetMapLayer,
   SatelliteLayer,
+  MapFullscreenToggle,
   MeterMapColorLegend,
   TransporationLayer,
   BoundariesLayer,
@@ -74,6 +76,7 @@ export default function MeterSelectionMap({
   const navigate = useNavigate();
   const [meterSearchDebounced] = useDebounce(meterSearch, 250);
   const meterMarkers = useGetMeterLocations(meterSearchDebounced);
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapBaseLayer = normalizeMapBaseLayer(
     search.mapBase,
     BASE_LAYER_NAMES,
@@ -99,11 +102,17 @@ export default function MeterSelectionMap({
   return (
     <>
       <Box
+        ref={mapContainerRef}
         sx={{
           borderRadius: 2,
           overflow: "hidden",
           height: "100%",
           minHeight: 320,
+          position: "relative",
+          "&:fullscreen": {
+            borderRadius: 0,
+            minHeight: "100vh",
+          },
           "& .leaflet-container": { height: "100%", width: "100%" },
         }}
       >
@@ -237,6 +246,7 @@ export default function MeterSelectionMap({
               checked={mapOverlayNames.includes("Boundaries and Places")}
             />
           </LayersControl>
+          <MapFullscreenToggle containerRef={mapContainerRef} />
           <MeterMapColorLegend />
         </MapContainer>
       </Box>
