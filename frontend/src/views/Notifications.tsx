@@ -34,7 +34,6 @@ import {
   useGetNotifications,
   useGetNotificationTypes,
   useGetRoles,
-  useGetUnreadNotificationCount,
   useUpdateNotificationReadStatus,
   useGetUserAdminList,
 } from "@/service";
@@ -160,9 +159,9 @@ export const Notifications = () => {
         renderCell: (params) => (
           <Chip
             size="small"
-            color={params.value ? "default" : "warning"}
+            color={params.value ? "success" : "error"}
             label={params.value ? "Read" : "Unread"}
-            variant={params.value ? "outlined" : "filled"}
+            variant="outlined"
           />
         ),
       },
@@ -198,14 +197,6 @@ export const Notifications = () => {
             </a>
           );
         },
-      },
-      {
-        field: "read_at",
-        headerName: "Read At",
-        minWidth: 190,
-        flex: 1.1,
-        valueFormatter: (value) =>
-          value ? dayjs(value as string).format("MMMM D, YYYY h:mm A") : "-",
       },
     ],
     [],
@@ -383,7 +374,11 @@ export const Notifications = () => {
               disableColumnMenu
               getRowHeight={() => "auto"}
               sx={{
+                "& .MuiDataGrid-row": {
+                  alignItems: "center",
+                },
                 "& .MuiDataGrid-cell": {
+                  display: "flex",
                   alignItems: "center",
                   py: 1.25,
                 },
