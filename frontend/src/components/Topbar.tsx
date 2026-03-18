@@ -1,6 +1,7 @@
 import { MouseEvent, useState } from "react";
 import {
   AppBar,
+  Badge,
   Box,
   Button,
   Divider,
@@ -34,6 +35,7 @@ import {
 } from "@/components/ui/sidebar";
 import { BgColor } from "@/constants";
 import { useIsActiveRoute } from "@/hooks";
+import { useGetUnreadNotificationCount } from "@/service";
 
 export const Topbar = ({
   open,
@@ -55,6 +57,7 @@ export const Topbar = ({
   const isChloridesActive = useIsActiveRoute("/chlorides");
   const isMonitoringWellsActive = useIsActiveRoute("/monitoringwells");
   const isNotificationsActive = useIsActiveRoute("/notifications");
+  const isSettingsActive = useIsActiveRoute("/settings");
 
   const [userMenuAnchorEl, setUserMenuAnchorEl] = useState<null | HTMLElement>(
     null,
@@ -62,11 +65,16 @@ export const Topbar = ({
   const [publicMenuAnchorEl, setPublicMenuAnchorEl] =
     useState<null | HTMLElement>(null);
 
-  const role: string = authUser()?.user_role?.name;
-  const fullName =
-    authUser()?.full_name ?? authUser()?.display_name ?? "Unknown";
-  const email = authUser()?.email ?? "No email available";
-  const isLoggedIn = !!authUser();
+  const user = authUser();
+  const role: string = user?.user_role?.name;
+  const fullName = user?.full_name ?? user?.display_name ?? "Unknown";
+  const email = user?.email ?? "No email available";
+  const isLoggedIn = !!user;
+  const unreadNotificationsQuery = useGetUnreadNotificationCount({
+    enabled: isLoggedIn,
+  });
+  const unreadNotificationCount =
+    unreadNotificationsQuery.data?.unread_count ?? 0;
   const isPublicDataActive = isChloridesActive || isMonitoringWellsActive;
   const effectiveSidebarWidth =
     isDesktop && isLoggedIn
@@ -279,34 +287,40 @@ export const Topbar = ({
         {isLoggedIn ? (
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
             <IconButton
-              disabled
               size="small"
               onClick={() => navigate({ to: "/notifications", search: {} })}
               sx={{
                 width: { xs: 35, md: 40, lg: 44 },
                 height: { xs: 35, md: 40, lg: 44 },
                 color: isNotificationsActive ? "darkblue" : "text.secondary",
-                border: "1px solid",
+                border: isNotificationsActive ? "1px solid" : undefined,
                 borderColor: isNotificationsActive
                   ? "rgba(0, 0, 139, 0.24)"
-                  : "divider",
+                  : undefined,
                 bgcolor: isNotificationsActive
                   ? "rgba(0, 0, 139, 0.08)"
-                  : "rgba(255, 255, 255, 0.76)",
+                  : undefined,
                 "&:hover": {
                   bgcolor: isNotificationsActive
                     ? "rgba(0, 0, 139, 0.14)"
-                    : "rgba(15, 23, 42, 0.04)",
+                    : undefined,
                 },
               }}
             >
-              <NotificationsOutlined fontSize="small" />
+              <Badge
+                badgeContent={unreadNotificationCount}
+                color="error"
+                overlap="circular"
+                max={99}
+              >
+                <NotificationsOutlined fontSize="small" />
+              </Badge>
             </IconButton>
             <TopbarUserButton
               role={role}
               full_name={fullName}
               onClick={handleMenuOpen}
-              src={authUser()?.avatar_img}
+              src={user?.avatar_img}
             />
             <Menu
               anchorEl={userMenuAnchorEl}
@@ -345,7 +359,7 @@ export const Topbar = ({
                 <UserAvatar
                   full_name={fullName}
                   role={role}
-                  src={authUser()?.avatar_img}
+                  src={user?.avatar_img}
                   size={42}
                   sx={{ flexShrink: 0 }}
                 />
@@ -381,6 +395,7 @@ export const Topbar = ({
               </Box>
               <Divider />
               <MenuItem
+                selected={isSettingsActive}
                 onClick={() => {
                   navigate({ to: "/settings", search: {} });
                   handleMenuClose();
@@ -395,7 +410,7 @@ export const Topbar = ({
                 </Typography>
               </MenuItem>
               <MenuItem
-                disabled
+                selected={isNotificationsActive}
                 onClick={() => {
                   navigate({ to: "/notifications", search: {} });
                   handleMenuClose();

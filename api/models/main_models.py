@@ -472,6 +472,48 @@ class Users(Base):
     display_name: Mapped[str] = mapped_column(String, nullable=True)
     redirect_page: Mapped[str] = mapped_column(String, nullable=True, default="/")
     avatar_img: Mapped[str] = mapped_column(String, nullable=True)
+    notifications: Mapped[List["Notifications"]] = relationship(
+        "Notifications", back_populates="user", cascade="all, delete-orphan"
+    )
+
+
+class NotificationTypeLU(Base):
+    __tablename__ = "notification_type_lu"
+
+    name: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
+    description: Mapped[Optional[str]] = mapped_column(String)
+
+    notifications: Mapped[List["Notifications"]] = relationship(
+        "Notifications", back_populates="notification_type"
+    )
+
+
+class Notifications(Base):
+    __tablename__ = "notifications"
+
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("Users.id", ondelete="CASCADE", onupdate="CASCADE"), index=True
+    )
+    notification_type_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey(
+            "notification_type_lu.id", ondelete="RESTRICT", onupdate="CASCADE"
+        ),
+        index=True,
+    )
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    message: Mapped[str] = mapped_column(String, nullable=False)
+    link: Mapped[Optional[str]] = mapped_column(String(500))
+    is_read: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, index=True)
+    created_at: Mapped[DateTime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now(), index=True
+    )
+    read_at: Mapped[Optional[DateTime]] = mapped_column(DateTime)
+
+    user: Mapped["Users"] = relationship("Users", back_populates="notifications")
+    notification_type: Mapped["NotificationTypeLU"] = relationship(
+        "NotificationTypeLU", back_populates="notifications"
+    )
 
 
 # Association table that links roles and their associated scopes

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuthUser } from "react-auth-kit";
-import { Autocomplete, Box, Stack, TextField } from "@mui/material";
+import { Autocomplete, Box, Chip, Stack, TextField } from "@mui/material";
 import {
   Control,
   Controller,
@@ -37,11 +37,13 @@ type ControlledUserSelectProps<TFieldValues extends FieldValues> = {
   control: Control<TFieldValues>;
   hideAndSelectCurrentUser?: boolean;
   setValue?: UseFormSetValue<TFieldValues> | null;
+  options?: User[];
   label?: string;
   error?: string;
   helperText?: string;
   disabled?: boolean;
   sx?: object;
+  multiple?: boolean;
 };
 
 export const ControlledUserSelect = <TFieldValues extends FieldValues>({
@@ -54,9 +56,12 @@ export const ControlledUserSelect = <TFieldValues extends FieldValues>({
   const [isCurrentUserSet, setIsCurrentUserSet] = useState<boolean>(false);
   const currentUser = useAuthUser();
   const userList = useGetUserList();
+  const providedOptions = Array.isArray(childProps.options)
+    ? childProps.options
+    : undefined;
   const users = useMemo(
-    () => sortUsersByRoleThenName(userList.data ?? []),
-    [userList.data],
+    () => sortUsersByRoleThenName(providedOptions ?? userList.data ?? []),
+    [providedOptions, userList.data],
   );
 
   useEffect(() => {
@@ -80,6 +85,7 @@ export const ControlledUserSelect = <TFieldValues extends FieldValues>({
       helperText,
       disabled,
       sx,
+      multiple = false,
       ...autocompleteProps
     } = childProps;
 
@@ -90,33 +96,47 @@ export const ControlledUserSelect = <TFieldValues extends FieldValues>({
         defaultValue={null as UseControllerProps<TFieldValues>["defaultValue"]}
         render={({ field }) => (
           (() => {
+            const selectedUsers: User[] = multiple
+              ? Array.isArray(field.value)
+                ? field.value
+                    .map((value: unknown) => {
+                      const valueId = getUserId(value);
+                      return users.find((user) => user.id === valueId);
+                    })
+                    .filter(Boolean)
+                : []
+              : [];
             const fieldValueId = getUserId(field.value);
             const fieldValue = isUserLike(field.value)
               ? (field.value as User)
               : null;
             const selectedUser: User | null =
-              users.find((user) => user.id === fieldValueId) ??
-              fieldValue ??
-              null;
+              !multiple
+                ? users.find((user) => user.id === fieldValueId) ??
+                  fieldValue ??
+                  null
+                : null;
 
             return (
-              <Autocomplete<User, false, false, false>
+              <Autocomplete<User, boolean, false, false>
                 {...autocompleteProps}
-                {...field}
                 size="small"
+                multiple={multiple}
                 options={users}
                 groupBy={(user: User) => getRoleLabel(user)}
                 getOptionLabel={(user: User) => user?.full_name ?? ""}
                 isOptionEqualToValue={(option: User, value: User) =>
                   option.id === value.id
                 }
-                value={selectedUser}
+                value={multiple ? selectedUsers : selectedUser}
                 onChange={(_, newValue) => field.onChange(newValue)}
                 loading={userList.isLoading}
-                disabled={disabled ?? userList.isLoading}
+                disabled={
+                  disabled ?? (providedOptions ? false : userList.isLoading)
+                }
                 sx={sx}
                 renderOption={(props, option) => (
-                  <Box component="li" {...props} key={option.id}>
+                  <Box component="li" {...props}>
                     <Stack direction="row" spacing={1} alignItems="center">
                       <UserAvatar
                         full_name={option.full_name}
@@ -128,9 +148,25 @@ export const ControlledUserSelect = <TFieldValues extends FieldValues>({
                     </Stack>
                   </Box>
                 )}
+                renderTags={(selected: readonly User[], getTagProps) =>
+                  selected.map((option, index) => (
+                    <Chip
+                      label={option.full_name}
+                      avatar={
+                        <UserAvatar
+                          full_name={option.full_name}
+                          role={getAvatarRole(option)}
+                          src={option.avatar_img ?? undefined}
+                          size={24}
+                        />
+                      }
+                      {...getTagProps({ index })}
+                    />
+                  ))
+                }
                 renderInput={(params) => {
                   const { InputProps, ...rest } = params;
-                  const startAdornment = selectedUser ? (
+                  const startAdornment = !multiple && selectedUser ? (
                     <>
                       <UserAvatar
                         full_name={selectedUser.full_name}

@@ -14,6 +14,7 @@ from api.routes.maintenance import (
     public_maintenance_router,
 )
 from api.routes.meters import authenticated_meter_router, public_meter_router
+from api.routes.notifications import notifications_router
 from api.routes.OSE import ose_router
 from api.routes.parts import part_router
 from api.routes.settings import settings_router
@@ -43,6 +44,7 @@ tags_metadata = [
         "name": "WaterLevels",
         "description": "Groundwater Depth and Chloride Measurement Related Endpoints",
     },
+    {"name": "Notifications", "description": "Notification related endpoints"},
     {"name": "OSE", "description": "Endpoints Used by the OSE to Generate Reports"},
     {"name": "Admin", "description": "Admin Functionality Related Endpoints"},
     {"name": "Login", "description": "User Auth and Token Related Endpoints"},
@@ -121,6 +123,7 @@ authenticated_router.include_router(admin_router)
 authenticated_router.include_router(authenticated_chlorides_router)
 authenticated_router.include_router(authenticated_maintenance_router)
 authenticated_router.include_router(authenticated_meter_router)
+authenticated_router.include_router(notifications_router)
 authenticated_router.include_router(part_router)
 authenticated_router.include_router(authenticated_well_measurement_router)
 authenticated_router.include_router(authenticated_well_router)

@@ -10,12 +10,17 @@ import { useAuthHeader, useSignOut } from "react-auth-kit";
 import { enqueueSnackbar, useSnackbar } from "notistack";
 import {
   ActivityTypeLU,
+  CreateNotificationPayload,
   HomeSummary,
   MeterListDTO,
   MeterListQueryParams,
   MeterTypeLU,
   NewWellMeasurement,
   NoteTypeLU,
+  Notification,
+  NotificationCreateResult,
+  NotificationQueryParams,
+  NotificationType,
   ObservedPropertyTypeLU,
   Page,
   ST2Measurement,
@@ -372,6 +377,54 @@ export function useGetHomeSummary() {
   );
 }
 
+export function useGetNotifications(
+  params: NotificationQueryParams | undefined,
+  options?: UseQueryOptions<Page<Notification>, Error>,
+) {
+  const route = "notifications";
+  const authHeader = useAuthHeader();
+  const navigate = useNavigate();
+  const signOut = useSignOut();
+
+  return useQuery<Page<Notification>, Error>(
+    [route, params],
+    () => GETFetch(route, params, authHeader(), signOut, navigate),
+    {
+      keepPreviousData: true,
+      ...options,
+    },
+  );
+}
+
+export function useGetNotificationTypes() {
+  const route = "notification_types";
+  const authHeader = useAuthHeader();
+  const navigate = useNavigate();
+  const signOut = useSignOut();
+
+  return useQuery<NotificationType[], Error>([route], () =>
+    GETFetch(route, null, authHeader(), signOut, navigate),
+  );
+}
+
+export function useGetUnreadNotificationCount(
+  options?: UseQueryOptions<{ unread_count: number }, Error>,
+) {
+  const route = "notifications/unread_count";
+  const authHeader = useAuthHeader();
+  const navigate = useNavigate();
+  const signOut = useSignOut();
+
+  return useQuery<{ unread_count: number }, Error>(
+    [route],
+    () => GETFetch(route, null, authHeader(), signOut, navigate),
+    {
+      refetchInterval: 60_000,
+      ...options,
+    },
+  );
+}
+
 export function useGetMeterRegisterList() {
   const route = "meter_registers";
   const authHeader = useAuthHeader();
@@ -429,25 +482,29 @@ export function useGetSecurityScopes() {
   );
 }
 
-export function useGetRoles() {
+export function useGetRoles(options?: UseQueryOptions<UserRole[], Error>) {
   const route = "roles";
   const authHeader = useAuthHeader();
   const navigate = useNavigate();
   const signOut = useSignOut();
 
-  return useQuery<UserRole[], Error>([route], () =>
-    GETFetch(route, null, authHeader(), signOut, navigate),
+  return useQuery<UserRole[], Error>(
+    [route],
+    () => GETFetch(route, null, authHeader(), signOut, navigate),
+    options,
   );
 }
 
-export function useGetUserAdminList() {
+export function useGetUserAdminList(options?: UseQueryOptions<User[], Error>) {
   const route = "usersadmin";
   const authHeader = useAuthHeader();
   const navigate = useNavigate();
   const signOut = useSignOut();
 
-  return useQuery<User[], Error>([route], () =>
-    GETFetch(route, null, authHeader(), signOut, navigate),
+  return useQuery<User[], Error>(
+    [route],
+    () => GETFetch(route, null, authHeader(), signOut, navigate),
+    options,
   );
 }
 
@@ -895,6 +952,71 @@ export function useCreateRole(onSuccess: Function) {
         });
         return responseJson;
       }
+    },
+    retry: 0,
+  });
+}
+
+export function useCreateNotifications(onSuccess: Function) {
+  const { enqueueSnackbar } = useSnackbar();
+  const queryClient = useQueryClient();
+  const route = "notifications";
+  const authHeader = useAuthHeader();
+
+  return useMutation({
+    mutationFn: async (payload: CreateNotificationPayload) => {
+      const response = await POSTFetch(route, payload, authHeader());
+
+      if (!response.ok) {
+        const errorMessage =
+          (await response.json().catch(() => null))?.detail ??
+          `Error ${response.status}`;
+        enqueueSnackbar(errorMessage, { variant: "error" });
+        throw Error(errorMessage);
+      }
+
+      const responseJson: NotificationCreateResult = await response.json();
+      onSuccess(responseJson);
+      queryClient.invalidateQueries("notifications");
+      queryClient.invalidateQueries("notifications/unread_count");
+      return responseJson;
+    },
+    onSuccess: (result) => {
+      enqueueSnackbar(
+        `Created ${result.created_count} notification${result.created_count === 1 ? "" : "s"}.`,
+        {
+          variant: "success",
+        },
+      );
+    },
+    retry: 0,
+  });
+}
+
+export function useUpdateNotificationReadStatus(onSuccess?: Function) {
+  const { enqueueSnackbar } = useSnackbar();
+  const queryClient = useQueryClient();
+  const route = "notifications";
+  const authHeader = useAuthHeader();
+
+  return useMutation({
+    mutationFn: async (payload: { id: number; is_read: boolean }) => {
+      const response = await PATCHFetch(route, payload, authHeader());
+
+      if (!response.ok) {
+        const errorMessage =
+          (await response.json().catch(() => null))?.detail ??
+          `Error ${response.status}`;
+        enqueueSnackbar(errorMessage, { variant: "error" });
+        throw Error(errorMessage);
+      }
+
+      return response.json();
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries("notifications");
+      queryClient.invalidateQueries("notifications/unread_count");
+      onSuccess?.(result);
     },
     retry: 0,
   });
