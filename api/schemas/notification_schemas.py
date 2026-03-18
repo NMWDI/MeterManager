@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from api.schemas.base import ORMBase
+from api.schemas.security_schemas import User
 
 
 class NotificationType(ORMBase):
@@ -11,6 +12,7 @@ class NotificationType(ORMBase):
 class Notification(ORMBase):
     user_id: int
     notification_type_id: int
+    created_by: int | None = None
     title: str
     message: str
     link: str | None = None
@@ -18,6 +20,7 @@ class Notification(ORMBase):
     created_at: datetime
     read_at: datetime | None = None
     notification_type: NotificationType
+    creator: User | None = None
 
 
 class NotificationUnreadCount(ORMBase):

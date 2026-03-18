@@ -473,7 +473,15 @@ class Users(Base):
     redirect_page: Mapped[str] = mapped_column(String, nullable=True, default="/")
     avatar_img: Mapped[str] = mapped_column(String, nullable=True)
     notifications: Mapped[List["Notifications"]] = relationship(
-        "Notifications", back_populates="user", cascade="all, delete-orphan"
+        "Notifications",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        foreign_keys="Notifications.user_id",
+    )
+    created_notifications: Mapped[List["Notifications"]] = relationship(
+        "Notifications",
+        back_populates="creator",
+        foreign_keys="Notifications.created_by",
     )
 
 
@@ -501,6 +509,9 @@ class Notifications(Base):
         ),
         index=True,
     )
+    created_by: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("Users.id", ondelete="SET NULL", onupdate="CASCADE"), index=True
+    )
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     message: Mapped[str] = mapped_column(String, nullable=False)
     link: Mapped[Optional[str]] = mapped_column(String(500))
@@ -510,7 +521,12 @@ class Notifications(Base):
     )
     read_at: Mapped[Optional[DateTime]] = mapped_column(DateTime)
 
-    user: Mapped["Users"] = relationship("Users", back_populates="notifications")
+    user: Mapped["Users"] = relationship(
+        "Users", back_populates="notifications", foreign_keys=[user_id]
+    )
+    creator: Mapped[Optional["Users"]] = relationship(
+        "Users", back_populates="created_notifications", foreign_keys=[created_by]
+    )
     notification_type: Mapped["NotificationTypeLU"] = relationship(
         "NotificationTypeLU", back_populates="notifications"
     )

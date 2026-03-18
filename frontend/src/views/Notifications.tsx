@@ -26,8 +26,9 @@ import {
   CreateNotificationModal,
   CustomCardHeader,
   TristateToggle,
+  UserAvatar,
 } from "@/components";
-import { Notification, SecurityScope } from "@/interfaces";
+import { Notification, SecurityScope, User } from "@/interfaces";
 import { Route } from "@/routes/notifications";
 import {
   useCreateNotifications,
@@ -37,6 +38,7 @@ import {
   useUpdateNotificationReadStatus,
   useGetUserAdminList,
 } from "@/service";
+import { getRoleLabel } from "@/utils/UserRoleGrouping";
 
 const formatNotificationTypeName = (value: string) =>
   value
@@ -66,6 +68,8 @@ export const Notifications = () => {
     () => (notificationTypesQuery.data ?? []).map((type) => type.id),
     [notificationTypesQuery.data],
   );
+  const getAvatarRole = (user: User | null | undefined) =>
+    user ? getRoleLabel(user) : undefined;
 
   useEffect(() => {
     if (!notificationTypeIds.length || search.notification_type_id.length)
@@ -107,99 +111,144 @@ export const Notifications = () => {
   };
 
   const columns = useMemo<GridColDef<Notification>[]>(
-    () => [
-      {
-        field: "read_toggle",
-        headerName: "Mark Read",
-        minWidth: 110,
-        flex: 0.7,
-        sortable: false,
-        filterable: false,
-        renderCell: (params) => (
-          <Checkbox
-            size="small"
-            checked={Boolean(params.row.is_read)}
-            onChange={(_, checked) =>
-              updateNotificationReadStatus.mutate({
-                id: params.row.id,
-                is_read: checked,
-              })
-            }
-          />
-        ),
-      },
-      {
-        field: "created_at",
-        headerName: "Created",
-        minWidth: 190,
-        flex: 1.1,
-        valueFormatter: (value) =>
-          value ? dayjs(value as string).format("MMMM D, YYYY h:mm A") : "-",
-      },
-      {
-        field: "notification_type",
-        headerName: "Type",
-        minWidth: 140,
-        flex: 0.9,
-        sortable: false,
-        valueGetter: (_, row) => row.notification_type?.name ?? "",
-        renderCell: (params) => (
-          <Chip
-            size="small"
-            label={formatNotificationTypeName(String(params.value ?? ""))}
-            sx={{ textTransform: "capitalize" }}
-          />
-        ),
-      },
-      {
-        field: "is_read",
-        headerName: "Status",
-        minWidth: 110,
-        flex: 0.7,
-        renderCell: (params) => (
-          <Chip
-            size="small"
-            color={params.value ? "success" : "error"}
-            label={params.value ? "Read" : "Unread"}
-            variant="outlined"
-          />
-        ),
-      },
-      {
-        field: "title",
-        headerName: "Title",
-        minWidth: 220,
-        flex: 1.4,
-      },
-      {
-        field: "message",
-        headerName: "Message",
-        minWidth: 320,
-        flex: 2.3,
-      },
-      {
-        field: "link",
-        headerName: "Link",
-        minWidth: 180,
-        flex: 1.2,
-        sortable: false,
-        renderCell: (params) => {
-          const value = params.value as string | null | undefined;
-          if (!value) return "-";
-
-          return (
-            <a
-              href={value}
-              target={value.startsWith("/") ? undefined : "_blank"}
-              rel={value.startsWith("/") ? undefined : "noreferrer"}
-            >
-              Open
-            </a>
-          );
+    () => {
+      const baseColumns: GridColDef<Notification>[] = [
+        {
+          field: "read_toggle",
+          headerName: "Mark Read",
+          minWidth: 110,
+          flex: 0.7,
+          sortable: false,
+          filterable: false,
+          renderCell: (params) => (
+            <Checkbox
+              size="small"
+              checked={Boolean(params.row.is_read)}
+              onChange={(_, checked) =>
+                updateNotificationReadStatus.mutate({
+                  id: params.row.id,
+                  is_read: checked,
+                })
+              }
+            />
+          ),
         },
-      },
-    ],
-    [],
+        {
+          field: "created_at",
+          headerName: "Created",
+          minWidth: 190,
+          flex: 1.1,
+          valueFormatter: (value) =>
+            value ? dayjs(value as string).format("MMMM D, YYYY h:mm A") : "-",
+        },
+        {
+          field: "notification_type",
+          headerName: "Type",
+          minWidth: 140,
+          flex: 0.9,
+          sortable: false,
+          valueGetter: (_, row) => row.notification_type?.name ?? "",
+          renderCell: (params) => (
+            <Chip
+              size="small"
+              label={formatNotificationTypeName(String(params.value ?? ""))}
+              sx={{ textTransform: "capitalize" }}
+            />
+          ),
+        },
+        {
+          field: "is_read",
+          headerName: "Status",
+          minWidth: 110,
+          flex: 0.7,
+          renderCell: (params) => (
+            <Chip
+              size="small"
+              color={params.value ? "success" : "error"}
+              label={params.value ? "Read" : "Unread"}
+              variant="outlined"
+            />
+          ),
+        },
+        {
+          field: "title",
+          headerName: "Title",
+          minWidth: 220,
+          flex: 1.4,
+        },
+        {
+          field: "message",
+          headerName: "Message",
+          minWidth: 320,
+          flex: 2.3,
+        },
+        {
+          field: "link",
+          headerName: "Link",
+          minWidth: 180,
+          flex: 1.2,
+          sortable: false,
+          renderCell: (params) => {
+            const value = params.value as string | null | undefined;
+            if (!value) return "-";
+
+            return (
+              <a
+                href={value}
+                target={value.startsWith("/") ? undefined : "_blank"}
+                rel={value.startsWith("/") ? undefined : "noreferrer"}
+              >
+                Open
+              </a>
+            );
+          },
+        },
+      ];
+
+      if (!isAdmin) return baseColumns;
+
+      return [
+        baseColumns[0],
+        baseColumns[1],
+        {
+          field: "creator",
+          headerName: "Created By",
+          minWidth: 220,
+          flex: 1.3,
+          sortable: false,
+          cellClassName: "notification-creator-cell",
+          valueGetter: (_, row) =>
+            row.creator?.display_name || row.creator?.full_name || "",
+          renderCell: (params) => {
+            const creator = params.row.creator;
+            if (!creator) return "-";
+
+            const name = creator.display_name || creator.full_name || "Unknown";
+
+            return (
+              <Box
+                sx={{
+                  width: "100%",
+                  display: "flex",
+                  gap: 1,
+                  alignItems: "center",
+                }}
+              >
+                <UserAvatar
+                  full_name={creator.full_name || name}
+                  role={getAvatarRole(creator)}
+                  src={creator.avatar_img ?? undefined}
+                  size={34}
+                />
+                <Box component="span">{name}</Box>
+              </Box>
+            );
+          },
+        },
+        ...baseColumns.slice(2),
+      ];
+    },
+    [getAvatarRole, isAdmin, updateNotificationReadStatus],
   );
 
   return (
@@ -374,12 +423,11 @@ export const Notifications = () => {
               disableColumnMenu
               getRowHeight={() => "auto"}
               sx={{
-                "& .MuiDataGrid-row": {
-                  alignItems: "center",
+                "& .notification-creator-cell": {
+                  alignItems: "flex-start",
+                  py: 1,
                 },
                 "& .MuiDataGrid-cell": {
-                  display: "flex",
-                  alignItems: "center",
                   py: 1.25,
                 },
               }}

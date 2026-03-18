@@ -39,7 +39,10 @@ def get_notifications(
 ):
     query_statement = (
         select(Notifications)
-        .options(joinedload(Notifications.notification_type))
+        .options(
+            joinedload(Notifications.notification_type),
+            joinedload(Notifications.creator),
+        )
         .where(Notifications.user_id == user.id)
         .order_by(Notifications.created_at.desc(), Notifications.id.desc())
     )
@@ -113,6 +116,7 @@ def get_unread_notification_count(
 def create_notifications(
     payload: NotificationCreateRequest,
     db: Session = Depends(get_db),
+    user: Users = Depends(get_current_user),
 ):
     user_ids = set(payload.user_ids)
 
@@ -148,6 +152,7 @@ def create_notifications(
         Notifications(
             user_id=user_id,
             notification_type_id=payload.notification_type_id,
+            created_by=user.id,
             title=payload.title.strip(),
             message=payload.message.strip(),
             link=payload.link.strip() if payload.link else None,
@@ -174,7 +179,10 @@ def update_notification_read_status(
 ):
     notification = db.scalar(
         select(Notifications)
-        .options(joinedload(Notifications.notification_type))
+        .options(
+            joinedload(Notifications.notification_type),
+            joinedload(Notifications.creator),
+        )
         .where(Notifications.id == payload.id, Notifications.user_id == user.id)
     )
 
