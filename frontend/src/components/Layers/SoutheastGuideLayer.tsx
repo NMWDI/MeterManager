@@ -52,9 +52,13 @@ const labelIcon = (text: string) =>
     ">${text}</div>`,
   });
 
-export const SoutheastGuideLayer = () =>
+export const SoutheastGuideLayer = ({
+  checked = false,
+}: {
+  checked?: boolean;
+}) =>
 (
-  <LayersControl.Overlay name="Clorides Report Region Guide" checked>
+  <LayersControl.Overlay checked={checked} name="Clorides Report Region Guide">
     {/* Lower than your GeoJSON panes (you used 600/625); markers still clickable above */}
     <Pane name="se_quadrant_guide" style={{ zIndex: 550 }}>
       <FeatureGroup>

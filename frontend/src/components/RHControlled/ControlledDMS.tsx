@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState, forwardRef } from "react";
 import { TextField } from "@mui/material";
 import { Controller } from "react-hook-form";
-import { GCSdimension } from "../../enums";
 import { PatternFormat, PatternFormatProps } from "react-number-format";
+import { GCSdimension } from "@/enums";
 
 interface DMSInputProps {
   dimension_type: GCSdimension;
@@ -16,7 +16,7 @@ interface CustomProps {
   name: string;
 }
 
-const DMSFormatCustom = React.forwardRef<PatternFormatProps, CustomProps>(
+const DMSFormatCustom = forwardRef<PatternFormatProps, CustomProps>(
   function PatternFormatCustom(props, ref) {
     const { onChange, ...other } = props;
 
@@ -115,6 +115,8 @@ function DMSInput({ dimension_type, value, onChange }: DMSInputProps) {
       value={dms_string}
       onChange={handleUpdate}
       onBlur={handleBlur}
+      fullWidth
+      size="small"
       InputProps={{
         inputComponent: DMSFormatCustom as any,
       }}
@@ -122,18 +124,16 @@ function DMSInput({ dimension_type, value, onChange }: DMSInputProps) {
   );
 }
 
-export default function ControlledDMS({ name, control, ...childProps }: any) {
-  return (
-    <Controller
-      name={name}
-      control={control}
-      render={({ field }) => (
-        <DMSInput
-          {...childProps}
-          value={childProps.value}
-          onChange={(newValue) => field.onChange(newValue)}
-        />
-      )}
-    />
-  );
-}
+export const ControlledDMS = ({ name, control, ...childProps }: any) => (
+  <Controller
+    name={name}
+    control={control}
+    render={({ field }) => (
+      <DMSInput
+        {...childProps}
+        value={childProps.value}
+        onChange={(newValue) => field.onChange(newValue)}
+      />
+    )}
+  />
+);

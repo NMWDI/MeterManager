@@ -20,6 +20,9 @@ export function ControlledSelect({
       control={control}
       render={({ field }) => {
         const isMultiple = multiple;
+        const options = Array.isArray(childProps.options)
+          ? childProps.options
+          : [];
 
         // Normalize value for multi/single mode
         const value = isMultiple
@@ -28,13 +31,15 @@ export function ControlledSelect({
 
         const handleChange = (event: any) => {
           if (isMultiple) {
-            const selectedIds = event.target.value;
-            const selectedOptions = childProps.options.filter((opt: any) =>
+            const selectedIds = Array.isArray(event.target.value)
+              ? event.target.value
+              : [];
+            const selectedOptions = options.filter((opt: any) =>
               selectedIds.includes(opt.id),
             );
             field.onChange(selectedOptions);
           } else {
-            const selectedOption = childProps.options.find(
+            const selectedOption = options.find(
               (opt: any) => opt.id === event.target.value,
             );
             field.onChange(selectedOption);
@@ -57,18 +62,18 @@ export function ControlledSelect({
               label={childProps.label}
               renderValue={(selected: any) =>
                 isMultiple
-                  ? childProps.options
+                  ? options
                       .filter((opt: any) => selected.includes(opt.id))
                       .map((opt: any) => childProps.getOptionLabel(opt))
                       .join(", ")
                   : childProps.getOptionLabel(
-                      childProps.options.find(
+                      options.find(
                         (opt: any) => opt.id === selected,
                       ) ?? {},
                     )
               }
             >
-              {childProps.options.map((option: any) => (
+              {options.map((option: any) => (
                 <MenuItem key={option.id} value={option.id}>
                   {childProps.getOptionLabel(option)}
                 </MenuItem>
@@ -93,6 +98,8 @@ export function ControlledSelectNonObject({
   name,
   ...childProps
 }: any) {
+  const options = Array.isArray(childProps.options) ? childProps.options : [];
+
   return (
     <Controller
       name={name}
@@ -112,7 +119,7 @@ export function ControlledSelectNonObject({
             value={field.value ?? ""}
             defaultValue={""}
           >
-            {childProps.options.map((option: any) => (
+            {options.map((option: any) => (
               <MenuItem value={option} key={option}>
                 {childProps.getOptionLabel(option)}
               </MenuItem>

@@ -1,13 +1,26 @@
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient, UseQueryOptions } from "react-query";
+import {
+  InfiniteData,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+  UseQueryOptions,
+} from "react-query";
 import { useAuthHeader, useSignOut } from "react-auth-kit";
 import { enqueueSnackbar, useSnackbar } from "notistack";
 import {
   ActivityTypeLU,
+  CreateNotificationPayload,
+  HomeSummary,
   MeterListDTO,
   MeterListQueryParams,
   MeterTypeLU,
   NewWellMeasurement,
   NoteTypeLU,
+  Notification,
+  NotificationCreateResult,
+  NotificationQueryParams,
+  NotificationType,
   ObservedPropertyTypeLU,
   Page,
   ST2Measurement,
@@ -44,10 +57,90 @@ import {
   MeterRegister,
   WaterSource,
   WellStatus,
-} from "../interfaces.js";
-import { WorkOrderStatus } from "../enums";
-import { useNavigate } from "react-router-dom";
-import { API_URL } from "../config";
+} from "@/interfaces";
+import { IncreaseQuantityPayload } from "@/interfaces";
+import { WorkOrderStatus } from "@/enums";
+import { API_URL } from "@/config";
+import { useNavigate } from "@tanstack/react-router";
+import {
+  PartHistoryResponse,
+  UpdatePartHistoryPayload,
+} from "@/interfaces/PartHistoryResponse";
+
+// Cashe for up to 48 hours
+const MAP_CACHE_TTL_MS = 1000 * 60 * 60 * 24 * 2;
+const MAP_CACHE_PREFIX = "wmdb:map-cache:";
+const MAP_QUERY_ROUTES = ["meters_locations", "well_locations"] as const;
+
+type StoredMapCache<T> = {
+  data: T;
+  updatedAt: number;
+};
+
+function getMapCacheStorageKey(queryKey: readonly unknown[]) {
+  return `${MAP_CACHE_PREFIX}${JSON.stringify(queryKey)}`;
+}
+
+function readMapCache<T>(queryKey: readonly unknown[]) {
+  if (typeof window === "undefined") return undefined;
+
+  const storageKey = getMapCacheStorageKey(queryKey);
+  const rawValue = window.localStorage.getItem(storageKey);
+  if (!rawValue) return undefined;
+
+  try {
+    const parsed = JSON.parse(rawValue) as StoredMapCache<T>;
+    if (
+      !parsed ||
+      typeof parsed.updatedAt !== "number" ||
+      Date.now() - parsed.updatedAt > MAP_CACHE_TTL_MS
+    ) {
+      window.localStorage.removeItem(storageKey);
+      return undefined;
+    }
+
+    return parsed;
+  } catch {
+    window.localStorage.removeItem(storageKey);
+    return undefined;
+  }
+}
+
+function writeMapCache<T>(queryKey: readonly unknown[], data: T) {
+  if (typeof window === "undefined") return;
+
+  const storageKey = getMapCacheStorageKey(queryKey);
+  const value: StoredMapCache<T> = {
+    data,
+    updatedAt: Date.now(),
+  };
+
+  window.localStorage.setItem(storageKey, JSON.stringify(value));
+}
+
+export function clearSavedQueryLocalStorage() {
+  if (typeof window === "undefined") return;
+
+  const keysToRemove: string[] = [];
+  for (let i = 0; i < window.localStorage.length; i++) {
+    const key = window.localStorage.key(i);
+    if (key?.startsWith(MAP_CACHE_PREFIX)) {
+      keysToRemove.push(key);
+    }
+  }
+
+  keysToRemove.forEach((key) => window.localStorage.removeItem(key));
+}
+
+function invalidateMapDataCaches(
+  queryClient: ReturnType<typeof useQueryClient>,
+) {
+  clearSavedQueryLocalStorage();
+  MAP_QUERY_ROUTES.forEach((route) => {
+    queryClient.removeQueries(route);
+    queryClient.invalidateQueries(route);
+  });
+}
 
 // Date display util
 export function toGMT6String(date: Date) {
@@ -106,15 +199,18 @@ async function GETFetch(
   navigate: Function,
 ) {
   const headers = { Authorization: authHeader };
-  const response = await fetch(`${API_URL}/${route}` + formattedQueryParams(params), {
-    headers: headers,
-  });
+  const response = await fetch(
+    `${API_URL}/${route}` + formattedQueryParams(params),
+    {
+      headers: headers,
+    },
+  );
 
   if (!response.ok) {
     // If backend indicates that user's token is expired, log them out and notify
     if (response.status == 440 && localStorage.getItem("loggedIn")) {
       localStorage.removeItem("loggedIn");
-      navigate("/");
+      navigate({ to: "/" });
       signOut();
       enqueueSnackbar("Your session has expired, please login again.", {
         variant: "error",
@@ -235,18 +331,24 @@ export function useGetMeterLocations(searchstring: string | undefined) {
   const authHeader = useAuthHeader();
   const navigate = useNavigate();
   const signOut = useSignOut();
+  const queryKey = [route, searchstring] as const;
+  const cachedData = readMapCache<MeterMapDTO[]>(queryKey);
 
   return useQuery<MeterMapDTO[], Error>({
-    queryKey: [route, searchstring],
-    queryFn: () => GETFetch(
-      route,
-      { search_string: searchstring },
-      authHeader(),
-      signOut,
-      navigate,
-    ),
-    staleTime: 1000 * 60 * 60 * 24, // 24 hours
-    cacheTime: 1000 * 60 * 60 * 24, // keep in memory for 24 hours
+    queryKey,
+    queryFn: () =>
+      GETFetch(
+        route,
+        { search_string: searchstring },
+        authHeader(),
+        signOut,
+        navigate,
+      ),
+    initialData: cachedData?.data,
+    initialDataUpdatedAt: cachedData?.updatedAt,
+    onSuccess: (data) => writeMapCache(queryKey, data),
+    staleTime: MAP_CACHE_TTL_MS,
+    cacheTime: MAP_CACHE_TTL_MS,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     refetchOnReconnect: false,
@@ -261,6 +363,65 @@ export function useGetMeterTypeList() {
 
   return useQuery<MeterTypeLU[], Error>([route], () =>
     GETFetch(route, null, authHeader(), signOut, navigate),
+  );
+}
+
+export function useGetHomeSummary() {
+  const route = "maintenance/home_summary";
+  const authHeader = useAuthHeader();
+  const navigate = useNavigate();
+  const signOut = useSignOut();
+
+  return useQuery<HomeSummary, Error>([route], () =>
+    GETFetch(route, null, authHeader(), signOut, navigate),
+  );
+}
+
+export function useGetNotifications(
+  params: NotificationQueryParams | undefined,
+  options?: UseQueryOptions<Page<Notification>, Error>,
+) {
+  const route = "notifications";
+  const authHeader = useAuthHeader();
+  const navigate = useNavigate();
+  const signOut = useSignOut();
+
+  return useQuery<Page<Notification>, Error>(
+    [route, params],
+    () => GETFetch(route, params, authHeader(), signOut, navigate),
+    {
+      keepPreviousData: true,
+      ...options,
+    },
+  );
+}
+
+export function useGetNotificationTypes() {
+  const route = "notification_types";
+  const authHeader = useAuthHeader();
+  const navigate = useNavigate();
+  const signOut = useSignOut();
+
+  return useQuery<NotificationType[], Error>([route], () =>
+    GETFetch(route, null, authHeader(), signOut, navigate),
+  );
+}
+
+export function useGetUnreadNotificationCount(
+  options?: UseQueryOptions<{ unread_count: number }, Error>,
+) {
+  const route = "notifications/unread_count";
+  const authHeader = useAuthHeader();
+  const navigate = useNavigate();
+  const signOut = useSignOut();
+
+  return useQuery<{ unread_count: number }, Error>(
+    [route],
+    () => GETFetch(route, null, authHeader(), signOut, navigate),
+    {
+      refetchInterval: 60_000,
+      ...options,
+    },
   );
 }
 
@@ -321,25 +482,29 @@ export function useGetSecurityScopes() {
   );
 }
 
-export function useGetRoles() {
+export function useGetRoles(options?: UseQueryOptions<UserRole[], Error>) {
   const route = "roles";
   const authHeader = useAuthHeader();
   const navigate = useNavigate();
   const signOut = useSignOut();
 
-  return useQuery<UserRole[], Error>([route], () =>
-    GETFetch(route, null, authHeader(), signOut, navigate),
+  return useQuery<UserRole[], Error>(
+    [route],
+    () => GETFetch(route, null, authHeader(), signOut, navigate),
+    options,
   );
 }
 
-export function useGetUserAdminList() {
+export function useGetUserAdminList(options?: UseQueryOptions<User[], Error>) {
   const route = "usersadmin";
   const authHeader = useAuthHeader();
   const navigate = useNavigate();
   const signOut = useSignOut();
 
-  return useQuery<User[], Error>([route], () =>
-    GETFetch(route, null, authHeader(), signOut, navigate),
+  return useQuery<User[], Error>(
+    [route],
+    () => GETFetch(route, null, authHeader(), signOut, navigate),
+    options,
   );
 }
 
@@ -351,6 +516,19 @@ export function useGetUserList() {
 
   return useQuery<User[], Error>([route], () =>
     GETFetch(route, null, authHeader(), signOut, navigate),
+  );
+}
+
+export function useGetUser(id: number, options = {}) {
+  const route = "users";
+  const authHeader = useAuthHeader();
+  const navigate = useNavigate();
+  const signOut = useSignOut();
+
+  return useQuery<User, Error>(
+    [route, id],
+    () => GETFetch(`${route}/${id}`, null, authHeader(), signOut, navigate),
+    options,
   );
 }
 
@@ -409,6 +587,26 @@ export function useGetPropertyTypes() {
   );
 }
 
+export function useGetWellById(well_id?: number) {
+  const route = "wells";
+  const authHeader = useAuthHeader();
+  const navigate = useNavigate();
+  const signOut = useSignOut();
+
+  return useQuery<Well, Error>(
+    [route, "detail", well_id],
+    () =>
+      GETFetch(
+        `${route}/${well_id}`,
+        undefined,
+        authHeader(),
+        signOut,
+        navigate,
+      ),
+    { enabled: !!well_id },
+  );
+}
+
 export function useGetWells(params: WellListQueryParams | undefined) {
   const route = "wells";
   const authHeader = useAuthHeader();
@@ -422,22 +620,32 @@ export function useGetWells(params: WellListQueryParams | undefined) {
   );
 }
 
-export function useGetWellLocations(searchstring: string | undefined, has_chloride_group: boolean | null = null) {
+export function useGetWellLocations(
+  searchstring: string | undefined,
+  has_chloride_group: boolean | null = null,
+) {
   const route = "well_locations";
   const authHeader = useAuthHeader();
   const navigate = useNavigate();
   const signOut = useSignOut();
   const PAGE_SIZE = 500;
+  const queryKey = [route, searchstring, has_chloride_group] as const;
+  const cachedData = readMapCache<InfiniteData<Well[]>>(queryKey);
 
   return useInfiniteQuery<Well[], Error>({
-    queryKey: [route, searchstring, has_chloride_group],
+    queryKey,
     queryFn: async ({ pageParam = 0 }) => {
       return GETFetch(
         route,
-        { search_string: searchstring, offset: pageParam, limit: PAGE_SIZE, has_chloride_group },
+        {
+          search_string: searchstring,
+          offset: pageParam,
+          limit: PAGE_SIZE,
+          has_chloride_group,
+        },
         authHeader(),
         signOut,
-        navigate
+        navigate,
       );
     },
     getNextPageParam: (lastPage, allPages) => {
@@ -445,14 +653,16 @@ export function useGetWellLocations(searchstring: string | undefined, has_chlori
       if (!lastPage || lastPage.length < PAGE_SIZE) return undefined;
       return allPages.length * PAGE_SIZE; // next offset
     },
-    staleTime: 1000 * 60 * 60 * 24,
-    cacheTime: 1000 * 60 * 60 * 24,
+    initialData: cachedData?.data,
+    initialDataUpdatedAt: cachedData?.updatedAt,
+    onSuccess: (data) => writeMapCache(queryKey, data),
+    staleTime: MAP_CACHE_TTL_MS,
+    cacheTime: MAP_CACHE_TTL_MS,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     refetchOnReconnect: false,
   });
 }
-
 
 export function useGetWell(params: WellDetailsQueryParams | undefined) {
   const route = "well";
@@ -558,24 +768,34 @@ export function useGetST2WaterLevels(datastreamID: number | undefined) {
 }
 
 export function useGetWorkOrders(
-  status_filter: WorkOrderStatus[],
-  options?: UseQueryOptions<WorkOrder[], Error>
+  params: {
+    filter_by_status: WorkOrderStatus[];
+    start_date?: string; // ISO date string (YYYY-MM-DD)
+    work_order_id?: number[];
+    assigned_user_id?: number;
+    q?: string;
+  },
+  options?: UseQueryOptions<WorkOrder[], Error>,
 ) {
   const route = "work_orders";
   const authHeader = useAuthHeader();
   const navigate = useNavigate();
   const signOut = useSignOut();
 
+  // normalize params so queryKey is stable (order of arrays matters)
+  const normalized = {
+    ...params,
+    filter_by_status: [...(params.filter_by_status ?? [])].sort(),
+    work_order_id: params.work_order_id
+      ? [...params.work_order_id].sort((a, b) => a - b)
+      : undefined,
+    q: params.q?.trim() || undefined,
+  };
+
   return useQuery<WorkOrder[], Error>({
-    queryKey: [route, { status_filter: status_filter.sort() }],
-    queryFn: () => GETFetch(
-      route,
-      { filter_by_status: status_filter },
-      authHeader(),
-      signOut,
-      navigate,
-    ),
-    ...options
+    queryKey: [route, normalized],
+    queryFn: () => GETFetch(route, normalized, authHeader(), signOut, navigate),
+    ...options,
   });
 }
 
@@ -667,6 +887,7 @@ export function useCreateWell(onSuccess: Function) {
   const { enqueueSnackbar } = useSnackbar();
   const route = "wells";
   const authHeader = useAuthHeader();
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (new_well: SubmitWellCreate) => {
@@ -691,6 +912,7 @@ export function useCreateWell(onSuccess: Function) {
       } else {
         onSuccess();
         const responseJson = await response.json();
+        invalidateMapDataCaches(queryClient);
         return responseJson;
       }
     },
@@ -735,6 +957,71 @@ export function useCreateRole(onSuccess: Function) {
   });
 }
 
+export function useCreateNotifications(onSuccess: Function) {
+  const { enqueueSnackbar } = useSnackbar();
+  const queryClient = useQueryClient();
+  const route = "notifications";
+  const authHeader = useAuthHeader();
+
+  return useMutation({
+    mutationFn: async (payload: CreateNotificationPayload) => {
+      const response = await POSTFetch(route, payload, authHeader());
+
+      if (!response.ok) {
+        const errorMessage =
+          (await response.json().catch(() => null))?.detail ??
+          `Error ${response.status}`;
+        enqueueSnackbar(errorMessage, { variant: "error" });
+        throw Error(errorMessage);
+      }
+
+      const responseJson: NotificationCreateResult = await response.json();
+      onSuccess(responseJson);
+      queryClient.invalidateQueries("notifications");
+      queryClient.invalidateQueries("notifications/unread_count");
+      return responseJson;
+    },
+    onSuccess: (result) => {
+      enqueueSnackbar(
+        `Created ${result.created_count} notification${result.created_count === 1 ? "" : "s"}.`,
+        {
+          variant: "success",
+        },
+      );
+    },
+    retry: 0,
+  });
+}
+
+export function useUpdateNotificationReadStatus(onSuccess?: Function) {
+  const { enqueueSnackbar } = useSnackbar();
+  const queryClient = useQueryClient();
+  const route = "notifications";
+  const authHeader = useAuthHeader();
+
+  return useMutation({
+    mutationFn: async (payload: { id: number; is_read: boolean }) => {
+      const response = await PATCHFetch(route, payload, authHeader());
+
+      if (!response.ok) {
+        const errorMessage =
+          (await response.json().catch(() => null))?.detail ??
+          `Error ${response.status}`;
+        enqueueSnackbar(errorMessage, { variant: "error" });
+        throw Error(errorMessage);
+      }
+
+      return response.json();
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries("notifications");
+      queryClient.invalidateQueries("notifications/unread_count");
+      onSuccess?.(result);
+    },
+    retry: 0,
+  });
+}
+
 export function useUpdateWell(onSuccess: Function) {
   const { enqueueSnackbar } = useSnackbar();
   const route = "wells";
@@ -764,6 +1051,7 @@ export function useUpdateWell(onSuccess: Function) {
       } else {
         onSuccess();
         const responseJson = await response.json();
+        invalidateMapDataCaches(queryClient);
 
         // Since query data will be based on params, iterate through all possible queries of this route
         const wellsQueries = queryClient.getQueryCache().findAll("wells");
@@ -930,6 +1218,7 @@ export function useCreateMeter(onSuccess: Function) {
   const { enqueueSnackbar } = useSnackbar();
   const route = "meters";
   const authHeader = useAuthHeader();
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (meter: Meter) => {
@@ -955,6 +1244,7 @@ export function useCreateMeter(onSuccess: Function) {
         onSuccess();
 
         const responseJson = await response.json();
+        invalidateMapDataCaches(queryClient);
         return responseJson;
       }
     },
@@ -1087,6 +1377,7 @@ export function useUpdateMeter(onSuccess: Function) {
         onSuccess();
 
         const responseJson = await response.json();
+        invalidateMapDataCaches(queryClient);
 
         // Since query data will be based on params, iterate through all possible queries of this route
         const meterQueries = queryClient.getQueryCache().findAll("meters");
@@ -1255,9 +1546,14 @@ export function useCreatePart(onSuccess: Function) {
   return useMutation({
     mutationFn: async (part: Part) => {
       try {
-        //Due to the way the form gets generated for a new part, I need to populate part_type_id manually here
+        if (!part.part_type?.id) {
+          throw new Error("part_type_id is required but missing");
+        }
+
+        // Due to the way the form gets generated for a new part,
+        // I need to populate part_type_id manually here
         part.part_type_id = part.part_type?.id;
-        console.log(part);
+
         const response = await POSTFetch(route, part, authHeader());
 
         if (!response.ok) {
@@ -1353,7 +1649,7 @@ export function useCreateWaterLevel() {
   const authHeader = useAuthHeader();
 
   return useMutation({
-    mutationFn: async (newWaterLevel: NewWellMeasurement) => {
+    mutationFn: async (newWaterLevel: Partial<NewWellMeasurement>) => {
       const response = await POSTFetch(route, newWaterLevel, authHeader());
 
       if (!response.ok) {
@@ -1392,7 +1688,7 @@ export function useUpdateWaterLevel(onSuccess: Function) {
   const authHeader = useAuthHeader();
 
   return useMutation({
-    mutationFn: async (updatedWaterLevel: PatchWellMeasurement) => {
+    mutationFn: async (updatedWaterLevel: Partial<PatchWellMeasurement>) => {
       const response = await PATCHFetch(route, updatedWaterLevel, authHeader());
 
       if (!response.ok) {
@@ -1586,6 +1882,141 @@ export function useCreateWorkOrder() {
         const responseJson = await response.json();
         return responseJson;
       }
+    },
+    retry: 0,
+  });
+}
+
+export function useAddParts(onSuccess?: () => void) {
+  const { enqueueSnackbar } = useSnackbar();
+  const queryClient = useQueryClient();
+  const authHeader = useAuthHeader();
+
+  const route = "parts/add";
+
+  return useMutation({
+    mutationFn: async (payload: IncreaseQuantityPayload) => {
+      const response = await POSTFetch(route, payload, authHeader());
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          enqueueSnackbar("Part not found.", { variant: "error" });
+          throw new Error("Part not found (404)");
+        }
+
+        if (response.status === 422) {
+          enqueueSnackbar("Missing or invalid fields.", { variant: "error" });
+          throw new Error("Validation error (422)");
+        }
+
+        // Optional: read backend detail if present
+        let detail = "";
+        try {
+          const j = await response.json();
+          detail = j?.detail ? ` (${j.detail})` : "";
+        } catch {}
+
+        enqueueSnackbar(
+          `Unknown error occurred! (${response.status})${detail}`,
+          {
+            variant: "error",
+          },
+        );
+        throw new Error(`Unknown Error: ${response.status}${detail}`);
+      }
+
+      const updatedPart: Part = await response.json();
+
+      // update any cached parts lists you have
+      queryClient.setQueryData<Part[]>(["parts"], (old) => {
+        const safeOld = old ?? [];
+        return safeOld.map((p) => (p.id === updatedPart.id ? updatedPart : p));
+      });
+
+      onSuccess?.();
+      return updatedPart;
+    },
+    retry: 0,
+  });
+}
+
+export function useGetPartHistory(partId?: string) {
+  const authHeader = useAuthHeader();
+  const navigate = useNavigate();
+  const signOut = useSignOut();
+
+  return useQuery<PartHistoryResponse, Error>(
+    ["parts-history", partId],
+    () =>
+      GETFetch(
+        `parts/${partId}/history`,
+        null,
+        authHeader(),
+        signOut,
+        navigate,
+      ),
+    { enabled: !!partId, keepPreviousData: true },
+  );
+}
+
+export function useUpdatePartHistory(
+  partId?: string,
+  onSuccess?: (response: PartHistoryResponse) => void,
+) {
+  const { enqueueSnackbar } = useSnackbar();
+  const authHeader = useAuthHeader();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: UpdatePartHistoryPayload) => {
+      if (!partId) {
+        throw new Error("Missing part id");
+      }
+
+      const response = await PATCHFetch(
+        `parts/${partId}/history`,
+        payload,
+        authHeader(),
+      );
+
+      if (!response.ok) {
+        let detail = "";
+        try {
+          const json = await response.json();
+          detail = json?.detail ? ` (${json.detail})` : "";
+        } catch {}
+
+        if (response.status === 404) {
+          enqueueSnackbar(`Part history row not found${detail}`, {
+            variant: "error",
+          });
+          throw new Error(`Part history row not found${detail}`);
+        }
+
+        if (response.status === 422) {
+          enqueueSnackbar(`Invalid history update${detail}`, {
+            variant: "error",
+          });
+          throw new Error(`Invalid history update${detail}`);
+        }
+
+        enqueueSnackbar(
+          `Unknown error occurred! (${response.status})${detail}`,
+          {
+            variant: "error",
+          },
+        );
+        throw new Error(`Unknown Error: ${response.status}${detail}`);
+      }
+
+      const responseJson: PartHistoryResponse = await response.json();
+
+      queryClient.setQueryData(["parts-history", partId], responseJson);
+      queryClient.invalidateQueries({ queryKey: ["parts"] });
+      queryClient.invalidateQueries({ queryKey: ["part"] });
+
+      onSuccess?.(responseJson);
+      return responseJson;
     },
     retry: 0,
   });

@@ -1,10 +1,11 @@
-import { useLocation } from "react-router-dom";
+import { useRouterState } from "@tanstack/react-router";
 
 type RouteLike = string | { pathname?: string };
 
 export function useIsActiveRoute(route: RouteLike): boolean {
-  const location = useLocation();
-  const currentPath = location.pathname;
+  const currentPath = useRouterState({
+    select: (state) => state.location.pathname,
+  });
 
   // normalize target path (strip query & hash)
   const targetPath =

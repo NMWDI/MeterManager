@@ -1,11 +1,11 @@
 from fastapi import Depends, APIRouter, Query, File, UploadFile, Form
 from fastapi.exceptions import HTTPException
 from fastapi.responses import StreamingResponse
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, undefer
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy import select, text
+from sqlalchemy import select, text, or_
 from datetime import datetime
-from typing import List
+from typing import List, Annotated
 from api import security
 from api.schemas import meter_schemas
 from api.models.main_models import (
@@ -622,7 +622,11 @@ def get_activity_types(
     tags=["Activities"],
 )
 def get_users(db: Session = Depends(get_db)):
-    return db.scalars(select(Users).where(Users.disabled == False)).all()
+    return db.scalars(
+        select(Users)
+        .options(undefer(Users.user_role_id))
+        .where(Users.disabled == False)
+    ).all()
 
 
 @activity_router.get(
@@ -678,11 +682,16 @@ def get_note_types(db: Session = Depends(get_db)):
     tags=["Work Orders"],
 )
 def get_work_orders(
-    filter_by_status: list[WorkOrderStatus] = Query(["Open"]),
+    filter_by_status: Annotated[list[WorkOrderStatus], Query()] = [
+        WorkOrderStatus.Open
+    ],
     start_date: datetime = Query(datetime.strptime("2024-06-01", "%Y-%m-%d")),
+    work_order_id: Annotated[list[int] | None, Query()] = None,
+    assigned_user_id: int | None = None,
+    q: str | None = None,
     db: Session = Depends(get_db),
 ):
-    query_stmt = (
+    stmt = (
         select(workOrders)
         .options(
             joinedload(workOrders.status),
@@ -693,7 +702,26 @@ def get_work_orders(
         .where(workOrderStatusLU.name.in_(filter_by_status))
         .where(workOrders.date_created >= start_date)
     )
-    work_orders = db.scalars(query_stmt).all()
+
+    if work_order_id:
+        stmt = stmt.where(workOrders.id.in_(work_order_id))
+
+    if assigned_user_id:
+        stmt = stmt.where(workOrders.assigned_user_id == assigned_user_id)
+
+    if q:
+        q_like = f"%{q.strip()}%"
+        stmt = stmt.where(
+            or_(
+                workOrders.title.ilike(q_like),
+                workOrders.description.ilike(q_like),
+                workOrders.creator.ilike(q_like),
+                workOrders.notes.ilike(q_like),
+                workOrders.meter.has(Meters.serial_number.ilike(q_like)),
+            )
+        )
+
+    work_orders = db.scalars(stmt).all()
 
     # grab activities separately
     relevant_activities = db.scalars(

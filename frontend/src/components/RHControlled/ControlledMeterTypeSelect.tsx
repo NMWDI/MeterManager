@@ -1,12 +1,13 @@
-import { useGetMeterTypeList } from "../../service/ApiServiceNew";
-import { MeterTypeLU } from "../../interfaces";
+import { useGetMeterTypeList } from "@/service";
+import { MeterTypeLU } from "@/interfaces";
+
 import { ControlledSelect } from "./ControlledSelect";
 
-export default function ControlledMeterTypeSelect({
+export const ControlledMeterTypeSelect = ({
   name,
   control,
   ...childProps
-}: any) {
+}: any) => {
   const meterTypeList = useGetMeterTypeList();
 
   return (
@@ -21,4 +22,4 @@ export default function ControlledMeterTypeSelect({
       value={meterTypeList.isLoading ? "Loading..." : childProps.value}
     />
   );
-}
+};

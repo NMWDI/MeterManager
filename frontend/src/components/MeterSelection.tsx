@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Autocomplete, TextField } from "@mui/material";
-import { useGetMeterList } from "../service/ApiServiceNew";
 import { useDebounce } from "use-debounce";
-import { MeterListDTO } from "../interfaces";
-import { MeterStatusNames } from "../enums";
+import { useGetMeterList } from "@/service";
+import { MeterListDTO } from "@/interfaces";
+import { MeterStatusNames } from "@/enums";
 
 interface MeterSelectionProps {
   selectedMeter: MeterListDTO | undefined;
@@ -11,11 +11,11 @@ interface MeterSelectionProps {
   error?: boolean;
 }
 
-export default function MeterSelection({
+export const MeterSelection = ({
   selectedMeter,
   onMeterChange,
   error,
-}: MeterSelectionProps) {
+}: MeterSelectionProps) => {
   const [meterSearchQuery, setMeterSearchQuery] = useState<string>("");
   const [meterSearchQueryDebounced] = useDebounce(meterSearchQuery, 250);
 
@@ -80,4 +80,4 @@ export default function MeterSelection({
       }}
     />
   );
-}
+};

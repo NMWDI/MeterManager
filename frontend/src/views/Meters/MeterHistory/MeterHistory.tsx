@@ -1,90 +1,134 @@
 import { useState, useEffect, useMemo } from "react";
 import { Box, Card, CardContent, Grid } from "@mui/material";
-import { MeterHistoryTable } from "./MeterHistoryTable";
-import { SelectedActivityDetails } from "./SelectedActivityDetails";
-import { SelectedObservationDetails } from "./SelectedObservationDetails";
-import { SelectedBlankCard } from "./SelectedBlankCard";
-import { useLocation, useSearchParams } from "react-router-dom";
-import { useGetMeterHistory } from "../../../service/ApiServiceNew";
+import { ImageOutlined } from "@mui/icons-material";
+import { useNavigate, useSearch } from "@tanstack/react-router";
+
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+import { useGetMeterHistory } from "@/service";
 import {
   MeterHistoryDTO,
   PatchActivityForm,
   PatchObservationForm,
-} from "../../../interfaces";
-import { MeterHistoryType } from "../../../enums";
-import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc";
-import timezone from "dayjs/plugin/timezone";
-import { CustomCardHeader, ImageDialog, ImagePreviewGrid } from "../../../components";
-import { ImageOutlined } from "@mui/icons-material";
-dayjs.extend(utc);
-dayjs.extend(timezone);
+} from "@/interfaces";
+import { MeterHistoryType } from "@/enums";
+import { CustomCardHeader, ImageDialog, ImagePreviewGrid } from "@/components";
+import { MeterHistoryTable } from "@/views/Meters/MeterHistory/MeterHistoryTable";
+import { SelectedActivityDetails } from "@/views/Meters/MeterHistory/SelectedActivityDetails";
+import { SelectedObservationDetails } from "@/views/Meters/MeterHistory/SelectedObservationDetails";
+import { SelectedBlankCard } from "@/views/Meters/MeterHistory/SelectedBlankCard";
+import { assertDefined } from "@/utils";
 
 export const MeterHistory = ({
   selectedMeterID,
 }: {
   selectedMeterID?: number;
 }) => {
-  const location = useLocation();
-  const [selectedHistoryItem, setSelectedHistoryItem] = useState<any>();
-  const meterHistory = useGetMeterHistory({ meter_id: selectedMeterID });
-  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const search = useSearch({ from: "/manage/meters" });
+
+  const meterHistoryQuery = useGetMeterHistory({ meter_id: selectedMeterID });
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
+  const selectedActivityId = search.activity_id;
+  const selectedObservationId = search.observation_id;
+
+  // Derive selected item from URL + loaded data
+  const selectedHistoryItem = useMemo<MeterHistoryDTO | undefined>(() => {
+    if (!meterHistoryQuery.data) return undefined;
+
+    if (selectedActivityId !== undefined) {
+      return meterHistoryQuery.data.find(
+        (item) =>
+          item.history_type === MeterHistoryType.Activity &&
+          item.history_item.id === selectedActivityId,
+      );
+    }
+
+    if (selectedObservationId !== undefined) {
+      return meterHistoryQuery.data.find(
+        (item) =>
+          item.history_type === MeterHistoryType.Observation &&
+          item.history_item.id === selectedObservationId,
+      );
+    }
+
+    return undefined;
+  }, [meterHistoryQuery.data, selectedActivityId, selectedObservationId]);
+
+  // If URL points to an activity, scroll to history section once data is loaded
+  useEffect(() => {
+    if (!meterHistoryQuery.data) return;
+    if (selectedActivityId === undefined && selectedObservationId === undefined)
+      return;
+
+    document
+      .getElementById("meter_history")
+      ?.scrollIntoView({ behavior: "smooth" });
+  }, [meterHistoryQuery.data, selectedActivityId, selectedObservationId]);
+
   const photos = useMemo(() => {
     if (selectedHistoryItem?.history_type === MeterHistoryType.Activity) {
-      return (
-        selectedHistoryItem.photos?.map((p: any) => p.url) ?? []
-      );
+      return selectedHistoryItem.photos?.map((p: any) => p.url) ?? [];
     }
     return [];
   }, [selectedHistoryItem]);
 
-  // If there is an activity_id in the URL, set the selectedHistoryItem to the corresponding item and scroll to it
-  useEffect(() => {
-    const activity_id = searchParams.get("activity_id") as number | null;
+  const handleDeleteItem = () => {
+    // Clearing selection should clear URL too
+    navigate({
+      to: "/manage/meters",
+      search: (prev) => ({
+        ...(prev as any),
+        activity_id: undefined,
+        observation_id: undefined,
+      }),
+      replace: true,
+    });
+  };
 
-    if (meterHistory.data && activity_id !== null) {
-      // Find the history item with the corresponding 'id'
-      const load_history_item = meterHistory.data?.find(
-        (item: MeterHistoryDTO) =>
-          item.history_item.id == activity_id &&
-          item.history_type == MeterHistoryType.Activity,
-      );
-      if (load_history_item) {
-        setSelectedHistoryItem(load_history_item);
+  const handleHistoryItemSelection = (historyItem: MeterHistoryDTO) => {
+    if (historyItem.history_type === MeterHistoryType.Activity) {
+      const id = historyItem.history_item.id;
 
-        // Find the element with the corresponding id
-        const element = document.getElementById("meter_history");
-        if (element) {
-          // Scroll to the element
-          element.scrollIntoView({ behavior: "smooth" });
-
-          // Remove the hash from the URL so that the user can switch meters without scrolling
-          location.hash = "";
-        } else {
-          console.error("element not found");
-        }
-      }
-      // Clear the activity_id from the URL so it doesn't interfere later
-      setSearchParams();
+      navigate({
+        to: "/manage/meters",
+        search: (prev) => ({
+          ...(prev as any),
+          activity_id: prev.activity_id === id ? undefined : id,
+          observation_id: undefined,
+        }),
+      });
+      return;
     }
-  }, [meterHistory.data]); // Run the effect only when meter history changes otherwise there is a race condition
 
-  function handleDeleteItem() {
-    setSelectedHistoryItem(undefined);
-  }
+    const id = historyItem.history_item.id;
 
-  function handleSaveItem() {
-    //Update the meter history
-    meterHistory.refetch();
-  }
+    navigate({
+      to: "/manage/meters",
+      search: (prev) => ({
+        ...(prev as any),
+        observation_id: prev.observation_id === id ? undefined : id,
+        activity_id: undefined,
+      }),
+    });
+  };
 
   // Function to convert MeterHistoryDTO to PatchMeterActivity
   function convertHistoryActivity(
     historyItem: MeterHistoryDTO,
   ): PatchActivityForm {
+    assertDefined(
+      selectedMeterID,
+      "No meter selected (selectedMeterID is undefined)",
+    );
+
     let activity_details: PatchActivityForm = {
       activity_id: historyItem.history_item.id,
       meter_id: selectedMeterID,
@@ -134,8 +178,16 @@ export const MeterHistory = ({
     return observation_details;
   }
 
+  const hasMeter = Boolean(search.meter_id);
+  const hasSelection =
+    Boolean(search.activity_id) || Boolean(search.observation_id);
+
   const getDetailsCard = (historyItem?: MeterHistoryDTO): JSX.Element => {
-    if (!historyItem) return <SelectedBlankCard />;
+    if (!hasMeter) return <></>;
+
+    if (!hasSelection) return <SelectedBlankCard />;
+
+    if (!historyItem) return <SelectedBlankCard isLoading={!historyItem} />;
 
     if (historyItem.history_type === MeterHistoryType.Activity) {
       return (
@@ -144,10 +196,10 @@ export const MeterHistory = ({
             <SelectedActivityDetails
               onDeletion={handleDeleteItem}
               selectedActivity={convertHistoryActivity(historyItem)}
-              afterSave={handleSaveItem}
+              afterSave={() => meterHistoryQuery.refetch()}
             />
           </Grid>
-          {photos && photos?.length > 0 ? (
+          {photos?.length > 0 ? (
             <Grid item xs={12}>
               <Card>
                 <CustomCardHeader title="Image Previews" icon={ImageOutlined} />
@@ -176,7 +228,7 @@ export const MeterHistory = ({
       <SelectedObservationDetails
         onDeletion={handleDeleteItem}
         selectedObservation={convertHistoryObservation(historyItem)}
-        afterSave={handleSaveItem}
+        afterSave={() => meterHistoryQuery.refetch()}
       />
     );
   };
@@ -186,8 +238,11 @@ export const MeterHistory = ({
       <Grid container spacing={2} sx={{ minHeight: "700px" }}>
         <Grid item xs={12} lg={6}>
           <MeterHistoryTable
-            onHistoryItemSelection={setSelectedHistoryItem}
-            selectedMeterHistory={meterHistory.data}
+            onHistoryItemSelection={handleHistoryItemSelection}
+            selectedMeterHistory={meterHistoryQuery.data}
+            isLoading={meterHistoryQuery.isLoading}
+            selectedActivityId={selectedActivityId}
+            selectedObservationId={search.observation_id}
           />
         </Grid>
         <Grid item xs={12} lg={6}>

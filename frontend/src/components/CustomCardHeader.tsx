@@ -8,7 +8,7 @@ import {
 } from "@mui/material";
 
 type CustomCardHeaderProps = Omit<CardHeaderProps, "title"> & {
-  title?: string;
+  title?: React.ReactNode;
   icon?: React.ComponentType<SvgIconProps>;
 };
 
@@ -27,7 +27,8 @@ export const CustomCardHeader: React.FC<CustomCardHeaderProps> = ({
             flexDirection: "row",
             alignItems: "center",
             color: "white",
-            background: "#292929",
+            // background: "#292929",
+            background: "#333",
             borderRadius: "5px",
             px: "14px",
             py: "10px",

@@ -2,32 +2,28 @@ import { useEffect } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { useAuthUser } from "react-auth-kit";
 import { Grid, Card, CardContent, Stack, Button } from "@mui/material";
-import SaveIcon from "@mui/icons-material/Save";
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import { Save, Construction } from "@mui/icons-material";
 import {
   PatchActivityForm,
   PatchActivitySubmit,
   SecurityScope,
-} from "../../../interfaces";
-import {
-  useUpdateActivity,
-  useDeleteActivity,
-} from "../../../service/ApiServiceNew";
+} from "@/interfaces";
+import { useUpdateActivity, useDeleteActivity } from "@/service/ApiServiceNew";
 import dayjs from "dayjs";
 import { enqueueSnackbar } from "notistack";
-
-import ControlledDatepicker from "../../../components/RHControlled/ControlledDatepicker";
-import ControlledTimepicker from "../../../components/RHControlled/ControlledTimepicker";
-import ControlledActivitySelect from "../../../components/RHControlled/ControlledActivitySelect";
-import ControlledUserSelect from "../../../components/RHControlled/ControlledUserSelect";
-import ControlledWellSelection from "../../../components/RHControlled/ControlledWellSelection";
-import ControlledTextbox from "../../../components/RHControlled/ControlledTextbox";
-
-import NotesChipSelect from "../../../components/RHControlled/NotesChipSelect";
-import ServicesChipSelect from "../../../components/RHControlled/ServicesChipSelect";
-import PartsChipSelect from "../../../components/RHControlled/PartsChipSelect";
-import ControlledCheckbox from "../../../components/RHControlled/ControlledCheckbox";
-import { CustomCardHeader } from "../../../components/CustomCardHeader";
+import {
+  ControlledDatepicker,
+  ControlledTimepicker,
+  ControlledActivitySelect,
+  ControlledUserSelect,
+  ControlledWellSelection,
+  ControlledTextbox,
+  NotesChipSelect,
+  ServicesChipSelect,
+  PartsChipSelect,
+  ControlledCheckbox,
+  CustomCardHeader,
+} from "@/components";
 
 export const SelectedActivityDetails = ({
   selectedActivity,
@@ -120,15 +116,12 @@ export const SelectedActivityDetails = ({
     <Card>
       <CustomCardHeader
         title={`Activity ID: ${selectedActivity.activity_id}`}
-        icon={InfoOutlinedIcon}
+        icon={Construction}
       />
       <CardContent>
         <Grid container spacing={2}>
           <Grid item xs={12} lg={6}>
-            <ControlledUserSelect
-              name="submitting_user"
-              control={control}
-            />
+            <ControlledUserSelect name="submitting_user" control={control} />
           </Grid>
           <Grid item xs={12} lg={6}>
             <ControlledDatepicker
@@ -155,10 +148,7 @@ export const SelectedActivityDetails = ({
             />
           </Grid>
           <Grid item xs={12} lg={6}>
-            <ControlledActivitySelect
-              name="activity_type"
-              control={control}
-            />
+            <ControlledActivitySelect name="activity_type" control={control} />
           </Grid>
           <Grid item xs={12} lg={6}>
             <ControlledWellSelection name="well" control={control} />
@@ -214,7 +204,7 @@ export const SelectedActivityDetails = ({
                 onClick={handleSubmit(onSaveChanges)}
                 disabled={!hasAdminScope}
               >
-                <SaveIcon sx={{ fontSize: "1.2rem" }} />
+                <Save sx={{ fontSize: "1.2rem" }} />
                 &nbsp; Save Changes
               </Button>
               <Button
@@ -227,7 +217,7 @@ export const SelectedActivityDetails = ({
             </Stack>
           </Grid>
         </Grid>
-      </CardContent >
-    </Card >
+      </CardContent>
+    </Card>
   );
 };

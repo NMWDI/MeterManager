@@ -1,8 +1,9 @@
 import { Box, Modal, Button, Grid } from "@mui/material";
 import { useState, useEffect } from "react";
-import { useMergeWells } from "../service/ApiServiceNew";
+import { useMergeWells } from "@/service";
+import { Well } from "@/interfaces";
+
 import WellSelection from "./WellSelection";
-import { Well } from "../interfaces";
 
 export function MergeWellModal({
   isWellMergeModalOpen,

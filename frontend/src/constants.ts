@@ -1,17 +1,22 @@
 import {
-  Home as HomeIcon,
-  FormatListBulletedOutlined,
-  ScreenshotMonitor,
-  Construction,
+  AssignmentTurnedInOutlined,
   MonitorHeart,
-  Plumbing,
   Build,
   Science,
   People,
   Storage,
+  MonitorHeartOutlined,
+  ConstructionOutlined,
+  BuildOutlined,
+  ScienceOutlined,
+  WaterDrop,
+  SpeedOutlined,
+  Engineering,
 } from "@mui/icons-material";
 import { SvgIconProps } from "@mui/material";
 import { ComponentType } from "react";
+
+export const BgColor = "#F8FAFC";
 
 type NavItem = {
   path: string;
@@ -23,7 +28,6 @@ type NavItem = {
 };
 
 export const navConfig: NavItem[] = [
-  { path: "/", label: "Home", icon: HomeIcon },
   { path: "/chlorides", label: "Chlorides", icon: Science },
   { path: "/monitoringwells", label: "Monitoring Wells", icon: MonitorHeart },
 
@@ -31,54 +35,54 @@ export const navConfig: NavItem[] = [
   {
     path: "/workorders",
     label: "Work Orders",
-    icon: FormatListBulletedOutlined,
+    icon: AssignmentTurnedInOutlined,
     role: "Technician",
   },
   {
     path: "/activities",
     label: "Activities",
-    icon: Construction,
+    icon: Engineering,
     role: "Technician",
   },
   {
     path: "/manage/meters",
     label: "Manage Meters",
-    icon: ScreenshotMonitor,
+    icon: SpeedOutlined,
     role: "Technician",
   },
   {
     path: "/manage/wells",
     label: "Manage Wells",
-    icon: Plumbing,
+    icon: WaterDrop,
     role: "Technician",
   },
 
   // Reports
   {
+    path: "/reports/chlorides",
+    label: "Chlorides",
+    icon: ScienceOutlined,
+    role: "Technician",
+    parent: "reports",
+  },
+  {
     path: "/reports/monitoringwells",
     label: "Monitoring Wells",
-    icon: MonitorHeart,
+    icon: MonitorHeartOutlined,
     role: "Technician",
     parent: "reports",
   },
   {
     path: "/reports/maintenance",
     label: "Maintenance",
-    icon: Construction,
+    icon: ConstructionOutlined,
     role: "Technician",
     parent: "reports",
   },
   {
     path: "/reports/partsused",
     label: "Parts Used",
-    icon: Build,
-    role: "Technician",
-    parent: "reports",
-  },
-  {
-    path: "/reports/chlorides",
-    label: "Chlorides",
-    icon: Science,
+    icon: BuildOutlined,
     role: "Technician",
     parent: "reports",
   },

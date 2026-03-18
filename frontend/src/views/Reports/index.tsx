@@ -1,57 +1,39 @@
 import {
-  Assessment,
-  Build,
-  MonitorHeart,
-  Plumbing,
-  Science,
+  AssessmentOutlined,
+  BuildOutlined,
+  ConstructionOutlined,
+  MonitorHeartOutlined,
+  ScienceOutlined,
 } from "@mui/icons-material";
 import { Box, Card, CardContent } from "@mui/material";
-import { NavLink } from "../../components/NavLink";
-import { BackgroundBox } from "../../components/BackgroundBox";
-import { CustomCardHeader } from "../../components/CustomCardHeader";
+import { BackgroundBox, CustomCardHeader, NavLink } from "@/components";
 
 export const ReportsView = () => {
   return (
     <BackgroundBox>
       <Card sx={{ height: "fit-content" }}>
-        <CustomCardHeader title="Reports" icon={Assessment} />
+        <CustomCardHeader title="Reports" icon={AssessmentOutlined} />
         <CardContent>
           <Box sx={{ minWidth: "15rem", maxWidth: "15%" }} py={1}>
-            {/*
             <NavLink
-              disabled
-              route="/reports/workorders"
-              label="Work Orders"
-              Icon={FormatListBulletedOutlined}
+              route="/reports/chlorides"
+              label="Chlorides"
+              icon={ScienceOutlined}
             />
-            */}
             <NavLink
               route="/reports/monitoringwells"
               label="Monitoring Wells"
-              icon={MonitorHeart}
+              icon={MonitorHeartOutlined}
             />
             <NavLink
               route="/reports/maintenance"
               label="Maintenance"
-              icon={Plumbing}
+              icon={ConstructionOutlined}
             />
             <NavLink
               route="/reports/partsused"
               label="Parts Used"
-              icon={Build}
-            />
-            {/*
-            <NavLink
-              disabled
-              route="/reports/board"
-              label="Board"
-              Icon={People}
-            />
-            */}
-            <NavLink
-              route="/reports/chlorides"
-              label="Chlorides"
-              icon={Science}
+              icon={BuildOutlined}
             />
           </Box>
         </CardContent>

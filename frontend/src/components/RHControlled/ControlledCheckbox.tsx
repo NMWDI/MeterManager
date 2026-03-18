@@ -8,32 +8,25 @@ const disabledInputStyle = {
   cursor: "default",
 };
 
-export default function ControlledCheckbox({
-  name,
-  control,
-  ...childProps
-}: any) {
-  return (
-    <Controller
-      name={name}
-      control={control}
-      defaultValue={false}
-      render={({ field }) => {
-        //console.log(field)
-        return (
-          <FormControlLabel
-            control={
-              <Checkbox
-                onChange={field.onChange}
-                checked={field.value}
-                size="small"
-                sx={disabledInputStyle}
-              />
-            }
-            {...childProps}
-          />
-        );
-      }}
-    />
-  );
-}
+export const ControlledCheckbox = ({ name, control, ...childProps }: any) => (
+  <Controller
+    name={name}
+    control={control}
+    defaultValue={false}
+    render={({ field }) => {
+      return (
+        <FormControlLabel
+          control={
+            <Checkbox
+              onChange={field.onChange}
+              checked={field.value}
+              size="small"
+              sx={disabledInputStyle}
+            />
+          }
+          {...childProps}
+        />
+      );
+    }}
+  />
+);

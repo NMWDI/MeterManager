@@ -9,8 +9,12 @@ from api.models.main_models import Users
 from api.routes.activities import activity_router, public_activity_router
 from api.routes.admin import admin_router
 from api.routes.chlorides import authenticated_chlorides_router, public_chlorides_router
-from api.routes.maintenance import maintenance_router
+from api.routes.maintenance import (
+    authenticated_maintenance_router,
+    public_maintenance_router,
+)
 from api.routes.meters import authenticated_meter_router, public_meter_router
+from api.routes.notifications import notifications_router
 from api.routes.OSE import ose_router
 from api.routes.parts import part_router
 from api.routes.settings import settings_router
@@ -40,6 +44,7 @@ tags_metadata = [
         "name": "WaterLevels",
         "description": "Groundwater Depth and Chloride Measurement Related Endpoints",
     },
+    {"name": "Notifications", "description": "Notification related endpoints"},
     {"name": "OSE", "description": "Endpoints Used by the OSE to Generate Reports"},
     {"name": "Admin", "description": "Admin Functionality Related Endpoints"},
     {"name": "Login", "description": "User Auth and Token Related Endpoints"},
@@ -116,8 +121,9 @@ def login_for_access_token(
 authenticated_router.include_router(activity_router)
 authenticated_router.include_router(admin_router)
 authenticated_router.include_router(authenticated_chlorides_router)
-authenticated_router.include_router(maintenance_router)
+authenticated_router.include_router(authenticated_maintenance_router)
 authenticated_router.include_router(authenticated_meter_router)
+authenticated_router.include_router(notifications_router)
 authenticated_router.include_router(part_router)
 authenticated_router.include_router(authenticated_well_measurement_router)
 authenticated_router.include_router(authenticated_well_router)
@@ -130,5 +136,6 @@ app.include_router(public_activity_router)
 app.include_router(public_meter_router)
 app.include_router(public_well_router)
 app.include_router(public_chlorides_router)
+app.include_router(public_maintenance_router)
 app.include_router(public_well_measurement_router)
 app.include_router(authenticated_router)

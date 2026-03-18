@@ -1,15 +1,16 @@
 import { useState } from "react";
 import { TextField } from "@mui/material";
 import { useDebounce } from "use-debounce";
-import { useGetWells } from "../../service/ApiServiceNew";
-import { Well } from "../../interfaces";
-import ControlledAutocomplete from "./ControlledAutocomplete";
+import { useGetWells } from "@/service";
+import { Well } from "@/interfaces";
 
-export default function ControlledWellSelection({
+import { ControlledAutocomplete } from "./ControlledAutocomplete";
+
+export const ControlledWellSelection = ({
   name,
   control,
   ...childProps
-}: any) {
+}: any) => {
   const [wellSearchQuery, setWellSearchQuery] = useState<string>("");
   const [wellSearchQueryDebounced] = useDebounce(wellSearchQuery, 250);
 
@@ -45,4 +46,4 @@ export default function ControlledWellSelection({
       }}
     />
   );
-}
+};

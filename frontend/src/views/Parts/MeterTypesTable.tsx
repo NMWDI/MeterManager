@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import {
   Button,
@@ -10,26 +10,35 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { Search } from "@mui/icons-material";
-import { useGetMeterTypeList } from "../../service/ApiServiceNew";
-import AddIcon from "@mui/icons-material/Add";
-import FormatListBulletedOutlinedIcon from "@mui/icons-material/FormatListBulletedOutlined";
-import { MeterTypeLU } from "../../interfaces";
-import TristateToggle from "../../components/TristateToggle";
-import GridFooterWithButton from "../../components/GridFooterWithButton";
-import { IsTrueChip, CustomCardHeader } from "../../components";
+import { Search, Add, SpeedOutlined } from "@mui/icons-material";
+import { useNavigate } from "@tanstack/react-router";
+import { useGetMeterTypeList } from "@/service";
+import { Route } from "@/routes/manage/parts/index";
+import {
+  CustomCardHeader,
+  GridFooterWithButton,
+  IsTrueChip,
+  TristateToggle,
+} from "@/components";
 
 export const MeterTypesTable = ({
-  setSelectedMeterType,
-  setMeterTypeAddMode,
+  onSelectMeterType,
+  onCreateMeterType,
 }: {
-  setSelectedMeterType: Function;
-  setMeterTypeAddMode: Function;
+  onSelectMeterType: (id: number) => void;
+  onCreateMeterType: () => void;
 }) => {
   const meterTypes = useGetMeterTypeList();
-  const [meterTypeSearchQuery, setMeterTypeSearchQuery] = useState<string>("");
-  const [filteredRows, setFilteredRows] = useState<MeterTypeLU[]>();
-  const [inUseFilter, setInUseFilter] = useState<boolean>();
+  const navigate = useNavigate();
+  const search = Route.useSearch();
+
+  const setSearch = (updater: (prev: typeof search) => any) => {
+    navigate({
+      to: "/manage/parts",
+      search: (prev) => updater(prev as any),
+      replace: true,
+    });
+  };
 
   const cols: GridColDef[] = [
     { field: "brand", headerName: "Brand", width: 200 },
@@ -44,43 +53,57 @@ export const MeterTypesTable = ({
     {
       field: "in_use",
       headerName: "In Use",
-      renderCell: (params: any) => <IsTrueChip assert={params.value == true} />
+      renderCell: (params: any) => <IsTrueChip assert={params.value == true} />,
     },
   ];
 
-  // Filter rows based on search. Cant use multiple filters w/o pro datagrid
-  useEffect(() => {
-    const psq = meterTypeSearchQuery.toLowerCase();
-    let filtered = (meterTypes.data ?? []).filter(
+  const filteredRows = useMemo(() => {
+    const q = (search.meter_type_q ?? "").toLowerCase();
+    let rows = (meterTypes.data ?? []).filter(
       (row) =>
-        row.brand?.toLowerCase().includes(psq) ||
-        row.model?.toLowerCase().includes(psq) ||
-        row.size?.toString().includes(psq) ||
-        row.series?.toLowerCase().includes(psq) ||
-        row.description?.toLowerCase().includes(psq),
+        row.brand?.toLowerCase().includes(q) ||
+        row.model?.toLowerCase().includes(q) ||
+        row.size?.toString().includes(q) ||
+        row.series?.toLowerCase().includes(q) ||
+        row.description?.toLowerCase().includes(q),
     );
-    if (inUseFilter != undefined)
-      filtered = filtered.filter((row) => row.in_use == inUseFilter);
 
-    setFilteredRows(filtered);
-  }, [meterTypeSearchQuery, meterTypes.data, inUseFilter]);
+    if (search.meter_type_in_use !== "all") {
+      const wantInUse = search.meter_type_in_use === "true";
+      rows = rows.filter((row) => row.in_use === wantInUse);
+    }
+
+    return rows;
+  }, [meterTypes.data, search.meter_type_q, search.meter_type_in_use]);
 
   return (
     <Card>
-      <CustomCardHeader
-        title="All Meter Types"
-        icon={FormatListBulletedOutlinedIcon}
-      />
+      <CustomCardHeader title="Meter Types" icon={SpeedOutlined} />
       <CardContent>
         <Grid container spacing={2}>
-          <Grid item xs={6} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
+          <Grid
+            item
+            xs={12}
+            md={6}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "flex-start",
+            }}
+          >
             <TextField
-              sx={{ m: 0, width: '100%', maxWidth: '75rem' }}
+              sx={{ m: 0, width: "100%", maxWidth: "75rem" }}
               placeholder="Search Meter Types..."
               variant="outlined"
               size="small"
-              value={meterTypeSearchQuery}
-              onChange={(event: any) => setMeterTypeSearchQuery(event.target.value)}
+              value={search.meter_type_q ?? ""}
+              onChange={(event: any) =>
+                setSearch((prev) => ({
+                  ...prev,
+                  meter_type_q: event.target.value,
+                  mt_page: 0,
+                }))
+              }
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -90,11 +113,29 @@ export const MeterTypesTable = ({
               }}
             />
           </Grid>
-          <Grid item xs={6} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-            <Typography variant="body1" style={{ display: "inline" }}>Choose Filters: </Typography>
+          <Grid
+            item
+            xs={12}
+            md={6}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "flex-end",
+            }}
+          >
+            <Typography variant="body1" style={{ display: "inline" }}>
+              Choose Filters:{" "}
+            </Typography>
             <TristateToggle
               label="In Use"
-              onToggle={(state: boolean | undefined) => setInUseFilter(state)}
+              value={search.meter_type_in_use}
+              onToggle={(next) =>
+                setSearch((prev) => ({
+                  ...prev,
+                  meter_type_in_use: next,
+                  mt_page: 0,
+                }))
+              }
             />
           </Grid>
         </Grid>
@@ -102,11 +143,32 @@ export const MeterTypesTable = ({
           <DataGrid
             sx={{ height: 550, border: "none" }}
             rows={filteredRows ?? []}
+            pagination
+            paginationModel={{
+              page: search.mt_page,
+              pageSize: search.mt_pageSize,
+            }}
+            onPaginationModelChange={(model) =>
+              setSearch((prev) => ({
+                ...prev,
+                mt_pageSize: model.pageSize,
+                mt_page: model.pageSize !== prev.mt_pageSize ? 0 : model.page,
+              }))
+            }
+            pageSizeOptions={[10, 25, 50, 100]}
+            rowSelectionModel={
+              search.meter_type_id ? [search.meter_type_id] : []
+            }
             loading={meterTypes.isLoading}
             columns={cols}
             disableColumnMenu
             onRowClick={(selectedRow) => {
-              setSelectedMeterType(selectedRow.row);
+              if (search.meter_type_id === selectedRow.row.id) {
+                onCreateMeterType();
+                return;
+              }
+
+              onSelectMeterType(selectedRow.row.id);
             }}
             slots={{ footer: GridFooterWithButton }}
             slotProps={{
@@ -115,17 +177,20 @@ export const MeterTypesTable = ({
                   <Stack
                     direction={{ xs: "column", sm: "row" }}
                     spacing={1}
-                    sx={{ ml: { xs: 0, sm: 1 }, mt: { xs: 1, sm: 0 }, width: "100%" }}
+                    sx={{
+                      ml: { xs: 0, sm: 1 },
+                      mt: { xs: 1, sm: 0 },
+                      width: "100%",
+                    }}
                     alignItems={{ xs: "stretch", sm: "center" }}
                   >
                     <Button
                       variant="contained"
                       size="small"
-
-                      onClick={() => setMeterTypeAddMode(true)}
+                      onClick={onCreateMeterType}
                       sx={{ flexShrink: 0, width: { xs: "100%", sm: "auto" } }}
                     >
-                      <AddIcon fontSize="small" sx={{ mr: 0.5 }} />
+                      <Add fontSize="small" sx={{ mr: 0.5 }} />
                       Create
                     </Button>
                   </Stack>
@@ -136,6 +201,6 @@ export const MeterTypesTable = ({
           />
         </Grid>
       </CardContent>
-    </Card >
+    </Card>
   );
 };

@@ -1,89 +1,36 @@
-import { useEffect, useState } from "react";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
-import { Button, Card, CardContent, Grid, InputAdornment, TextField, Tooltip } from "@mui/material";
-import { useGetSecurityScopes } from "../../service/ApiServiceNew";
-import AddIcon from "@mui/icons-material/Add";
-import { Search } from "@mui/icons-material";
-import FormatListBulletedOutlinedIcon from "@mui/icons-material/FormatListBulletedOutlined";
-import { SecurityScope } from "../../interfaces";
-import GridFooterWithButton from "../../components/GridFooterWithButton";
-import { CustomCardHeader } from "../../components/CustomCardHeader";
+import { Card, CardContent, Grid } from "@mui/material";
+import { VerifiedUserOutlined } from "@mui/icons-material";
+import { useGetSecurityScopes } from "@/service";
+import { CustomCardHeader } from "@/components";
 
 export const PermissionsTable = () => {
   const securityScopesList = useGetSecurityScopes();
-  const [permissionSearchQuery, setPermissionSearchQuery] =
-    useState<string>("");
-  const [filteredRows, setFilteredRows] = useState<SecurityScope[]>();
 
   const cols: GridColDef[] = [
-    { field: "scope_string", headerName: "Permission Name", width: 200 },
-    { field: "description", headerName: "Desciption", width: 600 },
+    {
+      field: "scope_string",
+      headerName: "Permission Name",
+      flex: 1,
+    },
+    { field: "description", headerName: "Desciption", flex: 3 },
   ];
-
-  // Filter rows based on search. Cant use multiple filters w/o pro datagrid
-  useEffect(() => {
-    const psq = permissionSearchQuery.toLowerCase();
-    let filtered = (securityScopesList.data ?? []).filter(
-      (row) =>
-        row.scope_string.toLowerCase().includes(psq) ||
-        row.description.toLowerCase().includes(psq),
-    );
-
-    setFilteredRows(filtered);
-  }, [permissionSearchQuery, securityScopesList.data]);
 
   return (
     <Card>
-      <CustomCardHeader
-        title="All Permissions"
-        icon={FormatListBulletedOutlinedIcon}
-      />
+      <CustomCardHeader title="Permissions" icon={VerifiedUserOutlined} />
       <CardContent>
         <Grid container spacing={2}>
-          <Grid item xs={6} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
-            <TextField
-              sx={{ m: 0, width: '100%', maxWidth: '75rem' }}
-              placeholder="Search Permissions..."
-              variant="outlined"
-              size="small"
-              onChange={(event: any) => setPermissionSearchQuery(event.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Search />
-                  </InputAdornment>
-                ),
-              }}
-            />
-          </Grid>
           <Grid item xs={12}>
             <DataGrid
-              sx={{ height: 550, border: "none" }}
-              rows={filteredRows ?? []}
+              sx={{ border: "none" }}
+              rows={securityScopesList?.data ?? []}
               loading={securityScopesList.isLoading}
               columns={cols}
               disableColumnMenu
-              slots={{ footer: GridFooterWithButton }}
-              slotProps={{
-                footer: {
-                  button: (
-                    <Tooltip title="Permissions must be created by a developer">
-                      <span>
-                        <Button
-                          disabled
-                          variant="contained"
-                          size="small"
-                          sx={{ flexShrink: 0, width: { xs: "100%", sm: "auto" } }}
-                        >
-                          <AddIcon fontSize="small" sx={{ mr: 0.5 }} />
-                          Create
-                        </Button>
-                      </span>
-                    </Tooltip>
-                  ),
-                },
-              }}
               disableColumnFilter
+              disableRowSelectionOnClick
+              hideFooter
             />
           </Grid>
         </Grid>

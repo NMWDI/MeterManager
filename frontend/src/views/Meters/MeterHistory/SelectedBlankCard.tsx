@@ -1,16 +1,44 @@
-import { Grid, Card, CardContent } from "@mui/material";
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
-import { CustomCardHeader } from "../../../components/CustomCardHeader";
+import { Card, CardContent, CircularProgress, Typography } from "@mui/material";
+import { CustomCardHeader } from "@/components";
+import { ArrowBack, CloudSync, NewReleases } from "@mui/icons-material";
 
-// A blank card to display when no history item is selected
-export const SelectedBlankCard = () => {
+export const SelectedBlankCard = ({
+  isLoading = false,
+}: {
+  isLoading?: boolean;
+}) => {
   return (
-    <Card sx={{ height: "100%" }}>
-      <CustomCardHeader title="Selected Details" icon={InfoOutlinedIcon} />
-      <CardContent>
-        <Grid container item xs={10}>
-          Select a history item to view details
-        </Grid>
+    <Card>
+      <CustomCardHeader
+        title={isLoading ? "Loading details..." : "Action Required!"}
+        icon={isLoading ? CloudSync : NewReleases}
+      />
+      <CardContent
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexDirection: "column",
+          gap: 2,
+          pt: 3,
+          pb: 6,
+          color: "text.secondary",
+          minHeight: 200,
+        }}
+      >
+        {isLoading ? (
+          <>
+            <CircularProgress size={32} />
+            <Typography variant="body1">Loading details…</Typography>
+          </>
+        ) : (
+          <>
+            <ArrowBack sx={{ fontSize: 28 }} />
+            <Typography variant="h6" align="center">
+              Select an activity or observation to view its details.
+            </Typography>
+          </>
+        )}
       </CardContent>
     </Card>
   );

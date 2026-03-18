@@ -9,6 +9,7 @@ from sqlalchemy import (
     Boolean,
     Table,
     Numeric,
+    Date,
 )
 from sqlalchemy.orm import (
     relationship,
@@ -18,6 +19,7 @@ from sqlalchemy.orm import (
     deferred,
 )
 from geoalchemy2.shape import to_shape
+from datetime import date
 from typing import Optional, List
 
 
@@ -29,9 +31,6 @@ class Base(DeclarativeBase):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     __name__: str
-
-
-# ---------- Parts/Services/Notes ------------
 
 
 class PartTypeLU(Base):
@@ -64,7 +63,7 @@ class Parts(Base):
     part_number: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     description: Mapped[Optional[str]]
     vendor: Mapped[Optional[str]]
-    count: Mapped[int] = mapped_column(Integer, default=0)
+    initial_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     note: Mapped[Optional[str]]
     in_use: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     commonly_used: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
@@ -80,14 +79,40 @@ class Parts(Base):
         secondary=PartAssociation
     )
 
+    parts_used_links: Mapped[list["PartsUsed"]] = relationship(
+        back_populates="part",
+        cascade="all, delete-orphan",
+    )
 
-# Association table that links parts and the meter activity they were used on
-PartsUsed = Table(
-    "PartsUsed",
-    Base.metadata,
-    Column("meter_activity_id", ForeignKey("MeterActivities.id"), nullable=False),
-    Column("part_id", ForeignKey("Parts.id"), nullable=False),
-)
+
+class PartsUsed(Base):
+    __tablename__ = "PartsUsed"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    meter_activity_id: Mapped[int] = mapped_column(
+        ForeignKey("MeterActivities.id"), nullable=False
+    )
+    part_id: Mapped[int] = mapped_column(ForeignKey("Parts.id"), nullable=False)
+
+    count: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+
+    part: Mapped["Parts"] = relationship(back_populates="parts_used_links")
+    meter_activity: Mapped["MeterActivities"] = relationship(
+        back_populates="parts_used_links"
+    )
+
+
+class PartsAdded(Base):
+    __tablename__ = "PartsAdded"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    part_id: Mapped[int] = mapped_column(ForeignKey("Parts.id"), nullable=False)
+
+    count: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    date: Mapped[date] = mapped_column(Date, nullable=False)  # default handled by DB
+    note: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    part: Mapped["Parts"] = relationship
 
 
 class ServiceTypeLU(Base):
@@ -133,8 +158,6 @@ Notes = Table(
     Column("meter_activity_id", ForeignKey("MeterActivities.id"), nullable=False),
     Column("note_type_id", ForeignKey("NoteTypeLU.id"), nullable=False),
 )
-
-# ---------  Meter Related Tables ---------
 
 
 class Meters(Base):
@@ -189,8 +212,6 @@ class MeterTypeLU(Base):
     description: Mapped[str] = mapped_column(String)
     in_use: Mapped[bool] = mapped_column(Boolean, nullable=False)
 
-    # parts: Mapped[List["Parts"]] = relationship(secondary=PartAssociation)
-
 
 class MeterStatusLU(Base):
     """
@@ -233,7 +254,6 @@ class MeterActivities(Base):
     activity_type: Mapped["ActivityTypeLU"] = relationship()
     location: Mapped["Locations"] = relationship()
 
-    parts_used: Mapped[List["Parts"]] = relationship("Parts", secondary=PartsUsed)
     services_performed: Mapped[List["ServiceTypeLU"]] = relationship(
         "ServiceTypeLU", secondary=ServicesPerformed
     )
@@ -247,6 +267,11 @@ class MeterActivities(Base):
     )
     photos: Mapped[List["MeterActivityPhotos"]] = relationship(
         "MeterActivityPhotos", back_populates="meter_activity", cascade="all, delete"
+    )
+
+    parts_used_links: Mapped[list["PartsUsed"]] = relationship(
+        back_populates="meter_activity",
+        cascade="all, delete-orphan",
     )
 
 
@@ -343,15 +368,12 @@ class Units(Base):
     description: Mapped[str] = mapped_column(String)
 
 
-# Association table that links observed property types and their appropriate units
 PropertyUnits = Table(
     "PropertyUnits",
     Base.metadata,
     Column("property_id", ForeignKey("ObservedPropertyTypeLU.id"), nullable=False),
     Column("unit_id", ForeignKey("Units.id"), nullable=False),
 )
-
-# ---------- Other Tables ---------------
 
 
 class Locations(Base):
@@ -370,7 +392,6 @@ class Locations(Base):
     quarter: Mapped[int] = mapped_column(Integer)
     half_quarter: Mapped[int] = mapped_column(Integer)
     quarter_quarter: Mapped[int] = mapped_column(Integer)
-    # geom = mapped_column(Geometry("POINT")) # SQLAlchemy/FastAPI has some issue sending this
 
     type_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("LocationTypeLU.id"), nullable=False
@@ -428,9 +449,6 @@ class LandOwners(Base):
     note: Mapped[str] = mapped_column(String)
 
 
-# -----------    Security Tables    ---------------
-
-
 class Users(Base):
     """
     All info about a user of the app
@@ -454,6 +472,64 @@ class Users(Base):
     display_name: Mapped[str] = mapped_column(String, nullable=True)
     redirect_page: Mapped[str] = mapped_column(String, nullable=True, default="/")
     avatar_img: Mapped[str] = mapped_column(String, nullable=True)
+    notifications: Mapped[List["Notifications"]] = relationship(
+        "Notifications",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        foreign_keys="Notifications.user_id",
+    )
+    created_notifications: Mapped[List["Notifications"]] = relationship(
+        "Notifications",
+        back_populates="creator",
+        foreign_keys="Notifications.created_by",
+    )
+
+
+class NotificationTypeLU(Base):
+    __tablename__ = "notification_type_lu"
+
+    name: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
+    description: Mapped[Optional[str]] = mapped_column(String)
+
+    notifications: Mapped[List["Notifications"]] = relationship(
+        "Notifications", back_populates="notification_type"
+    )
+
+
+class Notifications(Base):
+    __tablename__ = "notifications"
+
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("Users.id", ondelete="CASCADE", onupdate="CASCADE"), index=True
+    )
+    notification_type_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey(
+            "notification_type_lu.id", ondelete="RESTRICT", onupdate="CASCADE"
+        ),
+        index=True,
+    )
+    created_by: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("Users.id", ondelete="SET NULL", onupdate="CASCADE"), index=True
+    )
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    message: Mapped[str] = mapped_column(String, nullable=False)
+    link: Mapped[Optional[str]] = mapped_column(String(500))
+    is_read: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, index=True)
+    created_at: Mapped[DateTime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now(), index=True
+    )
+    read_at: Mapped[Optional[DateTime]] = mapped_column(DateTime)
+
+    user: Mapped["Users"] = relationship(
+        "Users", back_populates="notifications", foreign_keys=[user_id]
+    )
+    creator: Mapped[Optional["Users"]] = relationship(
+        "Users", back_populates="created_notifications", foreign_keys=[created_by]
+    )
+    notification_type: Mapped["NotificationTypeLU"] = relationship(
+        "NotificationTypeLU", back_populates="notifications"
+    )
 
 
 # Association table that links roles and their associated scopes
@@ -483,9 +559,6 @@ class UserRoles(Base):
     security_scopes: Mapped[List["SecurityScopes"]] = relationship(
         secondary=ScopesRoles
     )
-
-
-# ------------ Wells --------------
 
 
 class WellUseLU(Base):
@@ -614,9 +687,6 @@ class workOrders(Base):
         Integer, ForeignKey("Users.id"), nullable=True
     )
     ose_request_id: Mapped[int] = mapped_column(Integer, nullable=True)
-
-    # Associated Activities
-    # associated_activities: Mapped[List['MeterActivities']] = relationship("MeterActivities")
 
     meter: Mapped["Meters"] = relationship()
     status: Mapped["workOrderStatusLU"] = relationship()

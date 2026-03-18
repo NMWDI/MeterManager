@@ -3,33 +3,35 @@ import { useForm, SubmitHandler } from "react-hook-form";
 import { useAuthUser } from "react-auth-kit";
 import { enqueueSnackbar } from "notistack";
 import { Grid, Card, CardContent, Stack, Button } from "@mui/material";
-import SaveIcon from "@mui/icons-material/Save";
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import { Save, Biotech } from "@mui/icons-material";
 import {
   PatchObservationForm,
   PatchObservationSubmit,
   SecurityScope,
   ObservedPropertyTypeLU,
-} from "../../../interfaces";
+} from "@/interfaces";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-import ControlledDatepicker from "../../../components/RHControlled/ControlledDatepicker";
-import ControlledTimepicker from "../../../components/RHControlled/ControlledTimepicker";
-import ControlledUserSelect from "../../../components/RHControlled/ControlledUserSelect";
-import ControlledWellSelection from "../../../components/RHControlled/ControlledWellSelection";
-import ControlledTextbox from "../../../components/RHControlled/ControlledTextbox";
-import { ControlledSelect } from "../../../components/RHControlled/ControlledSelect";
-import ControlledCheckbox from "../../../components/RHControlled/ControlledCheckbox";
+import {
+  ControlledDatepicker,
+  ControlledTimepicker,
+  ControlledUserSelect,
+  ControlledWellSelection,
+  ControlledTextbox,
+  ControlledSelect,
+  ControlledCheckbox,
+  CustomCardHeader,
+} from "@/components";
+
 import {
   useGetPropertyTypes,
   useUpdateObservation,
   useDeleteObservation,
-} from "../../../service/ApiServiceNew";
-import { CustomCardHeader } from "../../../components/CustomCardHeader";
+} from "@/service";
 
 export const SelectedObservationDetails = ({
   selectedObservation,
@@ -116,7 +118,7 @@ export const SelectedObservationDetails = ({
     <Card>
       <CustomCardHeader
         title={`Observation ID: ${selectedObservation.observation_id}`}
-        icon={InfoOutlinedIcon}
+        icon={Biotech}
       />
       <CardContent>
         <Grid container spacing={2}>
@@ -171,7 +173,7 @@ export const SelectedObservationDetails = ({
             <ControlledUserSelect
               name="submitting_user"
               control={control}
-              errors={""}
+              error=""
             />
           </Grid>
           <Grid item xs={12} lg={6}>
@@ -206,7 +208,7 @@ export const SelectedObservationDetails = ({
                 onClick={handleSubmit(onSaveChanges)}
                 disabled={!hasAdminScope}
               >
-                <SaveIcon sx={{ fontSize: "1.2rem" }} />
+                <Save sx={{ fontSize: "1.2rem" }} />
                 &nbsp; Save Changes
               </Button>
               <Button
@@ -219,7 +221,7 @@ export const SelectedObservationDetails = ({
             </Stack>
           </Grid>
         </Grid>
-      </CardContent >
-    </Card >
+      </CardContent>
+    </Card>
   );
 };

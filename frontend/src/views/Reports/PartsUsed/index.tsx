@@ -1,5 +1,6 @@
-import { useEffect, useMemo } from "react";
-import { ArrowBack, Build, PictureAsPdf } from "@mui/icons-material";
+import { useEffect, useMemo, useRef } from "react";
+import { useAuthHeader } from "react-auth-kit";
+import { BuildOutlined, PictureAsPdf } from "@mui/icons-material";
 import {
   Autocomplete,
   Button,
@@ -7,24 +8,27 @@ import {
   CardContent,
   FormControlLabel,
   Grid,
-  IconButton,
   Switch,
   TextField,
   Tooltip,
 } from "@mui/material";
-import { Link } from "react-router-dom";
-import ControlledDatepicker from "../../../components/RHControlled/ControlledDatepicker";
+import { useNavigate } from "@tanstack/react-router";
 import { Controller, useForm } from "react-hook-form";
 import { useMutation, useQuery } from "react-query";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
-import dayjs, { Dayjs } from "dayjs";
-import { API_URL } from "../../../config";
-import { useAuthHeader } from "react-auth-kit";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
-import { BackgroundBox } from "../../../components/BackgroundBox";
-import { CustomCardHeader } from "../../../components/CustomCardHeader";
-import { ControlledSelect } from "../../../components/RHControlled/ControlledSelect";
+import dayjs, { Dayjs } from "dayjs";
+
+import { API_URL } from "@/config";
+import {
+  ControlledDatepicker,
+  BackgroundBox,
+  CustomCardHeader,
+  ControlledSelect,
+  ReportBreadcrumbTitle,
+} from "@/components";
+import { Route } from "@/routes/reports/partsused";
 
 export interface MeterType {
   id: number;
@@ -63,7 +67,7 @@ const schema = yup.object().shape({
     .mixed<Dayjs>()
     .nullable()
     .required("To date is required")
-    .test("is-after", "'To' date must be after 'From'", function(value) {
+    .test("is-after", "'To' date must be after 'From'", function (value) {
       const { from } = this.parent;
       return !from || !value || dayjs(value).isAfter(dayjs(from));
     }),
@@ -87,28 +91,56 @@ const schema = yup.object().shape({
     .array()
     .of(yup.number().required())
     .min(1, "At least one Part is required"),
-  in_use: yup.bool().required()
+  in_use: yup.bool().required(),
 });
 
 const defaultSchema = {
-  from: dayjs().startOf('month'),
-  to: dayjs().endOf('month'),
+  from: dayjs().startOf("month"),
+  to: dayjs().endOf("month"),
   part_types: [],
   parts: [],
-  in_use: true
+  in_use: true,
 };
 
 export const PartsUsedReportView = () => {
-  const { control, reset, watch } = useForm({
+  const navigate = useNavigate();
+  const search = Route.useSearch();
+  const hydratedRef = useRef(false);
+
+  const defaultValues = useMemo(
+    () => ({
+      from: dayjs(search.from, "YYYY-MM-DD"),
+      to: dayjs(search.to, "YYYY-MM-DD"),
+      part_types: [],
+      parts: [],
+      in_use: search.in_use,
+    }),
+    [search.from, search.to, search.in_use],
+  );
+
+  const { control, reset, watch, setValue } = useForm({
     resolver: yupResolver(schema),
-    defaultValues: defaultSchema,
+    defaultValues,
   });
+
+  useEffect(() => {
+    hydratedRef.current = false;
+    reset(defaultValues);
+  }, [defaultValues, reset]);
 
   const from = watch("from");
   const to = watch("to");
   const selectedPartIds = watch("parts") ?? [];
   const partTypes = watch("part_types");
   const inUse = watch("in_use");
+
+  const setSearch = (updater: (prev: typeof search) => any) => {
+    navigate({
+      to: "/reports/partsused",
+      search: (prev) => updater(prev as any),
+      replace: true,
+    });
+  };
 
   const authHeader = useAuthHeader();
   const partsQuery = useQuery<Part[]>({
@@ -126,6 +158,63 @@ export const PartsUsedReportView = () => {
     cacheTime: 1000 * 60 * 60 * 24, // cache in memory for 24 hours
   });
 
+  const partTypeOptions = useMemo(
+    () => [
+      ...new Map(
+        (partsQuery?.data ?? [])
+          .map((option: Part) => ({
+            id: option.part_type_id,
+            type: option.part_type,
+          }))
+          .map((item) => [item.id, item]),
+      ).values(),
+    ],
+    [partsQuery.data],
+  );
+
+  useEffect(() => {
+    setValue("from", dayjs(search.from, "YYYY-MM-DD"), {
+      shouldDirty: false,
+      shouldValidate: true,
+    });
+    setValue("to", dayjs(search.to, "YYYY-MM-DD"), {
+      shouldDirty: false,
+      shouldValidate: true,
+    });
+    setValue("in_use", search.in_use, {
+      shouldDirty: false,
+      shouldValidate: true,
+    });
+  }, [search.from, search.to, search.in_use, setValue]);
+
+  useEffect(() => {
+    if (!partsQuery.data) return;
+
+    const selected = partTypeOptions.filter((option) =>
+      search.part_types.includes(option.id),
+    );
+    setValue("part_types", selected, {
+      shouldDirty: false,
+      shouldValidate: true,
+    });
+
+    const availablePartIds = new Set(partsQuery.data.map((part) => part.id));
+    const selectedParts = search.parts.filter((id) => availablePartIds.has(id));
+
+    setValue("parts", selectedParts, {
+      shouldDirty: false,
+      shouldValidate: true,
+    });
+
+    hydratedRef.current = true;
+  }, [
+    partTypeOptions,
+    partsQuery.data,
+    search.part_types,
+    search.parts,
+    setValue,
+  ]);
+
   const filteredParts = useMemo(() => {
     if (!partsQuery.data) return [];
 
@@ -139,16 +228,71 @@ export const PartsUsedReportView = () => {
     return partsQuery.data;
   }, [partsQuery.data, partTypes]);
 
-  useEffect(() => {
-    const currentParts = watch("parts") ?? [];
-    const validIds = filteredParts.map((p) => p.id);
-    const stillValid = currentParts.filter((id) => validIds.includes(id));
+  const groupedFilteredParts = useMemo(() => {
+    return [...filteredParts].sort((a, b) => {
+      const typeCompare = (a.part_type?.name ?? "").localeCompare(
+        b.part_type?.name ?? "",
+      );
+      if (typeCompare !== 0) return typeCompare;
 
-    if (currentParts.length !== stillValid.length) {
-      // Drop invalid part IDs
-      reset({ ...watch(), parts: stillValid });
+      return `${a.part_number} ${a.description}`.localeCompare(
+        `${b.part_number} ${b.description}`,
+      );
+    });
+  }, [filteredParts]);
+
+  useEffect(() => {
+    if (!hydratedRef.current) return;
+
+    const validIds = filteredParts.map((p) => p.id);
+    const stillValid = selectedPartIds.filter((id) => validIds.includes(id));
+
+    if (selectedPartIds.length !== stillValid.length) {
+      setValue("parts", stillValid, {
+        shouldDirty: false,
+        shouldValidate: true,
+      });
+      setSearch((prev) => ({
+        ...prev,
+        parts: stillValid,
+        page: 0,
+      }));
     }
-  }, [partTypes, filteredParts]);
+  }, [filteredParts, selectedPartIds, setSearch, setValue]);
+
+  useEffect(() => {
+    if (!hydratedRef.current) return;
+
+    const nextFrom = from?.format("YYYY-MM-DD");
+    const nextTo = to?.format("YYYY-MM-DD");
+    const nextPartTypes = (partTypes ?? []).map((partType: any) => partType.id);
+
+    setSearch((prev) => {
+      const sameFrom = prev.from === nextFrom;
+      const sameTo = prev.to === nextTo;
+      const sameInUse = prev.in_use === inUse;
+      const samePartTypes =
+        prev.part_types.length === nextPartTypes.length &&
+        prev.part_types.every((value, index) => value === nextPartTypes[index]);
+      const sameParts =
+        prev.parts.length === selectedPartIds.length &&
+        prev.parts.every((value, index) => value === selectedPartIds[index]);
+
+      if (sameFrom && sameTo && sameInUse && samePartTypes && sameParts) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        from: nextFrom,
+        to: nextTo,
+        part_types: nextPartTypes,
+        parts: selectedPartIds,
+        in_use: inUse,
+        page: 0,
+      };
+    });
+  }, [from, to, partTypes, selectedPartIds, inUse]);
 
   const partsUsedQuery = useQuery<any[]>({
     queryKey: ["Inventory", "report", "partsused", from, to, selectedPartIds],
@@ -271,37 +415,11 @@ export const PartsUsedReportView = () => {
   return (
     <BackgroundBox>
       <Card sx={{ height: "fit-content" }}>
-        <CustomCardHeader title="Parts Used Report" icon={Build} />
+        <CustomCardHeader
+          title={<ReportBreadcrumbTitle current="Parts Used" />}
+          icon={BuildOutlined}
+        />
         <CardContent>
-          <Grid
-            container
-            justifyContent="space-between"
-            alignContent="center"
-            paddingBottom={2}
-          >
-            <Grid item>
-              <Link to="/reports">
-                <Tooltip title="Go back" placement="right">
-                  <IconButton aria-label="return to reports page">
-                    <ArrowBack />
-                  </IconButton>
-                </Tooltip>
-              </Link>
-            </Grid>
-            <Grid item>
-              <Tooltip title="Export report as PDF" placement="left">
-                <IconButton
-                  aria-label="export report as pdf"
-                  onClick={handleDownloadPDF}
-                  disabled={
-                    !selectedPartIds.length || downloadPDFMutation.isLoading
-                  }
-                >
-                  <PictureAsPdf />
-                </IconButton>
-              </Tooltip>
-            </Grid>
-          </Grid>
           <Grid
             container
             justifyContent="flex-start"
@@ -333,7 +451,7 @@ export const PartsUsedReportView = () => {
                 format="YYYY MMMM DD"
               />
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid item xs sx={{ flexGrow: 1 }}>
               <ControlledSelect
                 sx={{ width: "100%" }}
                 size="small"
@@ -342,18 +460,36 @@ export const PartsUsedReportView = () => {
                 name="part_types"
                 multiple
                 disabled={partsQuery.isFetching}
-                options={[
-                  ...new Map(
-                    partsQuery?.data
-                      ?.map((option: Part) => ({
-                        id: option.part_type_id,
-                        type: option.part_type,
-                      }))
-                      .map((item) => [item.id, item]), // key by id
-                  ).values(),
-                ]}
+                options={partTypeOptions}
                 getOptionLabel={(option: any) => option.type.name}
               />
+            </Grid>
+            <Grid
+              item
+              xs={12}
+              sm={6}
+              md="auto"
+              sx={{
+                display: "flex",
+                justifyContent: { xs: "center", sm: "flex-end" },
+              }}
+            >
+              <Tooltip title="Export report as PDF" placement="top">
+                <span>
+                  <Button
+                    variant="outlined"
+                    startIcon={<PictureAsPdf />}
+                    aria-label="export report as pdf"
+                    onClick={handleDownloadPDF}
+                    disabled={
+                      !selectedPartIds.length || downloadPDFMutation.isLoading
+                    }
+                    sx={{ width: "fit-content", whiteSpace: "nowrap" }}
+                  >
+                    PDF
+                  </Button>
+                </span>
+              </Tooltip>
             </Grid>
             <Grid item xs={12}>
               <Controller
@@ -369,7 +505,8 @@ export const PartsUsedReportView = () => {
                     <Autocomplete
                       multiple
                       disableClearable
-                      options={filteredParts}
+                      options={groupedFilteredParts}
+                      groupBy={(option: Part) => option.part_type?.name ?? "Other"}
                       getOptionLabel={(option: Part) =>
                         `${option.part_number} ${option.description}`
                       }
@@ -400,7 +537,7 @@ export const PartsUsedReportView = () => {
                 }}
               />
             </Grid>
-            <Grid item xs={12} sx={{ display: 'flex', alignItems: 'center' }}>
+            <Grid item xs={12} sx={{ display: "flex", alignItems: "center" }}>
               <Controller
                 name="in_use"
                 control={control}
@@ -426,16 +563,36 @@ export const PartsUsedReportView = () => {
               columns={columns}
               disableColumnMenu
               hideFooterSelectedRowCount
+              pagination
               pageSizeOptions={[5, 10, 25]}
-              initialState={{
-                pagination: {
-                  paginationModel: { pageSize: 5, page: 0 },
-                },
-              }}
+              paginationModel={{ page: search.page, pageSize: search.pageSize }}
+              onPaginationModelChange={(model) =>
+                setSearch((prev) => ({
+                  ...prev,
+                  pageSize: model.pageSize,
+                  page: model.pageSize !== prev.pageSize ? 0 : model.page,
+                }))
+              }
             />
           </Grid>
-          <Grid item xs={12}>
-            <Button onClick={() => reset(defaultSchema)}>Reset</Button>
+          <Grid item xs={12} px={2}>
+            <Button
+              onClick={() => {
+                reset(defaultSchema);
+                setSearch((prev) => ({
+                  ...prev,
+                  from: dayjs().startOf("month").format("YYYY-MM-DD"),
+                  to: dayjs().endOf("month").format("YYYY-MM-DD"),
+                  part_types: [],
+                  parts: [],
+                  in_use: true,
+                  page: 0,
+                  pageSize: 5,
+                }));
+              }}
+            >
+              Reset
+            </Button>
           </Grid>
         </CardContent>
       </Card>

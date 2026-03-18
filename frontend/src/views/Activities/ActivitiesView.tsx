@@ -1,14 +1,13 @@
 import { CardContent, Card } from "@mui/material";
 import MeterActivityEntry from "./MeterActivityEntry/MeterActivityEntry";
-import { Construction } from "@mui/icons-material";
-import { BackgroundBox } from "../../components/BackgroundBox";
-import { CustomCardHeader } from "../../components/CustomCardHeader";
+import { Engineering } from "@mui/icons-material";
+import { BackgroundBox, CustomCardHeader } from "@/components";
 
 export const ActivitiesView = () => {
   return (
     <BackgroundBox>
       <Card sx={{ height: "fit-content" }}>
-        <CustomCardHeader title="Submit an Activity" icon={Construction} />
+        <CustomCardHeader title="Activities" icon={Engineering} />
         <CardContent>
           <MeterActivityEntry />
         </CardContent>

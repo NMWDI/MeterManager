@@ -1,85 +1,138 @@
 <html>
+  <head>
+    <style>
+      @page {
+        size: A4 landscape;
+        margin: 20px;
+      }
 
-<head>
-  <style>
-    @page {
-      size: A4 landscape;
-      margin: 20px;
-    }
+      body {
+        font-family: sans-serif;
+        padding: 1em;
+      }
 
-    body {
-      font-family: sans-serif;
-      padding: 1em;
-    }
+      h2 {
+        margin-top: 2em;
+      }
 
-    h2 {
-      margin-top: 2em;
-    }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1em;
+      }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 1em;
-    }
+      th,
+      td {
+        border: 1px solid #ccc;
+        padding: 6px;
+        text-align: left;
+      }
 
-    th,
-    td {
-      border: 1px solid #ccc;
-      padding: 6px;
-      text-align: left;
-    }
+      th {
+        background-color: #f5f5f5;
+      }
 
-    th {
-      background-color: #f5f5f5;
-    }
+      .chart {
+        margin-top: 2em;
+        text-align: center;
+      }
+    </style>
+  </head>
 
-    .chart {
-      margin-top: 2em;
-      text-align: center;
-    }
-  </style>
-</head>
+  <body>
+    <h1 style="text-align: center; margin-bottom: 4px">{{ report_title }}</h1>
 
-<body>
-  <h1 style="text-align:center; margin-bottom:4px;">{{ report_title }}</h1>
+    {% if report_subtext %}
+    <p
+      style="
+        text-align: center;
+        font-size: 12px;
+        white-space: pre-line;
+        margin-top: 0;
+      "
+    >
+      {{ report_subtext }}
+    </p>
+    {% endif %}
 
-  {% if report_subtext %}
-  <p style="text-align:center; font-size:12px; white-space:pre-line; margin-top:0;">
-    {{ report_subtext }}
-  </p>
-  {% endif %}
+    <p>
+      <strong>From:</strong> {{ from_date }} &nbsp;&nbsp;
+      <strong>To:</strong> {{ to_date }}
+    </p>
 
-  <p>
-    <strong>From:</strong> {{ from_date }} &nbsp;&nbsp;
-    <strong>To:</strong> {{ to_date }}
-  </p>
+    {% if observation_chart %}
+    <div class="chart">
+      <h2>Depth of Water over Time</h2>
+      <img src="data:image/png;base64,{{ observation_chart }}" />
+    </div>
+    {% endif %}
 
-  {% if observation_chart %}
-  <div class="chart">
-    <h2>Depth of Water over Time</h2>
-    <img src="data:image/png;base64,{{ observation_chart }}" />
-  </div>
-  {% endif %}
+    <h2>Water Level Measurements</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Well</th>
+          <th>Date / Time</th>
+          <th>Depth to Water (ft)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td>{{ row.well_ra_number }}</td>
+          <td>{{ row.timestamp }}</td>
+          <td>{{ "%.2f"|format(row.depth_to_water) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
 
-  <h2>Water Level Measurements</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>Date / Time</th>
-        <th>Depth to Water (ft)</th>
-        <th>Well</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for row in rows %}
-      <tr>
-        <td>{{ row.timestamp }}</td>
-        <td>{{ row.depth_to_water }}</td>
-        <td>{{ row.well_ra_number }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</body>
+    {% if averages and averages.bucket %}
+    <h2>Report Averages ({{ averages.bucket | title }})</h2>
 
+    <h3>Per-well averages</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Well</th>
+          <th>Period</th>
+          <th>Average Depth to Water (ft)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in averages.per_well %}
+        <tr>
+          <td>{{ row.ra_number }}</td>
+          <td>{{ row.period_start }}</td>
+          <td>
+            {{ "%.2f"|format(row.avg_value) if row.avg_value is not none else ""
+            }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <h3>All-wells average</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Period</th>
+          <th>Average Depth to Water (ft)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in averages.all_wells %}
+        <tr>
+          <td>{{ row.period_start }}</td>
+          <td>
+            {{ "%.2f"|format(row.avg_value) if row.avg_value is not none else ""
+            }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </body>
 </html>

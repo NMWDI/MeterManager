@@ -2,8 +2,8 @@ import { useState } from "react";
 import { TextField } from "@mui/material";
 import { useDebounce } from "use-debounce";
 import { Autocomplete } from "@mui/material";
-import { useGetWells } from "../service/ApiServiceNew";
-import { Well } from "../interfaces";
+import { useGetWells } from "@/service";
+import { Well } from "@/interfaces";
 
 export default function WellSelection({
   selectedWell,

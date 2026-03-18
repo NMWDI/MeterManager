@@ -1,45 +1,50 @@
+import { useEffect, useState } from "react";
 import {
-  Modal,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   TextField,
   Button,
   MenuItem,
   Select,
   FormControl,
   InputLabel,
-  Grid,
   Typography,
+  Stack,
   FormControlLabel,
   Checkbox,
 } from "@mui/material";
-import { useState } from "react";
+import { RadioButtonUnchecked, TaskAlt, Save } from "@mui/icons-material";
+import { DatePicker, TimePicker } from "@mui/x-date-pickers";
 import { useAuthUser } from "react-auth-kit";
+import { useQuery } from "react-query";
 import {
   MonitoredWell,
   NewRegionMeasurement,
   SecurityScope,
-} from "../../../interfaces.js";
+} from "@/interfaces";
 import dayjs, { Dayjs } from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 dayjs.extend(utc);
 dayjs.extend(timezone);
-import { DatePicker, TimePicker } from "@mui/x-date-pickers";
-import { RadioButtonUnchecked, TaskAlt } from "@mui/icons-material";
-import { useGetUserList } from "../../../service/ApiServiceNew";
-import { useQuery } from "react-query";
-import { useFetchWithAuth } from "../../../hooks/useFetchWithAuth.js";
-import { ModalBackgroundBox } from "./../../";
+
+import { useGetUserList } from "@/service";
+import { useFetchWithAuth } from "@/hooks";
 
 export const CreateModal = ({
-  region_id, //Used to filter wells
-  isNewMeasurementModalOpen,
-  handleCloseNewMeasurementModal,
+  region_id,
+  open,
+  onClose,
   handleSubmitNewMeasurement,
+  title = "Create New Measurement",
 }: {
-  region_id: number; //Used to filter wells
-  isNewMeasurementModalOpen: boolean;
-  handleCloseNewMeasurementModal: () => void;
-  handleSubmitNewMeasurement: (newMeasurement: NewRegionMeasurement) => void;
+  region_id: number;
+  open: boolean;
+  onClose: () => void;
+  handleSubmitNewMeasurement: (m: Partial<NewRegionMeasurement>) => void;
+  title?: string;
 }) => {
   const authUser = useAuthUser();
   const hasAdminScope = authUser()
@@ -49,12 +54,13 @@ export const CreateModal = ({
     .includes("admin");
 
   const fetchWithAuth = useFetchWithAuth();
+  const regionId = region_id;
   const { data: wells, isLoading: isLoadingWells } = useQuery<
     { items: MonitoredWell[] },
     Error,
     MonitoredWell[]
   >({
-    queryKey: ["wells", "has_chloride_groups", region_id],
+    queryKey: ["wells", "has_chloride_groups", regionId],
     queryFn: () =>
       fetchWithAuth({
         method: "GET",
@@ -63,11 +69,11 @@ export const CreateModal = ({
           sort_by: "ra_number",
           sort_direction: "asc",
           has_chloride_group: true,
-          chloride_group_id: region_id,
+          chloride_group_id: regionId,
           limit: 100,
         },
       }),
-    enabled: isNewMeasurementModalOpen,
+    enabled: open && !!regionId,
     select: (res) => res.items,
   });
 
@@ -94,38 +100,44 @@ export const CreateModal = ({
       region_id: 0, // Set by parent
       well_id: selectedWellID as number,
       timestamp: combinedDateTime.toISOString(),
-      value: value as number,
+      value: notSampled ? null : value,
       submitting_user_id: selectedUserID as number,
     });
   }
 
-  const UserSelection = () => {
-    if (hasAdminScope) {
-      return (
-        <FormControl size="small" fullWidth required>
-          <InputLabel>User</InputLabel>
-          <Select
-            value={userList.isLoading ? "loading" : selectedUserID}
-            onChange={(event: any) => setSelectedUserID(event.target.value)}
-            label="User"
-          >
-            {userList.data?.map((user: any) => (
-              <MenuItem key={user.id} value={user.id}>
-                {user.full_name}
-              </MenuItem>
-            ))}
-            {userList.isLoading && (
-              <MenuItem value={"loading"} hidden>
-                Loading...
-              </MenuItem>
-            )}
-          </Select>
-        </FormControl>
-      );
-    } else {
-      setSelectedUserID(authUser()?.id);
-      return null;
+  useEffect(() => {
+    if (!open) return;
+
+    if (!hasAdminScope) {
+      const id = authUser()?.id;
+      if (id != null) setSelectedUserID(id);
     }
+  }, [open, hasAdminScope, authUser]);
+
+  const UserSelection = () => {
+    if (!hasAdminScope) return null;
+
+    return (
+      <FormControl size="small" fullWidth required>
+        <InputLabel>User</InputLabel>
+        <Select
+          value={userList.isLoading ? "loading" : selectedUserID}
+          onChange={(event) => setSelectedUserID(event.target.value)}
+          label="User"
+        >
+          {userList.data?.map((user: any) => (
+            <MenuItem key={user.id} value={user.id}>
+              {user.full_name}
+            </MenuItem>
+          ))}
+          {userList.isLoading && (
+            <MenuItem value={"loading"} hidden>
+              Loading...
+            </MenuItem>
+          )}
+        </Select>
+      </FormControl>
+    );
   };
 
   const WellSelection = ({ region_id }: { region_id: number }) => {
@@ -138,7 +150,9 @@ export const CreateModal = ({
           label="Well"
         >
           {wells
-            ?.filter((well: MonitoredWell) => well.chloride_group_id === region_id)
+            ?.filter(
+              (well: MonitoredWell) => well.chloride_group_id === region_id,
+            )
             .map((well: MonitoredWell) => (
               <MenuItem key={well.id} value={well.id}>
                 {well.ra_number}
@@ -154,101 +168,124 @@ export const CreateModal = ({
     );
   };
 
-  return (
-    <Modal
-      open={isNewMeasurementModalOpen}
-      onClose={handleCloseNewMeasurementModal}
-    >
-      <ModalBackgroundBox>
-        <Grid container spacing={2}>
-          <Grid item xs={12}>
-            <Typography variant="h4" fontWeight="bold" pb={2} textAlign="center">Create New Measurement</Typography>
-          </Grid>
-          <Grid item xs={12}>
-            <UserSelection />
-          </Grid>
-          <Grid item xs={12}>
-            <DatePicker
-              label="Date"
-              value={date}
-              onChange={setDate}
-              slotProps={{
-                textField: { size: "small", fullWidth: true, required: true },
-              }}
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <TimePicker
-              label="Time"
-              timezone="America/Denver"
-              slotProps={{
-                textField: { size: "small", fullWidth: true, required: true },
-              }}
-              value={time}
-              onChange={setTime}
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <FormControlLabel
-              value="bottom"
-              control={
-                <Checkbox
-                  size="large"
-                  icon={<RadioButtonUnchecked />}
-                  checkedIcon={<TaskAlt />}
-                  checked={notSampled}
-                  onChange={(e) => {
-                    const checked = e.target.checked;
-                    setNotSampled(checked)
+  const userOk =
+    Number.isFinite(Number(selectedUserID)) && Number(selectedUserID) > 0;
+  const wellOk =
+    Number.isFinite(Number(selectedWellID)) && Number(selectedWellID) > 0;
+  const dateOk = date != null && dayjs(date).isValid();
+  const timeOk = time != null && dayjs(time).isValid();
+  const hasValue = value !== null && Number.isFinite(value);
 
-                    if (checked) {
-                      setValue(null);
-                    }
-                  }}
-                />
-              }
-              label="Well was visited but NOT SAMPLED"
-              labelPlacement="end"
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <TextField
-              required={!notSampled}
-              fullWidth
-              size={"small"}
-              type="number"
-              disabled={notSampled}
-              value={notSampled ? "" : value ?? ""}
-              label={notSampled ? "NOT SAMPLED" : "Value"}
-              onChange={(event) => {
-                const newValue = event.target.value;
-                setValue(newValue === "" ? null : Number(newValue));
-              }}
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <WellSelection region_id={region_id} />
-          </Grid>
-          <Grid
-            item
-            xs={12}
-            sx={{
-              mr: "auto",
-              ml: "auto",
-              display: "flex",
-              justifyContent: "right",
-            }}
+  const canSave =
+    userOk && wellOk && dateOk && timeOk && (notSampled || hasValue);
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
+      maxWidth="sm"
+      aria-labelledby="create-region-measurement-title"
+      aria-describedby="create-region-measurement-description"
+    >
+      <DialogTitle id="create-region-measurement-title">{title}</DialogTitle>
+
+      <DialogContent dividers>
+        <Stack spacing={2}>
+          <Typography
+            id="create-region-measurement-description"
+            variant="body2"
+            color="text.secondary"
           >
-            <Button
-              type="submit"
-              variant="contained"
-              onClick={onMeasurementSubmitted}
-            >
-              Submit
-            </Button>
-          </Grid>
-        </Grid>
-      </ModalBackgroundBox>
-    </Modal>
+            Enter the measurement details below. Date and time default to the
+            current moment and can be adjusted if needed.
+          </Typography>
+
+          <UserSelection />
+
+          <DatePicker
+            label="Date"
+            value={date}
+            onChange={setDate}
+            slotProps={{
+              textField: { size: "small", fullWidth: true, required: true },
+            }}
+          />
+
+          <TimePicker
+            label="Time"
+            timezone="America/Denver"
+            slotProps={{
+              textField: { size: "small", fullWidth: true, required: true },
+            }}
+            value={time}
+            onChange={setTime}
+          />
+
+          <FormControlLabel
+            value="bottom"
+            control={
+              <Checkbox
+                size="large"
+                icon={<RadioButtonUnchecked />}
+                checkedIcon={<TaskAlt />}
+                checked={notSampled}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  setNotSampled(checked);
+
+                  if (checked) {
+                    setValue(null);
+                  }
+                }}
+              />
+            }
+            label="Well was visited but NOT SAMPLED"
+            labelPlacement="end"
+          />
+
+          <TextField
+            required={!notSampled}
+            fullWidth
+            size={"small"}
+            type="number"
+            disabled={notSampled}
+            value={notSampled ? "" : (value ?? "")}
+            label={notSampled ? "NOT SAMPLED" : "Value"}
+            onChange={(event) => {
+              const newValue = event.target.value;
+              setValue(newValue === "" ? null : Number(newValue));
+            }}
+          />
+          <WellSelection region_id={regionId} />
+        </Stack>
+      </DialogContent>
+
+      <DialogActions
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          px: 3,
+          py: 2,
+        }}
+      >
+        <Button onClick={onClose} variant="text">
+          Cancel
+        </Button>
+
+        <Button
+          type="submit"
+          variant="contained"
+          color="success"
+          onClick={onMeasurementSubmitted}
+          disabled={!canSave}
+          sx={{ flexShrink: 0, width: { xs: "100%", sm: "auto" } }}
+          startIcon={<Save fontSize="small" />}
+        >
+          Save
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 };

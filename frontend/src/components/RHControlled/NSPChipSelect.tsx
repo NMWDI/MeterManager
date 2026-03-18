@@ -1,11 +1,12 @@
-import ChipSelect from "../ChipSelect";
-import { NoteTypeLU, ServiceTypeLU, PartTypeLU } from "../../interfaces";
+import { Controller } from "react-hook-form";
+import { NoteTypeLU, ServiceTypeLU, PartTypeLU } from "@/interfaces";
 import {
   useGetNoteTypes,
   useGetServiceTypes,
   useGetPartTypeList,
-} from "../../service/ApiServiceNew";
-import { Controller } from "react-hook-form";
+} from "@/service";
+
+import ChipSelect from "../ChipSelect";
 
 type SelectType = "Notes" | "Services" | "Parts";
 

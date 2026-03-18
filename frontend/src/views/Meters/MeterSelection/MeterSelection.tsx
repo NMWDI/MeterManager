@@ -1,7 +1,5 @@
-import { useState } from "react";
 import { MeterSelectionTable } from "./MeterSelectionTable";
 import MeterSelectionMap from "./MeterSelectionMap";
-import TabPanel from "../../../components/TabPanel";
 import {
   Tabs,
   Tab,
@@ -13,70 +11,65 @@ import {
   ToggleButton,
   InputAdornment,
 } from "@mui/material";
-import FormatListBulletedOutlinedIcon from "@mui/icons-material/FormatListBulletedOutlined";
-import { MeterStatusNames } from "../../../enums";
-import { CustomCardHeader } from "../../../components/CustomCardHeader";
-import { Search } from "@mui/icons-material";
+import { Search, SpeedOutlined } from "@mui/icons-material";
+import { MeterStatusNames } from "@/enums";
+import { CustomCardHeader, ManageBreadcrumbTitle, TabPanel } from "@/components";
+import { useMemo } from "react";
+
+type MeterFilterKey = "installed" | "stored" | "sold" | "scrapped" | "unknown";
 
 export const MeterSelection = ({
   onMeterSelection,
   setMeterAddMode,
+  currentTabIndex,
+  onTabChange,
+  meterSearchQuery,
+  onSearchQueryChange,
+  meterFilterButtons,
+  onFilterButtonsChange,
 }: {
-  onMeterSelection: Function;
-  setMeterAddMode: Function;
+  onMeterSelection: (meterId?: number) => void;
+  setMeterAddMode: (addMode: boolean) => void;
+  currentTabIndex: number;
+  onTabChange: (index: number) => void;
+  meterSearchQuery: string;
+  onSearchQueryChange: (query: string) => void;
+  meterFilterButtons: MeterFilterKey[];
+  onFilterButtonsChange: (filters: MeterFilterKey[]) => void;
 }) => {
-  const [currentTabIndex, setCurrentTabIndex] = useState(0);
-  const [meterSearchQuery, setMeterSearchQuery] = useState<string>("");
-  const [meterFilterButtons, setMeterFilterButtons] = useState<string[]>([
-    "installed",
-  ]);
-  const [meterFilters, setMeterFilters] = useState<MeterStatusNames[]>([
-    MeterStatusNames.Installed,
-  ]);
-
   const handleTabChange = (_: React.SyntheticEvent, newTabIndex: number) =>
-    setCurrentTabIndex(newTabIndex);
+    onTabChange(newTabIndex);
 
   const handleFilterSelect = (
     _: React.MouseEvent<HTMLElement>,
-    newFilters: string[],
+    newFilters: MeterFilterKey[],
   ) => {
-    if (newFilters.length === 0) {
-      newFilters.push("installed");
-    }
-
-    setMeterFilterButtons(newFilters);
-
-    //Update the meterFilters based on the selected filter buttons
-    let updatedMeterFilters: MeterStatusNames[] = [];
-    if (newFilters.includes("installed")) {
-      updatedMeterFilters.push(MeterStatusNames.Installed);
-    }
-    if (newFilters.includes("stored")) {
-      updatedMeterFilters.push(MeterStatusNames.Warehouse);
-    }
-    if (newFilters.includes("sold")) {
-      updatedMeterFilters.push(MeterStatusNames.Sold);
-    }
-    if (newFilters.includes("scrapped")) {
-      updatedMeterFilters.push(MeterStatusNames.Scrapped);
-      updatedMeterFilters.push(MeterStatusNames.Returned);
-    }
-    if (newFilters.includes("unknown")) {
-      updatedMeterFilters.push(MeterStatusNames.Unknown);
-    }
-    setMeterFilters(updatedMeterFilters);
+    onFilterButtonsChange(newFilters.length ? newFilters : ["installed"]);
   };
+
+  const meterFilters: MeterStatusNames[] = useMemo(() => {
+    const out: MeterStatusNames[] = [];
+    if (meterFilterButtons.includes("installed"))
+      out.push(MeterStatusNames.Installed);
+    if (meterFilterButtons.includes("stored"))
+      out.push(MeterStatusNames.Warehouse);
+    if (meterFilterButtons.includes("sold")) out.push(MeterStatusNames.Sold);
+    if (meterFilterButtons.includes("scrapped"))
+      out.push(MeterStatusNames.Scrapped, MeterStatusNames.Returned);
+    if (meterFilterButtons.includes("unknown"))
+      out.push(MeterStatusNames.Unknown);
+    return out;
+  }, [meterFilterButtons]);
 
   return (
     <Card sx={{ height: "100%" }}>
       <CustomCardHeader
-        title="All Meters"
-        icon={FormatListBulletedOutlinedIcon}
+        title={<ManageBreadcrumbTitle current="Meters" />}
+        icon={SpeedOutlined}
       />
       <CardContent sx={{ height: "100%" }}>
         <Grid container justifyContent="space-between">
-          <Grid item xs={6} >
+          <Grid item xs={6}>
             <Tabs
               value={currentTabIndex}
               onChange={handleTabChange}
@@ -90,15 +83,23 @@ export const MeterSelection = ({
               <Tab label="Meter Map" />
             </Tabs>
           </Grid>
-          <Grid item xs={6} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+          <Grid
+            item
+            xs={6}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "flex-end",
+            }}
+          >
             <TextField
-              sx={{ m: 0, pl: 2, width: '100%', maxWidth: '75rem' }}
+              sx={{ m: 0, pl: 2, width: "100%", maxWidth: "75rem" }}
               placeholder="Search Meter..."
               variant="outlined"
               size="small"
               value={meterSearchQuery}
               onChange={(e) => {
-                setMeterSearchQuery(e.target.value);
+                onSearchQueryChange(e.target.value);
               }}
               InputProps={{
                 startAdornment: (
@@ -145,7 +146,7 @@ export const MeterSelection = ({
         </TabPanel>
         <TabPanel currentTabIndex={currentTabIndex} tabIndex={1}>
           <Grid container sx={{ mt: 1, height: 550 }}>
-            <Grid item xs={12} sx={{ height: '100%' }}>
+            <Grid item xs={12} sx={{ height: "100%" }}>
               <MeterSelectionMap
                 onMeterSelection={onMeterSelection}
                 meterSearch={meterSearchQuery}

@@ -1,1 +1,0 @@
-pg_restore -d appdb_local appdb.sql

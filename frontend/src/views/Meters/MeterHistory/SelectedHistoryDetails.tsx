@@ -1,7 +1,7 @@
 import { TextField, Grid, Card, CardContent, CardHeader } from "@mui/material";
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
-import { MeterHistoryType } from "../../../enums";
-import { NoteTypeLU } from "../../../interfaces";
+import { InfoOutlined } from "@mui/icons-material";
+import { MeterHistoryType } from "@/enums";
+import { NoteTypeLU } from "@/interfaces";
 import dayjs from "dayjs";
 
 const disabledInputStyle = {
@@ -44,7 +44,7 @@ export default function SelectedHistoryDetails({
         title={
           <div className="custom-card-header">
             <span>Selected History Details</span>
-            <InfoOutlinedIcon />
+            <InfoOutlined />
           </div>
         }
         sx={{ mb: 0, pb: 0 }}

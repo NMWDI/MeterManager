@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@tanstack/react-router";
 import { useAuthUser, useIsAuthenticated, useSignIn } from "react-auth-kit";
 import {
   Box,
@@ -10,17 +10,24 @@ import {
   Alert,
   Stack,
   Grid,
+  InputAdornment,
+  IconButton,
 } from "@mui/material";
-import LoginIcon from '@mui/icons-material/Login';
+import {
+  Login as LoginIcon,
+  Visibility,
+  VisibilityOff,
+} from "@mui/icons-material";
 import { enqueueSnackbar } from "notistack";
-import { SecurityScope } from "../interfaces";
-import { API_URL } from "../config";
-import { CustomCardHeader } from "../components";
+import { SecurityScope } from "@/interfaces";
+import { API_URL } from "@/config";
+import { CustomCardHeader } from "@/components";
 
 export const Login = () => {
-  const [username, setUsername] = useState("");
+  const [loginIdentifier, setLoginIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const signIn = useSignIn();
   const isAuthenticated = useIsAuthenticated();
@@ -31,21 +38,21 @@ export const Login = () => {
     event.preventDefault();
 
     const body = new FormData();
-    body.append("username", username);
+    body.append("username", loginIdentifier);
     body.append("password", password);
 
     fetch(`${API_URL}/token`, { method: "POST", body })
       .then(handleLogin)
       .catch((_) => {
         setError(
-          "Unable to connect to the server. Please check your internet connection and try again. If the issue persists, contact support."
+          "Unable to connect to the server. Please check your internet connection and try again. If the issue persists, contact support.",
         );
       });
   };
 
   useEffect(() => {
     if (isAuthenticated()) {
-      navigate(authUser()?.redirect_page ?? "/");
+      navigate({ to: authUser()?.redirect_page ?? "/" });
     }
   }, [isAuthenticated, navigate]);
 
@@ -59,7 +66,7 @@ export const Login = () => {
         ) {
           enqueueSnackbar(
             "Your role does not have access to the site UI. Please try accessing data via our API.",
-            { variant: "error" }
+            { variant: "error" },
           );
           return;
         }
@@ -73,9 +80,9 @@ export const Login = () => {
         ) {
           localStorage.setItem("_auth", data.access_token);
           localStorage.setItem("loggedIn", "true");
-          navigate(data.user.redirect_page ?? "/");
+          navigate({ to: data.user.redirect_page ?? "/" });
         } else {
-          setError("Invalid username or password. Please try again.");
+          setError("Invalid username, email, or password. Please try again.");
         }
       });
     } else {
@@ -95,10 +102,7 @@ export const Login = () => {
       }}
     >
       <Card sx={{ width: "25%", minWidth: 300 }}>
-        <CustomCardHeader
-          title="Login"
-          icon={LoginIcon}
-        />
+        <CustomCardHeader title="Login" icon={LoginIcon} />
         <CardContent
           sx={{
             pt: 0,
@@ -118,21 +122,33 @@ export const Login = () => {
               sx={{ paddingTop: "1.5rem", paddingBottom: "1.5rem" }}
             >
               <TextField
-                value={username}
+                value={loginIdentifier}
                 required
                 fullWidth
-                label="Username"
+                label="Username or Email"
                 name="username"
-                onChange={(e) => setUsername(e.target.value)}
+                onChange={(e) => setLoginIdentifier(e.target.value)}
               />
               <TextField
                 value={password}
                 required
                 fullWidth
                 label="Password"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 name="password"
                 onChange={(e) => setPassword(e.target.value)}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        edge="end"
+                        onClick={() => setShowPassword((show) => !show)}
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
               />
             </Stack>
             <Grid container justifyContent="flex-end">
@@ -164,4 +180,3 @@ export const Login = () => {
 };
 
 export default Login;
-

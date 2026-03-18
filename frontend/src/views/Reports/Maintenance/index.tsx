@@ -1,5 +1,6 @@
-import { useMemo } from "react";
-import { ArrowBack, PictureAsPdf, Plumbing } from "@mui/icons-material";
+import { useEffect, useMemo, useRef } from "react";
+import { useAuthHeader } from "react-auth-kit";
+import { ConstructionOutlined, PictureAsPdf } from "@mui/icons-material";
 import {
   Box,
   Button,
@@ -7,24 +8,17 @@ import {
   CardContent,
   Chip,
   Grid,
-  IconButton,
   TextField,
   Tooltip,
   Typography,
 } from "@mui/material";
-import { Link } from "react-router-dom";
-import ControlledDatepicker from "../../../components/RHControlled/ControlledDatepicker";
-import ControlledAutocomplete from "../../../components/RHControlled/ControlledAutocomplete";
+import { useNavigate } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
 import { useMutation, useQuery } from "react-query";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
+import { Route } from "@/routes/reports/maintenance";
 import dayjs, { Dayjs } from "dayjs";
-import { CustomCardHeader } from "../../../components/CustomCardHeader";
-import { BackgroundBox } from "../../../components/BackgroundBox";
-import ControlledTextbox from "../../../components/RHControlled/ControlledTextbox";
-import { useAuthHeader } from "react-auth-kit";
-import { API_URL } from "../../../config";
 import { PieChart } from "@mui/x-charts";
 import {
   DataGrid,
@@ -32,17 +26,27 @@ import {
   GridValueGetter,
   GridValueFormatter,
 } from "@mui/x-data-grid";
+import {
+  ControlledDatepicker,
+  ControlledAutocomplete,
+  BackgroundBox,
+  ControlledTextbox,
+  CustomCardHeader,
+  ReportBreadcrumbTitle,
+  UserAvatar,
+} from "@/components";
+import { API_URL, ROLE_IDS } from "@/config";
+import { User } from "@/interfaces";
+import {
+  getRoleLabel,
+  sortUsersByRoleThenName,
+} from "@/utils/UserRoleGrouping";
 
-interface User {
-  full_name: string;
-  id: number;
-}
-
-const ALL_TECHNICIANS_ID = -1;
-
-const allTechniciansOption: User = {
-  id: ALL_TECHNICIANS_ID,
-  full_name: "All Technicians",
+type FormValues = {
+  from: Dayjs;
+  to: Dayjs;
+  techicians: User[]; // keep your existing form name
+  trss: string;
 };
 
 const schema = yup.object().shape({
@@ -70,12 +74,20 @@ const schema = yup.object().shape({
 const defaultSchema = {
   from: dayjs().startOf("month"),
   to: dayjs().endOf("month"),
-  techicians: [{ ...allTechniciansOption }],
+  techicians: [],
   trss: "",
 };
 
+const isoToDayjs = (s?: string, fallback?: Dayjs) =>
+  s ? dayjs(s, "YYYY-MM-DD") : (fallback ?? dayjs());
+
 export const MaintenanceReportView = () => {
+  const navigate = useNavigate();
+  const search = Route.useSearch();
   const authHeader = useAuthHeader();
+
+  const hydratedRef = useRef(false);
+
   const techiciansQuery = useQuery({
     queryKey: ["users"],
     queryFn: async () => {
@@ -95,42 +107,120 @@ export const MaintenanceReportView = () => {
     refetchOnReconnect: false,
   });
 
+  const technicianOptions = useMemo<User[]>(() => {
+    const users = (techiciansQuery.data ?? []) as User[];
+    return sortUsersByRoleThenName(users);
+  }, [techiciansQuery.data]);
+
+  // URL -> RHF default values (technicians are hydrated after users load)
+  const defaultValues = useMemo<FormValues>(() => {
+    const fallbackFrom = dayjs().startOf("month");
+    const fallbackTo = dayjs().endOf("month");
+
+    return {
+      from: isoToDayjs(search.from, fallbackFrom),
+      to: isoToDayjs(search.to, fallbackTo),
+      techicians: [], // hydrate from search.technicians once we have users
+      trss: search.trss ?? "",
+    };
+  }, [search.from, search.to, search.trss]);
+
   const { control, reset, setValue, watch } = useForm({
     resolver: yupResolver(schema),
     defaultValues: defaultSchema,
   });
+
+  // keep form in sync if URL changes (back/forward)
+  useEffect(() => {
+    reset(defaultValues);
+  }, [defaultValues, reset]);
+
+  // hydrate selected techs from URL ids AFTER users load
+  useEffect(() => {
+    const users = techiciansQuery.data;
+    if (!users) return;
+
+    const ids = new Set(search.technicians ?? []);
+    let selected = users.filter((u: User) => ids.has(u.id));
+
+    // if no ids provided, default to "all techs"
+    if (selected.length === 0)
+      selected = users?.filter(
+        (u: User) => u?.user_role_id === ROLE_IDS.TECHNICIAN,
+      );
+
+    setValue("techicians", selected, {
+      shouldDirty: false,
+      shouldValidate: true,
+    });
+
+    hydratedRef.current = true;
+  }, [techiciansQuery.data, search.technicians, setValue]);
+
+  const setSearch = (updater: (prev: typeof search) => any) => {
+    navigate({
+      to: "/reports/maintenance",
+      search: (prev) => updater(prev as any),
+      replace: true,
+    });
+  };
 
   const from = watch("from");
   const to = watch("to");
   const technicians = watch("techicians");
   const trss = watch("trss");
 
-  const technicianOptions = useMemo(() => {
-    const base = techiciansQuery.data ?? [];
-    return [...base, allTechniciansOption];
-  }, [techiciansQuery.data]);
+  // push form -> URL (but only after hydration so we don't wipe URL on refresh)
+  useEffect(() => {
+    if (!hydratedRef.current) return;
+
+    setSearch((prev) => ({
+      ...(prev as any),
+      from: from?.format("YYYY-MM-DD"),
+      to: to?.format("YYYY-MM-DD"),
+      trss: trss?.trim() || undefined,
+      technicians: (technicians ?? []).map((t) => t.id),
+      page: 0, // reset paging on filter changes
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    from?.valueOf(),
+    to?.valueOf(),
+    trss,
+    (technicians ?? []).map((t) => t.id).join(","),
+  ]);
 
   const dataQuery = useQuery({
     queryKey: [
       "maintenance",
       {
-        from: from?.format("YYYY-MM-DD"),
-        to: to?.format("YYYY-MM-DD"),
-        trss: trss ?? "",
-        technicians: technicians?.map((t) => t.id) ?? [],
+        from: search.from,
+        to: search.to,
+        trss: search.trss ?? "",
+        technicians: search.technicians ?? [],
+        offset: search.page * search.pageSize,
+        limit: search.pageSize,
       },
     ],
     queryFn: async () => {
       const queryParams = new URLSearchParams();
-      queryParams.set("from_date", from?.format("YYYY-MM-DD"));
-      queryParams.set("to_date", to?.format("YYYY-MM-DD"));
-      queryParams.set("trss", trss ?? "");
+      queryParams.set(
+        "from_date",
+        search.from ?? dayjs().startOf("month").format("YYYY-MM-DD"),
+      );
+      queryParams.set(
+        "to_date",
+        search.to ?? dayjs().endOf("month").format("YYYY-MM-DD"),
+      );
+      queryParams.set("trss", search.trss ?? "");
 
-      technicians
-        ?.map((t) => t.id)
-        .forEach((id) => {
-          queryParams.append("technicians", id.toString());
-        });
+      (search.technicians ?? []).forEach((id) =>
+        queryParams.append("technicians", id.toString()),
+      );
+
+      // if your API supports pagination:
+      queryParams.set("offset", String(search.page * search.pageSize));
+      queryParams.set("limit", String(search.pageSize));
 
       const response = await fetch(
         `${API_URL}/maintenance?${queryParams.toString()}`,
@@ -138,16 +228,13 @@ export const MaintenanceReportView = () => {
           headers: { Authorization: authHeader() },
         },
       );
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch maintenance data");
-      }
-
+      if (!response.ok) throw new Error("Failed to fetch maintenance data");
       return response.json();
     },
-    staleTime: 1000 * 60 * 60 * 24,
-    cacheTime: 1000 * 60 * 60 * 24,
-    enabled: Boolean(from && to && technicians && technicians.length > 0),
+    enabled: Boolean(
+      search.from && search.to && (search.technicians?.length ?? 0) > 0,
+    ),
+    keepPreviousData: true,
   });
 
   const numberOfRepairsPieChartData = useMemo(() => {
@@ -195,6 +282,12 @@ export const MaintenanceReportView = () => {
     );
   }, [dataQuery.data]);
 
+  const techniciansByName = useMemo(() => {
+    return new Map(
+      technicianOptions.map((user) => [user.full_name, user] as const),
+    );
+  }, [technicianOptions]);
+
   const columns: GridColDef[] = [
     {
       field: "date_time",
@@ -210,18 +303,59 @@ export const MaintenanceReportView = () => {
         return date.toLocaleString();
       }) as GridValueFormatter,
     },
-    { field: "technician", headerName: "Technician", flex: 1 },
+    {
+      field: "technician",
+      headerName: "Technician",
+      flex: 1,
+      renderCell: (params) => {
+        const technicianName = String(params.value ?? "");
+        const user = techniciansByName.get(technicianName);
+
+        return (
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              minWidth: 0,
+              height: "100%",
+            }}
+          >
+            <UserAvatar
+              full_name={technicianName}
+              role={user ? getRoleLabel(user) : undefined}
+              src={user?.avatar_img ?? undefined}
+              size={28}
+            />
+            <Box
+              component="span"
+              sx={{
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {technicianName}
+            </Box>
+          </Box>
+        );
+      },
+    },
     {
       field: "number_of_repairs",
       headerName: "Number of Repairs",
       type: "number",
       flex: 1,
+      align: "left",
+      headerAlign: "left",
     },
     {
       field: "number_of_pms",
       headerName: "Number of Preventative Maintenances",
       type: "number",
       flex: 1,
+      align: "left",
+      headerAlign: "left",
     },
     {
       field: "meter",
@@ -287,33 +421,11 @@ export const MaintenanceReportView = () => {
   return (
     <BackgroundBox>
       <Card sx={{ height: "fit-content" }}>
-        <CustomCardHeader title="Maintenance Report" icon={Plumbing} />
+        <CustomCardHeader
+          title={<ReportBreadcrumbTitle current="Maintenance" />}
+          icon={ConstructionOutlined}
+        />
         <CardContent>
-          <Grid container justifyContent="space-between" alignContent="center">
-            <Grid item>
-              <Link to="/reports">
-                <Tooltip title="Go back" placement="right">
-                  <IconButton aria-label="return to reports page">
-                    <ArrowBack />
-                  </IconButton>
-                </Tooltip>
-              </Link>
-            </Grid>
-            <Grid item>
-              <Tooltip title="Export report as PDF" placement="left">
-                <IconButton
-                  aria-label="export report as pdf"
-                  onClick={handleDownloadMaintenancePDF}
-                  disabled={
-                    !technicians?.length ||
-                    downloadMaintenancePDFMutation.isLoading
-                  }
-                >
-                  <PictureAsPdf />
-                </IconButton>
-              </Tooltip>
-            </Grid>
-          </Grid>
           <Grid container spacing={2} padding={2}>
             <Grid item xs={12} sm={6} md={3}>
               <ControlledDatepicker
@@ -339,7 +451,7 @@ export const MaintenanceReportView = () => {
                 format="YYYY MMMM DD"
               />
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid item xs sx={{ flexGrow: 1 }}>
               <ControlledTextbox
                 sx={{ width: "100%" }}
                 size="small"
@@ -347,6 +459,34 @@ export const MaintenanceReportView = () => {
                 label="TRSS"
                 control={control}
               />
+            </Grid>
+            <Grid
+              item
+              xs={12}
+              sm={6}
+              md="auto"
+              sx={{
+                display: "flex",
+                justifyContent: { xs: "center", sm: "flex-end" },
+              }}
+            >
+              <Tooltip title="Export report as PDF" placement="top">
+                <span>
+                  <Button
+                    variant="outlined"
+                    startIcon={<PictureAsPdf />}
+                    aria-label="export report as pdf"
+                    onClick={handleDownloadMaintenancePDF}
+                    disabled={
+                      !technicians?.length ||
+                      downloadMaintenancePDFMutation.isLoading
+                    }
+                    sx={{ width: "fit-content", whiteSpace: "nowrap" }}
+                  >
+                    PDF
+                  </Button>
+                </span>
+              </Tooltip>
             </Grid>
             <Grid item xs={12}>
               <ControlledAutocomplete
@@ -361,18 +501,39 @@ export const MaintenanceReportView = () => {
                   option?.id === value?.id
                 }
                 onChange={(_: React.SyntheticEvent, selected: User[]) => {
-                  const isSelectingAll = selected.some(
-                    (tech) => tech.id === ALL_TECHNICIANS_ID,
-                  );
-                  const allTechs = techiciansQuery.data ?? [];
+                  setValue("techicians", selected, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  });
 
-                  if (isSelectingAll) {
-                    // Set all real users as selected, excluding the synthetic "All Technicians"
-                    setValue("techicians", allTechs);
-                  } else {
-                    setValue("techicians", selected);
+                  if (hydratedRef.current) {
+                    setSearch((prev) => ({
+                      ...(prev as any),
+                      technicians: selected.map((t) => t.id),
+                      page: 0,
+                    }));
                   }
                 }}
+                groupBy={(option: User) => getRoleLabel(option)}
+                renderOption={(props: React.HTMLAttributes<HTMLLIElement>, option: User) => (
+                  <Box component="li" {...props} key={option.id}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                      }}
+                    >
+                      <UserAvatar
+                        full_name={option.full_name}
+                        role={getRoleLabel(option)}
+                        src={option.avatar_img ?? undefined}
+                        size={30}
+                      />
+                      <Box component="span">{option.full_name}</Box>
+                    </Box>
+                  </Box>
+                )}
                 renderInput={(params: Parameters<typeof TextField>[0]) => {
                   if (techiciansQuery.isLoading && params.inputProps) {
                     params.inputProps.value = "Loading...";
@@ -392,6 +553,14 @@ export const MaintenanceReportView = () => {
                     <Chip
                       key={option.id}
                       label={option.full_name}
+                      avatar={
+                        <UserAvatar
+                          full_name={option.full_name}
+                          role={getRoleLabel(option)}
+                          src={option.avatar_img ?? undefined}
+                          size={24}
+                        />
+                      }
                       {...getTagProps({ index })}
                     />
                   ))
@@ -482,22 +651,60 @@ export const MaintenanceReportView = () => {
               </Box>
             </Grid>
           </Grid>
-          <Grid item xs={12}>
+          <Grid item xs={12} px={2}>
             <DataGrid
               rows={tableRows ?? []}
               columns={columns}
+              loading={dataQuery.isLoading}
               disableColumnMenu
               hideFooterSelectedRowCount
-              pageSizeOptions={[5, 10, 25]}
-              initialState={{
-                pagination: {
-                  paginationModel: { pageSize: 5, page: 0 },
-                },
+              pagination
+              paginationModel={{ page: search.page, pageSize: search.pageSize }}
+              pageSizeOptions={[5, 10, 25, 50, 100]}
+              onPaginationModelChange={(m) => {
+                navigate({
+                  to: "/reports/maintenance",
+                  search: (prev) => ({
+                    ...(prev as any),
+                    pageSize: m.pageSize,
+                    page: m.pageSize !== (prev as any).pageSize ? 0 : m.page,
+                  }),
+                  replace: true,
+                });
               }}
+              rowCount={dataQuery.data?.total ?? tableRows.length}
             />
           </Grid>
-          <Grid item xs={12}>
-            <Button onClick={() => reset()}>Reset</Button>
+          <Grid item xs={12} px={2}>
+            <Button
+              onClick={() => {
+                reset({
+                  from: dayjs().startOf("month"),
+                  to: dayjs().endOf("month"),
+                  techicians:
+                    techiciansQuery?.data?.filter(
+                      (t: User) => t?.user_role_id === ROLE_IDS.TECHNICIAN,
+                    ) ?? [],
+                  trss: "",
+                });
+
+                navigate({
+                  to: "/reports/maintenance",
+                  search: (prev) => ({
+                    ...(prev as any),
+                    from: dayjs().startOf("month").format("YYYY-MM-DD"),
+                    to: dayjs().endOf("month").format("YYYY-MM-DD"),
+                    trss: undefined,
+                    technicians: [],
+                    page: 0,
+                    pageSize: 5,
+                  }),
+                  replace: true,
+                });
+              }}
+            >
+              Reset
+            </Button>
           </Grid>
         </CardContent>
       </Card>

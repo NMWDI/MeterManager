@@ -1,18 +1,20 @@
 import { useMemo } from "react";
 import { Box, Button } from "@mui/material";
 import { DataGrid, GridPagination, GridColDef } from "@mui/x-data-grid";
-import AddIcon from "@mui/icons-material/Add";
-import { RegionMeasurementDTO } from "../../interfaces";
+import { Add } from "@mui/icons-material";
 import dayjs, { Dayjs } from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import { useIsAuthenticated } from "react-auth-kit";
+import { RegionMeasurementDTO } from "@/interfaces";
+import { useNavigate } from "@tanstack/react-router";
+import { Route } from "@/routes/chlorides";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
 declare module "@mui/x-data-grid" {
-  interface FooterPropsOverrides extends Partial<FooterExtraProps> { }
+  interface FooterPropsOverrides extends Partial<FooterExtraProps> {}
 }
 
 interface FooterExtraProps {
@@ -20,7 +22,7 @@ interface FooterExtraProps {
   isRegionSelected: boolean;
 }
 
-export const ChloridesTable = ({
+export const Table = ({
   rows,
   onOpenModal,
   isRegionSelected,
@@ -44,6 +46,9 @@ export const ChloridesTable = ({
     };
   }) => void;
 }) => {
+  const navigate = useNavigate();
+  const { page, pageSize } = Route.useSearch();
+
   const isAuthenticated = useIsAuthenticated();
   const columns: GridColDef[] = useMemo(() => {
     const baseCols: GridColDef[] = [
@@ -60,8 +65,7 @@ export const ChloridesTable = ({
         field: "value",
         headerName: "Chlorides (ppm)",
         width: 175,
-        valueFormatter: (value) =>
-          value == null ? "NOT SAMPLED" : value,
+        valueFormatter: (value) => (value == null ? "NOT SAMPLED" : value),
       },
       {
         field: "well",
@@ -90,6 +94,24 @@ export const ChloridesTable = ({
       <DataGrid
         rows={rows}
         columns={columns}
+        pagination
+        initialState={{
+          pagination: { paginationModel: { page: 0, pageSize: 25 } },
+        }}
+        pageSizeOptions={[10, 25, 50, 100]}
+        paginationModel={{ page, pageSize }}
+        onPaginationModelChange={(m) => {
+          navigate({
+            to: "/chlorides",
+            search: (prev) => ({
+              ...(prev as any),
+              regionId: prev.regionId ?? undefined,
+              page: m.page,
+              pageSize: m.pageSize,
+            }),
+            replace: true,
+          });
+        }}
         slots={{
           footer: Footer,
         }}
@@ -122,8 +144,8 @@ const Footer = ({
             size="small"
             onClick={onOpenModal}
             sx={{ flexShrink: 0, width: { xs: "100%", sm: "auto" }, ml: 1.5 }}
+            startIcon={<Add fontSize="small" />}
           >
-            <AddIcon fontSize="small" sx={{ mr: 0.5 }} />
             Create
           </Button>
         ) : null}

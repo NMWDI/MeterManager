@@ -5,15 +5,17 @@ import {
   ListItemIcon,
   ListItemText,
 } from "@mui/material";
-import {
-  Assessment,
-  ExpandLess,
-  ExpandMore,
-} from "@mui/icons-material";
-import { useNavigate } from "react-router-dom";
-import { useIsActiveRoute } from "../hooks";
+import { Assessment, ExpandLess, ExpandMore } from "@mui/icons-material";
+import { useNavigate } from "@tanstack/react-router";
+import { useIsActiveRoute } from "@/hooks";
 
-export function ReportsNavItem({ open, setOpen }: { open: boolean, setOpen: Dispatch<SetStateAction<boolean>> }) {
+export function ReportsNavItem({
+  open,
+  setOpen,
+}: {
+  open: boolean;
+  setOpen: Dispatch<SetStateAction<boolean>>;
+}) {
   const navigate = useNavigate();
   const [clickTimer, setClickTimer] = useState<NodeJS.Timeout | null>(null);
   const isActive = useIsActiveRoute("/reports");
@@ -37,7 +39,7 @@ export function ReportsNavItem({ open, setOpen }: { open: boolean, setOpen: Disp
     }
     e.stopPropagation();
     setOpen(false);
-    navigate("/reports");
+    navigate({ to: "/reports", search: {} });
   };
 
   return (
@@ -69,4 +71,3 @@ export function ReportsNavItem({ open, setOpen }: { open: boolean, setOpen: Disp
     </ListItem>
   );
 }
-

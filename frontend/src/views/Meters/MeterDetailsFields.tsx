@@ -1,12 +1,9 @@
-import { useForm, SubmitHandler } from "react-hook-form";
 import { useEffect, useState } from "react";
+import { useForm, SubmitHandler } from "react-hook-form";
 import { enqueueSnackbar } from "notistack";
 import { useAuthUser } from "react-auth-kit";
-import { createSearchParams, useNavigate } from "react-router-dom";
-import GradingIcon from "@mui/icons-material/Grading";
-import AddIcon from "@mui/icons-material/Add";
-import SaveIcon from "@mui/icons-material/Save";
-import SaveAsIcon from "@mui/icons-material/SaveAs";
+import { useNavigate } from "@tanstack/react-router";
+import { Add, Grading, Save, SaveAs } from "@mui/icons-material";
 import { Button, Grid, Card, CardContent, InputAdornment } from "@mui/material";
 import {
   Table,
@@ -16,27 +13,23 @@ import {
   TableHead,
   TableRow,
 } from "@mui/material";
-import { SecurityScope, Meter } from "../../interfaces";
-import {
-  useCreateMeter,
-  useGetMeter,
-  useUpdateMeter,
-} from "../../service/ApiServiceNew";
 import * as Yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
-import ControlledTextbox from "../../components/RHControlled/ControlledTextbox";
-import ControlledMeterTypeSelect from "../../components/RHControlled/ControlledMeterTypeSelect";
-import ControlledWellSelection from "../../components/RHControlled/ControlledWellSelection";
-import ControlledMeterStatusTypeSelect from "../../components/RHControlled/ControlledMeterStatusTypeSelect";
-import { formatLatLong } from "../../conversions";
-import ControlledMeterRegisterSelect from "../../components/RHControlled/ControlledMeterRegisterSelect";
-import { CustomCardHeader } from "../../components/CustomCardHeader";
+import {
+  CustomCardHeader,
+  ControlledTextbox,
+  ControlledMeterTypeSelect,
+  ControlledWellSelection,
+  ControlledMeterStatusTypeSelect,
+  ControlledMeterRegisterSelect,
+} from "@/components";
+import { SecurityScope, Meter } from "@/interfaces";
+import { useCreateMeter, useGetMeter, useUpdateMeter } from "@/service";
+import { formatLatLong } from "@/conversions";
 
 const MeterResolverSchema: Yup.ObjectSchema<any> = Yup.object().shape({
   serial_number: Yup.string().required("Please enter a serial number."),
-  price: Yup.number()
-    .nullable()
-    .min(0, "Price cannot be negative"),
+  price: Yup.number().nullable().min(0, "Price cannot be negative"),
   meter_type: Yup.object().required("Please select a meter type."),
   meter_register: Yup.object().required("Please select a meter register."),
 });
@@ -114,11 +107,12 @@ export const MeterDetailsFields = ({
 
   const navigateToNewActivity = () => {
     navigate({
-      pathname: "/activities",
-      search: createSearchParams({
-        meter_id: selectedMeterID?.toString() ?? "",
-        serial_number: meterDetails.data?.serial_number ?? "",
-      }).toString(),
+      to: "/activities",
+      search: {
+        meter_id: selectedMeterID,
+        serial_number: meterDetails.data?.serial_number ?? undefined,
+        work_order_id: undefined,
+      },
     });
   };
 
@@ -126,7 +120,7 @@ export const MeterDetailsFields = ({
     <Card>
       <CustomCardHeader
         title={meterAddMode ? "Add New Meter" : "Selected Meter Details"}
-        icon={meterAddMode ? AddIcon : GradingIcon}
+        icon={meterAddMode ? Add : Grading}
       />
       <CardContent>
         <Grid container spacing={2}>
@@ -184,7 +178,9 @@ export const MeterDetailsFields = ({
               type="number"
               inputProps={{ step: "0.01" }}
               InputProps={{
-                startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                startAdornment: (
+                  <InputAdornment position="start">$</InputAdornment>
+                ),
               }}
             />
           </Grid>
@@ -218,12 +214,13 @@ export const MeterDetailsFields = ({
                         : watch("well")?.location?.trss}
                     </TableCell>
                     <TableCell sx={{ fontSize: "1rem" }}>
-                      {watch("well")?.location?.latitude == null
+                      {!watch("well")?.location?.latitude ||
+                      !watch("well")?.location?.longitude
                         ? "--"
                         : formatLatLong(
-                          watch("well")?.location?.latitude,
-                          watch("well")?.location?.longitude,
-                        )}
+                            watch("well")?.location?.latitude ?? 0,
+                            watch("well")?.location?.longitude ?? 0,
+                          )}
                     </TableCell>
                     <TableCell sx={{ fontSize: "1rem" }}>
                       {watch("well")?.osetag == null
@@ -292,7 +289,7 @@ export const MeterDetailsFields = ({
                     variant="contained"
                     onClick={handleSubmit(onAddMeter, onErr)}
                   >
-                    <SaveIcon sx={{ fontSize: "1.2rem" }} />
+                    <Save sx={{ fontSize: "1.2rem" }} />
                     &nbsp; Save New Meter
                   </Button>
                 ) : (
@@ -301,7 +298,7 @@ export const MeterDetailsFields = ({
                     variant="contained"
                     onClick={handleSubmit(onSaveChanges, onErr)}
                   >
-                    <SaveAsIcon sx={{ fontSize: "1.2rem" }} />
+                    <SaveAs sx={{ fontSize: "1.2rem" }} />
                     &nbsp; Save Changes
                   </Button>
                 )}

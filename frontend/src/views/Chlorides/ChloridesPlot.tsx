@@ -1,9 +1,10 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Box, CircularProgress, Typography } from "@mui/material";
-import Plot from "react-plotly.js";
-import { Data } from "plotly.js";
+import ReactPlot from "react-plotly.js";
+import type { Data } from "plotly.js";
+import { PlotContextMenu } from "../../components/PlotContextMenu";
 
-export const ChloridesPlot = ({
+export const Plot = ({
   manual_dates,
   manual_vals,
   isLoading,
@@ -12,6 +13,25 @@ export const ChloridesPlot = ({
   manual_vals: { value: number; well: string }[];
   isLoading: boolean;
 }) => {
+  const plotContainerRef = useRef<HTMLDivElement | null>(null);
+  const plotRef = useRef<HTMLElement | null>(null);
+  const [plotRevision, setPlotRevision] = useState(0);
+  const [dragMode, setDragMode] = useState<"pan" | "zoom">("pan");
+
+  const resetAxes = () => {
+    if (!plotRef.current) {
+      return;
+    }
+
+    const resetAxesButton = plotRef.current.querySelector<HTMLElement>(
+      '.modebar-btn[data-title="Reset axes"]',
+    );
+
+    if (resetAxesButton) {
+      resetAxesButton.click();
+    }
+  };
+
   const data: Partial<Data>[] = useMemo(() => {
     const wellData: Record<string, { x: Date[]; y: number[] }> = {};
 
@@ -26,19 +46,57 @@ export const ChloridesPlot = ({
     return Object.entries(wellData).map(([well, { x, y }], index) => ({
       x,
       y,
-      type: "scatter",
+      type: "scattergl",
       mode: "markers",
       marker: { color: generateColorScale(index) },
       name: `Well ${well}`,
+      hovertemplate:
+        "Date: %{x|%B %-d, %Y}<br>Value: %{y} ppm<extra>%{fullData.name}</extra>",
     }));
   }, [manual_dates, manual_vals]);
 
+  const hasData = data.length > 0;
+
+  useEffect(() => {
+    const container = plotContainerRef.current;
+    if (!container) {
+      return undefined;
+    }
+
+    let frame = 0;
+    const observer = new ResizeObserver(() => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        setPlotRevision((prev) => prev + 1);
+      });
+    });
+
+    observer.observe(container);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, []);
+
   return (
-    <Box sx={{ height: 600, width: '100%' }}>
-      {isLoading ?
+    <Box
+      sx={{
+        height: { xs: 300, sm: 400, md: 500, lg: 600 },
+        width: "100%",
+        border: 1,
+        borderColor: "divider",
+        borderRadius: 1,
+        bgcolor: "background.paper",
+        overflow: "hidden",
+        p: 2,
+        boxSizing: "border-box",
+      }}
+    >
+      {isLoading && !hasData ? (
         <Box
           sx={{
-            height: 600,
+            height: { xs: 300, sm: 400, md: 500, lg: 600 },
             width: "100%",
             display: "flex",
             justifyContent: "center",
@@ -51,32 +109,63 @@ export const ChloridesPlot = ({
             Loading plot data...
           </Typography>
         </Box>
-        :
-        <Plot
-          data={data}
-          layout={{
-            autosize: true,
-            title: "Chlorides Over Time",
-            titlefont: { size: 18 },
-            legend: {
-              title: { text: "Wells", font: { size: 14 } },
-              x: 1,
-              y: 1,
-              xanchor: "right",
-              yanchor: "top",
-              bordercolor: "grey", // Add border color
-              borderwidth: 1, // Add border width
-            },
-            xaxis: { title: { text: "Date", font: { size: 16 } } },
-            yaxis: {
-              title: { text: "Chlorides (ppm)", font: { size: 16 } },
-            },
-            margin: { t: 40, b: 50, l: 60, r: 10 },
-          }}
-          useResizeHandler
-          style={{ width: "100%", height: "100%" }}
-        />
-      }
+      ) : (
+        <PlotContextMenu
+          onResetAxes={resetAxes}
+          dragMode={dragMode}
+          onToggleDragMode={() =>
+            setDragMode((prev) => (prev === "pan" ? "zoom" : "pan"))
+          }
+        >
+          <Box
+            ref={plotContainerRef}
+            sx={{ width: "100%", height: "100%" }}
+          >
+            <ReactPlot
+              data={data}
+              revision={plotRevision}
+              layout={{
+                autosize: true,
+                dragmode: dragMode,
+                uirevision: "chlorides-plot",
+                title: "Chlorides Over Time",
+                titlefont: { size: 18 },
+                legend: {
+                  title: { text: "Wells", font: { size: 14 } },
+                  x: 1,
+                  y: 1,
+                  xanchor: "right",
+                  yanchor: "top",
+                  bordercolor: "grey",
+                  borderwidth: 1,
+                },
+                xaxis: { title: { text: "Date", font: { size: 16 } } },
+                yaxis: {
+                  title: { text: "Chlorides (ppm)", font: { size: 16 } },
+                },
+                margin: { t: 40, b: 50, l: 60, r: 10 },
+              }}
+              onInitialized={(_, graphDiv) => {
+                plotRef.current = graphDiv;
+              }}
+              onUpdate={(_, graphDiv) => {
+                plotRef.current = graphDiv;
+              }}
+              config={{
+                displaylogo: false,
+                responsive: true,
+                modeBarButtonsToRemove: [
+                  "select2d",
+                  "lasso2d",
+                  "autoScale2d",
+                ],
+              }}
+              useResizeHandler
+              style={{ width: "100%", height: "100%" }}
+            />
+          </Box>
+        </PlotContextMenu>
+      )}
     </Box>
   );
 };

@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { useDebounce } from "use-debounce";
 import {
   MapContainer,
@@ -7,27 +8,55 @@ import {
   Marker,
   Pane,
 } from "react-leaflet";
-import { MeterMapDTO } from "../../../interfaces";
+import { MeterMapDTO } from "@/interfaces";
 
 import L from "leaflet";
 import { FeatureCollection } from "geojson";
 
 import "leaflet/dist/leaflet.css";
 import "@changey/react-leaflet-markercluster/dist/styles.min.css";
-import "../../../css/map.css";
-import { useGetMeterLocations } from "../../../service/ApiServiceNew";
-import * as tr_data from "../../../data/RoswellTR_v2.json";
-import * as ss_data from "../../../data/RoswellSS.json";
+import "@/css/map.css";
+import * as tr_data from "@/data/RoswellTR_v2.json";
+import * as ss_data from "@/data/RoswellSS.json";
 
 import icon from "leaflet/dist/images/marker-icon.png";
 import iconShadow from "leaflet/dist/images/marker-shadow.png";
+import { useGetMeterLocations } from "@/service";
 import { Box, Typography } from "@mui/material";
+import { useNavigate } from "@tanstack/react-router";
 
 // @ts-ignore
 import MarkerClusterGroup from "@changey/react-leaflet-markercluster";
-import { OpenStreetMapLayer, SatelliteLayer } from "../../../components";
-import { getMeterMarkerColor } from "../../../utils";
-import { MeterMapColorLegend } from "../../../components/MeterMapColorLegend";
+import {
+  OpenStreetMapLayer,
+  SatelliteLayer,
+  MapFullscreenToggle,
+  MeterMapColorLegend,
+  TransporationLayer,
+  BoundariesLayer,
+  MapUrlStateSync,
+} from "@/components";
+import {
+  DEFAULT_MAP_CENTER,
+  DEFAULT_MAP_ZOOM,
+  getMapLayersControlKey,
+  getMeterMarkerColor,
+  normalizeMapBaseLayer,
+  normalizeMapOverlayNames,
+  parseMapView,
+} from "@/utils";
+import { Route } from "@/routes/manage/meters";
+
+const BASE_LAYER_NAMES = ["Satellite", "OpenStreetMap"] as const;
+const OVERLAY_NAMES = [
+  "Meters",
+  "Section",
+  "Township Range",
+  "Transportation",
+  "Boundaries and Places",
+] as const;
+const DEFAULT_BASE_LAYER = "OpenStreetMap";
+const DEFAULT_OVERLAYS = ["Meters"];
 
 const DefaultIcon = L.icon({ iconUrl: icon, shadowUrl: iconShadow });
 L.Marker.prototype.options.icon = DefaultIcon;
@@ -43,33 +72,77 @@ export default function MeterSelectionMap({
   meterSearch: string;
   onMeterSelection: Function;
 }) {
+  const search = Route.useSearch();
+  const navigate = useNavigate();
   const [meterSearchDebounced] = useDebounce(meterSearch, 250);
   const meterMarkers = useGetMeterLocations(meterSearchDebounced);
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
+  const mapBaseLayer = normalizeMapBaseLayer(
+    search.mapBase,
+    BASE_LAYER_NAMES,
+    DEFAULT_BASE_LAYER,
+  );
+  const mapOverlayNames = normalizeMapOverlayNames(
+    search.mapOverlays,
+    OVERLAY_NAMES,
+    DEFAULT_OVERLAYS,
+  );
+  const mapView = parseMapView(search, {
+    center: DEFAULT_MAP_CENTER,
+    zoom: DEFAULT_MAP_ZOOM,
+  });
+  const setSearch = (updater: (prev: typeof search) => typeof search) => {
+    navigate({
+      to: "/manage/meters",
+      search: (prev) => updater(prev as typeof search),
+      replace: true,
+    });
+  };
 
   return (
     <>
       <Box
+        ref={mapContainerRef}
         sx={{
           borderRadius: 2,
-          overflow: 'hidden',
-          height: '100%',
+          overflow: "hidden",
+          height: "100%",
           minHeight: 320,
-          '& .leaflet-container': { height: '100%', width: '100%' },
+          position: "relative",
+          "&:fullscreen": {
+            borderRadius: 0,
+            minHeight: "100vh",
+          },
+          "& .leaflet-container": { height: "100%", width: "100%" },
         }}
       >
         <MapContainer
-          center={[33, -104.0]}
-          zoom={8}
-          style={{ height: '100%', width: '100%' }}
+          center={mapView.center}
+          zoom={mapView.zoom}
+          style={{ height: "100%", width: "100%" }}
           maxZoom={18}
         >
-          <LayersControl position="topleft">
+          <MapUrlStateSync
+            allowedBaseLayers={BASE_LAYER_NAMES}
+            allowedOverlays={OVERLAY_NAMES}
+            defaultBaseLayer={DEFAULT_BASE_LAYER}
+            defaultOverlays={DEFAULT_OVERLAYS}
+            search={search}
+            setSearch={setSearch}
+          />
+          <LayersControl
+            key={getMapLayersControlKey(mapBaseLayer, mapOverlayNames)}
+            position="topleft"
+          >
             {/* Base Layers */}
-            <SatelliteLayer />
-            <OpenStreetMapLayer />
+            <SatelliteLayer checked={mapBaseLayer === "Satellite"} />
+            <OpenStreetMapLayer checked={mapBaseLayer === "OpenStreetMap"} />
 
             {/* Markers Cluster Overlay */}
-            <LayersControl.Overlay name="Meters" checked>
+            <LayersControl.Overlay
+              checked={mapOverlayNames.includes("Meters")}
+              name="Meters"
+            >
               <MarkerClusterGroup
                 chunkedLoading
                 maxClusterRadius={35}
@@ -97,12 +170,17 @@ export default function MeterSelectionMap({
               >
                 {meterMarkers.isSuccess &&
                   meterMarkers.data.map((meter: MeterMapDTO) => {
-                    const color = meter.last_pm ? getMeterMarkerColor(meter.last_pm) : "black";
+                    const color = meter.last_pm
+                      ? getMeterMarkerColor(meter.last_pm)
+                      : "black";
 
                     return (
                       <Marker
                         key={meter.id}
-                        position={[meter.location.latitude, meter.location.longitude]}
+                        position={[
+                          meter.location.latitude,
+                          meter.location.longitude,
+                        ]}
                         eventHandlers={{
                           click: () => onMeterSelection(meter.id),
                         }}
@@ -119,7 +197,10 @@ export default function MeterSelectionMap({
             </LayersControl.Overlay>
 
             {/* Section GeoJSON */}
-            <LayersControl.Overlay name="Section">
+            <LayersControl.Overlay
+              checked={mapOverlayNames.includes("Section")}
+              name="Section"
+            >
               <Pane name="section_overlay" style={{ zIndex: 600 }}>
                 <GeoJSON
                   data={ssData}
@@ -134,7 +215,10 @@ export default function MeterSelectionMap({
             </LayersControl.Overlay>
 
             {/* Township/Range GeoJSON */}
-            <LayersControl.Overlay name="Township Range">
+            <LayersControl.Overlay
+              checked={mapOverlayNames.includes("Township Range")}
+              name="Township Range"
+            >
               <Pane name="township_range_overlay" style={{ zIndex: 625 }}>
                 <GeoJSON
                   data={trData}
@@ -155,25 +239,41 @@ export default function MeterSelectionMap({
                 />
               </Pane>
             </LayersControl.Overlay>
+            <TransporationLayer
+              checked={mapOverlayNames.includes("Transportation")}
+            />
+            <BoundariesLayer
+              checked={mapOverlayNames.includes("Boundaries and Places")}
+            />
           </LayersControl>
+          <MapFullscreenToggle containerRef={mapContainerRef} />
           <MeterMapColorLegend />
         </MapContainer>
       </Box>
       {/* Loading and empty states */}
       {meterMarkers.isLoading && (
         <Box py={2}>
-          <Typography variant="h6" sx={{
-            pointerEvents: "none",
-            userSelect: "none",
-          }}>Loading meter markers...</Typography>
+          <Typography
+            variant="h6"
+            sx={{
+              pointerEvents: "none",
+              userSelect: "none",
+            }}
+          >
+            Loading meter markers...
+          </Typography>
         </Box>
       )}
       {meterMarkers.isSuccess && meterMarkers?.data.length === 0 && (
         <Box py={2}>
-          <Typography variant="h6" color="text.secondary" sx={{
-            pointerEvents: "none",
-            userSelect: "none",
-          }}>
+          <Typography
+            variant="h6"
+            color="text.secondary"
+            sx={{
+              pointerEvents: "none",
+              userSelect: "none",
+            }}
+          >
             No meters found for that search.
           </Typography>
         </Box>
@@ -181,10 +281,14 @@ export default function MeterSelectionMap({
       {/* Error */}
       {meterMarkers.isError && (
         <Box py={2}>
-          <Typography variant="h6" color="error" sx={{
-            pointerEvents: "none",
-            userSelect: "none",
-          }}>
+          <Typography
+            variant="h6"
+            color="error"
+            sx={{
+              pointerEvents: "none",
+              userSelect: "none",
+            }}
+          >
             Failed to load meters: {meterMarkers.error.message}
           </Typography>
         </Box>

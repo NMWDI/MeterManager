@@ -10,9 +10,9 @@ import {
   Typography,
 } from "@mui/material";
 import { useFieldArray } from "react-hook-form";
-import { Part } from "../../../interfaces";
-import { StyledToggleButton } from "../../../components";
-import { useGetMeterPartsList } from "../../../service/ApiServiceNew";
+import { Part } from "@/interfaces";
+import { StyledToggleButton } from "@/components";
+import { useGetMeterPartsList } from "@/service";
 
 export default function PartsSelection({ control, watch, setValue }: any) {
   const partsList = useGetMeterPartsList({

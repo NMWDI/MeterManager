@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import {
+  Box,
   Button,
   Card,
   CardContent,
@@ -9,36 +10,98 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { Search } from "@mui/icons-material";
-import { useGetUserAdminList } from "../../service/ApiServiceNew";
-import AddIcon from "@mui/icons-material/Add";
-import FormatListBulletedOutlinedIcon from "@mui/icons-material/FormatListBulletedOutlined";
-import { User } from "../../interfaces";
-import TristateToggle from "../../components/TristateToggle";
-import GridFooterWithButton from "../../components/GridFooterWithButton";
-import { RoleChip, CustomCardHeader, IsTrueChip } from "../../components";
+import { Search, Add, People } from "@mui/icons-material";
+import { useNavigate } from "@tanstack/react-router";
+import { Route } from "@/routes/manage/users";
+import { useGetUserAdminList } from "@/service";
+import {
+  CustomCardHeader,
+  GridFooterWithButton,
+  IsTrueChip,
+  ManageBreadcrumbTitle,
+  RoleChip,
+  TristateToggle,
+  UserAvatar,
+} from "@/components";
 
 export const UsersTable = ({
-  setSelectedUser,
-  setUserAddMode,
+  onSelectUser,
+  onCreateUser,
 }: {
-  setSelectedUser: Function;
-  setUserAddMode: Function;
+  onSelectUser: (id: number) => void;
+  onCreateUser: () => void;
 }) => {
   const usersList = useGetUserAdminList();
-  const [userSearchQuery, setUserSearchQuery] = useState<string>("");
-  const [filteredRows, setFilteredRows] = useState<User[]>();
-  const [isActiveFilter, setIsActiveFilter] = useState<boolean>();
-  const [isTechnicianFilter, setIsTechnicianFilter] = useState<boolean>();
+  const navigate = useNavigate();
+  const search = Route.useSearch();
+
+  const setSearch = (updater: (prev: typeof search) => any) => {
+    navigate({
+      to: "/manage/users",
+      search: (prev) => updater(prev as any),
+      replace: true,
+    });
+  };
+
+  const filteredRows = useMemo(() => {
+    const q = (search.user_q ?? "").toLowerCase();
+
+    let rows = (usersList.data ?? []).filter(
+      (row) =>
+        row.full_name.toLowerCase().includes(q) ||
+        row.email?.toLowerCase().includes(q) ||
+        row.username?.toLowerCase().includes(q),
+    );
+
+    if (search.active !== "all") {
+      const wantActive = search.active === "true";
+      rows = rows.filter((row) => !row.disabled === wantActive);
+    }
+
+    if (search.tech !== "all") {
+      const wantTech = search.tech === "true";
+      rows = rows.filter(
+        (row) => (row.user_role?.name === "Technician") === wantTech,
+      );
+    }
+
+    return rows;
+  }, [usersList.data, search.user_q, search.active, search.tech]);
 
   const cols: GridColDef[] = [
+    {
+      field: "avatar_img",
+      headerName: "Avatar",
+      width: 70,
+      sortable: false,
+      filterable: false,
+      renderCell: (params: any) => (
+        <Box
+          sx={{
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            gap: 2,
+            justifyContent: "start",
+            alignItems: "center",
+          }}
+        >
+          <UserAvatar
+            full_name={params.row.full_name}
+            role={params.row.user_role?.name}
+            src={params.row.avatar_img}
+            size={34}
+          />
+        </Box>
+      ),
+    },
     { field: "full_name", headerName: "Full Name", width: 200 },
     {
       field: "user_role",
       headerName: "Role",
       width: 125,
       valueGetter: (_, row) => row.user_role.name,
-      renderCell: (params: any) => <RoleChip role={params.value} />
+      renderCell: (params: any) => <RoleChip role={params.value} />,
     },
     { field: "email", headerName: "Email", width: 250 },
     { field: "username", headerName: "Username", width: 150 },
@@ -46,46 +109,43 @@ export const UsersTable = ({
       field: "disabled",
       headerName: "Active",
       width: 80,
-      renderCell: (params: any) => <IsTrueChip assert={params.value != true} />
+      renderCell: (params: any) => <IsTrueChip assert={params.value != true} />,
     },
     { field: "display_name", headerName: "Display Name", width: 150 },
     { field: "redirect_page", headerName: "Redirect Page", width: 200 },
   ];
 
-  useEffect(() => {
-    const psq = userSearchQuery.toLowerCase();
-    let filtered = (usersList.data ?? []).filter(
-      (row) =>
-        row.full_name.toLowerCase().includes(psq) ||
-        row.email?.toLowerCase().includes(psq) ||
-        row.username?.toLowerCase().includes(psq),
-    );
-    if (isActiveFilter != undefined)
-      filtered = filtered.filter((row) => !row.disabled == isActiveFilter);
-    if (isTechnicianFilter != undefined)
-      filtered = filtered.filter(
-        (row) => (row?.user_role?.name == "Technician") == isTechnicianFilter,
-      );
-
-    setFilteredRows(filtered);
-  }, [userSearchQuery, usersList.data, isActiveFilter, isTechnicianFilter]);
-
   return (
     <Card>
       <CustomCardHeader
-        title="All Users"
-        icon={FormatListBulletedOutlinedIcon}
+        title={<ManageBreadcrumbTitle current="Users" />}
+        icon={People}
       />
       <CardContent>
         <Grid container spacing={2}>
-          <Grid item xs={6} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
+          <Grid
+            item
+            xs={12}
+            md={6}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "flex-start",
+            }}
+          >
             <TextField
-              sx={{ m: 0, width: '100%', maxWidth: '75rem' }}
+              sx={{ m: 0, width: "100%", maxWidth: "75rem" }}
               placeholder="Search Users..."
               variant="outlined"
               size="small"
-              value={userSearchQuery}
-              onChange={(event: any) => setUserSearchQuery(event.target.value)}
+              value={search.user_q ?? ""}
+              onChange={(e) =>
+                setSearch((prev) => ({
+                  ...prev,
+                  user_q: e.target.value,
+                  u_page: 0,
+                }))
+              }
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -95,18 +155,39 @@ export const UsersTable = ({
               }}
             />
           </Grid>
-          <Grid item xs={6} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-            <Typography variant="body1" style={{ display: "inline" }}>Choose Filters: </Typography>
+          <Grid
+            item
+            xs={12}
+            md={6}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "flex-end",
+            }}
+          >
+            <Typography variant="body1" style={{ display: "inline" }}>
+              Choose Filters:{" "}
+            </Typography>
             <TristateToggle
               label="Active"
-              onToggle={(state: boolean | undefined) =>
-                setIsActiveFilter(state)
+              value={search.active}
+              onToggle={(next) =>
+                setSearch((prev) => ({
+                  ...prev,
+                  active: next,
+                  u_page: 0,
+                }))
               }
             />
             <TristateToggle
               label="Technician User"
-              onToggle={(state: boolean | undefined) =>
-                setIsTechnicianFilter(state)
+              value={search.tech}
+              onToggle={(next) =>
+                setSearch((prev) => ({
+                  ...prev,
+                  tech: next,
+                  u_page: 0,
+                }))
               }
             />
           </Grid>
@@ -115,15 +196,30 @@ export const UsersTable = ({
           <DataGrid
             sx={{ height: 550, border: "none" }}
             rows={filteredRows ?? []}
+            pagination
+            paginationModel={{
+              page: search.u_page,
+              pageSize: search.u_pageSize,
+            }}
+            onPaginationModelChange={(model) =>
+              setSearch((prev) => ({
+                ...prev,
+                u_pageSize: model.pageSize,
+                u_page: model.pageSize !== prev.u_pageSize ? 0 : model.page,
+              }))
+            }
+            pageSizeOptions={[10, 25, 50, 100]}
+            rowSelectionModel={search.user_id ? [search.user_id] : []}
             loading={usersList.isLoading}
             columns={cols}
             disableColumnMenu
-            onRowClick={(selectedRow) => {
-              setSelectedUser(
-                usersList.data?.find(
-                  (user: User) => user.id == selectedRow.row.id,
-                ),
-              );
+            onRowClick={(r) => {
+              if (search.user_id === r.row.id) {
+                onCreateUser();
+                return;
+              }
+
+              onSelectUser(r.row.id);
             }}
             slots={{ footer: GridFooterWithButton }}
             slotProps={{
@@ -132,10 +228,9 @@ export const UsersTable = ({
                   <Button
                     variant="contained"
                     size="small"
-                    onClick={() => setUserAddMode(true)}
-                    sx={{ flexShrink: 0, width: { xs: "100%", sm: "auto" } }}
+                    onClick={onCreateUser}
                   >
-                    <AddIcon fontSize="small" sx={{ mr: 0.5 }} />
+                    <Add fontSize="small" sx={{ mr: 0.5 }} />
                     Create
                   </Button>
                 ),
@@ -145,6 +240,6 @@ export const UsersTable = ({
           />
         </Grid>
       </CardContent>
-    </Card >
+    </Card>
   );
 };

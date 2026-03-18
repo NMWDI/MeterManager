@@ -1,9 +1,9 @@
 import { useAuthHeader, useSignOut } from "react-auth-kit";
-import { useNavigate } from "react-router-dom";
-import { formatQueryParams } from "../utils/HttpUtils";
+import { useNavigate } from "@tanstack/react-router";
+import { formatQueryParams } from "@/utils";
 import { enqueueSnackbar } from "notistack";
-import { HttpStatus } from "../enums";
-import { API_URL } from "../config";
+import { HttpStatus } from "@/enums";
+import { API_URL } from "@/config";
 
 export const useFetchWithAuth = () => {
   const authHeader = useAuthHeader();
@@ -24,19 +24,24 @@ export const useFetchWithAuth = () => {
     responseType?: "json" | "blob" | "text" | "response";
   }) => {
     const url = `${API_URL}${route}${formatQueryParams(params)}`;
+    const isFormData = body instanceof FormData;
 
     const response = await fetch(url, {
       method,
       headers: {
         Authorization: authHeader(),
         // Only set JSON content-type when sending JSON
-        ...(body && ["PATCH", "POST", "PUT", "DELETE"].includes(method)
+        ...(body &&
+        !isFormData &&
+        ["PATCH", "POST", "PUT", "DELETE"].includes(method)
           ? { "Content-Type": "application/json" }
           : {}),
       },
       body:
         body && ["PATCH", "POST", "PUT", "DELETE"].includes(method)
-          ? JSON.stringify(body)
+          ? isFormData
+            ? body
+            : JSON.stringify(body)
           : undefined,
     });
 
@@ -46,7 +51,7 @@ export const useFetchWithAuth = () => {
         localStorage.getItem("loggedIn")
       ) {
         localStorage.removeItem("loggedIn");
-        navigate("/");
+        navigate({ to: "/" });
         signOut();
         enqueueSnackbar("Session expired. Please log in to continue.", {
           variant: "error",

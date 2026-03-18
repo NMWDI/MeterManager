@@ -1,12 +1,14 @@
 import { useMemo } from "react";
 import { Box, Button, Tooltip } from "@mui/material";
 import { DataGrid, GridPagination, GridColDef } from "@mui/x-data-grid";
-import AddIcon from "@mui/icons-material/Add";
-import { MonitoredWell, WellMeasurementDTO } from "../../interfaces";
+import { Add } from "@mui/icons-material";
 import dayjs, { Dayjs } from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import { useIsAuthenticated } from "react-auth-kit";
+import { MonitoredWell, WellMeasurementDTO } from "@/interfaces";
+import { useNavigate } from "@tanstack/react-router";
+import { Route } from "@/routes/monitoringwells";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -19,7 +21,7 @@ declare module "@mui/x-data-grid" {
   }
 }
 
-export const MonitoringWellsTable = ({
+export const Table = ({
   rows,
   onOpenModal,
   isWellSelected,
@@ -41,6 +43,8 @@ export const MonitoringWellsTable = ({
     };
   }) => void;
 }) => {
+  const navigate = useNavigate();
+  const { page, pageSize } = Route.useSearch();
   const isAuthenticated = useIsAuthenticated();
   const columns: GridColDef[] = useMemo(() => {
     const baseCols: GridColDef[] = [
@@ -53,7 +57,12 @@ export const MonitoringWellsTable = ({
           dayjs.utc(value).tz("America/Denver").format("MM/DD/YYYY hh:mm A"),
         type: "dateTime",
       },
-      { field: "value", headerName: "Depth to Water (ft)", flex: 1, minWidth: 100 },
+      {
+        field: "value",
+        headerName: "Depth to Water (ft)",
+        flex: 1,
+        minWidth: 100,
+      },
     ];
 
     // Add user column only if logged in
@@ -75,6 +84,24 @@ export const MonitoringWellsTable = ({
       <DataGrid
         rows={rows}
         columns={columns}
+        pagination
+        initialState={{
+          pagination: { paginationModel: { page: 0, pageSize: 25 } },
+        }}
+        pageSizeOptions={[10, 25, 50, 100]}
+        paginationModel={{ page, pageSize }}
+        onPaginationModelChange={(m) => {
+          navigate({
+            to: "/monitoringwells",
+            search: (prev) => ({
+              ...(prev as any),
+              wellId: prev.wellId ?? undefined,
+              page: m.page,
+              pageSize: m.pageSize,
+            }),
+            replace: true,
+          });
+        }}
         slots={{
           footer: Footer,
         }}
@@ -122,9 +149,13 @@ const Footer = ({
                 size="small"
                 onClick={onOpenModal}
                 disabled={isPlugged}
-                sx={{ flexShrink: 0, width: { xs: "100%", sm: "auto" }, ml: 1.5 }}
+                sx={{
+                  flexShrink: 0,
+                  width: { xs: "100%", sm: "auto" },
+                  ml: 1.5,
+                }}
+                startIcon={<Add fontSize="small" />}
               >
-                <AddIcon fontSize="small" sx={{ mr: 0.5 }} />
                 Create
               </Button>
             </span>

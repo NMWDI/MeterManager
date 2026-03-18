@@ -1,9 +1,11 @@
-import ChipSelect from "../ChipSelect";
-import { ServiceTypeLU } from "../../interfaces";
-import { useGetServiceTypes } from "../../service/ApiServiceNew";
 import { Controller } from "react-hook-form";
 
-export default function ServicesChipSelect({ name, control }: any) {
+import { ServiceTypeLU } from "@/interfaces";
+import { useGetServiceTypes } from "@/service";
+
+import ChipSelect from "../ChipSelect";
+
+export const ServicesChipSelect = ({ name, control }: any) => {
   const servicesList = useGetServiceTypes();
 
   return (
@@ -46,4 +48,4 @@ export default function ServicesChipSelect({ name, control }: any) {
       }}
     />
   );
-}
+};

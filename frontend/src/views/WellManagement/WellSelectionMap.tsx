@@ -1,12 +1,23 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useDebounce } from "use-debounce";
 import { LayersControl, MapContainer, Marker, Tooltip } from "react-leaflet";
 import { Box, Typography } from "@mui/material";
-import { useGetWellLocations } from "../../service/ApiServiceNew";
-import { Well } from "../../interfaces";
-import { OpenStreetMapLayer, SatelliteLayer, SoutheastGuideLayer, WellMapLegend } from "../../components";
-import { BlueMapIcon, RedMapIcon, BlackMapIcon } from "../../components/MapIcons";
-import { WellStatus } from "../../enums";
+import { useNavigate } from "@tanstack/react-router";
+import { Route } from "@/routes/manage/wells";
+import { useGetWellLocations } from "@/service";
+import { Well } from "@/interfaces";
+import {
+  BoundariesLayer,
+  MapUrlStateSync,
+  OpenStreetMapLayer,
+  SatelliteLayer,
+  SoutheastGuideLayer,
+  MapFullscreenToggle,
+  TransporationLayer,
+  WellMapLegend,
+} from "@/components";
+import { BlueMapIcon, RedMapIcon, BlackMapIcon } from "@/components/MapIcons";
+import { WellStatus } from "@/enums";
 
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -15,15 +26,58 @@ import "leaflet/dist/leaflet.css";
 import MarkerClusterGroup from "@changey/react-leaflet-markercluster";
 import "@changey/react-leaflet-markercluster/dist/styles.min.css";
 
+import {
+  DEFAULT_MAP_CENTER,
+  DEFAULT_MAP_ZOOM,
+  getMapLayersControlKey,
+  normalizeMapBaseLayer,
+  normalizeMapOverlayNames,
+  parseMapView,
+} from "@/utils";
+
+const BASE_LAYER_NAMES = ["Satellite", "OpenStreetMap"] as const;
+const OVERLAY_NAMES = [
+  "Wells",
+  "Clorides Report Region Guide",
+  "Transportation",
+  "Boundaries and Places",
+] as const;
+const DEFAULT_BASE_LAYER = "OpenStreetMap";
+const DEFAULT_OVERLAYS = ["Clorides Report Region Guide", "Wells"];
+
 export default function WellSelectionMap({
-  setSelectedWell,
   wellSearchQueryProp,
 }: {
   wellSearchQueryProp: string;
-  setSelectedWell: Function;
 }) {
+  const navigate = useNavigate();
+  const search = Route.useSearch();
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
+
   const [wellSearchDebounced] = useDebounce(wellSearchQueryProp, 250);
   const wellQuery = useGetWellLocations(wellSearchDebounced);
+  const mapBaseLayer = normalizeMapBaseLayer(
+    search.mapBase,
+    BASE_LAYER_NAMES,
+    DEFAULT_BASE_LAYER,
+  );
+  const mapOverlayNames = normalizeMapOverlayNames(
+    search.mapOverlays,
+    OVERLAY_NAMES,
+    DEFAULT_OVERLAYS,
+  );
+  const mapView = parseMapView(search, {
+    center: DEFAULT_MAP_CENTER,
+    zoom: DEFAULT_MAP_ZOOM,
+  });
+
+  const setSearch = (updater: (prev: typeof search) => typeof search) => {
+    navigate({
+      to: "/manage/wells",
+      search: (prev) => updater(prev as typeof search),
+      replace: true,
+    });
+  };
 
   useEffect(() => {
     if (wellQuery.hasNextPage && !wellQuery.isFetchingNextPage) {
@@ -33,31 +87,66 @@ export default function WellSelectionMap({
 
   const wellMarkers = wellQuery.data?.pages.flat() ?? [];
 
+  const handleSelectWell = (well: Well) => {
+    navigate({
+      to: "/manage/wells",
+      search: (prev) => ({
+        ...(prev as any),
+        well_id: well.id,
+        add: false,
+        tab: "map",
+      }),
+      replace: true,
+    });
+  };
+
   return (
     <>
       <Box
+        ref={mapContainerRef}
         sx={{
           borderRadius: 2,
-          overflow: 'hidden',
-          height: '100%',
+          overflow: "hidden",
+          height: "100%",
           minHeight: 500,
-          '& .leaflet-container': { height: '100%', width: '100%' },
+          position: "relative",
+          "&:fullscreen": {
+            borderRadius: 0,
+            minHeight: "100vh",
+          },
+          "& .leaflet-container": { height: "100%", width: "100%" },
         }}
       >
         <MapContainer
-          center={[33, -104.0]}
-          zoom={8}
-          style={{ height: '100%', width: '100%', minHeight: 500 }}
+          center={mapView.center}
+          zoom={mapView.zoom}
+          style={{ height: "100%", width: "100%", minHeight: 500 }}
           maxZoom={18}
         >
-          <LayersControl position="topleft">
+          <MapUrlStateSync
+            allowedBaseLayers={BASE_LAYER_NAMES}
+            allowedOverlays={OVERLAY_NAMES}
+            defaultBaseLayer={DEFAULT_BASE_LAYER}
+            defaultOverlays={DEFAULT_OVERLAYS}
+            search={search}
+            setSearch={setSearch}
+          />
+          <LayersControl
+            key={getMapLayersControlKey(mapBaseLayer, mapOverlayNames)}
+            position="topleft"
+          >
             {/* Base Layers */}
-            <SatelliteLayer />
-            <OpenStreetMapLayer />
-            <SoutheastGuideLayer />
+            <SatelliteLayer checked={mapBaseLayer === "Satellite"} />
+            <OpenStreetMapLayer checked={mapBaseLayer === "OpenStreetMap"} />
+            <SoutheastGuideLayer
+              checked={mapOverlayNames.includes("Clorides Report Region Guide")}
+            />
 
             {/* Wells Cluster Overlay */}
-            <LayersControl.Overlay name="Wells" checked>
+            <LayersControl.Overlay
+              checked={mapOverlayNames.includes("Wells")}
+              name="Wells"
+            >
               <MarkerClusterGroup
                 chunkedLoading
                 maxClusterRadius={35}
@@ -87,11 +176,11 @@ export default function WellSelectionMap({
                     <Marker
                       key={well.id}
                       position={[
-                        well.location?.latitude,
-                        well.location?.longitude,
+                        well.location?.latitude ?? 0,
+                        well.location?.longitude ?? 0,
                       ]}
                       eventHandlers={{
-                        click: () => setSelectedWell(well),
+                        click: () => handleSelectWell(well),
                       }}
                       icon={getWellIcon(well)}
                     >
@@ -101,35 +190,56 @@ export default function WellSelectionMap({
                     </Marker>
                   ))}
               </MarkerClusterGroup>
-              <WellMapLegend />
             </LayersControl.Overlay>
+            <TransporationLayer
+              checked={mapOverlayNames.includes("Transportation")}
+            />
+            <BoundariesLayer
+              checked={mapOverlayNames.includes("Boundaries and Places")}
+            />
           </LayersControl>
+          <MapFullscreenToggle containerRef={mapContainerRef} />
+          <WellMapLegend />
         </MapContainer>
       </Box>
       {/* Loading first page */}
       {wellQuery.isLoading && (
         <Box py={2}>
-          <Typography variant="h6" sx={{
-            pointerEvents: "none",
-            userSelect: "none",
-          }}>Loading well markers...</Typography>
+          <Typography
+            variant="h6"
+            sx={{
+              pointerEvents: "none",
+              userSelect: "none",
+            }}
+          >
+            Loading well markers...
+          </Typography>
         </Box>
       )}
       {/* Loading additional pages */}
       {wellQuery.isFetchingNextPage && (
         <Box py={2}>
-          <Typography variant="h6" sx={{
-            pointerEvents: "none",
-            userSelect: "none",
-          }}>Loading more wells...</Typography>
+          <Typography
+            variant="h6"
+            sx={{
+              pointerEvents: "none",
+              userSelect: "none",
+            }}
+          >
+            Loading more wells...
+          </Typography>
         </Box>
       )}
       {wellQuery.isSuccess && wellMarkers.length === 0 && (
         <Box py={2}>
-          <Typography variant="h6" color="text.secondary" sx={{
-            pointerEvents: "none",
-            userSelect: "none",
-          }}>
+          <Typography
+            variant="h6"
+            color="text.secondary"
+            sx={{
+              pointerEvents: "none",
+              userSelect: "none",
+            }}
+          >
             No wells found for that search.
           </Typography>
         </Box>
@@ -137,10 +247,14 @@ export default function WellSelectionMap({
       {/* Error */}
       {wellQuery.isError && (
         <Box py={2}>
-          <Typography variant="h6" color="error" sx={{
-            pointerEvents: "none",
-            userSelect: "none",
-          }}>
+          <Typography
+            variant="h6"
+            color="error"
+            sx={{
+              pointerEvents: "none",
+              userSelect: "none",
+            }}
+          >
             Failed to load wells: {wellQuery.error.message}
           </Typography>
         </Box>
@@ -157,5 +271,4 @@ const getWellIcon = (well: Well) => {
     return RedMapIcon;
   }
   return BlueMapIcon;
-}
-
+};

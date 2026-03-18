@@ -12,6 +12,7 @@ from api.models.main_models import (
     Meters,
     LandOwners,
     MeterActivities,
+    PartsUsed,
     Parts,
     MeterObservations,
     Locations,
@@ -36,6 +37,7 @@ public_meter_router = APIRouter()
 PHOTO_JWT_EXPIRE_SECONDS = 600  # 10 minutes
 BUCKET_NAME = os.getenv("GCP_BUCKET_NAME", "")
 
+
 # Get paginated, sorted list of meters, filtered by a search string if applicable
 @authenticated_meter_router.get(
     "/meters",
@@ -46,7 +48,7 @@ BUCKET_NAME = os.getenv("GCP_BUCKET_NAME", "")
 def get_meters(
     # offset: int, limit: int - From fastapi_pagination
     search_string: str = None,
-    filter_by_status: List[MeterStatus] = Query('Installed'),
+    filter_by_status: List[MeterStatus] = Query("Installed"),
     sort_by: MeterSortByField = MeterSortByField.SerialNumber,
     sort_direction: SortDirection = SortDirection.Ascending,
     db: Session = Depends(get_db),
@@ -64,14 +66,17 @@ def get_meters(
 
             case MeterSortByField.TRSS:
                 return Locations.trss
-    
+
     # If 'Warehouse' is in the filter, add 'On Hold' to the filter
-    if MeterStatus.OnHold not in filter_by_status and MeterStatus.Warehouse in filter_by_status:
+    if (
+        MeterStatus.OnHold not in filter_by_status
+        and MeterStatus.Warehouse in filter_by_status
+    ):
         filter_by_status.append(MeterStatus.OnHold)
 
     # Convert enums to strings
     filter_by_status_str = [status.value for status in filter_by_status]
-    
+
     # Build the query statement based on query params
     # joinedload loads relationships, outer joins on relationship tables makes them search/sortable
     query_statement = (
@@ -99,9 +104,7 @@ def get_meters(
         if sort_direction != SortDirection.Ascending:
             query_statement = query_statement.order_by(desc(schema_field_name))
         else:
-            query_statement = query_statement.order_by(
-                schema_field_name
-            ) 
+            query_statement = query_statement.order_by(schema_field_name)
 
     return paginate(db, query_statement)
 
@@ -217,7 +220,7 @@ def get_meters_locations(
     if not meter_ids:
         return []  # Short-circuit if nothing matched
 
-    # Query latest PMs for those meters 
+    # Query latest PMs for those meters
     pm_query = text(
         """
         SELECT MAX(timestamp_start) AS last_pm, meter_id
@@ -230,7 +233,7 @@ def get_meters_locations(
     pm_years = db.execute(pm_query, {"mids": meter_ids}).fetchall()
     pm_dict = {row.meter_id: row.last_pm for row in pm_years}
 
-    # Map to DTOs manually for added performance 
+    # Map to DTOs manually for added performance
     meter_map_list = []
     for row in result:
         meter_map_list.append(
@@ -248,12 +251,11 @@ def get_meters_locations(
                     "longitude": row.longitude,
                     "trss": row.trss,
                 },
-                last_pm=pm_dict.get(row.id)
+                last_pm=pm_dict.get(row.id),
             )
         )
 
     return meter_map_list
-
 
 
 def require_meter_id_or_serial_number(meter_id: int = None, serial_number: str = None):
@@ -263,6 +265,7 @@ def require_meter_id_or_serial_number(meter_id: int = None, serial_number: str =
         )
 
     return meter_id, serial_number
+
 
 # Get single, fully qualified meter
 # Can use either meter_id or serial_number
@@ -278,12 +281,12 @@ def get_meter(
 
     # Create the basic query
     query = select(Meters).options(
-            joinedload(Meters.meter_type),
-            joinedload(Meters.well).joinedload(Wells.location),
-            joinedload(Meters.status),
-            joinedload(Meters.meter_register).joinedload(meterRegisters.dial_units),
-            joinedload(Meters.meter_register).joinedload(meterRegisters.totalizer_units),
-        )
+        joinedload(Meters.meter_type),
+        joinedload(Meters.well).joinedload(Wells.location),
+        joinedload(Meters.status),
+        joinedload(Meters.meter_register).joinedload(meterRegisters.dial_units),
+        joinedload(Meters.meter_register).joinedload(meterRegisters.totalizer_units),
+    )
 
     # Filter by either meter by id or serial number
     if meter_id:
@@ -314,11 +317,10 @@ def get_meter_types(db: Session = Depends(get_db)):
 def get_meter_registers(db: Session = Depends(get_db)):
     query = select(meterRegisters).options(
         joinedload(meterRegisters.dial_units),
-        joinedload(meterRegisters.totalizer_units)
+        joinedload(meterRegisters.totalizer_units),
     )
 
     return db.scalars(query).all()
-
 
 
 # A route to return status types from the MeterStatusLU table
@@ -468,7 +470,9 @@ def get_meter_history(meter_id: int, db: Session = Depends(get_db)):
                 joinedload(MeterActivities.location),
                 joinedload(MeterActivities.submitting_user),
                 joinedload(MeterActivities.activity_type),
-                joinedload(MeterActivities.parts_used).joinedload(Parts.part_type),
+                joinedload(MeterActivities.parts_used_links)
+                .joinedload(PartsUsed.part)
+                .joinedload(Parts.part_type),
                 joinedload(MeterActivities.notes),
                 joinedload(MeterActivities.services_performed),
             )
@@ -496,8 +500,10 @@ def get_meter_history(meter_id: int, db: Session = Depends(get_db)):
     for activity in activities:
         activity.location.geom = None  # FastAPI errors when returning this
 
-        #Find if there is a well associated with the location
-        activity_well = db.scalars(select(Wells).where(Wells.location_id == activity.location_id)).first()
+        # Find if there is a well associated with the location
+        activity_well = db.scalars(
+            select(Wells).where(Wells.location_id == activity.location_id)
+        ).first()
 
         photos = [
             {
@@ -526,8 +532,10 @@ def get_meter_history(meter_id: int, db: Session = Depends(get_db)):
     for observation in observations:
         observation.location.geom = None
 
-        #Find if there is a well associated with the location
-        observation_well = db.scalars(select(Wells).where(Wells.location_id == observation.location_id)).first()
+        # Find if there is a well associated with the location
+        observation_well = db.scalars(
+            select(Wells).where(Wells.location_id == observation.location_id)
+        ).first()
 
         formattedHistoryItems.append(
             {
@@ -556,7 +564,7 @@ def create_signed_url(blob_path: str) -> str:
     creds = impersonated_credentials.Credentials(
         source_credentials=source_creds,
         target_principal=target_sa,
-        target_scopes=['https://www.googleapis.com/auth/devstorage.read_only'],
+        target_scopes=["https://www.googleapis.com/auth/devstorage.read_only"],
         lifetime=3600,
     )
 
