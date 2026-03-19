@@ -99,7 +99,7 @@ export const AppLayout = ({ children }: { children: JSX.Element }) => {
         sx={{
           minHeight: "100vh",
           ml: shouldShowDesktopSidebar ? `${effectiveSidebarWidth}px` : 0,
-          mt: "4rem",
+          mt: "3.75rem",
           width: shouldShowDesktopSidebar
             ? `calc(100% - ${effectiveSidebarWidth}px)`
             : "100%",

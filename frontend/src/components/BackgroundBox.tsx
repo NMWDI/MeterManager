@@ -12,7 +12,6 @@ export const BackgroundBox: React.FC<BoxProps> = ({
         mx: "auto", // center horizontally
         maxWidth: "2xl",
         height: "fit-content",
-        pb: 6,
         ...sx,
       }}
       {...rest}

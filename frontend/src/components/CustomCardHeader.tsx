@@ -1,4 +1,3 @@
-import React from "react";
 import {
   CardHeader,
   CardHeaderProps,
@@ -14,6 +13,7 @@ type CustomCardHeaderProps = Omit<CardHeaderProps, "title"> & {
 
 export const CustomCardHeader: React.FC<CustomCardHeaderProps> = ({
   title,
+  subheader,
   icon: Icon = null,
   sx,
   ...rest
@@ -24,11 +24,10 @@ export const CustomCardHeader: React.FC<CustomCardHeaderProps> = ({
         <Box
           sx={{
             display: "flex",
+            flexDirection: "row",
             alignItems: "center",
-            gap: 1.25,
             color: "white",
             background: "#333",
-            borderRadius: "5px",
             px: "14px",
             py: "10px",
             m: 0,
@@ -36,26 +35,43 @@ export const CustomCardHeader: React.FC<CustomCardHeaderProps> = ({
             fontSize: "1.1rem",
           }}
         >
+          <Typography component="span" variant="inherit" sx={{ flex: 1 }}>
+            {title}
+          </Typography>
           {Icon && (
             <Icon
               sx={{
                 fontSize: "1.3rem",
-                flexShrink: 0,
+                pb: 0,
+                mr: "10px",
               }}
             />
           )}
-          <Typography
-            component="span"
-            variant="inherit"
-            sx={{ flex: 1, lineHeight: 1.2, display: "flex", alignItems: "center" }}
-          >
-            {title}
-          </Typography>
         </Box>
+      }
+      subheader={
+        subheader && (
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "row",
+              alignItems: "center",
+              px: 2,
+              py: 0.5,
+              m: 0,
+              fontWeight: 500,
+              fontSize: "1.1rem",
+            }}
+          >
+            <Typography variant="body2" sx={{ color: "text.secondary" }}>
+              {subheader}
+            </Typography>
+          </Box>
+        )
       }
       sx={{
         mb: 0,
-        pb: 0,
+        p: 0,
         ...sx,
       }}
       {...rest}

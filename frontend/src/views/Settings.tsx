@@ -32,7 +32,6 @@ import {
   HistoryRounded,
   LaptopMacRounded,
   PhoneIphoneRounded,
-  Settings as SettingsIcon,
   SettingsApplications,
   ShieldOutlined,
   TabletMacRounded,
@@ -45,7 +44,6 @@ import {
   BackgroundBox,
   CustomCardHeader,
   ImageUploadWithPreview,
-  IsTrueChip,
   RoleChip,
 } from "@/components";
 import { navConfig } from "@/constants";
@@ -170,41 +168,9 @@ function SectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <Card
-      sx={{
-        borderRadius: 4,
-        border: "1px solid",
-        borderColor: alpha("#13324b", 0.12),
-        boxShadow: "0 18px 45px rgba(12, 32, 53, 0.08)",
-        background:
-          "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(245,249,252,0.98) 100%)",
-      }}
-    >
-      <CardContent sx={{ p: { xs: 2.25, md: 3 } }}>
-        <Stack spacing={2.5}>
-          <Stack direction="row" spacing={1.5} alignItems="flex-start">
-            <Avatar
-              sx={{
-                bgcolor: alpha("#0b5fa5", 0.12),
-                color: "#0b5fa5",
-                width: 44,
-                height: 44,
-              }}
-            >
-              <Icon />
-            </Avatar>
-            <Box>
-              <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                {title}
-              </Typography>
-              <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                {description}
-              </Typography>
-            </Box>
-          </Stack>
-          {children}
-        </Stack>
-      </CardContent>
+    <Card sx={{ height: "fit-content" }}>
+      <CustomCardHeader title={title} subheader={description} icon={Icon} />
+      <CardContent sx={{ p: { xs: 2, md: 3 } }}>{children}</CardContent>
     </Card>
   );
 }
@@ -263,13 +229,6 @@ function SessionRow({
             </Box>
           </Stack>
           <Stack direction="row" spacing={1} flexWrap="wrap">
-            {session.is_current ? (
-              <Chip
-                color="primary"
-                icon={<CheckCircleOutline />}
-                label="Current device"
-              />
-            ) : null}
             <Chip
               size="small"
               color={statusColor}
@@ -284,14 +243,17 @@ function SessionRow({
             <Typography variant="caption" sx={{ color: "text.secondary" }}>
               Signed in
             </Typography>
-            <Typography variant="body2">{formatDateTime(session.signed_in_at)}</Typography>
+            <Typography variant="body2">
+              {formatDateTime(session.signed_in_at)}
+            </Typography>
           </Grid>
           <Grid item xs={12} sm={4}>
             <Typography variant="caption" sx={{ color: "text.secondary" }}>
               Last seen
             </Typography>
             <Typography variant="body2">
-              {formatDateTime(session.last_seen_at)} ({formatRelativeTime(session.last_seen_at)})
+              {formatDateTime(session.last_seen_at)} (
+              {formatRelativeTime(session.last_seen_at)})
             </Typography>
           </Grid>
           <Grid item xs={12} sm={4}>
@@ -371,7 +333,11 @@ function KnownDeviceRow({ device }: { device: KnownDeviceSummary }) {
             </Box>
           </Stack>
           {device.is_current_device ? (
-            <Chip color="primary" icon={<CheckCircleOutline />} label="Current device" />
+            <Chip
+              color="primary"
+              icon={<CheckCircleOutline />}
+              label="Current device"
+            />
           ) : null}
         </Stack>
 
@@ -386,7 +352,9 @@ function KnownDeviceRow({ device }: { device: KnownDeviceSummary }) {
             <Typography variant="caption" sx={{ color: "text.secondary" }}>
               Active now
             </Typography>
-            <Typography variant="body2">{device.active_session_count}</Typography>
+            <Typography variant="body2">
+              {device.active_session_count}
+            </Typography>
           </Grid>
           <Grid item xs={12} sm={3}>
             <Typography variant="caption" sx={{ color: "text.secondary" }}>
@@ -400,7 +368,9 @@ function KnownDeviceRow({ device }: { device: KnownDeviceSummary }) {
             <Typography variant="caption" sx={{ color: "text.secondary" }}>
               Last seen
             </Typography>
-            <Typography variant="body2">{formatDateTime(device.last_seen_at)}</Typography>
+            <Typography variant="body2">
+              {formatDateTime(device.last_seen_at)}
+            </Typography>
           </Grid>
         </Grid>
       </Stack>
@@ -751,507 +721,514 @@ export const Settings = () => {
 
   return (
     <BackgroundBox>
-      <Card sx={{ height: "fit-content" }}>
-        <CustomCardHeader title="Settings" icon={SettingsIcon} />
-        <CardContent>
-          <Grid container spacing={3}>
-          <Grid item xs={12} lg={7}>
-            <Stack spacing={3}>
-              <SectionCard
-                title="Profile"
-                description="Review your account information and keep your profile up to date."
-                icon={ShieldOutlined}
-              >
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6}>
-                    <InfoTile
-                      label="Full name"
-                      compact
-                      value={
-                        <Typography sx={{ fontWeight: 700 }}>
-                          {user?.full_name ?? "N/A"}
-                        </Typography>
-                      }
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <InfoTile
-                      label="Email"
-                      value={
-                        <Typography sx={{ fontWeight: 700 }}>
-                          {user?.email ?? "N/A"}
-                        </Typography>
-                      }
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <InfoTile
-                      label="Username"
-                      value={
-                        <Typography sx={{ fontWeight: 700 }}>
-                          {user?.username ?? "N/A"}
-                        </Typography>
-                      }
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <InfoTile
-                      label="Role"
-                      value={<RoleChip role={user?.user_role?.name ?? "N/A"} />}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <InfoTile
-                      label="Account status"
-                      value={<IsTrueChip assert={!user?.disabled} />}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <InfoTile
-                      label="Access scopes"
-                      value={
-                        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                          <Chip
-                            size="small"
-                            color={hasReadScope ? "success" : "default"}
-                            label={hasReadScope ? "Read access" : "No read access"}
-                          />
-                          {hasAdminScope ? (
-                            <Chip size="small" color="primary" label="Admin access" />
-                          ) : null}
-                        </Stack>
-                      }
-                    />
-                  </Grid>
+      <Grid container spacing={2}>
+        <Grid item xs={12} lg={7}>
+          <Stack spacing={2}>
+            <SectionCard
+              title="Profile"
+              description="Review your account information and keep your profile up to date."
+              icon={ShieldOutlined}
+            >
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <InfoTile
+                    label="Full name"
+                    compact
+                    value={
+                      <Typography sx={{ fontWeight: 700 }}>
+                        {user?.full_name ?? "N/A"}
+                      </Typography>
+                    }
+                  />
                 </Grid>
-
-                <Divider />
-
-                <Box
-                  sx={{
-                    p: 2,
-                    borderRadius: 3,
-                    border: "1px solid",
-                    borderColor: alpha("#13324b", 0.1),
-                    backgroundColor: alpha("#ffffff", 0.72),
-                  }}
-                >
-                  <Stack
-                    direction={{ xs: "column", md: "row" }}
-                    spacing={2}
-                    alignItems={{ xs: "stretch", md: "center" }}
-                    justifyContent="space-between"
-                  >
-                    <Box>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                        Display name
+                <Grid item xs={12} sm={6}>
+                  <InfoTile
+                    label="Email"
+                    value={
+                      <Typography sx={{ fontWeight: 700 }}>
+                        {user?.email ?? "N/A"}
                       </Typography>
-                      <Typography variant="body2" sx={{ color: "text.secondary", mb: 1.5 }}>
-                        This is how your name appears across the application.
+                    }
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <InfoTile
+                    label="Username"
+                    value={
+                      <Typography sx={{ fontWeight: 700 }}>
+                        {user?.username ?? "N/A"}
                       </Typography>
-                    </Box>
+                    }
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <InfoTile
+                    label="Role"
+                    value={<RoleChip role={user?.user_role?.name ?? "N/A"} />}
+                  />
+                </Grid>
+              </Grid>
 
-                    {!isEditing ? (
-                      <Stack
-                        direction={{ xs: "column", sm: "row" }}
-                        spacing={1}
-                        alignItems={{ xs: "stretch", sm: "center" }}
-                      >
-                        <Chip
-                          label={user?.display_name ?? "N/A"}
-                          variant="outlined"
-                          sx={{ fontFamily: "monospace" }}
-                        />
-                        <Button
-                          variant="outlined"
-                          startIcon={<Edit />}
-                          onClick={() => setIsEditing(true)}
-                        >
-                          Edit
-                        </Button>
-                      </Stack>
-                    ) : (
-                      <Stack
-                        direction={{ xs: "column", sm: "row" }}
-                        spacing={1}
-                        sx={{ width: { xs: "100%", md: "auto" } }}
-                      >
-                        <Controller
-                          name="display_name"
-                          control={displayNameControl}
-                          render={({ field }) => (
-                            <TextField
-                              {...field}
-                              size="small"
-                              autoFocus
-                              label="Display name"
-                              sx={{ minWidth: { xs: "100%", sm: 280 } }}
-                            />
-                          )}
-                        />
-                        <Button
-                          color="inherit"
-                          variant="outlined"
-                          onClick={() => {
-                            displayNameReset({
-                              display_name: user?.display_name ?? "",
-                            });
-                            setIsEditing(false);
-                          }}
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          variant="contained"
-                          onClick={displayNameHandleSubmit(onDisplayNameSubmit)}
-                          disabled={displayNameMutation.isLoading}
-                        >
-                          Save
-                        </Button>
-                      </Stack>
-                    )}
-                  </Stack>
-                </Box>
+              <Divider />
 
-                <Box
-                  sx={{
-                    p: 2,
-                    borderRadius: 3,
-                    border: "1px solid",
-                    borderColor: alpha("#13324b", 0.1),
-                    backgroundColor: alpha("#ffffff", 0.72),
-                  }}
-                >
-                  <Stack spacing={2}>
-                    <Box>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                        Avatar
-                      </Typography>
-                      <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                        Upload or replace your account image.
-                      </Typography>
-                    </Box>
-                    <Grid container spacing={2} alignItems="flex-start">
-                      <Grid item xs={12} md={7}>
-                        <ImageUploadWithPreview
-                          key={avatarUploadKey}
-                          fileLimit={1}
-                          onFilesChange={setAvatarFiles}
-                        />
-                      </Grid>
-                      <Grid item xs={12} md={5}>
-                        <Stack spacing={1.5}>
-                          <Button
-                            variant="contained"
-                            onClick={onAvatarSubmit}
-                            disabled={
-                              avatarFiles.length === 0 ||
-                              avatarMutation.isLoading ||
-                              clearAvatarMutation.isLoading
-                            }
-                          >
-                            Save avatar
-                          </Button>
-                          <Button
-                            variant="outlined"
-                            color="error"
-                            onClick={() => clearAvatarMutation.mutate()}
-                            disabled={
-                              !user?.avatar_img ||
-                              avatarMutation.isLoading ||
-                              clearAvatarMutation.isLoading
-                            }
-                          >
-                            Remove avatar
-                          </Button>
-                        </Stack>
-                      </Grid>
-                    </Grid>
-                  </Stack>
-                </Box>
-              </SectionCard>
-
-              <SectionCard
-                title="Preferences"
-                description="Control your landing page and local application data."
-                icon={SettingsApplications}
+              <Box
+                sx={{
+                  p: 2,
+                  borderRadius: 3,
+                  border: "1px solid",
+                  borderColor: alpha("#13324b", 0.1),
+                  backgroundColor: alpha("#ffffff", 0.72),
+                }}
               >
-                <Box
-                  component="form"
-                  onSubmit={handleRedirectSubmit(onRedirectSubmit)}
-                  sx={{
-                    p: 2,
-                    borderRadius: 3,
-                    border: "1px solid",
-                    borderColor: alpha("#13324b", 0.1),
-                    backgroundColor: alpha("#ffffff", 0.72),
-                  }}
+                <Stack
+                  direction={{ xs: "column", md: "row" }}
+                  spacing={2}
+                  alignItems={{ xs: "stretch", md: "center" }}
+                  justifyContent="space-between"
                 >
-                  <Stack spacing={2}>
-                    <Box>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                        Default landing page
-                      </Typography>
-                      <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                        Choose where the app should take you after you sign in.
-                      </Typography>
-                    </Box>
-                    {getRedirectPageQuery.isLoading ? (
-                      <Skeleton variant="rounded" height={56} />
-                    ) : (
-                      <Controller
-                        name="redirect_page"
-                        control={redirectControl}
-                        render={({ field }) => (
-                          <TextField {...field} select fullWidth label="Redirect page">
-                            {redirectOptions.map((route) => {
-                              const RouteIcon = route.icon;
+                  <Box>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                      Display name
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{ color: "text.secondary", mb: 1.5 }}
+                    >
+                      This is how your name appears across the application.
+                    </Typography>
+                  </Box>
 
-                              return (
-                                <MenuItem key={route.path} value={route.path}>
-                                  <ListItemIcon sx={{ minWidth: 36, color: "inherit" }}>
-                                    <RouteIcon fontSize="small" />
-                                  </ListItemIcon>
-                                  {route.label}
-                                </MenuItem>
-                              );
-                            })}
-                          </TextField>
+                  {!isEditing ? (
+                    <Stack
+                      direction={{ xs: "column", sm: "row" }}
+                      spacing={1}
+                      alignItems={{ xs: "stretch", sm: "center" }}
+                    >
+                      <Chip
+                        label={user?.display_name ?? "N/A"}
+                        variant="outlined"
+                        sx={{ fontFamily: "monospace" }}
+                      />
+                      <Button
+                        variant="outlined"
+                        startIcon={<Edit />}
+                        onClick={() => setIsEditing(true)}
+                      >
+                        Edit
+                      </Button>
+                    </Stack>
+                  ) : (
+                    <Stack
+                      direction={{ xs: "column", sm: "row" }}
+                      spacing={1}
+                      sx={{ width: { xs: "100%", md: "auto" } }}
+                    >
+                      <Controller
+                        name="display_name"
+                        control={displayNameControl}
+                        render={({ field }) => (
+                          <TextField
+                            {...field}
+                            size="small"
+                            autoFocus
+                            label="Display name"
+                            sx={{ minWidth: { xs: "100%", sm: 280 } }}
+                          />
                         )}
                       />
-                    )}
-                    <Box>
                       <Button
-                        type="submit"
-                        variant="contained"
-                        disabled={
-                          getRedirectPageQuery.isLoading ||
-                          redirectMutation.isLoading ||
-                          isRedirectSelectionUnchanged
-                        }
+                        color="inherit"
+                        variant="outlined"
+                        onClick={() => {
+                          displayNameReset({
+                            display_name: user?.display_name ?? "",
+                          });
+                          setIsEditing(false);
+                        }}
                       >
-                        Save preference
+                        Cancel
                       </Button>
-                    </Box>
-                  </Stack>
-                </Box>
+                      <Button
+                        variant="contained"
+                        onClick={displayNameHandleSubmit(onDisplayNameSubmit)}
+                        disabled={displayNameMutation.isLoading}
+                      >
+                        Save
+                      </Button>
+                    </Stack>
+                  )}
+                </Stack>
+              </Box>
 
-                <Box
-                  sx={{
-                    p: 2,
-                    borderRadius: 3,
-                    border: "1px solid",
-                    borderColor: alpha("#13324b", 0.1),
-                    backgroundColor: alpha("#ffffff", 0.72),
-                  }}
-                >
-                  <Stack
-                    direction={{ xs: "column", md: "row" }}
-                    spacing={2}
-                    alignItems={{ xs: "stretch", md: "center" }}
-                    justifyContent="space-between"
-                  >
-                    <Box>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                        Cached map data
-                      </Typography>
-                      <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                        Clear saved client-side caches if the app feels out of sync.
-                      </Typography>
-                    </Box>
-                    <Button
-                      variant="outlined"
-                      color="inherit"
-                      onClick={handleClearCachedData}
-                      disabled={isClearingCachedData}
-                    >
-                      Clear cache
-                    </Button>
-                  </Stack>
-                </Box>
-              </SectionCard>
-
-              <SectionCard
-                title="Security"
-                description="Update your password and review account access posture."
-                icon={ShieldOutlined}
+              <Box
+                sx={{
+                  p: 2,
+                  borderRadius: 3,
+                  border: "1px solid",
+                  borderColor: alpha("#13324b", 0.1),
+                  backgroundColor: alpha("#ffffff", 0.72),
+                }}
               >
-                <Box
-                  component="form"
-                  onSubmit={handlePasswordSubmit(onPasswordSubmit)}
-                  sx={{
-                    p: 2,
-                    borderRadius: 3,
-                    border: "1px solid",
-                    borderColor: alpha("#13324b", 0.1),
-                    backgroundColor: alpha("#ffffff", 0.72),
-                  }}
-                >
-                  <Stack spacing={2}>
+                <Stack spacing={2}>
+                  <Box>
                     <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                      Change password
+                      Avatar
                     </Typography>
-                    <Controller
-                      name="currentPassword"
-                      control={passwordControl}
-                      render={({ field }) => (
-                        <TextField
-                          {...field}
-                          label="Current password"
-                          type={showCurrentPassword ? "text" : "password"}
-                          error={!!passwordErrors.currentPassword}
-                          helperText={passwordErrors.currentPassword?.message}
-                          InputProps={{
-                            endAdornment: (
-                              <InputAdornment position="end">
-                                <IconButton
-                                  onClick={() =>
-                                    setShowCurrentPassword((current) => !current)
-                                  }
-                                  edge="end"
-                                >
-                                  {showCurrentPassword ? <VisibilityOff /> : <Visibility />}
-                                </IconButton>
-                              </InputAdornment>
-                            ),
-                          }}
-                        />
-                      )}
-                    />
-                    <Controller
-                      name="newPassword"
-                      control={passwordControl}
-                      render={({ field }) => (
-                        <TextField
-                          {...field}
-                          label="New password"
-                          type={showNewPassword ? "text" : "password"}
-                          error={!!passwordErrors.newPassword}
-                          helperText={passwordErrors.newPassword?.message}
-                          InputProps={{
-                            endAdornment: (
-                              <InputAdornment position="end">
-                                <IconButton
-                                  onClick={() => setShowNewPassword((current) => !current)}
-                                  edge="end"
-                                >
-                                  {showNewPassword ? <VisibilityOff /> : <Visibility />}
-                                </IconButton>
-                              </InputAdornment>
-                            ),
-                          }}
-                        />
-                      )}
-                    />
-                    <Controller
-                      name="confirmPassword"
-                      control={passwordControl}
-                      render={({ field }) => (
-                        <TextField
-                          {...field}
-                          label="Confirm new password"
-                          type={showConfirmPassword ? "text" : "password"}
-                          error={!!passwordErrors.confirmPassword}
-                          helperText={passwordErrors.confirmPassword?.message}
-                          InputProps={{
-                            endAdornment: (
-                              <InputAdornment position="end">
-                                <IconButton
-                                  onClick={() =>
-                                    setShowConfirmPassword((current) => !current)
-                                  }
-                                  edge="end"
-                                >
-                                  {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
-                                </IconButton>
-                              </InputAdornment>
-                            ),
-                          }}
-                        />
-                      )}
-                    />
-                    <Box>
-                      <Button
-                        type="submit"
-                        variant="contained"
-                        disabled={passwordMutation.isLoading}
-                      >
-                        Update password
-                      </Button>
-                    </Box>
-                  </Stack>
-                </Box>
-              </SectionCard>
-            </Stack>
-          </Grid>
-
-          <Grid item xs={12} lg={5}>
-            <Stack spacing={3}>
-              <SectionCard
-                title="Sessions History"
-                description="Review sign-ins across devices and close sessions that are no longer needed."
-                icon={HistoryRounded}
-              >
-                {userSessionsQuery.isLoading ? (
-                  <Stack spacing={1.5}>
-                    <Skeleton variant="rounded" height={142} />
-                    <Skeleton variant="rounded" height={142} />
-                    <Skeleton variant="rounded" height={142} />
-                  </Stack>
-                ) : userSessionsQuery.isError ? (
-                  <Alert severity="error">
-                    Unable to load session history right now.
-                  </Alert>
-                ) : sessions.length === 0 ? (
-                  <Alert severity="info">No recorded sessions were found.</Alert>
-                ) : (
-                  <Stack spacing={1.5}>
-                    {sessions.map((session) => (
-                      <SessionRow
-                        key={session.session_identifier}
-                        session={session}
-                        isClosing={
-                          closeSessionMutation.isLoading &&
-                          closeSessionMutation.variables === session.session_identifier
-                        }
-                        onCloseSession={(sessionIdentifier) =>
-                          closeSessionMutation.mutate(sessionIdentifier)
-                        }
+                    <Typography
+                      variant="body2"
+                      sx={{ color: "text.secondary" }}
+                    >
+                      Upload or replace your account image.
+                    </Typography>
+                  </Box>
+                  <Grid container spacing={2} alignItems="flex-start">
+                    <Grid item xs={12} md={7}>
+                      <ImageUploadWithPreview
+                        key={avatarUploadKey}
+                        fileLimit={1}
+                        onFilesChange={setAvatarFiles}
                       />
-                    ))}
-                  </Stack>
-                )}
-              </SectionCard>
+                    </Grid>
+                    <Grid item xs={12} md={5}>
+                      <Stack spacing={1.5}>
+                        <Button
+                          variant="contained"
+                          onClick={onAvatarSubmit}
+                          disabled={
+                            avatarFiles.length === 0 ||
+                            avatarMutation.isLoading ||
+                            clearAvatarMutation.isLoading
+                          }
+                        >
+                          Save avatar
+                        </Button>
+                        <Button
+                          variant="outlined"
+                          color="error"
+                          onClick={() => clearAvatarMutation.mutate()}
+                          disabled={
+                            !user?.avatar_img ||
+                            avatarMutation.isLoading ||
+                            clearAvatarMutation.isLoading
+                          }
+                        >
+                          Remove avatar
+                        </Button>
+                      </Stack>
+                    </Grid>
+                  </Grid>
+                </Stack>
+              </Box>
+            </SectionCard>
 
-              <SectionCard
-                title="Known Devices"
-                description="See the devices recognized for your account and clearly identify the one you are using now."
-                icon={DevicesRounded}
+            <SectionCard
+              title="Preferences"
+              description="Control your landing page and local application data."
+              icon={SettingsApplications}
+            >
+              <Box
+                component="form"
+                onSubmit={handleRedirectSubmit(onRedirectSubmit)}
+                sx={{
+                  p: 2,
+                  borderRadius: 3,
+                  border: "1px solid",
+                  borderColor: alpha("#13324b", 0.1),
+                  backgroundColor: alpha("#ffffff", 0.72),
+                }}
               >
-                {userSessionsQuery.isLoading ? (
-                  <Stack spacing={1.5}>
-                    <Skeleton variant="rounded" height={118} />
-                    <Skeleton variant="rounded" height={118} />
-                  </Stack>
-                ) : userSessionsQuery.isError ? (
-                  <Alert severity="error">
-                    Unable to load known devices right now.
-                  </Alert>
-                ) : knownDevices.length === 0 ? (
-                  <Alert severity="info">No known devices were found.</Alert>
-                ) : (
-                  <Stack spacing={1.5}>
-                    {knownDevices.map((device) => (
-                      <KnownDeviceRow key={device.device_key} device={device} />
-                    ))}
-                  </Stack>
-                )}
-              </SectionCard>
-            </Stack>
-          </Grid>
-          </Grid>
-        </CardContent>
-      </Card>
+                <Stack spacing={2}>
+                  <Box>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                      Default landing page
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{ color: "text.secondary" }}
+                    >
+                      Choose where the app should take you after you sign in.
+                    </Typography>
+                  </Box>
+                  {getRedirectPageQuery.isLoading ? (
+                    <Skeleton variant="rounded" height={56} />
+                  ) : (
+                    <Controller
+                      name="redirect_page"
+                      control={redirectControl}
+                      render={({ field }) => (
+                        <TextField
+                          {...field}
+                          select
+                          fullWidth
+                          label="Redirect page"
+                        >
+                          {redirectOptions.map((route) => {
+                            const RouteIcon = route.icon;
+
+                            return (
+                              <MenuItem key={route.path} value={route.path}>
+                                <ListItemIcon
+                                  sx={{ minWidth: 36, color: "inherit" }}
+                                >
+                                  <RouteIcon fontSize="small" />
+                                </ListItemIcon>
+                                {route.label}
+                              </MenuItem>
+                            );
+                          })}
+                        </TextField>
+                      )}
+                    />
+                  )}
+                  <Box>
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      disabled={
+                        getRedirectPageQuery.isLoading ||
+                        redirectMutation.isLoading ||
+                        isRedirectSelectionUnchanged
+                      }
+                    >
+                      Save preference
+                    </Button>
+                  </Box>
+                </Stack>
+              </Box>
+
+              <Box
+                sx={{
+                  p: 2,
+                  borderRadius: 3,
+                  border: "1px solid",
+                  borderColor: alpha("#13324b", 0.1),
+                  backgroundColor: alpha("#ffffff", 0.72),
+                }}
+              >
+                <Stack
+                  direction={{ xs: "column", md: "row" }}
+                  spacing={2}
+                  alignItems={{ xs: "stretch", md: "center" }}
+                  justifyContent="space-between"
+                >
+                  <Box>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                      Cached map data
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{ color: "text.secondary" }}
+                    >
+                      Clear saved client-side caches if the app feels out of
+                      sync.
+                    </Typography>
+                  </Box>
+                  <Button
+                    variant="outlined"
+                    color="inherit"
+                    onClick={handleClearCachedData}
+                    disabled={isClearingCachedData}
+                  >
+                    Clear cache
+                  </Button>
+                </Stack>
+              </Box>
+            </SectionCard>
+
+            <SectionCard
+              title="Security"
+              description="Update your password and review account access posture."
+              icon={ShieldOutlined}
+            >
+              <Box
+                component="form"
+                onSubmit={handlePasswordSubmit(onPasswordSubmit)}
+                sx={{
+                  p: 2,
+                  borderRadius: 3,
+                  border: "1px solid",
+                  borderColor: alpha("#13324b", 0.1),
+                  backgroundColor: alpha("#ffffff", 0.72),
+                }}
+              >
+                <Stack spacing={2}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                    Change password
+                  </Typography>
+                  <Controller
+                    name="currentPassword"
+                    control={passwordControl}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        label="Current password"
+                        type={showCurrentPassword ? "text" : "password"}
+                        error={!!passwordErrors.currentPassword}
+                        helperText={passwordErrors.currentPassword?.message}
+                        InputProps={{
+                          endAdornment: (
+                            <InputAdornment position="end">
+                              <IconButton
+                                onClick={() =>
+                                  setShowCurrentPassword((current) => !current)
+                                }
+                                edge="end"
+                              >
+                                {showCurrentPassword ? (
+                                  <VisibilityOff />
+                                ) : (
+                                  <Visibility />
+                                )}
+                              </IconButton>
+                            </InputAdornment>
+                          ),
+                        }}
+                      />
+                    )}
+                  />
+                  <Controller
+                    name="newPassword"
+                    control={passwordControl}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        label="New password"
+                        type={showNewPassword ? "text" : "password"}
+                        error={!!passwordErrors.newPassword}
+                        helperText={passwordErrors.newPassword?.message}
+                        InputProps={{
+                          endAdornment: (
+                            <InputAdornment position="end">
+                              <IconButton
+                                onClick={() =>
+                                  setShowNewPassword((current) => !current)
+                                }
+                                edge="end"
+                              >
+                                {showNewPassword ? (
+                                  <VisibilityOff />
+                                ) : (
+                                  <Visibility />
+                                )}
+                              </IconButton>
+                            </InputAdornment>
+                          ),
+                        }}
+                      />
+                    )}
+                  />
+                  <Controller
+                    name="confirmPassword"
+                    control={passwordControl}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        label="Confirm new password"
+                        type={showConfirmPassword ? "text" : "password"}
+                        error={!!passwordErrors.confirmPassword}
+                        helperText={passwordErrors.confirmPassword?.message}
+                        InputProps={{
+                          endAdornment: (
+                            <InputAdornment position="end">
+                              <IconButton
+                                onClick={() =>
+                                  setShowConfirmPassword((current) => !current)
+                                }
+                                edge="end"
+                              >
+                                {showConfirmPassword ? (
+                                  <VisibilityOff />
+                                ) : (
+                                  <Visibility />
+                                )}
+                              </IconButton>
+                            </InputAdornment>
+                          ),
+                        }}
+                      />
+                    )}
+                  />
+                  <Box>
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      disabled={passwordMutation.isLoading}
+                    >
+                      Update password
+                    </Button>
+                  </Box>
+                </Stack>
+              </Box>
+            </SectionCard>
+          </Stack>
+        </Grid>
+
+        <Grid item xs={12} lg={5}>
+          <Stack spacing={2}>
+            <SectionCard
+              title="Sessions History"
+              description="Review sign-ins across devices and close sessions that are no longer needed."
+              icon={HistoryRounded}
+            >
+              {userSessionsQuery.isLoading ? (
+                <Stack spacing={1.5}>
+                  <Skeleton variant="rounded" height={142} />
+                  <Skeleton variant="rounded" height={142} />
+                  <Skeleton variant="rounded" height={142} />
+                </Stack>
+              ) : userSessionsQuery.isError ? (
+                <Alert severity="error">
+                  Unable to load session history right now.
+                </Alert>
+              ) : sessions.length === 0 ? (
+                <Alert severity="info">No recorded sessions were found.</Alert>
+              ) : (
+                <Stack spacing={1.5}>
+                  {sessions.map((session) => (
+                    <SessionRow
+                      key={session.session_identifier}
+                      session={session}
+                      isClosing={
+                        closeSessionMutation.isLoading &&
+                        closeSessionMutation.variables ===
+                          session.session_identifier
+                      }
+                      onCloseSession={(sessionIdentifier) =>
+                        closeSessionMutation.mutate(sessionIdentifier)
+                      }
+                    />
+                  ))}
+                </Stack>
+              )}
+            </SectionCard>
+
+            <SectionCard
+              title="Known Devices"
+              description="See the devices recognized for your account and clearly identify the one you are using now."
+              icon={DevicesRounded}
+            >
+              {userSessionsQuery.isLoading ? (
+                <Stack spacing={1.5}>
+                  <Skeleton variant="rounded" height={118} />
+                  <Skeleton variant="rounded" height={118} />
+                </Stack>
+              ) : userSessionsQuery.isError ? (
+                <Alert severity="error">
+                  Unable to load known devices right now.
+                </Alert>
+              ) : knownDevices.length === 0 ? (
+                <Alert severity="info">No known devices were found.</Alert>
+              ) : (
+                <Stack spacing={1.5}>
+                  {knownDevices.map((device) => (
+                    <KnownDeviceRow key={device.device_key} device={device} />
+                  ))}
+                </Stack>
+              )}
+            </SectionCard>
+          </Stack>
+        </Grid>
+      </Grid>
     </BackgroundBox>
   );
 };
