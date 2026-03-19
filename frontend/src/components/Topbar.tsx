@@ -36,6 +36,7 @@ import {
 import { BgColor } from "@/constants";
 import { useIsActiveRoute } from "@/hooks";
 import { useGetUnreadNotificationCount } from "@/service";
+import { clearTrackedSession, notifyTrackedLogout } from "@/utils/SessionTracking";
 
 export const Topbar = ({
   open,
@@ -108,9 +109,12 @@ export const Topbar = ({
     handlePublicMenuOpen(event);
   };
 
-  const fullSignOut = () => {
+  const fullSignOut = async () => {
+    await notifyTrackedLogout("manual_logout");
     navigate({ to: "/", search: {} });
     localStorage.removeItem("loggedIn");
+    localStorage.removeItem("_auth");
+    clearTrackedSession();
     signOut();
   };
 

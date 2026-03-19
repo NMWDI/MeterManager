@@ -66,6 +66,7 @@ export * from "./Unit";
 export * from "./UpdatedUserPassword";
 export * from "./User";
 export * from "./UserRole";
+export * from "./UserSessions";
 export * from "./WaterLevelQueryParams";
 export * from "./WaterSource";
 export * from "./Well";

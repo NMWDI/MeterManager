@@ -483,6 +483,60 @@ class Users(Base):
         back_populates="creator",
         foreign_keys="Notifications.created_by",
     )
+    user_sessions: Mapped[List["UserSessions"]] = relationship(
+        "UserSessions",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
+
+class SignOutReasonTypeLU(Base):
+    __tablename__ = "sign_out_reason_type_lu"
+
+    name: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
+    description: Mapped[Optional[str]] = mapped_column(String)
+
+    user_sessions: Mapped[List["UserSessions"]] = relationship(
+        "UserSessions", back_populates="sign_out_reason_type"
+    )
+
+
+class UserSessions(Base):
+    __tablename__ = "user_sessions"
+
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("Users.id", ondelete="CASCADE", onupdate="CASCADE"), index=True
+    )
+    session_identifier: Mapped[str] = mapped_column(
+        String(36), nullable=False, unique=True, index=True
+    )
+    ip_address: Mapped[Optional[str]] = mapped_column(String(255))
+    user_agent: Mapped[Optional[str]] = mapped_column(String)
+    device_label: Mapped[Optional[str]] = mapped_column(String(255))
+    device_type: Mapped[Optional[str]] = mapped_column(String(100))
+    browser: Mapped[Optional[str]] = mapped_column(String(100))
+    operating_system: Mapped[Optional[str]] = mapped_column(String(100))
+    fingerprint_hash: Mapped[Optional[str]] = mapped_column(String(128), index=True)
+    signed_in_at: Mapped[DateTime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now(), index=True
+    )
+    last_seen_at: Mapped[DateTime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now(), index=True
+    )
+    signed_out_at: Mapped[Optional[DateTime]] = mapped_column(DateTime, index=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, index=True)
+    sign_out_reason_type_id: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        ForeignKey(
+            "sign_out_reason_type_lu.id", ondelete="RESTRICT", onupdate="CASCADE"
+        ),
+        index=True,
+    )
+
+    user: Mapped["Users"] = relationship("Users", back_populates="user_sessions")
+    sign_out_reason_type: Mapped[Optional["SignOutReasonTypeLU"]] = relationship(
+        "SignOutReasonTypeLU", back_populates="user_sessions"
+    )
 
 
 class NotificationTypeLU(Base):

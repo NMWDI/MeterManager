@@ -24,10 +24,9 @@ export const CustomCardHeader: React.FC<CustomCardHeaderProps> = ({
         <Box
           sx={{
             display: "flex",
-            flexDirection: "row",
             alignItems: "center",
+            gap: 1.25,
             color: "white",
-            // background: "#292929",
             background: "#333",
             borderRadius: "5px",
             px: "14px",
@@ -37,18 +36,21 @@ export const CustomCardHeader: React.FC<CustomCardHeaderProps> = ({
             fontSize: "1.1rem",
           }}
         >
-          <Typography component="span" variant="inherit" sx={{ flex: 1 }}>
-            {title}
-          </Typography>
           {Icon && (
             <Icon
               sx={{
                 fontSize: "1.3rem",
-                pb: 0,
-                mr: "10px",
+                flexShrink: 0,
               }}
             />
           )}
+          <Typography
+            component="span"
+            variant="inherit"
+            sx={{ flex: 1, lineHeight: 1.2, display: "flex", alignItems: "center" }}
+          >
+            {title}
+          </Typography>
         </Box>
       }
       sx={{

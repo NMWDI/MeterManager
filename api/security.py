@@ -110,7 +110,7 @@ def get_current_user(
     db: Annotated[Session, Depends(get_db)],
     ) -> Users:
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = decode_access_token(token)
 
         username: str = payload.get("sub")
         if username is None:
@@ -128,6 +128,27 @@ def get_current_user(
 
     except Exception:
         raise invalid_credentials_exception
+
+
+def decode_access_token(token: str, verify_exp: bool = True) -> dict:
+    decode_options = None
+    if not verify_exp:
+        decode_options = {"verify_exp": False}
+
+    return jwt.decode(
+        token,
+        SECRET_KEY,
+        algorithms=[ALGORITHM],
+        options=decode_options,
+    )
+
+
+def get_session_identifier_from_token(
+    token: str, verify_exp: bool = True
+) -> str | None:
+    payload = decode_access_token(token, verify_exp=verify_exp)
+    session_identifier: str | None = payload.get("sid")
+    return session_identifier
 
 
 # Provide a list of scope_strings, recieve the current user if those scopes are present, raise auth exception if not

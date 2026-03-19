@@ -22,6 +22,11 @@ import { enqueueSnackbar } from "notistack";
 import { SecurityScope } from "@/interfaces";
 import { API_URL } from "@/config";
 import { CustomCardHeader } from "@/components";
+import {
+  buildSessionTrackingHeaders,
+  collectSessionTrackingMetadata,
+  persistTrackedSession,
+} from "@/utils/SessionTracking";
 
 export const Login = () => {
   const [loginIdentifier, setLoginIdentifier] = useState("");
@@ -34,15 +39,21 @@ export const Login = () => {
   const authUser = useAuthUser();
   const navigate = useNavigate();
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const body = new FormData();
     body.append("username", loginIdentifier);
     body.append("password", password);
 
-    fetch(`${API_URL}/token`, { method: "POST", body })
-      .then(handleLogin)
+    const sessionTrackingMetadata = await collectSessionTrackingMetadata();
+
+    fetch(`${API_URL}/token`, {
+      method: "POST",
+      body,
+      headers: buildSessionTrackingHeaders(sessionTrackingMetadata),
+    })
+      .then((res) => handleLogin(res, sessionTrackingMetadata.fingerprintHash))
       .catch((_) => {
         setError(
           "Unable to connect to the server. Please check your internet connection and try again. If the issue persists, contact support.",
@@ -56,7 +67,7 @@ export const Login = () => {
     }
   }, [isAuthenticated, navigate]);
 
-  function handleLogin(res: Response) {
+  function handleLogin(res: Response, fingerprintHash: string) {
     if (res.status === 200) {
       res.json().then((data) => {
         if (
@@ -80,6 +91,9 @@ export const Login = () => {
         ) {
           localStorage.setItem("_auth", data.access_token);
           localStorage.setItem("loggedIn", "true");
+          if (data.session_identifier) {
+            persistTrackedSession(data.session_identifier, fingerprintHash);
+          }
           navigate({ to: data.user.redirect_page ?? "/" });
         } else {
           setError("Invalid username, email, or password. Please try again.");
