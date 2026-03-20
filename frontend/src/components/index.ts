@@ -29,6 +29,7 @@ export * from "./RHControlled";
 export * from "./ResizableSplitPanels";
 export * from "./RoleChip";
 export * from "./StatCell";
+export * from "./SectionCard";
 export * from "./StyledToggleButton";
 export * from "./TabPanel";
 export * from "./Topbar";

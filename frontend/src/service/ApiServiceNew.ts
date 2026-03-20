@@ -7,7 +7,7 @@ import {
   UseQueryOptions,
 } from "react-query";
 import { useAuthHeader, useSignOut } from "react-auth-kit";
-import { enqueueSnackbar, useSnackbar } from "notistack";
+import { useSnackbar } from "notistack";
 import {
   ActivityTypeLU,
   CreateNotificationPayload,
@@ -62,7 +62,7 @@ import { IncreaseQuantityPayload } from "@/interfaces";
 import { WorkOrderStatus } from "@/enums";
 import { API_URL } from "@/config";
 import { useNavigate } from "@tanstack/react-router";
-import { clearTrackedSession, notifyTrackedLogout } from "@/utils/SessionTracking";
+import { handleExpiredSession } from "@/utils/AuthSession";
 import {
   PartHistoryResponse,
   UpdatePartHistoryPayload,
@@ -196,8 +196,8 @@ async function GETFetch(
   route: string,
   params: any,
   authHeader: string,
-  signOut: Function,
-  navigate: Function,
+  signOut: () => unknown,
+  navigate: (options: { to: string }) => unknown,
 ) {
   const headers = { Authorization: authHeader };
   const response = await fetch(
@@ -210,14 +210,10 @@ async function GETFetch(
   if (!response.ok) {
     // If backend indicates that user's token is expired, log them out and notify
     if (response.status == 440 && localStorage.getItem("loggedIn")) {
-      void notifyTrackedLogout("session_expired");
-      localStorage.removeItem("loggedIn");
-      localStorage.removeItem("_auth");
-      clearTrackedSession();
-      navigate({ to: "/" });
-      signOut();
-      enqueueSnackbar("Your session has expired, please login again.", {
-        variant: "error",
+      handleExpiredSession({
+        signOut,
+        navigate,
+        message: "Your session has expired, please login again.",
       });
     }
     throw new Error(response.status.toString());

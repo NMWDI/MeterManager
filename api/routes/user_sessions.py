@@ -58,6 +58,11 @@ class UserSessionsResponse(ORMBase):
     known_devices: list[KnownDeviceSummary]
 
 
+class CurrentSessionStatusResponse(ORMBase):
+    session_identifier: str
+    is_active: bool
+
+
 def serialize_session(
     session: UserSessions,
     *,
@@ -92,6 +97,27 @@ def get_known_device_key(session: UserSessions) -> str:
         session.device_type or "unknown-type",
     ]
     return f"derived:{'|'.join(fallback_parts)}"
+
+
+@user_sessions_router.get(
+    "/user-sessions/current/status",
+    response_model=CurrentSessionStatusResponse,
+)
+def get_current_session_status(
+    _: Users = Depends(get_current_user),
+    token: str = Depends(oauth2_scheme),
+):
+    current_session_identifier = get_session_identifier_from_token(token)
+    if not current_session_identifier:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Session identifier is missing from token",
+        )
+
+    return CurrentSessionStatusResponse(
+        session_identifier=current_session_identifier,
+        is_active=True,
+    )
 
 
 @user_sessions_router.get(

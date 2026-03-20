@@ -10,7 +10,7 @@ from sqlalchemy import or_
 from sqlalchemy.orm import joinedload, undefer, Session
 from sqlalchemy.sql import select
 
-from api.models.main_models import Users, UserRoles, SecurityScopes
+from api.models.main_models import Users, UserRoles, SecurityScopes, UserSessions
 from api.schemas import security_schemas
 from api.session import get_db
 
@@ -36,6 +36,12 @@ missing_permissions_exception = HTTPException(
 expired_token_exception = HTTPException(
     status_code=440,
     detail="Token expired, please login again to receive a new one.",
+    headers={"WWW-Authenticate": "Bearer"},
+)
+
+inactive_session_exception = HTTPException(
+    status_code=440,
+    detail="Session is no longer active. Please login again.",
     headers={"WWW-Authenticate": "Bearer"},
 )
 
@@ -116,15 +122,35 @@ def get_current_user(
         if username is None:
             raise invalid_credentials_exception
 
+        session_identifier: str | None = payload.get("sid")
+        if session_identifier is None:
+            raise invalid_credentials_exception
+
         user = get_user(username=username, db=db)
 
         if user is None:
             raise invalid_credentials_exception
 
+        session = (
+            db.query(UserSessions)
+            .filter(
+                UserSessions.session_identifier == session_identifier,
+                UserSessions.user_id == user.id,
+                UserSessions.is_active.is_(True),
+                UserSessions.signed_out_at.is_(None),
+            )
+            .first()
+        )
+        if session is None:
+            raise inactive_session_exception
+
         return user
 
     except ExpiredSignatureError:
         raise expired_token_exception
+
+    except HTTPException:
+        raise
 
     except Exception:
         raise invalid_credentials_exception

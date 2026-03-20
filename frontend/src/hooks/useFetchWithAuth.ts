@@ -1,10 +1,9 @@
 import { useAuthHeader, useSignOut } from "react-auth-kit";
 import { useNavigate } from "@tanstack/react-router";
 import { formatQueryParams } from "@/utils";
-import { enqueueSnackbar } from "notistack";
 import { HttpStatus } from "@/enums";
 import { API_URL } from "@/config";
-import { clearTrackedSession, notifyTrackedLogout } from "@/utils/SessionTracking";
+import { handleExpiredSession } from "@/utils/AuthSession";
 
 export const useFetchWithAuth = () => {
   const authHeader = useAuthHeader();
@@ -51,14 +50,9 @@ export const useFetchWithAuth = () => {
         response.status === HttpStatus.LOGIN_TIMEOUT &&
         localStorage.getItem("loggedIn")
       ) {
-        void notifyTrackedLogout("session_expired");
-        localStorage.removeItem("loggedIn");
-        localStorage.removeItem("_auth");
-        clearTrackedSession();
-        navigate({ to: "/" });
-        signOut();
-        enqueueSnackbar("Session expired. Please log in to continue.", {
-          variant: "error",
+        handleExpiredSession({
+          signOut,
+          navigate,
         });
       }
 

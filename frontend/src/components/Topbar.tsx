@@ -36,7 +36,10 @@ import {
 import { BgColor } from "@/constants";
 import { useIsActiveRoute } from "@/hooks";
 import { useGetUnreadNotificationCount } from "@/service";
-import { clearTrackedSession, notifyTrackedLogout } from "@/utils/SessionTracking";
+import {
+  clearTrackedSession,
+  notifyTrackedLogout,
+} from "@/utils/SessionTracking";
 
 export const Topbar = ({
   open,
@@ -453,16 +456,13 @@ export const Topbar = ({
         ) : (
           <Button
             size="small"
+            variant="text"
             onClick={() => navigate({ to: "/login", search: {} })}
             sx={{
               textTransform: "uppercase",
               fontFamily: "monospace",
               fontWeight: "bolder",
-              backgroundColor: "darkblue",
-              color: "white",
-              "&:hover": {
-                backgroundColor: "#00008b",
-              },
+              color: "darkblue",
             }}
           >
             Login

@@ -8,8 +8,6 @@ import {
   Avatar,
   Box,
   Button,
-  Card,
-  CardContent,
   Chip,
   Divider,
   Grid,
@@ -42,9 +40,9 @@ import { useAuthUser, useSignIn } from "react-auth-kit";
 import { useMutation, useQuery, useQueryClient } from "react-query";
 import {
   BackgroundBox,
-  CustomCardHeader,
   ImageUploadWithPreview,
   RoleChip,
+  SectionCard,
 } from "@/components";
 import { navConfig } from "@/constants";
 import { useFetchWithAuth } from "@/hooks";
@@ -125,53 +123,36 @@ function getDeviceIcon(deviceType?: string | null) {
   }
 }
 
-function InfoTile({
-  label,
-  value,
-  compact = false,
-}: {
-  label: string;
-  value: React.ReactNode;
-  compact?: boolean;
-}) {
+function InfoTile({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <Box
       sx={{
-        p: compact ? 1.5 : 2,
-        borderRadius: 3,
-        border: "1px solid",
-        borderColor: alpha("#13324b", 0.1),
-        backgroundColor: alpha("#ffffff", 0.72),
-        minHeight: compact ? 72 : 92,
+        p: 1,
+        display: "flex",
+        justifyContent: "left",
+        alignItems: "center",
+        gap: 1,
       }}
     >
       <Typography
         variant="body2"
-        sx={{ color: "text.secondary", mb: 1, fontWeight: 600 }}
+        sx={{ color: "text.secondary", fontWeight: 600 }}
       >
         {label}
       </Typography>
-      {value}
+      <Box component="span">
+        {typeof value === "string" ? (
+          <Chip
+            sx={{ fontFamily: "monospace" }}
+            size="small"
+            label={value}
+            variant="outlined"
+          />
+        ) : (
+          value
+        )}
+      </Box>
     </Box>
-  );
-}
-
-function SectionCard({
-  title,
-  description,
-  icon: Icon,
-  children,
-}: {
-  title: string;
-  description: string;
-  icon: typeof ShieldOutlined;
-  children: React.ReactNode;
-}) {
-  return (
-    <Card sx={{ height: "fit-content" }}>
-      <CustomCardHeader title={title} subheader={description} icon={Icon} />
-      <CardContent sx={{ p: { xs: 2, md: 3 } }}>{children}</CardContent>
-    </Card>
   );
 }
 
@@ -733,33 +714,14 @@ export const Settings = () => {
                 <Grid item xs={12} sm={6}>
                   <InfoTile
                     label="Full name"
-                    compact
-                    value={
-                      <Typography sx={{ fontWeight: 700 }}>
-                        {user?.full_name ?? "N/A"}
-                      </Typography>
-                    }
+                    value={user?.full_name ?? "N/A"}
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <InfoTile
-                    label="Email"
-                    value={
-                      <Typography sx={{ fontWeight: 700 }}>
-                        {user?.email ?? "N/A"}
-                      </Typography>
-                    }
-                  />
+                  <InfoTile label="Email" value={user?.email ?? "N/A"} />
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <InfoTile
-                    label="Username"
-                    value={
-                      <Typography sx={{ fontWeight: 700 }}>
-                        {user?.username ?? "N/A"}
-                      </Typography>
-                    }
-                  />
+                  <InfoTile label="Username" value={user?.username ?? "N/A"} />
                 </Grid>
                 <Grid item xs={12} sm={6}>
                   <InfoTile
@@ -767,158 +729,138 @@ export const Settings = () => {
                     value={<RoleChip role={user?.user_role?.name ?? "N/A"} />}
                   />
                 </Grid>
-              </Grid>
-
-              <Divider />
-
-              <Box
-                sx={{
-                  p: 2,
-                  borderRadius: 3,
-                  border: "1px solid",
-                  borderColor: alpha("#13324b", 0.1),
-                  backgroundColor: alpha("#ffffff", 0.72),
-                }}
-              >
-                <Stack
-                  direction={{ xs: "column", md: "row" }}
-                  spacing={2}
-                  alignItems={{ xs: "stretch", md: "center" }}
-                  justifyContent="space-between"
-                >
-                  <Box>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                      Display name
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{ color: "text.secondary", mb: 1.5 }}
-                    >
-                      This is how your name appears across the application.
-                    </Typography>
-                  </Box>
-
-                  {!isEditing ? (
-                    <Stack
-                      direction={{ xs: "column", sm: "row" }}
-                      spacing={1}
-                      alignItems={{ xs: "stretch", sm: "center" }}
-                    >
-                      <Chip
-                        label={user?.display_name ?? "N/A"}
-                        variant="outlined"
-                        sx={{ fontFamily: "monospace" }}
-                      />
-                      <Button
-                        variant="outlined"
-                        startIcon={<Edit />}
-                        onClick={() => setIsEditing(true)}
+                <Grid item xs={12}>
+                  <Stack
+                    direction={{ xs: "column", md: "row" }}
+                    spacing={2}
+                    alignItems={{ xs: "stretch", md: "center" }}
+                    justifyContent="space-between"
+                  >
+                    <Box>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                        Display name
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{ color: "text.secondary", mb: 1.5 }}
                       >
-                        Edit
-                      </Button>
-                    </Stack>
-                  ) : (
-                    <Stack
-                      direction={{ xs: "column", sm: "row" }}
-                      spacing={1}
-                      sx={{ width: { xs: "100%", md: "auto" } }}
-                    >
-                      <Controller
-                        name="display_name"
-                        control={displayNameControl}
-                        render={({ field }) => (
-                          <TextField
-                            {...field}
-                            size="small"
-                            autoFocus
-                            label="Display name"
-                            sx={{ minWidth: { xs: "100%", sm: 280 } }}
-                          />
-                        )}
-                      />
-                      <Button
-                        color="inherit"
-                        variant="outlined"
-                        onClick={() => {
-                          displayNameReset({
-                            display_name: user?.display_name ?? "",
-                          });
-                          setIsEditing(false);
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        variant="contained"
-                        onClick={displayNameHandleSubmit(onDisplayNameSubmit)}
-                        disabled={displayNameMutation.isLoading}
-                      >
-                        Save
-                      </Button>
-                    </Stack>
-                  )}
-                </Stack>
-              </Box>
+                        This is how your name appears across the application.
+                      </Typography>
+                    </Box>
 
-              <Box
-                sx={{
-                  p: 2,
-                  borderRadius: 3,
-                  border: "1px solid",
-                  borderColor: alpha("#13324b", 0.1),
-                  backgroundColor: alpha("#ffffff", 0.72),
-                }}
-              >
-                <Stack spacing={2}>
-                  <Box>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                      Avatar
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{ color: "text.secondary" }}
-                    >
-                      Upload or replace your account image.
-                    </Typography>
-                  </Box>
-                  <Grid container spacing={2} alignItems="flex-start">
-                    <Grid item xs={12} md={7}>
-                      <ImageUploadWithPreview
-                        key={avatarUploadKey}
-                        fileLimit={1}
-                        onFilesChange={setAvatarFiles}
-                      />
-                    </Grid>
-                    <Grid item xs={12} md={5}>
-                      <Stack spacing={1.5}>
-                        <Button
-                          variant="contained"
-                          onClick={onAvatarSubmit}
-                          disabled={
-                            avatarFiles.length === 0 ||
-                            avatarMutation.isLoading ||
-                            clearAvatarMutation.isLoading
-                          }
-                        >
-                          Save avatar
-                        </Button>
+                    {!isEditing ? (
+                      <Stack
+                        direction={{ xs: "column", sm: "row" }}
+                        spacing={1}
+                        alignItems={{ xs: "stretch", sm: "center" }}
+                      >
+                        <Chip
+                          label={user?.display_name ?? "N/A"}
+                          variant="outlined"
+                          sx={{ fontFamily: "monospace" }}
+                        />
                         <Button
                           variant="outlined"
-                          color="error"
-                          onClick={() => clearAvatarMutation.mutate()}
-                          disabled={
-                            !user?.avatar_img ||
-                            avatarMutation.isLoading ||
-                            clearAvatarMutation.isLoading
-                          }
+                          startIcon={<Edit />}
+                          onClick={() => setIsEditing(true)}
                         >
-                          Remove avatar
+                          Edit
                         </Button>
                       </Stack>
+                    ) : (
+                      <Stack
+                        direction={{ xs: "column", sm: "row" }}
+                        spacing={1}
+                        sx={{ width: { xs: "100%", md: "auto" } }}
+                      >
+                        <Controller
+                          name="display_name"
+                          control={displayNameControl}
+                          render={({ field }) => (
+                            <TextField
+                              {...field}
+                              size="small"
+                              autoFocus
+                              label="Display name"
+                              sx={{ minWidth: { xs: "100%", sm: 280 } }}
+                            />
+                          )}
+                        />
+                        <Button
+                          color="inherit"
+                          variant="outlined"
+                          onClick={() => {
+                            displayNameReset({
+                              display_name: user?.display_name ?? "",
+                            });
+                            setIsEditing(false);
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          variant="contained"
+                          onClick={displayNameHandleSubmit(onDisplayNameSubmit)}
+                          disabled={displayNameMutation.isLoading}
+                        >
+                          Save
+                        </Button>
+                      </Stack>
+                    )}
+                  </Stack>
+                </Grid>
+                <Grid item xs={12}>
+                  <Stack spacing={2}>
+                    <Box>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                        Avatar
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{ color: "text.secondary" }}
+                      >
+                        Upload or replace your account image.
+                      </Typography>
+                    </Box>
+                    <Grid container spacing={2} alignItems="flex-start">
+                      <Grid item xs={12} md={7}>
+                        <ImageUploadWithPreview
+                          key={avatarUploadKey}
+                          fileLimit={1}
+                          onFilesChange={setAvatarFiles}
+                        />
+                      </Grid>
+                      <Grid item xs={12} md={5}>
+                        <Stack spacing={1.5}>
+                          <Button
+                            variant="contained"
+                            onClick={onAvatarSubmit}
+                            disabled={
+                              avatarFiles.length === 0 ||
+                              avatarMutation.isLoading ||
+                              clearAvatarMutation.isLoading
+                            }
+                          >
+                            Save avatar
+                          </Button>
+                          <Button
+                            variant="outlined"
+                            color="error"
+                            onClick={() => clearAvatarMutation.mutate()}
+                            disabled={
+                              !user?.avatar_img ||
+                              avatarMutation.isLoading ||
+                              clearAvatarMutation.isLoading
+                            }
+                          >
+                            Remove avatar
+                          </Button>
+                        </Stack>
+                      </Grid>
                     </Grid>
-                  </Grid>
-                </Stack>
-              </Box>
+                  </Stack>
+                </Grid>
+              </Grid>
             </SectionCard>
 
             <SectionCard
