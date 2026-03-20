@@ -1,6 +1,6 @@
 import { ButtonProps, IconButton } from "@mui/material";
 import { getRoleColor } from "@/utils";
-import { UserAvatar } from "@/components/UserAvatar";
+import { UserAvatar } from "@/components/media/UserAvatar";
 
 export const TopbarUserButton = ({
   full_name,

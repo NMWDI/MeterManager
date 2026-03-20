@@ -44,7 +44,6 @@ import {
   ControlledDatepicker,
   ControlledSelectNonObject,
   IncreaseQuantityModal,
-  RouterMuiLink,
 } from "@/components";
 import {
   useAddParts,
@@ -92,6 +91,10 @@ const defaultSchema = {
   to: dayjs().endOf("month"),
   event_types: [...EVENT_TYPE_ORDER] as EventType[],
 };
+
+const RouterMuiLink = (props: any) => (
+  <MuiLink component={RouterLink as any} {...props} />
+);
 
 function normalizeEventTypes(input: unknown): EventType[] {
   const values = Array.isArray(input) ? input : [];

@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useMergeWells } from "@/service";
 import { Well } from "@/interfaces";
 
-import WellSelection from "./WellSelection";
+import WellSelection from "../forms/WellSelection";
 
 export function MergeWellModal({
   isWellMergeModalOpen,

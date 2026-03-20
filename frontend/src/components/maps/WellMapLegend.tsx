@@ -3,8 +3,7 @@ import {
   BlackMapIcon,
   BlueMapIcon,
   RedMapIcon,
-} from './MapIcons';
-
+} from "./icons";
 
 export const WellMapLegend: React.FC = () => {
   return (
@@ -48,4 +47,3 @@ export const WellMapLegend: React.FC = () => {
     </div>
   );
 };
-

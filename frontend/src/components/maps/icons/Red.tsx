@@ -1,9 +1,9 @@
 import L from "leaflet";
-import iconBlack from "./../../assets/leaflet/marker-icon-black.png";
+import iconRed from "../../../assets/leaflet/marker-icon-red.png";
 import iconShadow from "leaflet/dist/images/marker-shadow.png";
 
-export const BlackMapIcon = L.icon({
-  iconUrl: iconBlack,
+export const RedMapIcon = L.icon({
+  iconUrl: iconRed,
   shadowUrl: iconShadow,
   iconSize: [25, 41],
   iconAnchor: [12, 41],

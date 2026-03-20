@@ -44,7 +44,7 @@ import {
   TransporationLayer,
   BoundariesLayer,
 } from "@/components";
-import { RedMapIcon, BlackMapIcon } from "@/components/MapIcons";
+import { RedMapIcon, BlackMapIcon } from "@/components/maps/icons";
 import { useFetchWithAuth } from "@/hooks";
 import { useGetWellLocations } from "@/service";
 import { Well } from "@/interfaces";

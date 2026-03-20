@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Grid, Button, Typography, Box } from "@mui/material";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
-import { ImageDialog, ImagePreviewGrid } from "./";
+import { ImageDialog } from "./ImageDialog";
+import { ImagePreviewGrid } from "./ImagePreviewGrid";
 import { enqueueSnackbar } from "notistack";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
@@ -124,7 +125,7 @@ export const ImageUploadWithPreview = ({
           <ImagePreviewGrid
             previews={previews}
             onRemove={handleRemove}
-            onOpen={(src) => {
+            onOpen={(src: string) => {
               setSelectedImage(src);
               setDialogOpen(true);
             }}

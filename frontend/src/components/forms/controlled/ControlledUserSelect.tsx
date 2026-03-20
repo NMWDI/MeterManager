@@ -12,7 +12,7 @@ import {
 } from "react-hook-form";
 import { User } from "@/interfaces";
 import { useGetUserList } from "@/service";
-import { UserAvatar } from "@/components/UserAvatar";
+import { UserAvatar } from "@/components/media/UserAvatar";
 import {
   getRoleLabel,
   sortUsersByRoleThenName,

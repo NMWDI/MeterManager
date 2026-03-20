@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Box, CircularProgress, Typography } from "@mui/material";
 import ReactPlot from "react-plotly.js";
 import type { Data } from "plotly.js";
-import { PlotContextMenu } from "../../components/PlotContextMenu";
+import { PlotContextMenu } from "@/components/display/PlotContextMenu";
 
 export const Plot = ({
   manual_dates,

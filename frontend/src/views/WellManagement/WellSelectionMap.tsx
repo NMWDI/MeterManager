@@ -16,7 +16,7 @@ import {
   TransporationLayer,
   WellMapLegend,
 } from "@/components";
-import { BlueMapIcon, RedMapIcon, BlackMapIcon } from "@/components/MapIcons";
+import { BlueMapIcon, RedMapIcon, BlackMapIcon } from "@/components/maps/icons";
 import { WellStatus } from "@/enums";
 
 import L from "leaflet";

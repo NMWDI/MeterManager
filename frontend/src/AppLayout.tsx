@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Box, useMediaQuery, useTheme } from "@mui/material";
 import { Topbar } from "@/components";
-import { SessionStatusPoller } from "@/components/SessionStatusPoller";
+import { SessionStatusPoller } from "@/components/session/SessionStatusPoller";
 import { DESKTOP_COLLAPSED_WIDTH, SidebarInset } from "@/components/ui/sidebar";
 import Sidenav from "./sidenav";
 import { useAuthUser } from "react-auth-kit";
