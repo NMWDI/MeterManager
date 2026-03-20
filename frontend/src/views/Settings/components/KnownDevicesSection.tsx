@@ -52,28 +52,25 @@ function KnownDeviceRow({ device }: { device: KnownDeviceSummary }) {
         <Box
           sx={{
             display: "grid",
-            gridTemplateColumns: {
-              xs: "repeat(2, minmax(0, 1fr))",
-              sm: "repeat(4, minmax(0, 1fr))",
-            },
+            gridTemplateColumns: "repeat(8, minmax(0, 1fr))",
             gap: 1,
           }}
         >
-          <Box>
+          <Box sx={{ gridColumn: "1 / 2", gridRow: "1 / 2" }}>
             <Box sx={{ color: "text.secondary", fontSize: 12 }}>Sessions</Box>
             <Box sx={{ fontSize: 14 }}>{device.session_count}</Box>
           </Box>
-          <Box>
+          <Box sx={{ gridColumn: "2 / 3", gridRow: "1 / 2" }}>
             <Box sx={{ color: "text.secondary", fontSize: 12 }}>Active now</Box>
             <Box sx={{ fontSize: 14 }}>{device.active_session_count}</Box>
           </Box>
-          <Box>
+          <Box sx={{ gridColumn: "3 / 6", gridRow: "1 / 2" }}>
             <Box sx={{ color: "text.secondary", fontSize: 12 }}>First seen</Box>
             <Box sx={{ fontSize: 14 }}>
               {formatDateTime(device.signed_in_at_first)}
             </Box>
           </Box>
-          <Box>
+          <Box sx={{ gridColumn: "6 / 9", gridRow: "1 / 2" }}>
             <Box sx={{ color: "text.secondary", fontSize: 12 }}>Last seen</Box>
             <Box sx={{ fontSize: 14 }}>
               {formatDateTime(device.last_seen_at)}
