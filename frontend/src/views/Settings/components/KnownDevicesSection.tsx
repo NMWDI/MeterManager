@@ -1,7 +1,6 @@
 import { Alert, Box, Skeleton, Stack } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { KnownDeviceSummary } from "@/interfaces";
-import { SectionSurface } from "./SectionSurface";
 import {
   SessionDeviceIdentity,
   StatusChip,
