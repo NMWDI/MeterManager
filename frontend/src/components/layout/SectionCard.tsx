@@ -8,7 +8,7 @@ export function SectionCard({
   children,
 }: {
   title: string;
-  description: string;
+  description?: string;
   icon: typeof SvgIcon;
   children: React.ReactNode;
 }) {
