@@ -8,7 +8,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { Route } from "@/routes/manage/meters";
 import { MeterListQueryParams, SecurityScope } from "@/interfaces";
 import { SortDirection, MeterSortByField, MeterStatusNames } from "@/enums";
-import { useGetMeterList } from "@/service/ApiServiceNew";
+import { useGetMeterList } from "@/service";
 import { GridFooterWithButton } from "@/components";
 
 interface MeterSelectionTableProps {

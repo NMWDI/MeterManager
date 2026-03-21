@@ -8,7 +8,7 @@ import {
   PatchActivitySubmit,
   SecurityScope,
 } from "@/interfaces";
-import { useUpdateActivity, useDeleteActivity } from "@/service/ApiServiceNew";
+import { useDeleteActivity, useUpdateActivity } from "@/service";
 import dayjs from "dayjs";
 import { enqueueSnackbar } from "notistack";
 import {

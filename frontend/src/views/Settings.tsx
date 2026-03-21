@@ -18,8 +18,8 @@ import { navConfig } from "@/constants";
 import { useFetchWithAuth } from "@/hooks";
 import { SecurityScope, UserSessionsResponse } from "@/interfaces";
 import { Route } from "@/routes/settings";
-import { clearSavedQueryLocalStorage } from "@/service";
 import { getTrackedSession } from "@/utils/SessionTracking";
+import { clearSavedQueryLocalStorage } from "@/utils";
 import {
   KnownDevicesSection,
   PreferencesSection,
