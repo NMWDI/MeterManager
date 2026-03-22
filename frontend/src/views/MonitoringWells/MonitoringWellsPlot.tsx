@@ -12,7 +12,8 @@ export const Plot = ({
   sensor_dates,
   sensor_vals,
   isLoading,
-  isContinuousLoading = false,
+  emptyMessage,
+  loadingSources = [],
 }: {
   manual_dates: Date[];
   manual_vals: number[];
@@ -21,7 +22,8 @@ export const Plot = ({
   sensor_dates?: Date[];
   sensor_vals?: number[];
   isLoading: boolean;
-  isContinuousLoading?: boolean;
+  emptyMessage?: string;
+  loadingSources?: string[];
 }) => {
   const plotContainerRef = useRef<HTMLDivElement | null>(null);
   const plotRef = useRef<HTMLElement | null>(null);
@@ -42,61 +44,59 @@ export const Plot = ({
     }
   };
 
-  const data: Partial<Data>[] = useMemo(
-    () => {
-      const traces: Partial<Data>[] = [];
+  const data: Partial<Data>[] = useMemo(() => {
+    const traces: Partial<Data>[] = [];
 
-      if (manual_dates.length > 0) {
-        traces.push({
-          x: manual_dates,
-          y: manual_vals,
-          type: "scattergl",
-          mode: "markers",
-          marker: { color: "red" },
-          name: "Manual",
-          hovertemplate:
-            "Date: %{x|%B %-d, %Y}<br>Value: %{y} ft<extra>%{fullData.name}</extra>",
-        });
-      }
+    if (manual_dates.length > 0) {
+      traces.push({
+        x: manual_dates,
+        y: manual_vals,
+        type: "scattergl",
+        mode: "markers",
+        marker: { color: "red" },
+        name: "Manual",
+        hovertemplate:
+          "Date: %{x|%B %-d, %Y}<br>Value: %{y} ft<extra>%{fullData.name}</extra>",
+      });
+    }
 
-      if (logger_dates.length > 0) {
-        traces.push({
-          x: logger_dates,
-          y: logger_vals,
-          type: "scattergl",
-          marker: { color: "blue" },
-          name: "Continuous",
-          hovertemplate:
-            "Date: %{x|%B %-d, %Y}<br>Value: %{y} ft<extra>%{fullData.name}</extra>",
-        });
-      }
+    if (logger_dates.length > 0) {
+      traces.push({
+        x: logger_dates,
+        y: logger_vals,
+        type: "scattergl",
+        marker: { color: "blue" },
+        name: "Continuous",
+        hovertemplate:
+          "Date: %{x|%B %-d, %Y}<br>Value: %{y} ft<extra>%{fullData.name}</extra>",
+      });
+    }
 
-      if (sensor_dates && sensor_dates.length > 0) {
-        traces.push({
-          x: sensor_dates,
-          y: sensor_vals,
-          type: "scattergl",
-          mode: "markers",
-          marker: { color: "purple" },
-          name: "Woodpecker Sensor",
-          hovertemplate:
-            "Date: %{x|%B %-d, %Y}<br>Value: %{y} ft<extra>%{fullData.name}</extra>",
-        });
-      }
+    if (sensor_dates && sensor_dates.length > 0) {
+      traces.push({
+        x: sensor_dates,
+        y: sensor_vals,
+        type: "scattergl",
+        mode: "markers",
+        marker: { color: "purple" },
+        name: "Woodpecker Sensor",
+        hovertemplate:
+          "Date: %{x|%B %-d, %Y}<br>Value: %{y} ft<extra>%{fullData.name}</extra>",
+      });
+    }
 
-      return traces;
-    },
-    [
-      manual_dates,
-      manual_vals,
-      logger_dates,
-      logger_vals,
-      sensor_dates,
-      sensor_vals,
-    ],
-  );
+    return traces;
+  }, [
+    manual_dates,
+    manual_vals,
+    logger_dates,
+    logger_vals,
+    sensor_dates,
+    sensor_vals,
+  ]);
 
   const hasData = data.length > 0;
+  const hasLoadingOverlay = hasData && loadingSources.length > 0;
 
   useEffect(() => {
     const container = plotContainerRef.current;
@@ -150,8 +150,27 @@ export const Plot = ({
             Loading plot data...
           </Typography>
         </Box>
+      ) : !hasData && emptyMessage ? (
+        <Box
+          sx={{
+            height: { xs: 300, sm: 400, md: 500, lg: 600 },
+            width: "100%",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            px: 4,
+          }}
+        >
+          <Typography
+            variant="body1"
+            color="text.secondary"
+            sx={{ textAlign: "center", maxWidth: 360 }}
+          >
+            {emptyMessage}
+          </Typography>
+        </Box>
       ) : (
-        <Box sx={{ width: "100%", height: "100%" }}>
+        <Box sx={{ width: "100%", height: "100%", position: "relative" }}>
           <PlotContextMenu
             onResetAxes={resetAxes}
             dragMode={dragMode}
@@ -159,10 +178,7 @@ export const Plot = ({
               setDragMode((prev) => (prev === "pan" ? "zoom" : "pan"))
             }
           >
-            <Box
-              ref={plotContainerRef}
-              sx={{ width: "100%", height: "100%" }}
-            >
+            <Box ref={plotContainerRef} sx={{ width: "100%", height: "100%" }}>
               <ReactPlot
                 data={data}
                 revision={plotRevision}
@@ -208,27 +224,36 @@ export const Plot = ({
               />
             </Box>
           </PlotContextMenu>
-          {isContinuousLoading && (
+          {hasLoadingOverlay && (
             <Box
               sx={{
-                mt: 2,
-                px: 2,
-                py: 1.5,
+                position: "absolute",
+                top: 37.5,
+                right: 10,
+                zIndex: 2,
+                px: 1.5,
+                py: 1,
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center",
                 gap: 1.5,
+                borderRadius: 1.5,
+                border: 1,
+                borderColor: "divider",
+                backgroundColor: "rgba(255, 255, 255, 0.92)",
+                boxShadow: 2,
+                maxWidth: 260,
+                pointerEvents: "none",
               }}
             >
               <CircularProgress size={18} thickness={5} />
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ textAlign: "center" }}
-              >
-                Continuous data is still loading. More points will appear
-                automatically.
-              </Typography>
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  Loading additional data
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {loadingSources.join(", ")} still querying.
+                </Typography>
+              </Box>
             </Box>
           )}
         </Box>

@@ -7,9 +7,7 @@ import {
   InputLabel,
   Card,
   CardContent,
-  Alert,
-  Button,
-  AlertTitle,
+  Box,
 } from "@mui/material";
 import { Science } from "@mui/icons-material";
 import { useMutation, useQuery } from "react-query";
@@ -29,6 +27,8 @@ import { useFetchWithAuth } from "@/hooks";
 import {
   BackgroundBox,
   CustomCardHeader,
+  FieldLoadingSkeleton,
+  QueryErrorBox,
   ResizableSplitPanels,
 } from "@/components";
 import {
@@ -37,7 +37,7 @@ import {
   pageParam,
   routeSearchHydrator,
 } from "@/utils";
-import { Table, Plot } from "@/views/Chlorides";
+import { ChloridesPlotSection, ChloridesTableSection } from "@/views/Chlorides";
 
 const searchSchema = z.object({
   regionId: optionalPositiveInt.catch(undefined).default(undefined),
@@ -224,8 +224,6 @@ function Chlorides() {
     },
   });
 
-  const error = regionsQuery.isError || manualQuery.isError;
-
   const handleSubmitNewMeasurement = (data: Partial<NewRegionMeasurement>) => {
     if (regionId) {
       data.region_id = regionId;
@@ -279,64 +277,56 @@ function Chlorides() {
       <Card sx={{ height: "fit-content" }}>
         <CustomCardHeader title="Chlorides" icon={Science} />
         <CardContent>
-          {error && (
-            <Alert
-              severity="error"
-              sx={{ mb: 2 }}
-              action={
-                <Button
-                  variant="outlined"
-                  color="inherit"
-                  size="small"
-                  onClick={() => regionsQuery.refetch()}
+          <Box sx={{ minWidth: "100px", maxWidth: 600, width: "100%" }}>
+            {regionsQuery.isLoading ? (
+              <FieldLoadingSkeleton />
+            ) : regionsQuery.isError ? (
+              <QueryErrorBox
+                title="Unable to Load Regions"
+                message={
+                  regionsQuery.error?.message ||
+                  "We couldn’t load the list of chloride regions."
+                }
+                onRetry={() => regionsQuery.refetch()}
+              />
+            ) : (
+              <FormControl
+                size="small"
+                sx={{ width: "100%" }}
+                disabled={regionsQuery.isLoading}
+              >
+                <InputLabel id={`${uniqueSelectId}-label`}>Region</InputLabel>
+                <Select
+                  label="Region"
+                  labelId={`${uniqueSelectId}-label`}
+                  value={regionId ?? ""}
+                  onChange={(e) => {
+                    const next = Number(e.target.value);
+                    navigate({
+                      to: "/chlorides",
+                      search: (prev) => ({
+                        ...(prev as any),
+                        regionId: next,
+                      }),
+                      replace: true,
+                    });
+                  }}
                 >
-                  Retry
-                </Button>
-              }
-            >
-              <AlertTitle>Error Loading Data</AlertTitle>
-              We couldn’t load chloride data. Please check your connection or
-              try again.
-            </Alert>
-          )}
-          <FormControl
-            size="small"
-            sx={{ minWidth: "100px", maxWidth: 600, width: "100%" }}
-            disabled={regionsQuery.isLoading || !!regionsQuery.isError}
-          >
-            <InputLabel id={`${uniqueSelectId}-label`}>Region</InputLabel>
-            <Select
-              label="Region"
-              labelId={`${uniqueSelectId}-label`}
-              value={regionId ?? ""}
-              onChange={(e) => {
-                const next = Number(e.target.value);
-                navigate({
-                  to: "/chlorides",
-                  search: (prev) => ({
-                    ...(prev as any),
-                    regionId: next,
-                  }),
-                  replace: true,
-                });
-              }}
-            >
-              {regionsQuery.isLoading && (
-                <MenuItem disabled>Loading...</MenuItem>
-              )}
-              {regionsQuery.isLoading && (
-                <MenuItem disabled>Error loading Regions</MenuItem>
-              )}
-              {regionsQuery?.data?.map((region) => (
-                <MenuItem key={region.id} value={region.id}>
-                  Region {region.id}
-                  {region.names.length > 0 ? ":" : null}{" "}
-                  {region.names.slice(0, 3).join(", ")}
-                  {region.names.length > 3 ? "..." : ""}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+                  {regionsQuery.isLoading && (
+                    <MenuItem disabled>Loading...</MenuItem>
+                  )}
+                  {regionsQuery?.data?.map((region) => (
+                    <MenuItem key={region.id} value={region.id}>
+                      Region {region.id}
+                      {region.names.length > 0 ? ":" : null}{" "}
+                      {region.names.slice(0, 3).join(", ")}
+                      {region.names.length > 3 ? "..." : ""}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
+          </Box>
           <ResizableSplitPanels
             leftWidth={split}
             onLeftWidthChange={(nextSplit) => {
@@ -355,21 +345,20 @@ function Chlorides() {
               });
             }}
             left={
-              <Plot
+              <ChloridesPlotSection
                 isLoading={manualQuery.isLoading}
-                manual_dates={manualQuery?.data?.map((m) => m.timestamp) ?? []}
-                manual_vals={
-                  manualQuery?.data?.map((m) => ({
-                    value: m.value,
-                    well: m.well.ra_number,
-                  })) ?? []
-                }
+                isError={manualQuery.isError}
+                isRegionSelected={!!regionId}
+                rows={manualQuery.data ?? []}
+                onRetry={() => manualQuery.refetch()}
               />
             }
             right={
-              <Table
+              <ChloridesTableSection
                 rows={manualQuery?.data ?? []}
                 isRegionSelected={!!regionId}
+                isError={manualQuery.isError}
+                onRetry={() => manualQuery.refetch()}
                 onOpenModal={() => setIsNewModalOpen(true)}
                 onMeasurementSelect={handleMeasurementSelect}
               />
