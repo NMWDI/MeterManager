@@ -5,44 +5,26 @@ from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import IntegrityError
 from fastapi_pagination.ext.sqlalchemy import paginate
 from fastapi_pagination import LimitOffsetPage
-from enum import Enum
-from api.schemas import meter_schemas
-from api.schemas import well_schemas
-from api.models.main_models import (
-    Meters,
-    LandOwners,
-    MeterActivities,
-    PartsUsed,
-    Parts,
-    MeterObservations,
-    Locations,
-    MeterTypeLU,
-    Wells,
-    MeterStatusLU,
-    meterRegisters,
-)
-from api.route_util import _patch, _get
+from api.schemas import meter
+from api.schemas import well
+from api.models.location import LandOwners, Locations
+from api.models.meter import Meters, MeterStatusLU, MeterTypeLU, meterRegisters
+from api.models.well import Wells
+from api.routes.utils import _patch, _get
 from api.session import get_db
-from api.enums import ScopedUser, MeterSortByField, MeterStatus, SortDirection
-from google.auth import default, impersonated_credentials
-from google.cloud import storage
-from datetime import timedelta
-
-import os
+from api.services import meters as meter_service
+from api.auth.dependencies import ScopedUser
+from api.enums import MeterSortByField, MeterStatus, SortDirection
 
 authenticated_meter_router = APIRouter()
 public_meter_router = APIRouter()
-
-# Generate random secret at startup
-PHOTO_JWT_EXPIRE_SECONDS = 600  # 10 minutes
-BUCKET_NAME = os.getenv("GCP_BUCKET_NAME", "")
 
 
 # Get paginated, sorted list of meters, filtered by a search string if applicable
 @authenticated_meter_router.get(
     "/meters",
     dependencies=[Depends(ScopedUser.Read)],
-    response_model=LimitOffsetPage[meter_schemas.MeterListDTO],
+    response_model=LimitOffsetPage[meter.MeterListDTO],
     tags=["Meters"],
 )
 def get_meters(
@@ -111,12 +93,12 @@ def get_meters(
 
 @authenticated_meter_router.post(
     "/meters",
-    response_model=meter_schemas.Meter,
+    response_model=meter.Meter,
     dependencies=[Depends(ScopedUser.Admin)],
     tags=["Meters"],
 )
 def create_meter(
-    new_meter: meter_schemas.SubmitNewMeter, db: Session = Depends(get_db)
+    new_meter: meter.SubmitNewMeter, db: Session = Depends(get_db)
 ):
     """
     Create a new meter. This requires a SN and meter type.
@@ -173,7 +155,7 @@ def create_meter(
 @authenticated_meter_router.get(
     "/meters_locations",
     dependencies=[Depends(ScopedUser.Read)],
-    response_model=List[meter_schemas.MeterMapDTO],
+    response_model=List[meter.MeterMapDTO],
     tags=["Meters"],
 )
 def get_meters_locations(
@@ -237,7 +219,7 @@ def get_meters_locations(
     meter_map_list = []
     for row in result:
         meter_map_list.append(
-            meter_schemas.MeterMapDTO(
+            meter.MeterMapDTO(
                 id=row.id,
                 serial_number=row.serial_number,
                 well={
@@ -299,7 +281,7 @@ def get_meter(
 
 @authenticated_meter_router.get(
     "/meter_types",
-    response_model=List[meter_schemas.MeterTypeLU],
+    response_model=List[meter.MeterTypeLU],
     dependencies=[Depends(ScopedUser.Read)],
     tags=["Meters"],
 )
@@ -310,7 +292,7 @@ def get_meter_types(db: Session = Depends(get_db)):
 # A route to return register types from meter_register table
 @authenticated_meter_router.get(
     "/meter_registers",
-    response_model=List[meter_schemas.MeterRegister],
+    response_model=List[meter.MeterRegister],
     dependencies=[Depends(ScopedUser.Read)],
     tags=["Meters"],
 )
@@ -326,7 +308,7 @@ def get_meter_registers(db: Session = Depends(get_db)):
 # A route to return status types from the MeterStatusLU table
 @authenticated_meter_router.get(
     "/meter_status_types",
-    response_model=List[meter_schemas.MeterStatusLU],
+    response_model=List[meter.MeterStatusLU],
     dependencies=[Depends(ScopedUser.Read)],
     tags=["Meters"],
 )
@@ -336,12 +318,12 @@ def get_meter_status(db: Session = Depends(get_db)):
 
 @authenticated_meter_router.patch(
     "/meter_types",
-    response_model=meter_schemas.MeterTypeLU,
+    response_model=meter.MeterTypeLU,
     dependencies=[Depends(ScopedUser.Admin)],
     tags=["Meters"],
 )
 def update_meter_type(
-    updated_meter_type: meter_schemas.MeterTypeLU, db: Session = Depends(get_db)
+    updated_meter_type: meter.MeterTypeLU, db: Session = Depends(get_db)
 ):
     _patch(db, MeterTypeLU, updated_meter_type.id, updated_meter_type)
 
@@ -354,12 +336,12 @@ def update_meter_type(
 
 @authenticated_meter_router.post(
     "/meter_types",
-    response_model=meter_schemas.MeterTypeLU,
+    response_model=meter.MeterTypeLU,
     dependencies=[Depends(ScopedUser.Admin)],
     tags=["Meters"],
 )
 def create_meter_type(
-    new_meter_type: meter_schemas.MeterTypeLU, db: Session = Depends(get_db)
+    new_meter_type: meter.MeterTypeLU, db: Session = Depends(get_db)
 ):
     new_type_model = MeterTypeLU(
         brand=new_meter_type.brand,
@@ -380,7 +362,7 @@ def create_meter_type(
 @authenticated_meter_router.get(
     "/land_owners",
     dependencies=[Depends(ScopedUser.Read)],
-    response_model=List[well_schemas.LandOwner],
+    response_model=List[well.LandOwner],
     tags=["Meters"],
 )
 def get_land_owners(
@@ -392,11 +374,11 @@ def get_land_owners(
 @authenticated_meter_router.patch(
     "/meter",
     dependencies=[Depends(ScopedUser.Admin)],
-    response_model=meter_schemas.Meter,
+    response_model=meter.Meter,
     tags=["Meters"],
 )
 def patch_meter(
-    updated_meter: meter_schemas.SubmitMeterUpdate, db: Session = Depends(get_db)
+    updated_meter: meter.SubmitMeterUpdate, db: Session = Depends(get_db)
 ):
     """
     Update the current state of a meter. This is only used by Meter Details on the frontend.
@@ -453,127 +435,4 @@ def patch_meter(
     "/meter_history", dependencies=[Depends(ScopedUser.Read)], tags=["Meters"]
 )
 def get_meter_history(meter_id: int, db: Session = Depends(get_db)):
-    """
-    Get a list of the given meters history.
-    No defined schema for this at the moment.
-    """
-
-    class HistoryType(Enum):
-        Activity = "Activity"
-        Observation = "Observation"
-        LocationChange = "LocationChange"
-
-    activities = (
-        db.scalars(
-            select(MeterActivities)
-            .options(
-                joinedload(MeterActivities.location),
-                joinedload(MeterActivities.submitting_user),
-                joinedload(MeterActivities.activity_type),
-                joinedload(MeterActivities.parts_used_links)
-                .joinedload(PartsUsed.part)
-                .joinedload(Parts.part_type),
-                joinedload(MeterActivities.notes),
-                joinedload(MeterActivities.services_performed),
-            )
-            .filter(MeterActivities.meter_id == meter_id)
-        )
-        .unique()
-        .all()
-    )
-
-    observations = db.scalars(
-        select(MeterObservations)
-        .options(
-            joinedload(MeterObservations.submitting_user),
-            joinedload(MeterObservations.observed_property),
-            joinedload(MeterObservations.unit),
-            joinedload(MeterObservations.location),
-        )
-        .filter(MeterObservations.meter_id == meter_id)
-    ).all()
-
-    # Take all the history object we just got from the database and make them into a object that's easy for the frontend to consume
-    formattedHistoryItems = []
-    itemID = 0
-
-    for activity in activities:
-        activity.location.geom = None  # FastAPI errors when returning this
-
-        # Find if there is a well associated with the location
-        activity_well = db.scalars(
-            select(Wells).where(Wells.location_id == activity.location_id)
-        ).first()
-
-        photos = [
-            {
-                "id": photo.id,
-                "file_name": photo.file_name,
-                "url": create_signed_url(photo.gcs_path),
-                "uploaded_at": photo.uploaded_at,
-            }
-            for photo in activity.photos
-        ]
-
-        formattedHistoryItems.append(
-            {
-                "id": itemID,
-                "history_type": HistoryType.Activity,
-                "well": activity_well,
-                "location": activity.location,
-                "activity_type": activity.activity_type_id,
-                "date": activity.timestamp_start,
-                "history_item": activity,
-                "photos": photos,
-            }
-        )
-        itemID += 1
-
-    for observation in observations:
-        observation.location.geom = None
-
-        # Find if there is a well associated with the location
-        observation_well = db.scalars(
-            select(Wells).where(Wells.location_id == observation.location_id)
-        ).first()
-
-        formattedHistoryItems.append(
-            {
-                "id": itemID,
-                "history_type": HistoryType.Observation,
-                "well": observation_well,
-                "location": observation.location,
-                "date": observation.timestamp,
-                "history_item": observation,
-            }
-        )
-        itemID += 1
-
-    # Add location history also
-
-    formattedHistoryItems.sort(key=lambda x: x["date"], reverse=True)
-
-    return formattedHistoryItems
-
-
-def create_signed_url(blob_path: str) -> str:
-    """Create a v4 signed URL for a blob in GCS."""
-    source_creds, _ = default()
-    target_sa = "pvacd-meterapp@waterdatainitiative-271000.iam.gserviceaccount.com"
-
-    creds = impersonated_credentials.Credentials(
-        source_credentials=source_creds,
-        target_principal=target_sa,
-        target_scopes=["https://www.googleapis.com/auth/devstorage.read_only"],
-        lifetime=3600,
-    )
-
-    storage_client = storage.Client(credentials=creds)
-    bucket = storage_client.bucket(BUCKET_NAME)
-    blob = bucket.blob(blob_path)
-    url = blob.generate_signed_url(
-        version="v4",
-        expiration=timedelta(seconds=PHOTO_JWT_EXPIRE_SECONDS),
-        method="GET",
-    )
-    return url
+    return meter_service.get_meter_history(db, meter_id)

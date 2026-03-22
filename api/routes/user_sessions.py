@@ -1,74 +1,23 @@
 from collections import defaultdict
-from datetime import datetime
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from starlette import status
 
-from api.models.main_models import UserSessions, Users
-from api.schemas.base import ORMBase
+from api.models.user import UserSessions, Users
+from api.schemas import user_sessions
 from api.security import get_current_user, get_session_identifier_from_token, oauth2_scheme
 from api.session import get_db
-from api.session_tracking import mark_session_signed_out
+from api.auth.session_tracking import mark_session_signed_out
 
 user_sessions_router = APIRouter(tags=["Login"])
-
-
-class SessionSignOutRequest(ORMBase):
-    sign_out_reason_name: str
-    fingerprint_hash: Optional[str] = None
-
-
-class ExpiredSessionSignOutRequest(SessionSignOutRequest):
-    session_identifier: str
-
-
-class UserSessionSummary(ORMBase):
-    session_identifier: str
-    device_label: str | None = None
-    device_type: str | None = None
-    browser: str | None = None
-    operating_system: str | None = None
-    ip_address: str | None = None
-    signed_in_at: datetime
-    last_seen_at: datetime
-    signed_out_at: datetime | None = None
-    is_active: bool
-    sign_out_reason_name: str | None = None
-    is_current: bool
-
-
-class KnownDeviceSummary(ORMBase):
-    device_key: str
-    device_label: str | None = None
-    device_type: str | None = None
-    browser: str | None = None
-    operating_system: str | None = None
-    session_count: int
-    active_session_count: int
-    signed_in_at_first: datetime
-    last_seen_at: datetime
-    is_current_device: bool
-
-
-class UserSessionsResponse(ORMBase):
-    current_session_identifier: str | None = None
-    sessions: list[UserSessionSummary]
-    known_devices: list[KnownDeviceSummary]
-
-
-class CurrentSessionStatusResponse(ORMBase):
-    session_identifier: str
-    is_active: bool
-
 
 def serialize_session(
     session: UserSessions,
     *,
     current_session_identifier: str | None,
-) -> UserSessionSummary:
-    return UserSessionSummary(
+) -> user_sessions.UserSessionSummary:
+    return user_sessions.UserSessionSummary(
         session_identifier=session.session_identifier,
         device_label=session.device_label,
         device_type=session.device_type,
@@ -101,7 +50,7 @@ def get_known_device_key(session: UserSessions) -> str:
 
 @user_sessions_router.get(
     "/user-sessions/current/status",
-    response_model=CurrentSessionStatusResponse,
+    response_model=user_sessions.CurrentSessionStatusResponse,
 )
 def get_current_session_status(
     _: Users = Depends(get_current_user),
@@ -114,7 +63,7 @@ def get_current_session_status(
             detail="Session identifier is missing from token",
         )
 
-    return CurrentSessionStatusResponse(
+    return user_sessions.CurrentSessionStatusResponse(
         session_identifier=current_session_identifier,
         is_active=True,
     )
@@ -122,7 +71,7 @@ def get_current_session_status(
 
 @user_sessions_router.get(
     "/user-sessions",
-    response_model=UserSessionsResponse,
+    response_model=user_sessions.UserSessionsResponse,
 )
 def list_user_sessions(
     db: Session = Depends(get_db),
@@ -149,7 +98,7 @@ def list_user_sessions(
     for session in sessions:
         grouped_sessions[get_known_device_key(session)].append(session)
 
-    known_devices: list[KnownDeviceSummary] = []
+    known_devices: list[user_sessions.KnownDeviceSummary] = []
     for device_key, device_sessions in grouped_sessions.items():
         ordered_sessions = sorted(
             device_sessions,
@@ -158,7 +107,7 @@ def list_user_sessions(
         )
         newest_session = ordered_sessions[0]
         known_devices.append(
-            KnownDeviceSummary(
+            user_sessions.KnownDeviceSummary(
                 device_key=device_key,
                 device_label=newest_session.device_label,
                 device_type=newest_session.device_type,
@@ -184,7 +133,7 @@ def list_user_sessions(
         reverse=True,
     )
 
-    return UserSessionsResponse(
+    return user_sessions.UserSessionsResponse(
         current_session_identifier=current_session_identifier,
         sessions=serialized_sessions,
         known_devices=known_devices,
@@ -231,7 +180,7 @@ def revoke_user_session(
 
 @user_sessions_router.post("/logout")
 def logout_current_session(
-    payload: SessionSignOutRequest,
+    payload: user_sessions.SessionSignOutRequest,
     db: Session = Depends(get_db),
     _: Users = Depends(get_current_user),
     token: str = Depends(oauth2_scheme),
@@ -259,7 +208,7 @@ def logout_current_session(
 
 @user_sessions_router.post("/logout/expired")
 def logout_expired_session(
-    payload: ExpiredSessionSignOutRequest,
+    payload: user_sessions.ExpiredSessionSignOutRequest,
     db: Session = Depends(get_db),
 ):
     session = mark_session_signed_out(

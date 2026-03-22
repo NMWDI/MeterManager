@@ -5,14 +5,16 @@ from fastapi.responses import StreamingResponse
 from weasyprint import HTML
 from io import BytesIO
 from fastapi import APIRouter, Depends, Query
-from pydantic import BaseModel
 from sqlalchemy import and_, select
 from sqlalchemy.orm import Session, joinedload
 
-from api.schemas import well_schemas
-from api.models.main_models import WellMeasurements, Wells, Locations, WellUseLU
+from api.schemas import chlorides
+from api.schemas import well
+from api.models.location import Locations
+from api.models.well import WellMeasurements, Wells, WellUseLU
 from api.session import get_db
-from api.enums import ScopedUser, SortDirection
+from api.auth.dependencies import ScopedUser
+from api.enums import SortDirection
 
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -32,7 +34,7 @@ public_chlorides_router = APIRouter()
 
 @public_chlorides_router.get(
     "/chlorides",
-    response_model=List[well_schemas.WellMeasurementDTO],
+    response_model=List[well.WellMeasurementDTO],
     tags=["Chlorides"],
 )
 def read_chlorides(
@@ -59,7 +61,7 @@ def read_chlorides(
 
 @public_chlorides_router.get(
     "/chloride_groups",
-    response_model=List[well_schemas.ChlorideGroupResponse],
+    response_model=List[well.ChlorideGroupResponse],
     tags=["Chlorides"],
 )
 def get_chloride_groups(
@@ -93,26 +95,10 @@ def get_chloride_groups(
         {"id": group_id, "names": sorted(names)}
         for group_id, names in groups.items()
     ]
-
-class MinMaxAvgMedCount(BaseModel):
-    min: Optional[float] = None
-    max: Optional[float] = None
-    avg: Optional[float] = None
-    median: Optional[float] = None
-    count: int = 0
-
-
-class ChlorideReportNums(BaseModel):
-    north: MinMaxAvgMedCount
-    south: MinMaxAvgMedCount
-    east: MinMaxAvgMedCount
-    west: MinMaxAvgMedCount
-
-
 @authenticated_chlorides_router.get(
     "/chlorides/report",
     dependencies=[Depends(ScopedUser.Read)],
-    response_model=ChlorideReportNums,
+    response_model=chlorides.ChlorideReportNums,
     tags=["Chlorides"],
 )
 def get_chlorides_report(
@@ -191,7 +177,7 @@ def get_chlorides_report(
         else:
             west_vals.append(float(val))
 
-    return ChlorideReportNums(
+    return chlorides.ChlorideReportNums(
         north=_stats(north_vals),
         south=_stats(south_vals),
         east=_stats(east_vals),
@@ -240,11 +226,11 @@ def download_chlorides_report_pdf(
 @authenticated_chlorides_router.post(
     "/chlorides",
     dependencies=[Depends(ScopedUser.WellMeasurementWrite)],
-    response_model=well_schemas.ChlorideMeasurement,
+    response_model=well.ChlorideMeasurement,
     tags=["Chlorides"],
 )
 def add_chloride_measurement(
-    chloride_measurement: well_schemas.WellMeasurement,
+    chloride_measurement: well.WellMeasurement,
     db: Session = Depends(get_db),
 ):
     # Create a new chloride measurement as a WellMeasurement
@@ -265,11 +251,11 @@ def add_chloride_measurement(
 @authenticated_chlorides_router.patch(
     "/chlorides",
     dependencies=[Depends(ScopedUser.WellMeasurementWrite)],
-    response_model=well_schemas.WellMeasurement,
+    response_model=well.WellMeasurement,
     tags=["Chlorides"],
 )
 def patch_chloride_measurement(
-    chloride_measurement_patch: well_schemas.PatchChlorideMeasurement,
+    chloride_measurement_patch: well.PatchChlorideMeasurement,
     db: Session = Depends(get_db),
 ):
     well_measurement = (
@@ -306,12 +292,12 @@ def delete_chloride_measurement(chloride_measurement_id: int, db: Session = Depe
     return True
 
 
-def _stats(values: List[Optional[float]]) -> MinMaxAvgMedCount:
+def _stats(values: List[Optional[float]]) -> chlorides.MinMaxAvgMedCount:
     clean = [v for v in values if v is not None]
     if not clean:
-        return MinMaxAvgMedCount()
+        return chlorides.MinMaxAvgMedCount()
     
-    return MinMaxAvgMedCount(
+    return chlorides.MinMaxAvgMedCount(
         min=min(clean),
         max=max(clean),
         avg=sum(clean) / len(clean),

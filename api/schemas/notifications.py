@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from api.schemas.base import ORMBase
-from api.schemas.security_schemas import User
+from api.schemas.security import User
 
 
 class NotificationType(ORMBase):

@@ -10,16 +10,20 @@ from sqlalchemy import or_
 from sqlalchemy.orm import joinedload, undefer, Session
 from sqlalchemy.sql import select
 
-from api.models.main_models import Users, UserRoles, SecurityScopes, UserSessions
-from api.schemas import security_schemas
+from api.models.user import Users, UserRoles, SecurityScopes, UserSessions
+from api.schemas import security as security_schema
+from api.config import settings
 from api.session import get_db
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-SECRET_KEY = "09d25e194fbb6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_HOURS = 8
+SECRET_KEY = settings.JWT_SECRET_KEY
+ALGORITHM = settings.JWT_ALGORITHM
+ACCESS_TOKEN_EXPIRE_HOURS = settings.ACCESS_TOKEN_EXPIRE_HOURS
+
+if not SECRET_KEY:
+    raise RuntimeError("JWT_SECRET_KEY environment variable must be set.")
 
 invalid_credentials_exception = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
@@ -197,10 +201,10 @@ authenticated_router = APIRouter(dependencies=[Depends(scoped_user(["read"]))])
 
 
 @authenticated_router.get(
-    "/users/me", response_model=security_schemas.User, tags=["Login"]
+    "/users/me", response_model=security_schema.User, tags=["Login"]
 )
 def read_users_me(
-    current_user: security_schemas.User = Depends(get_current_user),
+    current_user: security_schema.User = Depends(get_current_user),
 ):
     return current_user
 

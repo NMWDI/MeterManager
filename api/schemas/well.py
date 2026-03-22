@@ -1,7 +1,7 @@
 from datetime import datetime
 from pydantic import BaseModel
 from typing import List
-from api.schemas.security_schemas import User
+from api.schemas.security import User
 from api.schemas.base import ORMBase
 
 

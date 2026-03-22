@@ -1,7 +1,7 @@
 from datetime import datetime
 from api.schemas.base import ORMBase
-from api.schemas.well_schemas import Well, Location
-from api.schemas.security_schemas import User
+from api.schemas.well import Well, Location
+from api.schemas.security import User
 from pydantic import BaseModel
 from decimal import Decimal
 

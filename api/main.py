@@ -4,8 +4,8 @@ from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_pagination import add_pagination
 from fastapi.middleware.cors import CORSMiddleware
 from starlette import status
-from api.schemas import security_schemas
-from api.models.main_models import Users
+from api.schemas import security as security_schema
+from api.models.user import Users
 from api.routes.activities import activity_router, public_activity_router
 from api.routes.admin import admin_router
 from api.routes.chlorides import authenticated_chlorides_router, public_chlorides_router
@@ -19,11 +19,13 @@ from api.routes.OSE import ose_router
 from api.routes.parts import part_router
 from api.routes.settings import settings_router
 from api.routes.user_sessions import user_sessions_router
+from api.routes.work_orders import work_orders_router
 from api.routes.well_measurements import (
     authenticated_well_measurement_router,
     public_well_measurement_router,
 )
 from api.routes.wells import authenticated_well_router, public_well_router
+from api.auth.session_tracking import create_user_session, touch_user_session
 from api.security import (
     authenticate_user,
     create_access_token,
@@ -32,7 +34,6 @@ from api.security import (
     get_session_identifier_from_token,
 )
 from api.session import get_db, SessionLocal
-from api.session_tracking import create_user_session, touch_user_session
 from sqlalchemy.orm import Session
 
 tags_metadata = [
@@ -86,7 +87,7 @@ app.add_middleware(
 # ============== Security ==============
 
 
-@app.post("/token", response_model=security_schemas.Token, tags=["Login"])
+@app.post("/token", response_model=security_schema.Token, tags=["Login"])
 def login_for_access_token(
     request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
@@ -119,7 +120,7 @@ def login_for_access_token(
         },
         expires_delta=timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS),
     )
-    user_response = security_schemas.User(**user.__dict__)
+    user_response = security_schema.User(**user.__dict__)
     db.commit()
 
     return {
@@ -161,6 +162,7 @@ authenticated_router.include_router(authenticated_maintenance_router)
 authenticated_router.include_router(authenticated_meter_router)
 authenticated_router.include_router(notifications_router)
 authenticated_router.include_router(part_router)
+authenticated_router.include_router(work_orders_router)
 authenticated_router.include_router(authenticated_well_measurement_router)
 authenticated_router.include_router(authenticated_well_router)
 authenticated_router.include_router(settings_router)

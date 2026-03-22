@@ -5,13 +5,13 @@ from sqlalchemy import select
 from typing import List
 from passlib.context import CryptContext
 
-from api.models.main_models import Users, UserRoles, SecurityScopes
+from api.models.user import Users, UserRoles, SecurityScopes
 
-from api.schemas import security_schemas
-from api.schemas import admin_schemas
+from api.schemas import security
+from api.schemas import admin
 from api.session import get_db
-from api.route_util import _patch
-from api.enums import ScopedUser
+from api.routes.utils import _patch
+from api.auth.dependencies import ScopedUser
 
 from pathlib import Path
 from google.cloud import storage
@@ -34,12 +34,12 @@ DATABASE_URL = os.getenv("DATABASE_URL", "")
 # define response models
 @admin_router.post(
     "/users/update_password",
-    response_model=security_schemas.User,
+    response_model=security.User,
     dependencies=[Depends(ScopedUser.Admin)],
     tags=["Admin"],
 )
 def update_user_password(
-    updatedUserPassword: security_schemas.UpdatedUserPassword,
+    updatedUserPassword: security.UpdatedUserPassword,
     db: Session = Depends(get_db),
 ):
     user = db.scalars(
@@ -55,12 +55,12 @@ def update_user_password(
 
 @admin_router.patch(
     "/users",
-    response_model=security_schemas.User,
+    response_model=security.User,
     dependencies=[Depends(ScopedUser.Admin)],
     tags=["Admin"],
 )
 def update_user(
-    updated_user: security_schemas.UpdatedUser, db: Session = Depends(get_db)
+    updated_user: security.UpdatedUser, db: Session = Depends(get_db)
 ):
     _patch(db, Users, updated_user.id, updated_user)
 
@@ -80,11 +80,11 @@ def update_user(
 
 @admin_router.post(
     "/users",
-    response_model=security_schemas.User,
+    response_model=security.User,
     dependencies=[Depends(ScopedUser.Admin)],
     tags=["Admin"],
 )
-def create_user(user: security_schemas.NewUser, db: Session = Depends(get_db)):
+def create_user(user: security.NewUser, db: Session = Depends(get_db)):
     new_user = Users(
         username=user.username,
         email=user.email,
@@ -114,7 +114,7 @@ def create_user(user: security_schemas.NewUser, db: Session = Depends(get_db)):
 
 @admin_router.get(
     "/users/{id}",
-    response_model=security_schemas.User,
+    response_model=security.User,
     dependencies=[Depends(ScopedUser.Admin)],
     tags=["Admin"],
 )
@@ -141,7 +141,7 @@ def get_user_admin(id: int, db: Session = Depends(get_db)):
 
 @admin_router.get(
     "/usersadmin",
-    response_model=List[security_schemas.User],
+    response_model=List[security.User],
     dependencies=[Depends(ScopedUser.Admin)],
     tags=["Admin"],
 )
@@ -165,7 +165,7 @@ def get_users_admin(db: Session = Depends(get_db)):
 
 @admin_router.get(
     "/security_scopes",
-    response_model=List[security_schemas.SecurityScope],
+    response_model=List[security.SecurityScope],
     dependencies=[Depends(ScopedUser.Admin)],
     tags=["Admin"],
 )
@@ -175,7 +175,7 @@ def get_security_scopes(db: Session = Depends(get_db)):
 
 @admin_router.get(
     "/roles",
-    response_model=List[security_schemas.UserRole],
+    response_model=List[security.UserRole],
     dependencies=[Depends(ScopedUser.Admin)],
     tags=["Admin"],
 )
@@ -189,11 +189,11 @@ def get_roles(db: Session = Depends(get_db)):
 
 @admin_router.post(
     "/roles",
-    response_model=security_schemas.UserRole,
+    response_model=security.UserRole,
     dependencies=[Depends(ScopedUser.Admin)],
     tags=["Admin"],
 )
-def create_role(new_role: security_schemas.UserRole, db: Session = Depends(get_db)):
+def create_role(new_role: security.UserRole, db: Session = Depends(get_db)):
     scopes = []
     if new_role.security_scopes:
         scope_ids = map(lambda s: s.id, new_role.security_scopes)
@@ -216,11 +216,11 @@ def create_role(new_role: security_schemas.UserRole, db: Session = Depends(get_d
 
 @admin_router.patch(
     "/roles",
-    response_model=security_schemas.UserRole,
+    response_model=security.UserRole,
     dependencies=[Depends(ScopedUser.Admin)],
     tags=["Admin"],
 )
-def update_role(updated_role: security_schemas.UserRole, db: Session = Depends(get_db)):
+def update_role(updated_role: security.UserRole, db: Session = Depends(get_db)):
     role = db.scalars(select(UserRoles).where(UserRoles.id == updated_role.id)).first()
 
     scope_ids = map(lambda s: s.id, updated_role.security_scopes)
@@ -243,7 +243,7 @@ def update_role(updated_role: security_schemas.UserRole, db: Session = Depends(g
 
 @admin_router.get(
     "/db-backups",
-    response_model=List[admin_schemas.BackupFile],
+    response_model=List[admin.BackupFile],
     dependencies=[Depends(ScopedUser.Admin)],
     tags=["Admin"],
 )
@@ -267,7 +267,7 @@ def list_db_backups(
 
     blobs_iter = client.list_blobs(BUCKET_NAME, prefix=prefix)
 
-    results: list[admin_schemas.BackupFile] = []
+    results: list[admin.BackupFile] = []
     for i, blob in enumerate(blobs_iter):
         if i >= limit:
             break
@@ -293,7 +293,7 @@ def list_db_backups(
             fmt = f"unknown ({ext})" if ext else "unknown"
 
         results.append(
-            admin_schemas.BackupFile(
+            admin.BackupFile(
                 name=display_name,
                 file_size=int(blob.size or 0),
                 format=fmt,

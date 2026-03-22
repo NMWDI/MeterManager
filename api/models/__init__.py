@@ -1,9 +1,7 @@
-from api.models import (
+from api.models.base import Base
+from api.models.location import LandOwners, Locations, LocationTypeLU
+from api.models.meter import (
     ActivityTypeLU,
-    Base,
-    LandOwners,
-    Locations,
-    LocationTypeLU,
     MeterActivities,
     MeterActivityPhotos,
     MeterObservations,
@@ -12,33 +10,26 @@ from api.models import (
     Meters,
     NoteTypeLU,
     Notes,
-    NotificationTypeLU,
-    Notifications,
     ObservedPropertyTypeLU,
-    PartAssociation,
-    PartTypeLU,
-    Parts,
-    PartsAdded,
-    PartsUsed,
     PropertyUnits,
-    ScopesRoles,
-    SecurityScopes,
     ServiceTypeLU,
     ServicesPerformed,
-    SignOutReasonTypeLU,
     Units,
+    meterRegisters,
+)
+from api.models.part import PartAssociation, PartTypeLU, Parts, PartsAdded, PartsUsed
+from api.models.user import (
+    NotificationTypeLU,
+    Notifications,
+    ScopesRoles,
+    SecurityScopes,
+    SignOutReasonTypeLU,
     UserRoles,
     UserSessions,
     Users,
-    WellMeasurements,
-    Wells,
-    WellStatus,
-    WellUseLU,
-    WaterSources,
-    meterRegisters,
-    workOrders,
-    workOrderStatusLU,
 )
+from api.models.well import WellMeasurements, Wells, WellStatus, WellUseLU, WaterSources
+from api.models.work_order import workOrders, workOrderStatusLU
 
 __all__ = [
     "ActivityTypeLU",

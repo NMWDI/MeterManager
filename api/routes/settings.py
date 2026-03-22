@@ -5,10 +5,10 @@ from fastapi import Depends, APIRouter, HTTPException, File, UploadFile
 from PIL import Image, UnidentifiedImageError
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
-from api.schemas.base import ORMBase
+from api.schemas import settings
 from api.session import get_db
 from api.security import get_current_user, get_password_hash, verify_password
-from api.models.main_models import Users
+from api.models.user import Users
 
 
 settings_router = APIRouter()
@@ -36,17 +36,12 @@ def get_redirect_page(
 
     return {"redirect_page": db_user.redirect_page}
 
-
-class RedirectPageUpdate(ORMBase):
-    redirect_page: str
-
-
 @settings_router.post(
     "/settings/redirect_page",
     tags=["settings"],
 )
 def post_redirect_page(
-    update: RedirectPageUpdate,
+    update: settings.RedirectPageUpdate,
     db: Session = Depends(get_db),
     user: Users = Depends(get_current_user),
 ):
@@ -60,22 +55,12 @@ def post_redirect_page(
 
     return {"message": "Redirect page updated", "redirect_page": db_user.redirect_page}
 
-
-class DisplayNameUpdate(ORMBase):
-    display_name: str
-
-
-class PasswordResetRequest(ORMBase):
-    current_password: str
-    new_password: str
-
-
 @settings_router.post(
     "/settings/display_name",
     tags=["settings"],
 )
 def post_redirect_page(
-    update: DisplayNameUpdate,
+    update: settings.DisplayNameUpdate,
     db: Session = Depends(get_db),
     user: Users = Depends(get_current_user),
 ):
@@ -95,7 +80,7 @@ def post_redirect_page(
     tags=["settings"],
 )
 def post_password_reset(
-    update: PasswordResetRequest,
+    update: settings.PasswordResetRequest,
     db: Session = Depends(get_db),
     user: Users = Depends(get_current_user),
 ):

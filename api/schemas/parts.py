@@ -1,7 +1,8 @@
-from typing import List, Literal, Optional
 from datetime import date, datetime
+from typing import List, Literal, Optional
+
 from api.schemas.base import ORMBase
-from api.schemas.meter_schemas import MeterTypeLU
+from api.schemas.meter import MeterTypeLU
 
 
 class PartTypeLU(ORMBase):

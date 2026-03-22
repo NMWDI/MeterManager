@@ -7,7 +7,7 @@ from uuid import uuid4
 from fastapi import Request
 from sqlalchemy.orm import Session
 
-from api.models.main_models import SignOutReasonTypeLU, UserSessions, Users
+from api.models.user import SignOutReasonTypeLU, UserSessions, Users
 
 LAST_SEEN_UPDATE_INTERVAL = timedelta(minutes=5)
 
@@ -113,12 +113,12 @@ def create_user_session(db: Session, user: Users, request: Request) -> UserSessi
     operating_system = normalize_header_value(
         request.headers.get("x-operating-system")
     ) or parse_operating_system(user_agent)
-    device_type = normalize_header_value(request.headers.get("x-device-type")) or parse_device_type(
-        user_agent
-    )
-    device_label = normalize_header_value(request.headers.get("x-device-label")) or build_device_label(
-        browser, operating_system, device_type
-    )
+    device_type = normalize_header_value(
+        request.headers.get("x-device-type")
+    ) or parse_device_type(user_agent)
+    device_label = normalize_header_value(
+        request.headers.get("x-device-label")
+    ) or build_device_label(browser, operating_system, device_type)
     fingerprint_hash = normalize_header_value(
         request.headers.get("x-device-fingerprint")
     )
@@ -178,7 +178,11 @@ def mark_session_signed_out(
     if not session:
         return None
 
-    if fingerprint_hash and session.fingerprint_hash and session.fingerprint_hash != fingerprint_hash:
+    if (
+        fingerprint_hash
+        and session.fingerprint_hash
+        and session.fingerprint_hash != fingerprint_hash
+    ):
         return None
 
     if session.signed_out_at is not None:

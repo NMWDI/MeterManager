@@ -7,11 +7,13 @@ from sqlalchemy.exc import IntegrityError
 from fastapi_pagination.ext.sqlalchemy import paginate
 from fastapi_pagination import LimitOffsetPage
 
-from api.schemas import well_schemas
-from api.models.main_models import Locations, WaterSources, WellStatus, WellUseLU, Wells
-from api.route_util import _patch, _get
+from api.schemas import well
+from api.models.location import Locations
+from api.models.well import WaterSources, WellStatus, WellUseLU, Wells
+from api.routes.utils import _patch, _get
 from api.session import get_db
-from api.enums import ScopedUser, WellSortByField, SortDirection
+from api.auth.dependencies import ScopedUser
+from api.enums import WellSortByField, SortDirection
 
 public_well_router = APIRouter()
 authenticated_well_router = APIRouter()
@@ -20,7 +22,7 @@ authenticated_well_router = APIRouter()
 @authenticated_well_router.get(
     "/use_types",
     dependencies=[Depends(ScopedUser.Read)],
-    response_model=List[well_schemas.WellUseLU],
+    response_model=List[well.WellUseLU],
     tags=["Wells"],
 )
 def get_use_types(
@@ -33,7 +35,7 @@ def get_use_types(
 @authenticated_well_router.get(
     "/water_sources",
     dependencies=[Depends(ScopedUser.Read)],
-    response_model=List[well_schemas.WaterSources],
+    response_model=List[well.WaterSources],
     tags=["Wells"],
 )
 def get_water_sources(
@@ -46,7 +48,7 @@ def get_water_sources(
 @authenticated_well_router.get(
     "/well_status_types",
     dependencies=[Depends(ScopedUser.Read)],
-    response_model=List[well_schemas.WellStatus],
+    response_model=List[well.WellStatus],
     tags=["Wells"],
 )
 def get_well_status_types(
@@ -57,7 +59,7 @@ def get_well_status_types(
 
 @public_well_router.get(
     "/wells/{well_id}",
-    response_model=well_schemas.WellResponse,
+    response_model=well.WellResponse,
     tags=["Wells"],
 )
 def get_well_by_id(well_id: int, db: Session = Depends(get_db)):
@@ -79,7 +81,7 @@ def get_well_by_id(well_id: int, db: Session = Depends(get_db)):
 
 @public_well_router.get(
     "/wells",
-    response_model=LimitOffsetPage[well_schemas.WellResponse],
+    response_model=LimitOffsetPage[well.WellResponse],
     tags=["Wells"],
 )
 def get_wells(
@@ -155,10 +157,10 @@ def get_wells(
 @authenticated_well_router.patch(
     "/wells",
     dependencies=[Depends(ScopedUser.WellWrite)],
-    response_model=well_schemas.WellResponse,
+    response_model=well.WellResponse,
     tags=["Wells"],
 )
-def update_well(updated_well: well_schemas.WellUpdate, db: Session = Depends(get_db)):
+def update_well(updated_well: well.WellUpdate, db: Session = Depends(get_db)):
     # If present, update location and remove from model
     if updated_well.location:
         _patch(db, Locations, updated_well.location.id, updated_well.location)
@@ -216,7 +218,7 @@ def update_well(updated_well: well_schemas.WellUpdate, db: Session = Depends(get
     dependencies=[Depends(ScopedUser.Admin)],
     tags=["Wells"],
 )
-def create_well(new_well: well_schemas.SubmitWellCreate, db: Session = Depends(get_db)):
+def create_well(new_well: well.SubmitWellCreate, db: Session = Depends(get_db)):
     # First, commit the new location that was added with the new well
     new_location_model = Locations(
         name=new_well.location.name,
@@ -267,7 +269,7 @@ def create_well(new_well: well_schemas.SubmitWellCreate, db: Session = Depends(g
 @authenticated_well_router.get(
     "/well_locations",
     dependencies=[Depends(ScopedUser.Read)],
-    response_model=List[well_schemas.WellResponse],
+    response_model=List[well.WellResponse],
     tags=["Wells"],
 )
 def get_wells_locations(
@@ -305,7 +307,7 @@ def get_wells_locations(
 @authenticated_well_router.get(
     "/well",
     dependencies=[Depends(ScopedUser.Read)],
-    response_model=well_schemas.Well,
+    response_model=well.Well,
     tags=["Wells"],
 )
 def get_well(well_id: int, db: Session = Depends(get_db)):
@@ -323,7 +325,7 @@ def get_well(well_id: int, db: Session = Depends(get_db)):
     dependencies=[Depends(ScopedUser.Admin)],
     tags=["Wells"],
 )
-def merge_well(well: well_schemas.SubmitWellMerge, db: Session = Depends(get_db)):
+def merge_well(well: well.SubmitWellMerge, db: Session = Depends(get_db)):
     """
     Transfers the history of merge well to target well then deletes the merge well
     """
