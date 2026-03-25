@@ -44,7 +44,7 @@ import {
   TransporationLayer,
   BoundariesLayer,
 } from "@/components";
-import { RedMapIcon, BlackMapIcon } from "@/components/MapIcons";
+import { RedMapIcon, BlackMapIcon } from "@/components/maps/icons";
 import { useFetchWithAuth } from "@/hooks";
 import { useGetWellLocations } from "@/service";
 import { Well } from "@/interfaces";
@@ -89,10 +89,10 @@ interface iMinMaxAvgMedCount {
 }
 
 interface iChlorideReportNums {
-  north: iMinMaxAvgMedCount;
-  south: iMinMaxAvgMedCount;
-  east: iMinMaxAvgMedCount;
-  west: iMinMaxAvgMedCount;
+  north_west: iMinMaxAvgMedCount;
+  north_east: iMinMaxAvgMedCount;
+  south_west: iMinMaxAvgMedCount;
+  south_east: iMinMaxAvgMedCount;
 }
 
 const isoToDayjs = (s?: string, fallback?: Dayjs) =>
@@ -107,6 +107,12 @@ const OVERLAY_NAMES = [
 ] as const;
 const DEFAULT_BASE_LAYER = "OpenStreetMap";
 const DEFAULT_OVERLAYS = ["Clorides Report Region Guide", "Wells"];
+const REPORT_SECTIONS = [
+  { title: "North West", key: "north_west" },
+  { title: "North East", key: "north_east" },
+  { title: "South West", key: "south_west" },
+  { title: "South East", key: "south_east" },
+] as const;
 
 export const ChloridesReportView = () => {
   const navigate = useNavigate();
@@ -318,8 +324,8 @@ export const ChloridesReportView = () => {
               </Typography>
               {chloridesQuery.isLoading && (
                 <Grid container spacing={2} sx={{ mt: 2 }}>
-                  {[0, 1, 2, 3].map((i) => (
-                    <Grid key={i} item xs={12}>
+                  {REPORT_SECTIONS.map(({ key }) => (
+                    <Grid key={key} item xs={12}>
                       <Card
                         variant="outlined"
                         sx={{ height: 140, borderRadius: 3 }}
@@ -350,46 +356,18 @@ export const ChloridesReportView = () => {
               )}
               {!chloridesQuery.isLoading && !chloridesQuery.isError && (
                 <Grid container spacing={2} sx={{ mt: 2 }}>
-                  <Grid item xs={12}>
-                    <DirectionCard
-                      title="North"
-                      min={chloridesQuery.data?.north?.min}
-                      avg={chloridesQuery.data?.north?.avg}
-                      max={chloridesQuery.data?.north?.max}
-                      median={chloridesQuery.data?.north?.median}
-                      count={chloridesQuery.data?.north?.count}
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <DirectionCard
-                      title="South"
-                      min={chloridesQuery.data?.south?.min}
-                      avg={chloridesQuery.data?.south?.avg}
-                      max={chloridesQuery.data?.south?.max}
-                      median={chloridesQuery.data?.south?.median}
-                      count={chloridesQuery.data?.south?.count}
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <DirectionCard
-                      title="East"
-                      min={chloridesQuery.data?.east?.min}
-                      avg={chloridesQuery.data?.east?.avg}
-                      max={chloridesQuery.data?.east?.max}
-                      median={chloridesQuery.data?.east?.median}
-                      count={chloridesQuery.data?.east?.count}
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <DirectionCard
-                      title="West"
-                      min={chloridesQuery.data?.west?.min}
-                      avg={chloridesQuery.data?.west?.avg}
-                      max={chloridesQuery.data?.west?.max}
-                      median={chloridesQuery.data?.west?.median}
-                      count={chloridesQuery.data?.west?.count}
-                    />
-                  </Grid>
+                  {REPORT_SECTIONS.map(({ title, key }) => (
+                    <Grid key={key} item xs={12}>
+                      <DirectionCard
+                        title={title}
+                        min={chloridesQuery.data?.[key]?.min}
+                        avg={chloridesQuery.data?.[key]?.avg}
+                        max={chloridesQuery.data?.[key]?.max}
+                        median={chloridesQuery.data?.[key]?.median}
+                        count={chloridesQuery.data?.[key]?.count}
+                      />
+                    </Grid>
+                  ))}
                 </Grid>
               )}
             </Grid>

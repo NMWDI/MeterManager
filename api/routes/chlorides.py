@@ -5,14 +5,16 @@ from fastapi.responses import StreamingResponse
 from weasyprint import HTML
 from io import BytesIO
 from fastapi import APIRouter, Depends, Query
-from pydantic import BaseModel
 from sqlalchemy import and_, select
 from sqlalchemy.orm import Session, joinedload
 
-from api.schemas import well_schemas
-from api.models.main_models import WellMeasurements, Wells, Locations, WellUseLU
+from api.schemas import chlorides
+from api.schemas import well
+from api.models.location import Locations
+from api.models.well import WellMeasurements, Wells, WellUseLU
 from api.session import get_db
-from api.enums import ScopedUser, SortDirection
+from api.auth.dependencies import ScopedUser
+from api.enums import SortDirection
 
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -32,7 +34,7 @@ public_chlorides_router = APIRouter()
 
 @public_chlorides_router.get(
     "/chlorides",
-    response_model=List[well_schemas.WellMeasurementDTO],
+    response_model=List[well.WellMeasurementDTO],
     tags=["Chlorides"],
 )
 def read_chlorides(
@@ -59,7 +61,7 @@ def read_chlorides(
 
 @public_chlorides_router.get(
     "/chloride_groups",
-    response_model=List[well_schemas.ChlorideGroupResponse],
+    response_model=List[well.ChlorideGroupResponse],
     tags=["Chlorides"],
 )
 def get_chloride_groups(
@@ -93,26 +95,10 @@ def get_chloride_groups(
         {"id": group_id, "names": sorted(names)}
         for group_id, names in groups.items()
     ]
-
-class MinMaxAvgMedCount(BaseModel):
-    min: Optional[float] = None
-    max: Optional[float] = None
-    avg: Optional[float] = None
-    median: Optional[float] = None
-    count: int = 0
-
-
-class ChlorideReportNums(BaseModel):
-    north: MinMaxAvgMedCount
-    south: MinMaxAvgMedCount
-    east: MinMaxAvgMedCount
-    west: MinMaxAvgMedCount
-
-
 @authenticated_chlorides_router.get(
     "/chlorides/report",
     dependencies=[Depends(ScopedUser.Read)],
-    response_model=ChlorideReportNums,
+    response_model=chlorides.ChlorideReportNums,
     tags=["Chlorides"],
 )
 def get_chlorides_report(
@@ -121,7 +107,8 @@ def get_chlorides_report(
     db: Session = Depends(get_db),
 ):
     """
-    Returns min/max/avg for north/south/east/west halves **within the SE quadrant of New Mexico**,
+    Returns min/max/avg for north-west/north-east/south-west/south-east quadrants
+    within the SE quadrant of New Mexico,
     over the specified [from_month, to_month] inclusive range, for chloride wells in the given group.
     """
 
@@ -170,32 +157,33 @@ def get_chlorides_report(
         )
     ]
 
-    north_vals: List[float] = []
-    south_vals: List[float] = []
-    east_vals:  List[float] = []
-    west_vals:  List[float] = []
+    north_west_vals: List[float] = []
+    north_east_vals: List[float] = []
+    south_west_vals: List[float] = []
+    south_east_vals: List[float] = []
 
     for val, lat, lon in se_rows:
         if val is None:
             continue  # skip null chloride values
 
-        # North vs South halves within the SE quadrant
-        if float(lat) >= SE_MID_LAT:
-            north_vals.append(float(val))
-        else:
-            south_vals.append(float(val))
+        lat_value = float(lat)
+        lon_value = float(lon)
+        chloride_value = float(val)
 
-        # East vs West halves within the SE quadrant
-        if float(lon) >= SE_MID_LON:
-            east_vals.append(float(val))
+        if lat_value >= SE_MID_LAT and lon_value < SE_MID_LON:
+            north_west_vals.append(chloride_value)
+        elif lat_value >= SE_MID_LAT and lon_value >= SE_MID_LON:
+            north_east_vals.append(chloride_value)
+        elif lat_value < SE_MID_LAT and lon_value < SE_MID_LON:
+            south_west_vals.append(chloride_value)
         else:
-            west_vals.append(float(val))
+            south_east_vals.append(chloride_value)
 
-    return ChlorideReportNums(
-        north=_stats(north_vals),
-        south=_stats(south_vals),
-        east=_stats(east_vals),
-        west=_stats(west_vals),
+    return chlorides.ChlorideReportNums(
+        north_west=_stats(north_west_vals),
+        north_east=_stats(north_east_vals),
+        south_west=_stats(south_west_vals),
+        south_east=_stats(south_east_vals),
     )
 
 
@@ -210,7 +198,7 @@ def download_chlorides_report_pdf(
     db: Session = Depends(get_db),
 ):
     """
-    Generate a PDF chloride report (north/south/east/west stats)
+    Generate a PDF chloride report (north-west/north-east/south-west/south-east stats)
     for the SE quadrant of New Mexico.
     """
     # Re-use existing logic
@@ -240,11 +228,11 @@ def download_chlorides_report_pdf(
 @authenticated_chlorides_router.post(
     "/chlorides",
     dependencies=[Depends(ScopedUser.WellMeasurementWrite)],
-    response_model=well_schemas.ChlorideMeasurement,
+    response_model=well.ChlorideMeasurement,
     tags=["Chlorides"],
 )
 def add_chloride_measurement(
-    chloride_measurement: well_schemas.WellMeasurement,
+    chloride_measurement: well.WellMeasurement,
     db: Session = Depends(get_db),
 ):
     # Create a new chloride measurement as a WellMeasurement
@@ -265,11 +253,11 @@ def add_chloride_measurement(
 @authenticated_chlorides_router.patch(
     "/chlorides",
     dependencies=[Depends(ScopedUser.WellMeasurementWrite)],
-    response_model=well_schemas.WellMeasurement,
+    response_model=well.WellMeasurement,
     tags=["Chlorides"],
 )
 def patch_chloride_measurement(
-    chloride_measurement_patch: well_schemas.PatchChlorideMeasurement,
+    chloride_measurement_patch: well.PatchChlorideMeasurement,
     db: Session = Depends(get_db),
 ):
     well_measurement = (
@@ -306,12 +294,12 @@ def delete_chloride_measurement(chloride_measurement_id: int, db: Session = Depe
     return True
 
 
-def _stats(values: List[Optional[float]]) -> MinMaxAvgMedCount:
+def _stats(values: List[Optional[float]]) -> chlorides.MinMaxAvgMedCount:
     clean = [v for v in values if v is not None]
     if not clean:
-        return MinMaxAvgMedCount()
+        return chlorides.MinMaxAvgMedCount()
     
-    return MinMaxAvgMedCount(
+    return chlorides.MinMaxAvgMedCount(
         min=min(clean),
         max=max(clean),
         avg=sum(clean) / len(clean),

@@ -1,11 +1,11 @@
 from datetime import timedelta
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_pagination import add_pagination
 from fastapi.middleware.cors import CORSMiddleware
 from starlette import status
-from api.schemas import security_schemas
-from api.models.main_models import Users
+from api.schemas import security as security_schema
+from api.models.user import Users
 from api.routes.activities import activity_router, public_activity_router
 from api.routes.admin import admin_router
 from api.routes.chlorides import authenticated_chlorides_router, public_chlorides_router
@@ -18,18 +18,22 @@ from api.routes.notifications import notifications_router
 from api.routes.OSE import ose_router
 from api.routes.parts import part_router
 from api.routes.settings import settings_router
+from api.routes.user_sessions import user_sessions_router
+from api.routes.work_orders import work_orders_router
 from api.routes.well_measurements import (
     authenticated_well_measurement_router,
     public_well_measurement_router,
 )
 from api.routes.wells import authenticated_well_router, public_well_router
+from api.auth.session_tracking import create_user_session, touch_user_session
 from api.security import (
     authenticate_user,
     create_access_token,
     ACCESS_TOKEN_EXPIRE_HOURS,
     authenticated_router,
+    get_session_identifier_from_token,
 )
-from api.session import get_db
+from api.session import get_db, SessionLocal
 from sqlalchemy.orm import Session
 
 tags_metadata = [
@@ -83,9 +87,11 @@ app.add_middleware(
 # ============== Security ==============
 
 
-@app.post("/token", response_model=security_schemas.Token, tags=["Login"])
+@app.post("/token", response_model=security_schema.Token, tags=["Login"])
 def login_for_access_token(
-    form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
+    request: Request,
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db),
 ):
     user: Users = authenticate_user(form_data.username, form_data.password, db)
     if not user:
@@ -102,18 +108,49 @@ def login_for_access_token(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    user_session = create_user_session(db=db, user=user, request=request)
+
     access_token = create_access_token(
         data={
             "sub": user.username,
+            "sid": user_session.session_identifier,
             "scopes": list(
                 map(lambda scope: scope.scope_string, user.user_role.security_scopes)
             ),
         },
         expires_delta=timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS),
     )
-    user_response = security_schemas.User(**user.__dict__)
+    user_response = security_schema.User(**user.__dict__)
+    db.commit()
 
-    return {"access_token": access_token, "token_type": "bearer", "user": user_response}
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": user_response,
+        "session_identifier": user_session.session_identifier,
+    }
+
+
+@app.middleware("http")
+async def update_user_session_last_seen(request: Request, call_next):
+    authorization_header = request.headers.get("authorization")
+    if authorization_header and authorization_header.startswith("Bearer "):
+        token = authorization_header.removeprefix("Bearer ").strip()
+        session_identifier = None
+
+        try:
+            session_identifier = get_session_identifier_from_token(token)
+        except Exception:
+            session_identifier = None
+
+        if session_identifier:
+            db = SessionLocal()
+            try:
+                touch_user_session(db, session_identifier)
+            finally:
+                db.close()
+
+    return await call_next(request)
 
 
 # =======================================
@@ -125,6 +162,7 @@ authenticated_router.include_router(authenticated_maintenance_router)
 authenticated_router.include_router(authenticated_meter_router)
 authenticated_router.include_router(notifications_router)
 authenticated_router.include_router(part_router)
+authenticated_router.include_router(work_orders_router)
 authenticated_router.include_router(authenticated_well_measurement_router)
 authenticated_router.include_router(authenticated_well_router)
 authenticated_router.include_router(settings_router)
@@ -138,4 +176,5 @@ app.include_router(public_well_router)
 app.include_router(public_chlorides_router)
 app.include_router(public_maintenance_router)
 app.include_router(public_well_measurement_router)
+app.include_router(user_sessions_router)
 app.include_router(authenticated_router)

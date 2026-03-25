@@ -8,7 +8,7 @@ import {
   PatchActivitySubmit,
   SecurityScope,
 } from "@/interfaces";
-import { useUpdateActivity, useDeleteActivity } from "@/service/ApiServiceNew";
+import { useDeleteActivity, useUpdateActivity } from "@/service";
 import dayjs from "dayjs";
 import { enqueueSnackbar } from "notistack";
 import {
@@ -87,7 +87,7 @@ export const SelectedActivityDetails = ({
 
       note_ids: data.notes.map((note: any) => note.id),
       service_ids: data.services.map((service: any) => service.id),
-      part_ids: data.parts_used.map((part: any) => part.id),
+      part_ids: (data.parts_used ?? []).map((part: any) => part.id),
     };
     updateActivity.mutate(activity_data);
   };

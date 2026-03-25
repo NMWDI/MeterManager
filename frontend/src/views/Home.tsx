@@ -10,7 +10,6 @@ import {
   Typography,
 } from "@mui/material";
 import { Link } from "@tanstack/react-router";
-import HomeIcon from "@mui/icons-material/Home";
 import ArrowOutwardIcon from "@mui/icons-material/ArrowOutward";
 import AssignmentTurnedInOutlinedIcon from "@mui/icons-material/AssignmentTurnedInOutlined";
 import AutorenewOutlinedIcon from "@mui/icons-material/AutorenewOutlined";
@@ -18,7 +17,7 @@ import BuildCircleOutlinedIcon from "@mui/icons-material/BuildCircleOutlined";
 import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
 import MonitorHeartIcon from "@mui/icons-material/MonitorHeart";
 import ScienceIcon from "@mui/icons-material/Science";
-import { BackgroundBox, CustomCardHeader } from "@/components";
+import { BackgroundBox } from "@/components";
 import pvacd_logo from "@/img/pvacd_logo.png";
 import meter_field from "@/img/meter_field.jpg";
 import meter_storage from "@/img/meter_storage.jpg";
@@ -88,10 +87,9 @@ export const Home = () => {
             "linear-gradient(135deg, #f8fbff 0%, #eef5ff 55%, #f6f9ff 100%)",
         }}
       >
-        <CustomCardHeader title="Home" icon={HomeIcon} />
         <CardContent>
           <Grid container px={4} py={3} spacing={3} alignItems="flex-start">
-            <Grid item xs={12} lg={7}>
+            <Grid item xs={12} lg={8}>
               <Stack spacing={3}>
                 <CardMedia
                   component="img"
@@ -189,7 +187,7 @@ export const Home = () => {
               </Stack>
             </Grid>
 
-            <Grid item xs={12} lg={5}>
+            <Grid item xs={12} lg={4}>
               <Stack spacing={2.5}>
                 <Stack
                   direction={{ xs: "column", sm: "row" }}
@@ -204,9 +202,11 @@ export const Home = () => {
                     image={meter_field}
                     alt="Field Meter"
                     sx={{
-                      maxWidth: { xs: "100%", md: 200, xl: 220 },
-                      width: "100%",
-                      height: { xs: 220, md: "auto" },
+                      flex: 1,
+                      minWidth: 0,
+                      maxWidth: { xs: "100%", sm: "calc(50% - 8px)" },
+                      width: { xs: "100%", sm: "auto" },
+                      height: { xs: 220 },
                       objectFit: "cover",
                       borderRadius: 4,
                       boxShadow: "0 18px 40px rgba(0,0,0,0.14)",
@@ -218,9 +218,11 @@ export const Home = () => {
                     image={meter_storage}
                     alt="Storage Meter"
                     sx={{
-                      maxWidth: { xs: "100%", md: 200, xl: 220 },
-                      width: "100%",
-                      height: { xs: 220, md: "auto" },
+                      flex: 1,
+                      minWidth: 0,
+                      maxWidth: { xs: "100%", sm: "calc(50% - 8px)" },
+                      width: { xs: "100%", sm: "auto" },
+                      height: { xs: 220 },
                       objectFit: "cover",
                       borderRadius: 4,
                       boxShadow: "0 18px 40px rgba(0,0,0,0.14)",

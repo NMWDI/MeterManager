@@ -1,48 +1,17 @@
-from typing import List, Optional, Any, Dict
+from typing import List, Optional
 from datetime import datetime, date
-import re
 
 from fastapi import Depends, APIRouter, Query, HTTPException
 from fastapi.responses import StreamingResponse
-from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import select, and_, func
+from sqlalchemy.orm import Session
+from sqlalchemy import select
 
-from weasyprint import HTML
-from io import BytesIO
-from collections import defaultdict
-from matplotlib.pyplot import figure, close
-from base64 import b64encode
-
-from api.schemas import well_schemas
-from api.models.main_models import (
-    WellMeasurements,
-    ObservedPropertyTypeLU,
-    Units,
-    Wells,
-)
+from api.schemas import well
+from api.models.meter import ObservedPropertyTypeLU, Units
+from api.models.well import WellMeasurements
 from api.session import get_db
-from api.enums import ScopedUser
-from google.cloud import storage
-
-from pathlib import Path
-from jinja2 import Environment, FileSystemLoader, select_autoescape
-from zoneinfo import ZoneInfo
-
-import zlib
-import json
-import os
-import matplotlib
-
-matplotlib.use("Agg")  # Force non-GUI backend
-
-WOODPECKER_BUCKET_NAME = os.getenv("GCP_WOODPECKER_BUCKET_NAME", "")
-
-TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "templates"
-
-templates = Environment(
-    loader=FileSystemLoader(TEMPLATES_DIR),
-    autoescape=select_autoescape(["html", "xml"]),
-)
+from api.auth.dependencies import ScopedUser
+from api.services import well_measurements as well_measurement_service
 
 authenticated_well_measurement_router = APIRouter()
 public_well_measurement_router = APIRouter()
@@ -51,11 +20,11 @@ public_well_measurement_router = APIRouter()
 @authenticated_well_measurement_router.post(
     "/waterlevels",
     dependencies=[Depends(ScopedUser.WellMeasurementWrite)],
-    response_model=well_schemas.WellMeasurement,
+    response_model=well.WellMeasurement,
     tags=["WaterLevels"],
 )
 def add_waterlevel(
-    waterlevel: well_schemas.NewWaterLevelMeasurement, db: Session = Depends(get_db)
+    waterlevel: well.NewWaterLevelMeasurement, db: Session = Depends(get_db)
 ):
     # Create the well measurement from the form, qualify with units and property type
     well_measurement = WellMeasurements(
@@ -81,111 +50,21 @@ def add_waterlevel(
 
 @public_well_measurement_router.get(
     "/waterlevels/woodpeckers",
-    response_model=List[well_schemas.WellMeasurementDTO],
+    response_model=List[well.WellMeasurementDTO],
     tags=["WaterLevels"],
 )
 def read_woodpecker_waterlevels(
     well_id: int = Query(..., description="At least one well ID is required"),
 ):
-    SP_JOHNSON_WELL_ID = 2599
-
-    if well_id != SP_JOHNSON_WELL_ID:
-        raise HTTPException(status_code=400, detail="Invalid well ID")
-
-    DEPTH_TO_WATER_SENSOR_NAME = "Depth to Water"
-
-    results: List[well_schemas.WellMeasurementDTO] = []
-    seen_timestamps: set[str] = set()
-
-    client = storage.Client()
-    bucket = client.bucket(WOODPECKER_BUCKET_NAME)
-
-    for blob in bucket.list_blobs():
-        if not blob.name.endswith(".json"):
-            continue
-
-        content = blob.download_as_text()
-        payload = json.loads(content)
-
-        device_attributes = payload.get("deviceAttributes") or {}
-        tz_name = device_attributes.get("timeZone") or "UTC"
-        ra_number = device_attributes.get("wellId") or ""  # e.g. "RA-3502"
-
-        sensor_data = payload.get("sensorData") or []
-        depth_sensor = next(
-            (
-                s
-                for s in sensor_data
-                if (s.get("sensorName") or "").strip() == DEPTH_TO_WATER_SENSOR_NAME
-            ),
-            None,
-        )
-        if not depth_sensor:
-            # No "Depth to Water" in this file; skip
-            continue
-
-        measurements = depth_sensor.get("measurements") or []
-        for m in measurements:
-            raw_ts = m.get("timestamp")
-            if not raw_ts:
-                continue
-
-            ts = _parse_woodpecker_timestamp(raw_ts, tz_name)
-
-            # Deduplicate by exact instant string (timezone-aware isoformat if tz parsed)
-            ts_key = ts.isoformat()
-            if ts_key in seen_timestamps:
-                continue
-            seen_timestamps.add(ts_key)
-
-            raw_value = m.get("data")
-            value = abs(raw_value) if raw_value is not None else None
-
-            measurement_id = _make_measurement_id(well_id, ts, value)
-
-            results.append(
-                well_schemas.WellMeasurementDTO(
-                    id=measurement_id,
-                    timestamp=ts,
-                    value=value,
-                    submitting_user=well_schemas.WellMeasurementDTO.UserDTO(
-                        full_name="Woodpeckers"
-                    ),
-                    well=well_schemas.WellMeasurementDTO.WellDTO(ra_number=ra_number),
-                )
-            )
-
-    # Sort combined results across all files
-    results.sort(key=lambda r: r.timestamp)
-    return results
-
-
-def _parse_woodpecker_timestamp(ts: str, tz_name: str) -> datetime:
-    """
-    Payload timestamp format: "DD/MM/YYYY HH:mm:ss"
-    Example: "29/12/2025 00:20:40"
-    """
-    dt_naive = datetime.strptime(ts, "%d/%m/%Y %H:%M:%S")
     try:
-        tz = ZoneInfo(tz_name)
-    except Exception:
-        # Fallback: keep naive if timezone is missing/invalid
-        return dt_naive
-    return dt_naive.replace(tzinfo=tz)
-
-
-def _make_measurement_id(well_id: int, ts: datetime, value: Optional[float]) -> int:
-    """
-    Since the incoming format doesn't provide an integer measurement id,
-    generate a deterministic-ish int id from well_id + timestamp + value.
-    """
-    key = f"{well_id}|{ts.isoformat()}|{value if value is not None else 'null'}"
-    return zlib.crc32(key.encode("utf-8"))
+        return well_measurement_service.read_woodpecker_waterlevels(well_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
 
 
 @public_well_measurement_router.get(
     "/waterlevels",
-    response_model=List[well_schemas.WellMeasurementDTO],
+    response_model=List[well.WellMeasurementDTO],
     tags=["WaterLevels"],
 )
 def read_waterlevels(
@@ -201,139 +80,18 @@ def read_waterlevels(
     comparisonYear: Optional[str] = Query(None, pattern=r"^$|^\d{4}$"),
     db: Session = Depends(get_db),
 ):
-    """
-    Return well measurements, optionally filtered by from_date/to_date,
-    with optional averaging and historical comparison.
-    """
-    MONITORING_USE_TYPE_ID = 11
-    synthetic_id_counter = -1
-
-    def group_and_average(measurements, group_by_label: str):
-        from collections import defaultdict
-
-        grouped = defaultdict(list)
-        for m in measurements:
-            key = m.timestamp.strftime(
-                "%Y-%m" if group_by_label == "month" else "%Y-%m-%d"
-            )
-            grouped[key].append(m.value)
-
-        result = []
-        for time_str, values in sorted(grouped.items()):
-            dt = datetime.strptime(
-                time_str,
-                "%Y-%m" if group_by_label == "month" else "%Y-%m-%d",
-            )
-            avg_value = sum(values) / len(values)
-            nonlocal synthetic_id_counter
-            result.append(
-                well_schemas.WellMeasurementDTO(
-                    id=synthetic_id_counter,
-                    timestamp=dt,
-                    value=avg_value,
-                    submitting_user={"full_name": "System"},
-                    well={"ra_number": "Average of wells"},
-                )
-            )
-            synthetic_id_counter -= 1
-        return result
-
-    def get_measurements_by_ids(well_ids, start: Optional[date], end: Optional[date]):
-        filters = [
-            ObservedPropertyTypeLU.name == "Depth to water",
-            WellMeasurements.well_id.in_(well_ids),
-        ]
-        if start:
-            filters.append(WellMeasurements.timestamp >= start)
-        if end:
-            # include full day when end is provided
-            end_dt = datetime.combine(end, datetime.max.time())
-            filters.append(WellMeasurements.timestamp <= end_dt)
-
-        stmt = (
-            select(WellMeasurements)
-            .options(
-                joinedload(WellMeasurements.submitting_user),
-                joinedload(WellMeasurements.well),
-            )
-            .join(ObservedPropertyTypeLU)
-            .where(and_(*filters))
-            .order_by(WellMeasurements.well_id, WellMeasurements.timestamp)
+    try:
+        return well_measurement_service.read_waterlevels(
+            db=db,
+            well_ids=well_ids,
+            from_date=from_date,
+            to_date=to_date,
+            is_averaging_all_wells=isAveragingAllWells,
+            is_comparing_to_1970_average=isComparingTo1970Average,
+            comparison_year=comparisonYear,
         )
-        return db.scalars(stmt).all()
-
-    # Decide grouping granularity only if both dates are given
-    group_by = None
-    if from_date and to_date:
-        group_by = "month" if (to_date - from_date).days >= 365 else "day"
-
-    if not well_ids and not isComparingTo1970Average and not comparisonYear:
-        return []
-
-    response_data: List[well_schemas.WellMeasurementDTO] = []
-
-    # Averaged selection (if requested)
-    if isAveragingAllWells and well_ids:
-        current_measurements = get_measurements_by_ids(well_ids, from_date, to_date)
-        averaged = group_and_average(current_measurements, group_by or "day")
-        response_data.extend(averaged)
-
-    # Raw per-well (if not averaging)
-    if not isAveragingAllWells and well_ids:
-        response_data.extend(get_measurements_by_ids(well_ids, from_date, to_date))
-
-    # Helper: add a comparison average for any given year
-    def add_year_average(year: int, label: str):
-        # pick full year or same-month window depending on user’s range
-        if from_date and to_date and (to_date - from_date).days >= 365:
-            start = datetime(year, 1, 1)
-            end = datetime(year, 12, 31, 23, 59, 59)
-        else:
-            # fallback: use provided month(s) if available, otherwise full year
-            if from_date and to_date:
-                start = datetime(year, from_date.month, 1)
-                import calendar
-
-                last_day = calendar.monthrange(year, to_date.month)[1]
-                end = datetime(year, to_date.month, last_day, 23, 59, 59)
-            else:
-                start = datetime(year, 1, 1)
-                end = datetime(year, 12, 31, 23, 59, 59)
-
-        monitoring_ids = [
-            row[0]
-            for row in db.execute(
-                select(Wells.id).where(Wells.use_type_id == MONITORING_USE_TYPE_ID)
-            ).all()
-        ]
-        year_measurements = get_measurements_by_ids(monitoring_ids, start, end)
-        averaged = group_and_average(year_measurements, "month")
-        for dto in averaged:
-            dto.well.ra_number = label
-        response_data.extend(averaged)
-
-    if isComparingTo1970Average:
-        add_year_average(1970, "1970 Average")
-
-    if comparisonYear:
-        try:
-            year_int = int(comparisonYear)
-        except ValueError:
-            raise HTTPException(
-                status_code=400, detail="comparisonYear must be a 4-digit year"
-            )
-
-        current_year = datetime.now().year
-        if year_int < 1900 or year_int > current_year:
-            raise HTTPException(
-                status_code=400,
-                detail=f"comparisonYear must be between 1900 and {current_year}",
-            )
-
-        if not (isComparingTo1970Average and year_int == 1970):
-            add_year_average(year_int, f"{year_int} Average")
-
-    return response_data
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
 
 
 @public_well_measurement_router.get(
@@ -365,7 +123,7 @@ def read_waterlevel_report_averages(
             status_code=400, detail="from_date and/or to_date is required for reports"
         )
 
-    return get_waterlevel_report_averages(
+    return well_measurement_service.get_waterlevel_report_averages(
         well_ids=well_ids,
         from_date=from_date,
         to_date=to_date,
@@ -392,131 +150,20 @@ def download_waterlevels_pdf(
     Reuses the read_waterlevels() endpoint for data.
     """
 
-    # Reuse the endpoint logic
-    data = read_waterlevels(
-        well_ids=well_ids,
-        from_date=from_date,
-        to_date=to_date,
-        isAveragingAllWells=isAveragingAllWells,
-        isComparingTo1970Average=isComparingTo1970Average,
-        comparisonYear=comparisonYear,
-        db=db,
-    )
-
-    if not data:
-        raise HTTPException(status_code=404, detail="No water-level data found")
-
-    from_year = from_date.year
-    shift_years = set()
-    if isComparingTo1970Average:
-        shift_years.add(1970)
-    if comparisonYear:
-        try:
-            shift_years.add(int(comparisonYear))
-        except ValueError:
-            pass  # already validated above
-
-    def shift_year_safe(dt, new_year: int):
-        """Shift dt to new_year, handling Feb 29 / month-end safely."""
-        import calendar
-
-        try:
-            return dt.replace(year=new_year)
-        except ValueError:
-            last_day = calendar.monthrange(new_year, dt.month)[1]
-            return dt.replace(year=new_year, day=min(dt.day, last_day))
-
-    # Prepare rows for the table and points for the chart
-    rows = []
-    data_by_well = defaultdict(list)
-
-    for m in data:
-        # m is a WellMeasurementDTO from read_waterlevels
-        ts = m.timestamp
-        val = m.value
-        ra = m.well["ra_number"] if isinstance(m.well, dict) else m.well.ra_number
-
-        rows.append(
-            {
-                "timestamp": ts.strftime("%Y-%m-%d %H:%M"),
-                "depth_to_water": val,
-                "well_ra_number": ra,
-            }
+    try:
+        pdf_io = well_measurement_service.build_waterlevels_pdf(
+            db=db,
+            well_ids=well_ids,
+            from_date=from_date,
+            to_date=to_date,
+            is_averaging_all_wells=isAveragingAllWells,
+            is_comparing_to_1970_average=isComparingTo1970Average,
+            comparison_year=comparisonYear,
         )
-
-        chart_ts = ts
-        if from_year:
-            m_match = re.match(r"^(\d{4}) Average$", ra)
-            if m_match:
-                yr = int(m_match.group(1))
-                if yr in shift_years:
-                    chart_ts = shift_year_safe(ts, from_year)
-
-        data_by_well[ra].append((chart_ts, val))
-
-    def make_line_chart(data: dict, title: str):
-        if not data:
-            return ""
-        fig = figure(figsize=(10, 6))
-        ax = fig.add_subplot(111)
-        for ra_label, measurements in data.items():
-            sorted_m = sorted(measurements, key=lambda x: x[0])
-            timestamps = [ts for ts, _ in sorted_m]
-            values = [val for _, val in sorted_m]
-            ax.plot(timestamps, values, label=ra_label, marker="o")
-        ax.set_title(title)
-        ax.set_xlabel("Time")
-        ax.set_ylabel("Depth to Water")
-        ax.invert_yaxis()
-
-        # Reserve Space on the top right & move legend outside the plot area to that reserved area
-        fig.subplots_adjust(right=0.78)
-        ax.legend(
-            loc="center left",
-            bbox_to_anchor=(1.02, 0.5),
-            borderaxespad=0.0,
-            frameon=True,
-        )
-
-        fig.autofmt_xdate()
-        buf = BytesIO()
-        fig.savefig(buf, format="png", bbox_inches="tight")
-        close(fig)
-        return b64encode(buf.getvalue()).decode("utf-8")
-
-    chart_b64 = make_line_chart(data_by_well, "Depth of Water over Time")
-
-    report_title = "ROSWELL ARTESIAN BASIN"
-    report_subtext = None
-    if isAveragingAllWells:
-        num_wells = len(well_ids)
-        well_word = "WELL" if num_wells == 1 else "WELLS"
-        report_subtext = (
-            f"MONTHLY AVERAGE WATER LEVEL WITHIN {num_wells} PVACD RECORDER {well_word}\n"
-            "AVERAGES TAKEN FROM STEEL TAPE MEASUREMENTS MADE\n"
-            "ON OR NEAR THE 5TH, 15TH AND 25TH OF EACH MONTH"
-        )
-
-    averages = get_waterlevel_report_averages(
-        well_ids=well_ids,
-        from_date=from_date,
-        to_date=to_date,
-        db=db,
-    )
-
-    html = templates.get_template("waterlevels_report.html").render(
-        from_date=from_date,
-        to_date=to_date,
-        observation_chart=chart_b64,
-        rows=rows,
-        report_title=report_title,
-        report_subtext=report_subtext,
-        averages=averages,
-    )
-
-    pdf_io = BytesIO()
-    HTML(string=html).write_pdf(pdf_io)
-    pdf_io.seek(0)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
 
     return StreamingResponse(
         pdf_io,
@@ -528,11 +175,11 @@ def download_waterlevels_pdf(
 @authenticated_well_measurement_router.patch(
     "/waterlevels",
     dependencies=[Depends(ScopedUser.Admin)],
-    response_model=well_schemas.WellMeasurement,
+    response_model=well.WellMeasurement,
     tags=["WaterLevels"],
 )
 def patch_waterlevel(
-    waterlevel_patch: well_schemas.PatchWaterLevel, db: Session = Depends(get_db)
+    waterlevel_patch: well.PatchWaterLevel, db: Session = Depends(get_db)
 ):
     # Find the measurement
     well_measurement = db.scalars(
@@ -566,104 +213,3 @@ def delete_waterlevel(waterlevel_id: int, db: Session = Depends(get_db)):
     db.commit()
 
     return True
-
-
-def get_waterlevel_report_averages(
-    *,
-    well_ids: List[int],
-    from_date: Optional[date],
-    to_date: Optional[date],
-    db: Session,
-) -> Dict[str, Any]:
-    """
-    Shared logic used by both JSON endpoint and PDF endpoint.
-    Returns:
-      {
-        "bucket": "month" | "year",
-        "per_well": [ { well_id, ra_number, period_start, avg_value }, ...],
-        "all_wells": [ { period_start, avg_value }, ...],
-      }
-    """
-    DEPTH_TO_WATER_NAME = "Depth to water"
-
-    if not well_ids:
-        return {"bucket": None, "per_well": [], "all_wells": []}
-
-    if from_date is None and to_date is None:
-        # Let callers decide whether to raise; for PDF we always have both.
-        return {"bucket": None, "per_well": [], "all_wells": []}
-
-    start_dt = datetime.combine(from_date, datetime.min.time()) if from_date else None
-    end_dt = datetime.combine(to_date, datetime.max.time()) if to_date else None
-
-    if from_date and to_date:
-        delta_days = (to_date - from_date).days
-        bucket_unit = "year" if delta_days >= 365 else "month"
-    else:
-        bucket_unit = "month"
-
-    bucket = func.date_trunc(bucket_unit, WellMeasurements.timestamp).label(
-        "period_start"
-    )
-
-    base_filters = [
-        ObservedPropertyTypeLU.name == DEPTH_TO_WATER_NAME,
-        WellMeasurements.well_id.in_(well_ids),
-    ]
-    if start_dt:
-        base_filters.append(WellMeasurements.timestamp >= start_dt)
-    if end_dt:
-        base_filters.append(WellMeasurements.timestamp <= end_dt)
-
-    per_well_stmt = (
-        select(
-            WellMeasurements.well_id.label("well_id"),
-            Wells.ra_number.label("ra_number"),
-            bucket,
-            func.avg(WellMeasurements.value).label("avg_value"),
-        )
-        .join(Wells, Wells.id == WellMeasurements.well_id)
-        .join(
-            ObservedPropertyTypeLU,
-            ObservedPropertyTypeLU.id == WellMeasurements.observed_property_id,
-        )
-        .where(and_(*base_filters))
-        .group_by(WellMeasurements.well_id, Wells.ra_number, bucket)
-        .order_by(Wells.ra_number, bucket)
-    )
-    per_well_rows = db.execute(per_well_stmt).all()
-
-    all_wells_stmt = (
-        select(
-            bucket,
-            func.avg(WellMeasurements.value).label("avg_value"),
-        )
-        .join(
-            ObservedPropertyTypeLU,
-            ObservedPropertyTypeLU.id == WellMeasurements.observed_property_id,
-        )
-        .where(and_(*base_filters))
-        .group_by(bucket)
-        .order_by(bucket)
-    )
-    all_wells_rows = db.execute(all_wells_stmt).all()
-
-    return {
-        "bucket": bucket_unit,
-        "per_well": [
-            {
-                "well_id": r.well_id,
-                "ra_number": r.ra_number,
-                "period_start": r.period_start,
-                "avg_value": float(r.avg_value) if r.avg_value is not None else None,
-            }
-            for r in per_well_rows
-        ],
-        "all_wells": [
-            {
-                "period_start": r.period_start,
-                "avg_value": float(r.avg_value) if r.avg_value is not None else None,
-            }
-            for r in all_wells_rows
-        ],
-    }

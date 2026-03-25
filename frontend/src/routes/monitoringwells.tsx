@@ -8,9 +8,7 @@ import {
   CardContent,
   ListSubheader,
   useTheme,
-  Alert,
-  Button,
-  AlertTitle,
+  Box,
 } from "@mui/material";
 import { useQuery, useQueryClient } from "react-query";
 import { useAuthUser } from "react-auth-kit";
@@ -39,9 +37,14 @@ import { CreateModal, UpdateModal } from "@/components/Modals/MonitoredWell";
 import {
   CustomCardHeader,
   BackgroundBox,
+  FieldLoadingSkeleton,
+  QueryErrorBox,
   ResizableSplitPanels,
 } from "@/components";
-import { Table, Plot } from "@/views/MonitoringWells";
+import {
+  MonitoringWellsPlotSection,
+  MonitoringWellsTableSection,
+} from "@/views/MonitoringWells";
 import { optionalPositiveInt, pageParam, routeSearchHydrator } from "@/utils";
 
 const searchSchema = z.object({
@@ -194,12 +197,6 @@ function MonitoringWells() {
   const updateMeasurement = useUpdateWaterLevel(() => refetchManual());
   const deleteMeasurement = useDeleteWaterLevel();
 
-  const error =
-    monitoredWellsQuery.isError ||
-    errorManual ||
-    errorSt2 ||
-    errorJohnsonSensorData;
-
   const handleSubmitNewMeasurement = (data: Partial<NewWellMeasurement>) => {
     if (wellId) {
       data.well_id = wellId;
@@ -277,126 +274,121 @@ function MonitoringWells() {
   const [outsideRecorderWells, regularWells] = separateAndSortMonitoredWells(
     monitoredWellsQuery?.data,
   );
+  const plotLoadingSources = [
+    isLoadingManual ? "Manual" : null,
+    isLoadingSt2 ? "Continuous" : null,
+    isLoadingJohnsonSensorData ? "Woodpecker" : null,
+  ].filter((source): source is string => source !== null);
 
   return (
     <BackgroundBox>
       <Card sx={{ height: "fit-content" }}>
         <CustomCardHeader title="Monitored Wells" icon={MonitorHeart} />
         <CardContent>
-          {error && (
-            <Alert
-              severity="error"
-              sx={{ mb: 2 }}
-              action={
-                <Button
-                  variant="outlined"
-                  color="inherit"
-                  size="small"
-                  onClick={() => monitoredWellsQuery.refetch()}
-                >
-                  Retry
-                </Button>
-              }
-            >
-              <AlertTitle>Error Loading Data</AlertTitle>
-              We couldn’t load monitoring wells. Please check your connection or
-              try again.
-            </Alert>
-          )}
-          <FormControl
-            size="small"
-            sx={{ minWidth: "100px", maxWidth: 600, width: "100%" }}
-            disabled={
-              monitoredWellsQuery?.isFetching || !!monitoredWellsQuery?.isError
-            }
-          >
-            <InputLabel id={`${uniqueSelectId}-label`}>Site</InputLabel>
-            <Select
-              label="Site"
-              labelId={`${uniqueSelectId}-label`}
-              value={wellId ?? ""}
-              onChange={(e) => {
-                const next = Number(e.target.value);
-                navigate({
-                  to: "/monitoringwells",
-                  search: (prev) => ({
-                    ...(prev as any),
-                    wellId: next,
-                  }),
-                  replace: true,
-                });
-              }}
-            >
-              {monitoredWellsQuery?.isFetching && (
-                <MenuItem disabled>Loading...</MenuItem>
-              )}
-              {monitoredWellsQuery?.isError && (
-                <MenuItem disabled>Error loading wells</MenuItem>
-              )}
-              {(monitoredWellsQuery?.data?.length ?? 0 > 0) ? (
-                <ListSubheader
-                  sx={{
-                    color: theme.palette.primary.main,
-                    fontWeight: "bold",
-                    textTransform: "uppercase",
-                    paddingY: "0.125rem",
+          <Box sx={{ minWidth: "100px", maxWidth: 600, width: "100%" }}>
+            {monitoredWellsQuery.isLoading ? (
+              <FieldLoadingSkeleton />
+            ) : monitoredWellsQuery.isError ? (
+              <QueryErrorBox
+                title="Unable to Load Monitoring Wells"
+                message={
+                  monitoredWellsQuery.error?.message ||
+                  "We couldn’t load the list of monitored wells."
+                }
+                onRetry={() => monitoredWellsQuery.refetch()}
+              />
+            ) : (
+              <FormControl
+                size="small"
+                sx={{ width: "100%" }}
+                disabled={monitoredWellsQuery.isFetching}
+              >
+                <InputLabel id={`${uniqueSelectId}-label`}>Well</InputLabel>
+                <Select
+                  label="Well"
+                  labelId={`${uniqueSelectId}-label`}
+                  value={wellId ?? ""}
+                  onChange={(e) => {
+                    const next = Number(e.target.value);
+                    navigate({
+                      to: "/monitoringwells",
+                      search: (prev) => ({
+                        ...(prev as any),
+                        wellId: next,
+                      }),
+                      replace: true,
+                    });
                   }}
                 >
-                  Wells
-                </ListSubheader>
-              ) : null}
-              {regularWells.map((well) => (
-                <MenuItem
-                  key={well.id}
-                  value={well.id}
-                  sx={{
-                    "&.Mui-selected": {
-                      backgroundColor:
-                        theme.palette.primary.dark + " !important",
-                      color: theme.palette.primary.contrastText,
-                    },
-                    "&:hover": {
-                      backgroundColor: theme.palette.primary.light,
-                      color: theme.palette.primary.contrastText,
-                    },
-                  }}
-                >
-                  {well.name?.trim() ? well.name : "Unnamed Well"}
-                </MenuItem>
-              ))}
-              {outsideRecorderWells.length > 0 ? (
-                <ListSubheader
-                  sx={{
-                    color: theme.palette.secondary.main,
-                    fontWeight: "bold",
-                    textTransform: "uppercase",
-                    paddingY: "0.125rem",
-                  }}
-                >
-                  Outside Recorder Wells
-                </ListSubheader>
-              ) : null}
-              {outsideRecorderWells.map((well) => (
-                <MenuItem
-                  key={well.id}
-                  value={well.id}
-                  sx={{
-                    "&.Mui-selected": {
-                      backgroundColor:
-                        theme.palette.secondary.dark + " !important",
-                      color: theme.palette.secondary.contrastText,
-                    },
-                    "&:hover": {
-                      backgroundColor: theme.palette.secondary.light,
-                      color: theme.palette.secondary.contrastText,
-                    },
-                  }}
-                >
-                  {well.name?.trim() ? well.name : "Unnamed Well"}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+                  {monitoredWellsQuery.isFetching && (
+                    <MenuItem disabled>Loading...</MenuItem>
+                  )}
+                  {(monitoredWellsQuery?.data?.length ?? 0 > 0) ? (
+                    <ListSubheader
+                      sx={{
+                        color: theme.palette.primary.main,
+                        fontWeight: "bold",
+                        textTransform: "uppercase",
+                        paddingY: "0.125rem",
+                      }}
+                    >
+                      Wells
+                    </ListSubheader>
+                  ) : null}
+                  {regularWells.map((well) => (
+                    <MenuItem
+                      key={well.id}
+                      value={well.id}
+                      sx={{
+                        "&.Mui-selected": {
+                          backgroundColor:
+                            theme.palette.primary.dark + " !important",
+                          color: theme.palette.primary.contrastText,
+                        },
+                        "&:hover": {
+                          backgroundColor: theme.palette.primary.light,
+                          color: theme.palette.primary.contrastText,
+                        },
+                      }}
+                    >
+                      {well.name?.trim() ? well.name : "Unnamed Well"}
+                    </MenuItem>
+                  ))}
+                  {outsideRecorderWells.length > 0 ? (
+                    <ListSubheader
+                      sx={{
+                        color: theme.palette.secondary.main,
+                        fontWeight: "bold",
+                        textTransform: "uppercase",
+                        paddingY: "0.125rem",
+                      }}
+                    >
+                      Outside Recorder Wells
+                    </ListSubheader>
+                  ) : null}
+                  {outsideRecorderWells.map((well) => (
+                    <MenuItem
+                      key={well.id}
+                      value={well.id}
+                      sx={{
+                        "&.Mui-selected": {
+                          backgroundColor:
+                            theme.palette.secondary.dark + " !important",
+                          color: theme.palette.secondary.contrastText,
+                        },
+                        "&:hover": {
+                          backgroundColor: theme.palette.secondary.light,
+                          color: theme.palette.secondary.contrastText,
+                        },
+                      }}
+                    >
+                      {well.name?.trim() ? well.name : "Unnamed Well"}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
+          </Box>
           <ResizableSplitPanels
             leftWidth={split}
             onLeftWidthChange={(nextSplit) => {
@@ -415,48 +407,43 @@ function MonitoringWells() {
               });
             }}
             left={
-              <Plot
+              <MonitoringWellsPlotSection
+                manualMeasurements={manualMeasurements}
+                st2Measurements={st2Measurements}
+                johnsonSensorDataMeasurements={johnsonSensorDataMeasurements}
+                isWellSelected={!!wellId}
                 isLoading={
                   isLoadingManual || isLoadingSt2 || isLoadingJohnsonSensorData
                 }
-                isContinuousLoading={isLoadingSt2}
-                manual_dates={(Array.isArray(manualMeasurements)
-                  ? manualMeasurements
-                  : []
-                ).map((m) => m.timestamp)}
-                manual_vals={(Array.isArray(manualMeasurements)
-                  ? manualMeasurements
-                  : []
-                ).map((m) => m.value)}
-                logger_dates={
-                  Array.isArray(st2Measurements)
-                    ? (st2Measurements ?? []).map((m) => m.resultTime)
-                    : []
+                loadingSources={plotLoadingSources}
+                isError={
+                  !!errorManual || !!errorSt2 || !!errorJohnsonSensorData
                 }
-                logger_vals={
-                  Array.isArray(st2Measurements)
-                    ? st2Measurements.map((m) => m.result)
-                    : []
-                }
-                sensor_dates={
-                  Array.isArray(johnsonSensorDataMeasurements)
-                    ? johnsonSensorDataMeasurements?.map((m) => m.timestamp)
-                    : undefined
-                }
-                sensor_vals={
-                  Array.isArray(johnsonSensorDataMeasurements)
-                    ? johnsonSensorDataMeasurements?.map((m) => m.value)
-                    : undefined
-                }
+                onRetry={() => {
+                  refetchManual();
+                  if (dataStreamId) {
+                    queryClient.invalidateQueries({
+                      queryKey: ["st2Measurements", dataStreamId],
+                    });
+                  }
+                  if (wellId === 2599) {
+                    queryClient.invalidateQueries({
+                      queryKey: ["woodpeckers", wellId],
+                    });
+                  }
+                }}
               />
             }
             right={
-              <Table
+              <MonitoringWellsTableSection
                 rows={manualMeasurements ?? []}
                 selectedWell={monitoredWellsQuery?.data?.find(
                   (well) => well.id == wellId,
                 )}
                 isWellSelected={!!wellId}
+                isLoading={isLoadingManual}
+                isError={!!errorManual}
+                onRetry={() => refetchManual()}
                 onOpenModal={() => setIsNewModalOpen(true)}
                 onMeasurementSelect={handleMeasurementSelect}
               />

@@ -6,9 +6,9 @@ from fastapi_pagination.ext.sqlalchemy import paginate
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload
 
-from api.enums import ScopedUser
-from api.models.main_models import Notifications, NotificationTypeLU, Users
-from api.schemas.notification_schemas import (
+from api.auth.dependencies import ScopedUser
+from api.models.user import Notifications, NotificationTypeLU, Users
+from api.schemas.notifications import (
     NotificationCreateRequest,
     NotificationCreateResult,
     Notification,

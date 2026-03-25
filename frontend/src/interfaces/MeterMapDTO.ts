@@ -9,5 +9,6 @@ export interface MeterMapDTO {
     longitude: number;
     latitude: number;
   };
-  last_pm: string;
+  last_pm_meter_activity: string | null;
+  last_location_only_meter_activity: string | null;
 }

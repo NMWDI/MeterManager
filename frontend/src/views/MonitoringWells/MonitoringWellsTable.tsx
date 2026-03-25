@@ -1,5 +1,11 @@
 import { useMemo } from "react";
-import { Box, Button, Tooltip } from "@mui/material";
+import {
+  Box,
+  Button,
+  CircularProgress,
+  Tooltip,
+  Typography,
+} from "@mui/material";
 import { DataGrid, GridPagination, GridColDef } from "@mui/x-data-grid";
 import { Add } from "@mui/icons-material";
 import dayjs, { Dayjs } from "dayjs";
@@ -18,6 +24,7 @@ declare module "@mui/x-data-grid" {
     onOpenModal: () => void;
     isWellSelected: boolean;
     selectedWell?: MonitoredWell;
+    isLoading: boolean;
   }
 }
 
@@ -26,12 +33,14 @@ export const Table = ({
   onOpenModal,
   isWellSelected,
   selectedWell,
+  isLoading,
   onMeasurementSelect,
 }: {
   rows: WellMeasurementDTO[];
   onOpenModal: () => void;
   isWellSelected: boolean;
   selectedWell?: MonitoredWell;
+  isLoading: boolean;
   onMeasurementSelect: (data: {
     row: {
       id: number;
@@ -84,6 +93,7 @@ export const Table = ({
       <DataGrid
         rows={rows}
         columns={columns}
+        loading={isLoading}
         pagination
         initialState={{
           pagination: { paginationModel: { page: 0, pageSize: 25 } },
@@ -104,12 +114,14 @@ export const Table = ({
         }}
         slots={{
           footer: Footer,
+          loadingOverlay: LoadingOverlay,
         }}
         slotProps={{
           footer: {
             onOpenModal: onOpenModal,
             isWellSelected: isWellSelected,
             selectedWell: selectedWell,
+            isLoading: isLoading,
           },
         }}
         onRowClick={onMeasurementSelect}
@@ -122,10 +134,12 @@ const Footer = ({
   onOpenModal,
   isWellSelected,
   selectedWell,
+  isLoading,
 }: {
   onOpenModal: () => void;
   isWellSelected: boolean;
   selectedWell?: MonitoredWell;
+  isLoading: boolean;
 }) => {
   const isAuthenticated = useIsAuthenticated();
   const isPlugged = selectedWell?.well_status.status === "plugged";
@@ -148,7 +162,7 @@ const Footer = ({
                 variant="contained"
                 size="small"
                 onClick={onOpenModal}
-                disabled={isPlugged}
+                disabled={isPlugged || isLoading}
                 sx={{
                   flexShrink: 0,
                   width: { xs: "100%", sm: "auto" },
@@ -166,3 +180,24 @@ const Footer = ({
     </Box>
   );
 };
+
+const LoadingOverlay = () => (
+  <Box
+    sx={{
+      height: "100%",
+      minHeight: 220,
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 1.5,
+      bgcolor: "rgba(255, 255, 255, 0.7)",
+      pointerEvents: "none",
+    }}
+  >
+    <CircularProgress size={36} thickness={4} />
+    <Typography variant="body2" color="text.secondary">
+      Loading table data...
+    </Typography>
+  </Box>
+);

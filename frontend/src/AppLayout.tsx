@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Box, useMediaQuery, useTheme } from "@mui/material";
 import { Topbar } from "@/components";
+import { SessionStatusPoller } from "@/components/session/SessionStatusPoller";
 import { DESKTOP_COLLAPSED_WIDTH, SidebarInset } from "@/components/ui/sidebar";
 import Sidenav from "./sidenav";
 import { useAuthUser } from "react-auth-kit";
@@ -74,6 +75,7 @@ export const AppLayout = ({ children }: { children: JSX.Element }) => {
         bgcolor: "#a5adb5",
       }}
     >
+      {isLoggedIn ? <SessionStatusPoller /> : null}
       <Topbar
         open={drawerOpen}
         sidebarWidth={sidebarWidth}
@@ -99,7 +101,7 @@ export const AppLayout = ({ children }: { children: JSX.Element }) => {
         sx={{
           minHeight: "100vh",
           ml: shouldShowDesktopSidebar ? `${effectiveSidebarWidth}px` : 0,
-          mt: "4rem",
+          mt: "3.75rem",
           width: shouldShowDesktopSidebar
             ? `calc(100% - ${effectiveSidebarWidth}px)`
             : "100%",

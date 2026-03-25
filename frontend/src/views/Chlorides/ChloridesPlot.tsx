@@ -2,16 +2,18 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Box, CircularProgress, Typography } from "@mui/material";
 import ReactPlot from "react-plotly.js";
 import type { Data } from "plotly.js";
-import { PlotContextMenu } from "../../components/PlotContextMenu";
+import { PlotContextMenu } from "@/components/display/PlotContextMenu";
 
 export const Plot = ({
   manual_dates,
   manual_vals,
   isLoading,
+  emptyMessage,
 }: {
   manual_dates: Date[];
   manual_vals: { value: number; well: string }[];
   isLoading: boolean;
+  emptyMessage?: string;
 }) => {
   const plotContainerRef = useRef<HTMLDivElement | null>(null);
   const plotRef = useRef<HTMLElement | null>(null);
@@ -107,6 +109,25 @@ export const Plot = ({
           <CircularProgress size={48} thickness={4} sx={{ mb: 2 }} />
           <Typography variant="body1" color="text.secondary">
             Loading plot data...
+          </Typography>
+        </Box>
+      ) : !hasData && emptyMessage ? (
+        <Box
+          sx={{
+            height: { xs: 300, sm: 400, md: 500, lg: 600 },
+            width: "100%",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            px: 4,
+          }}
+        >
+          <Typography
+            variant="body1"
+            color="text.secondary"
+            sx={{ textAlign: "center", maxWidth: 360 }}
+          >
+            {emptyMessage}
           </Typography>
         </Box>
       ) : (

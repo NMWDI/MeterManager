@@ -26,6 +26,9 @@ class Settings:
         "POSTGRES_PORT", 5432
     )  # default postgres port is 5432
     POSTGRES_DB: str = os.getenv("POSTGRES_DB")
+    JWT_SECRET_KEY: str | None = os.getenv("JWT_SECRET_KEY")
+    JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
+    ACCESS_TOKEN_EXPIRE_HOURS: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_HOURS", "8"))
     DATABASE_URL = f"postgresql+psycopg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
 
 

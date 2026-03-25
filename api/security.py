@@ -10,16 +10,20 @@ from sqlalchemy import or_
 from sqlalchemy.orm import joinedload, undefer, Session
 from sqlalchemy.sql import select
 
-from api.models.main_models import Users, UserRoles, SecurityScopes
-from api.schemas import security_schemas
+from api.models.user import Users, UserRoles, SecurityScopes, UserSessions
+from api.schemas import security as security_schema
+from api.config import settings
 from api.session import get_db
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-SECRET_KEY = "09d25e194fbb6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_HOURS = 8
+SECRET_KEY = settings.JWT_SECRET_KEY
+ALGORITHM = settings.JWT_ALGORITHM
+ACCESS_TOKEN_EXPIRE_HOURS = settings.ACCESS_TOKEN_EXPIRE_HOURS
+
+if not SECRET_KEY:
+    raise RuntimeError("JWT_SECRET_KEY environment variable must be set.")
 
 invalid_credentials_exception = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
@@ -36,6 +40,12 @@ missing_permissions_exception = HTTPException(
 expired_token_exception = HTTPException(
     status_code=440,
     detail="Token expired, please login again to receive a new one.",
+    headers={"WWW-Authenticate": "Bearer"},
+)
+
+inactive_session_exception = HTTPException(
+    status_code=440,
+    detail="Session is no longer active. Please login again.",
     headers={"WWW-Authenticate": "Bearer"},
 )
 
@@ -110,10 +120,14 @@ def get_current_user(
     db: Annotated[Session, Depends(get_db)],
     ) -> Users:
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = decode_access_token(token)
 
         username: str = payload.get("sub")
         if username is None:
+            raise invalid_credentials_exception
+
+        session_identifier: str | None = payload.get("sid")
+        if session_identifier is None:
             raise invalid_credentials_exception
 
         user = get_user(username=username, db=db)
@@ -121,13 +135,50 @@ def get_current_user(
         if user is None:
             raise invalid_credentials_exception
 
+        session = (
+            db.query(UserSessions)
+            .filter(
+                UserSessions.session_identifier == session_identifier,
+                UserSessions.user_id == user.id,
+                UserSessions.is_active.is_(True),
+                UserSessions.signed_out_at.is_(None),
+            )
+            .first()
+        )
+        if session is None:
+            raise inactive_session_exception
+
         return user
 
     except ExpiredSignatureError:
         raise expired_token_exception
 
+    except HTTPException:
+        raise
+
     except Exception:
         raise invalid_credentials_exception
+
+
+def decode_access_token(token: str, verify_exp: bool = True) -> dict:
+    decode_options = None
+    if not verify_exp:
+        decode_options = {"verify_exp": False}
+
+    return jwt.decode(
+        token,
+        SECRET_KEY,
+        algorithms=[ALGORITHM],
+        options=decode_options,
+    )
+
+
+def get_session_identifier_from_token(
+    token: str, verify_exp: bool = True
+) -> str | None:
+    payload = decode_access_token(token, verify_exp=verify_exp)
+    session_identifier: str | None = payload.get("sid")
+    return session_identifier
 
 
 # Provide a list of scope_strings, recieve the current user if those scopes are present, raise auth exception if not
@@ -150,10 +201,10 @@ authenticated_router = APIRouter(dependencies=[Depends(scoped_user(["read"]))])
 
 
 @authenticated_router.get(
-    "/users/me", response_model=security_schemas.User, tags=["Login"]
+    "/users/me", response_model=security_schema.User, tags=["Login"]
 )
 def read_users_me(
-    current_user: security_schemas.User = Depends(get_current_user),
+    current_user: security_schema.User = Depends(get_current_user),
 ):
     return current_user
 

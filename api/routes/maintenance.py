@@ -1,7 +1,6 @@
 from fastapi import Depends, APIRouter, Query
 from sqlalchemy import func
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
 from typing import List
 from datetime import datetime, date
 from fastapi.responses import StreamingResponse
@@ -9,17 +8,13 @@ from weasyprint import HTML
 from io import BytesIO
 from collections import defaultdict
 from matplotlib.pyplot import figure, close
-from api.models.main_models import (
-    Users,
-    Meters,
-    MeterActivities,
-    ActivityTypeLU,
-    Locations,
-    workOrders,
-    workOrderStatusLU,
-)
+from api.models.location import Locations
+from api.models.meter import ActivityTypeLU, MeterActivities, Meters
+from api.models.user import Users
+from api.models.work_order import workOrders, workOrderStatusLU
+from api.schemas import maintenance
 from api.session import get_db
-from api.enums import ScopedUser
+from api.auth.dependencies import ScopedUser
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
@@ -38,38 +33,10 @@ templates = Environment(
 authenticated_maintenance_router = APIRouter()
 public_maintenance_router = APIRouter()
 
-
-class MeterSummary(BaseModel):
-    meter: str
-    count: int
-
-
-class MaintenanceRow(BaseModel):
-    date_time: datetime
-    technician: str
-    meter: str
-    trss: str
-    number_of_repairs: int
-    number_of_pms: int
-
-
-class MaintenanceSummaryResponse(BaseModel):
-    repairs_by_meter: List[MeterSummary]
-    pms_by_meter: List[MeterSummary]
-    table_rows: List[MaintenanceRow]
-
-
-class HomeSummaryResponse(BaseModel):
-    completed_work_orders: int
-    repairs_processed: int
-    reinstallations_processed: int
-    preventative_maintenance_processed: int
-
-
 @public_maintenance_router.get(
     "/maintenance/home_summary",
     tags=["Maintenance"],
-    response_model=HomeSummaryResponse,
+    response_model=maintenance.HomeSummaryResponse,
 )
 def get_home_summary(db: Session = Depends(get_db)):
     completed_work_orders = (
@@ -105,7 +72,7 @@ def get_home_summary(db: Session = Depends(get_db)):
 @authenticated_maintenance_router.get(
     "/maintenance",
     tags=["Maintenance"],
-    response_model=MaintenanceSummaryResponse,
+    response_model=maintenance.MaintenanceSummaryResponse,
     dependencies=[Depends(ScopedUser.Read)],
 )
 def get_maintenance_summary(
