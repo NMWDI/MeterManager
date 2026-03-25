@@ -86,6 +86,9 @@ export default function WellSelectionMap({
   }, [wellQuery.hasNextPage, wellQuery.isFetchingNextPage]);
 
   const wellMarkers = wellQuery.data?.pages.flat() ?? [];
+  const selectedWellId = search.well_id;
+  const selectedWell =
+    wellMarkers.find((well: Well) => well.id === selectedWellId) ?? null;
 
   const handleSelectWell = (well: Well) => {
     navigate({
@@ -172,25 +175,51 @@ export default function WellSelectionMap({
                 }}
               >
                 {wellQuery.isSuccess &&
-                  wellMarkers.map((well: Well) => (
-                    <Marker
-                      key={well.id}
-                      position={[
-                        well.location?.latitude ?? 0,
-                        well.location?.longitude ?? 0,
-                      ]}
-                      eventHandlers={{
-                        click: () => handleSelectWell(well),
-                      }}
-                      icon={getWellIcon(well)}
-                    >
-                      <Tooltip>
-                        {well.name || well.ra_number || well.id}
-                      </Tooltip>
-                    </Marker>
-                  ))}
+                  wellMarkers.map((well: Well) => {
+                    if (well.id === selectedWellId) {
+                      return null;
+                    }
+
+                    return (
+                      <Marker
+                        key={well.id}
+                        position={[
+                          well.location?.latitude ?? 0,
+                          well.location?.longitude ?? 0,
+                        ]}
+                        eventHandlers={{
+                          click: () => handleSelectWell(well),
+                        }}
+                        icon={getWellIcon(well)}
+                      >
+                        <Tooltip>
+                          {well.name || well.ra_number || well.id}
+                        </Tooltip>
+                      </Marker>
+                    );
+                  })}
               </MarkerClusterGroup>
             </LayersControl.Overlay>
+            {selectedWell && (
+              <Marker
+                key={`selected-${selectedWell.id}`}
+                position={[
+                  selectedWell.location?.latitude ?? 0,
+                  selectedWell.location?.longitude ?? 0,
+                ]}
+                eventHandlers={{
+                  click: () => handleSelectWell(selectedWell),
+                }}
+                icon={getSelectedWellIcon(selectedWell)}
+                zIndexOffset={1000}
+              >
+                <Tooltip>
+                  {selectedWell.name ||
+                    selectedWell.ra_number ||
+                    selectedWell.id}
+                </Tooltip>
+              </Marker>
+            )}
             <TransporationLayer
               checked={mapOverlayNames.includes("Transportation")}
             />
@@ -271,4 +300,62 @@ const getWellIcon = (well: Well) => {
     return RedMapIcon;
   }
   return BlueMapIcon;
+};
+
+const createSelectedWellIcon = (icon: L.Icon) =>
+  L.divIcon({
+    className: "",
+    html: `
+      <div style="position: relative; width: 42px; height: 68px;">
+        <img
+          src="${icon.options.iconUrl}"
+          style="
+            position: absolute;
+            left: 1px;
+            top: 0;
+            width: 40px;
+            height: 66px;
+            filter: brightness(0);
+          "
+        />
+        <img
+          src="${icon.options.iconUrl}"
+          style="
+            position: absolute;
+            left: 2px;
+            top: 1px;
+            width: 38px;
+            height: 62px;
+            filter: brightness(0) invert(1);
+          "
+        />
+        <img
+          src="${icon.options.iconUrl}"
+          style="
+            position: absolute;
+            left: 4px;
+            top: 4px;
+            width: 34px;
+            height: 56px;
+          "
+        />
+      </div>
+    `,
+    iconSize: [42, 68],
+    iconAnchor: [21, 68],
+    popupAnchor: [1, -46],
+  });
+
+const SelectedBlueMapIcon = createSelectedWellIcon(BlueMapIcon);
+const SelectedRedMapIcon = createSelectedWellIcon(RedMapIcon);
+const SelectedBlackMapIcon = createSelectedWellIcon(BlackMapIcon);
+
+const getSelectedWellIcon = (well: Well) => {
+  if (well.well_status_id === WellStatus.PLUGGED) {
+    return SelectedBlackMapIcon;
+  }
+  if (well.chloride_group_id != null) {
+    return SelectedRedMapIcon;
+  }
+  return SelectedBlueMapIcon;
 };

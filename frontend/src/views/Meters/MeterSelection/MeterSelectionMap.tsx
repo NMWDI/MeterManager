@@ -98,6 +98,28 @@ export default function MeterSelectionMap({
       replace: true,
     });
   };
+  const selectedMeterId = search.meter_id;
+  const selectedMeter =
+    meterMarkers.data?.find(
+      (meter: MeterMapDTO) => meter.id === selectedMeterId,
+    ) ?? null;
+
+  const renderMarkerHtml = (color: string, isSelected: boolean) => {
+    const size = isSelected ? 32 : 12;
+    const borderWidth = isSelected ? 3 : 2;
+    const boxShadow = isSelected
+      ? "0 0 0 4px rgba(255, 255, 255, 0.95), 0 0 0 5px rgba(0, 0, 0, 0.95)"
+      : "none";
+
+    return `<div style="
+      background-color: ${color};
+      width: ${size}px;
+      height: ${size}px;
+      border-radius: 50%;
+      border: ${borderWidth}px solid black;
+      box-shadow: ${boxShadow};
+    "></div>`;
+  };
 
   return (
     <>
@@ -170,6 +192,10 @@ export default function MeterSelectionMap({
               >
                 {meterMarkers.isSuccess &&
                   meterMarkers.data.map((meter: MeterMapDTO) => {
+                    if (meter.id === selectedMeterId) {
+                      return null;
+                    }
+
                     const color = meter.last_pm
                       ? getMeterMarkerColor(meter.last_pm)
                       : "black";
@@ -186,7 +212,8 @@ export default function MeterSelectionMap({
                         }}
                         icon={L.divIcon({
                           className: "",
-                          html: `<div style="background-color: ${color}; width: 12px; height: 12px; border-radius: 50%; border: 2px solid black;"></div>`,
+                          html: renderMarkerHtml(color, false),
+                          iconSize: [12, 12],
                         })}
                       >
                         <Tooltip>{meter.serial_number}</Tooltip>
@@ -195,6 +222,31 @@ export default function MeterSelectionMap({
                   })}
               </MarkerClusterGroup>
             </LayersControl.Overlay>
+            {selectedMeter && (
+              <Marker
+                key={`selected-${selectedMeter.id}`}
+                position={[
+                  selectedMeter.location.latitude,
+                  selectedMeter.location.longitude,
+                ]}
+                eventHandlers={{
+                  click: () => onMeterSelection(selectedMeter.id),
+                }}
+                icon={L.divIcon({
+                  className: "",
+                  html: renderMarkerHtml(
+                    selectedMeter.last_pm
+                      ? getMeterMarkerColor(selectedMeter.last_pm)
+                      : "black",
+                    true,
+                  ),
+                  iconSize: [22, 22],
+                })}
+                zIndexOffset={1000}
+              >
+                <Tooltip>{selectedMeter.serial_number}</Tooltip>
+              </Marker>
+            )}
 
             {/* Section GeoJSON */}
             <LayersControl.Overlay

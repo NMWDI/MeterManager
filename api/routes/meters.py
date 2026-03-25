@@ -8,7 +8,13 @@ from fastapi_pagination import LimitOffsetPage
 from api.schemas import meter
 from api.schemas import well
 from api.models.location import LandOwners, Locations
-from api.models.meter import Meters, MeterStatusLU, MeterTypeLU, meterRegisters
+from api.models.meter import (
+    ActivityTypeLU,
+    Meters,
+    MeterStatusLU,
+    MeterTypeLU,
+    meterRegisters,
+)
 from api.models.well import Wells
 from api.routes.utils import _patch, _get
 from api.session import get_db
@@ -202,17 +208,32 @@ def get_meters_locations(
     if not meter_ids:
         return []  # Short-circuit if nothing matched
 
+    pm_activity_type_id = db.scalars(
+        select(ActivityTypeLU.id).where(
+            ActivityTypeLU.name == "Preventative Maintenance"
+        )
+    ).first()
+
+    if not pm_activity_type_id:
+        raise HTTPException(
+            status_code=500,
+            detail="Preventative Maintenance activity type is not configured.",
+        )
+
     # Query latest PMs for those meters
     pm_query = text(
         """
         SELECT MAX(timestamp_start) AS last_pm, meter_id
         FROM "MeterActivities"
-        WHERE activity_type_id = 4
+        WHERE activity_type_id = :pm_activity_type_id
           AND meter_id = ANY(:mids)
         GROUP BY meter_id
         """
     )
-    pm_years = db.execute(pm_query, {"mids": meter_ids}).fetchall()
+    pm_years = db.execute(
+        pm_query,
+        {"mids": meter_ids, "pm_activity_type_id": pm_activity_type_id},
+    ).fetchall()
     pm_dict = {row.meter_id: row.last_pm for row in pm_years}
 
     # Map to DTOs manually for added performance
