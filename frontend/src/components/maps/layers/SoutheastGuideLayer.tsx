@@ -37,8 +37,11 @@ const vertLine = [
 
 const labelIcon = (text: string) =>
   L.divIcon({
-    className: "",
+    className: "chlorides-report-label",
+    iconSize: [0, 0],
+    iconAnchor: [0, 0],
     html: `<div style="
+      display: inline-block;
       font-size: 12px;
       font-weight: 700;
       color: #0b3b86;
@@ -49,6 +52,7 @@ const labelIcon = (text: string) =>
       pointer-events: none;
       white-space: nowrap;
       backdrop-filter: blur(2px);
+      transform: translate(-50%, -50%);
     ">${text}</div>`,
   });
 
@@ -83,11 +87,35 @@ export const SoutheastGuideLayer = ({
           pathOptions={{ color: "#1976d2", weight: 2, dashArray: "6 6" }}
         />
 
-        {/* Labels (placed toward the center of each half) */}
-        <Marker position={[SE_LAT_MAX - (SE_LAT_MAX - SE_MID_LAT) / 2, SE_MID_LON]} icon={labelIcon("North")} />
-        <Marker position={[SE_LAT_MIN + (SE_MID_LAT - SE_LAT_MIN) / 2, SE_MID_LON]} icon={labelIcon("South")} />
-        <Marker position={[SE_MID_LAT, SE_LON_MAX - (SE_LON_MAX - SE_MID_LON) / 2]} icon={labelIcon("East")} />
-        <Marker position={[SE_MID_LAT, SE_LON_MIN + (SE_MID_LON - SE_LON_MIN) / 2]} icon={labelIcon("West")} />
+        {/* Labels placed near the center of each quadrant */}
+        <Marker
+          position={[
+            SE_MID_LAT + (SE_LAT_MAX - SE_MID_LAT) / 2,
+            SE_LON_MIN + (SE_MID_LON - SE_LON_MIN) / 2,
+          ]}
+          icon={labelIcon("North West")}
+        />
+        <Marker
+          position={[
+            SE_MID_LAT + (SE_LAT_MAX - SE_MID_LAT) / 2,
+            SE_MID_LON + (SE_LON_MAX - SE_MID_LON) / 2,
+          ]}
+          icon={labelIcon("North East")}
+        />
+        <Marker
+          position={[
+            SE_LAT_MIN + (SE_MID_LAT - SE_LAT_MIN) / 2,
+            SE_LON_MIN + (SE_MID_LON - SE_LON_MIN) / 2,
+          ]}
+          icon={labelIcon("South West")}
+        />
+        <Marker
+          position={[
+            SE_LAT_MIN + (SE_MID_LAT - SE_LAT_MIN) / 2,
+            SE_MID_LON + (SE_LON_MAX - SE_MID_LON) / 2,
+          ]}
+          icon={labelIcon("South East")}
+        />
 
         {/* Optional: center dot where lines cross */}
         {/* <Marker position={[SE_MID_LAT, SE_MID_LON]} icon={L.divIcon({ html: '<div style="width:8px;height:8px;border-radius:50%;background:#1976d2;border:2px solid white"></div>' })} /> */}

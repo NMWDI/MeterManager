@@ -12,7 +12,7 @@ class MinMaxAvgMedCount(BaseModel):
 
 
 class ChlorideReportNums(BaseModel):
-    north: MinMaxAvgMedCount
-    south: MinMaxAvgMedCount
-    east: MinMaxAvgMedCount
-    west: MinMaxAvgMedCount
+    north_west: MinMaxAvgMedCount
+    north_east: MinMaxAvgMedCount
+    south_west: MinMaxAvgMedCount
+    south_east: MinMaxAvgMedCount

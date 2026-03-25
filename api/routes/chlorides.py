@@ -107,7 +107,8 @@ def get_chlorides_report(
     db: Session = Depends(get_db),
 ):
     """
-    Returns min/max/avg for north/south/east/west halves **within the SE quadrant of New Mexico**,
+    Returns min/max/avg for north-west/north-east/south-west/south-east quadrants
+    within the SE quadrant of New Mexico,
     over the specified [from_month, to_month] inclusive range, for chloride wells in the given group.
     """
 
@@ -156,32 +157,33 @@ def get_chlorides_report(
         )
     ]
 
-    north_vals: List[float] = []
-    south_vals: List[float] = []
-    east_vals:  List[float] = []
-    west_vals:  List[float] = []
+    north_west_vals: List[float] = []
+    north_east_vals: List[float] = []
+    south_west_vals: List[float] = []
+    south_east_vals: List[float] = []
 
     for val, lat, lon in se_rows:
         if val is None:
             continue  # skip null chloride values
 
-        # North vs South halves within the SE quadrant
-        if float(lat) >= SE_MID_LAT:
-            north_vals.append(float(val))
-        else:
-            south_vals.append(float(val))
+        lat_value = float(lat)
+        lon_value = float(lon)
+        chloride_value = float(val)
 
-        # East vs West halves within the SE quadrant
-        if float(lon) >= SE_MID_LON:
-            east_vals.append(float(val))
+        if lat_value >= SE_MID_LAT and lon_value < SE_MID_LON:
+            north_west_vals.append(chloride_value)
+        elif lat_value >= SE_MID_LAT and lon_value >= SE_MID_LON:
+            north_east_vals.append(chloride_value)
+        elif lat_value < SE_MID_LAT and lon_value < SE_MID_LON:
+            south_west_vals.append(chloride_value)
         else:
-            west_vals.append(float(val))
+            south_east_vals.append(chloride_value)
 
     return chlorides.ChlorideReportNums(
-        north=_stats(north_vals),
-        south=_stats(south_vals),
-        east=_stats(east_vals),
-        west=_stats(west_vals),
+        north_west=_stats(north_west_vals),
+        north_east=_stats(north_east_vals),
+        south_west=_stats(south_west_vals),
+        south_east=_stats(south_east_vals),
     )
 
 
@@ -196,7 +198,7 @@ def download_chlorides_report_pdf(
     db: Session = Depends(get_db),
 ):
     """
-    Generate a PDF chloride report (north/south/east/west stats)
+    Generate a PDF chloride report (north-west/north-east/south-west/south-east stats)
     for the SE quadrant of New Mexico.
     """
     # Re-use existing logic
