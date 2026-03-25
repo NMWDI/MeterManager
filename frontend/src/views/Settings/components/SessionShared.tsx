@@ -16,8 +16,9 @@ import type { ComponentType } from "react";
 function parseUtcDate(value?: string | null) {
   if (!value) return null;
 
-  const normalizedValue =
-    /[zZ]|[+-]\d{2}:\d{2}$/.test(value) ? value : `${value}Z`;
+  const normalizedValue = /[zZ]|[+-]\d{2}:\d{2}$/.test(value)
+    ? value
+    : `${value}Z`;
   const parsedDate = new Date(normalizedValue);
 
   return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
@@ -63,7 +64,11 @@ export function formatRelativeTime(value?: string | null) {
 
 export function formatReasonLabel(value?: string | null) {
   if (!value) return "";
-  return value.split("_").join(" ");
+
+  return value
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 }
 
 export function getDeviceIcon(

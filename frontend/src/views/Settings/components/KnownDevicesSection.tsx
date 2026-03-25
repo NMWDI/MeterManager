@@ -1,4 +1,4 @@
-import { Alert, Box, Skeleton, Stack } from "@mui/material";
+import { Alert, Box, Skeleton, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { KnownDeviceSummary } from "@/interfaces";
 import {
@@ -51,29 +51,31 @@ function KnownDeviceRow({ device }: { device: KnownDeviceSummary }) {
         <Box
           sx={{
             display: "grid",
-            gridTemplateColumns: "repeat(8, minmax(0, 1fr))",
+            gridTemplateColumns: "repeat(18, minmax(0, 1fr))",
             gap: 1,
           }}
         >
-          <Box sx={{ gridColumn: "1 / 2", gridRow: "1 / 2" }}>
+          <Box sx={{ gridColumn: "1 / 4", gridRow: "1 / 2" }}>
             <Box sx={{ color: "text.secondary", fontSize: 12 }}>Sessions</Box>
-            <Box sx={{ fontSize: 14 }}>{device.session_count}</Box>
+            <Typography component="span">{device.session_count}</Typography>
           </Box>
-          <Box sx={{ gridColumn: "2 / 3", gridRow: "1 / 2" }}>
+          <Box sx={{ gridColumn: "4 / 7", gridRow: "1 / 2" }}>
             <Box sx={{ color: "text.secondary", fontSize: 12 }}>Active now</Box>
-            <Box sx={{ fontSize: 14 }}>{device.active_session_count}</Box>
+            <Typography component="span">
+              {device.active_session_count}
+            </Typography>
           </Box>
-          <Box sx={{ gridColumn: "3 / 6", gridRow: "1 / 2" }}>
+          <Box sx={{ gridColumn: "7 / 13", gridRow: "1 / 2" }}>
             <Box sx={{ color: "text.secondary", fontSize: 12 }}>First seen</Box>
-            <Box sx={{ fontSize: 14 }}>
+            <Typography component="span">
               {formatDateTime(device.signed_in_at_first)}
-            </Box>
+            </Typography>
           </Box>
-          <Box sx={{ gridColumn: "6 / 9", gridRow: "1 / 2" }}>
+          <Box sx={{ gridColumn: "13 / 19", gridRow: "1 / 2" }}>
             <Box sx={{ color: "text.secondary", fontSize: 12 }}>Last seen</Box>
-            <Box sx={{ fontSize: 14 }}>
+            <Typography component="span">
               {formatDateTime(device.last_seen_at)}
-            </Box>
+            </Typography>
           </Box>
         </Box>
       </Stack>
@@ -94,8 +96,10 @@ export function KnownDevicesSection({
     <>
       {isLoading ? (
         <Stack spacing={1}>
-          <Skeleton variant="rounded" height={112} />
-          <Skeleton variant="rounded" height={112} />
+          <Skeleton variant="rounded" height={120} sx={{ borderRadius: 2.5 }} />
+          <Skeleton variant="rounded" height={120} sx={{ borderRadius: 2.5 }} />
+          <Skeleton variant="rounded" height={120} sx={{ borderRadius: 2.5 }} />
+          <Skeleton variant="rounded" height={120} sx={{ borderRadius: 2.5 }} />
         </Stack>
       ) : isError ? (
         <Alert severity="error">Unable to load known devices right now.</Alert>

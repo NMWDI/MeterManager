@@ -6,6 +6,7 @@ import {
   Skeleton,
   Stack,
   Switch,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
@@ -75,30 +76,52 @@ function SessionRow({
         <Box
           sx={{
             display: "grid",
-            gridTemplateColumns: { xs: "1fr", sm: "repeat(3, minmax(0, 1fr))" },
+            gridTemplateColumns: {
+              xs: "1fr",
+              md: "repeat(3, minmax(0, 1fr))",
+            },
             gap: 1,
           }}
         >
           <SessionMetaItem
             label="Signed in"
-            value={formatDateTime(session.signed_in_at)}
+            value={
+              <Typography component="span">
+                {formatDateTime(session.signed_in_at)}
+              </Typography>
+            }
           />
+
           <SessionMetaItem
             label="Last seen"
-            value={`${formatDateTime(session.last_seen_at)} (${formatRelativeTime(
-              session.last_seen_at,
-            )})`}
+            value={
+              <Tooltip
+                title={formatRelativeTime(session.last_seen_at)}
+                arrow
+                placement="bottom"
+              >
+                <Typography
+                  component="span"
+                  sx={{ display: "inline-block", cursor: "help" }}
+                >
+                  {formatDateTime(session.last_seen_at)}
+                </Typography>
+              </Tooltip>
+            }
           />
+
           <SessionMetaItem
             label="Sign-out status"
             value={
-              session.signed_out_at
-                ? `${formatDateTime(session.signed_out_at)}${
-                    session.sign_out_reason_name
-                      ? ` • ${formatReasonLabel(session.sign_out_reason_name)}`
-                      : ""
-                  }`
-                : "Still active"
+              session.signed_out_at ? (
+                <Typography component="span">
+                  {session.sign_out_reason_name
+                    ? formatReasonLabel(session.sign_out_reason_name)
+                    : "Signed out"}
+                </Typography>
+              ) : (
+                "Still Active"
+              )
             }
           />
         </Box>
@@ -164,13 +187,13 @@ export function SessionHistorySection({
               onChange={(_, checked) => onShowClosedSessionsChange(checked)}
             />
           }
-          label={`Show Closed Session${closedSessions?.length > 1 ? "s" : null}`}
+          label={`Show Closed Session${(closedSessions?.length ?? 0) > 1 ? "s" : ""}`}
         />
       </Stack>
       {isLoading ? (
         <Stack spacing={1}>
-          <Skeleton variant="rounded" height={126} />
-          <Skeleton variant="rounded" height={126} />
+          <Skeleton variant="rounded" height={165} sx={{ borderRadius: 2.5 }} />
+          <Skeleton variant="rounded" height={165} sx={{ borderRadius: 2.5 }} />
         </Stack>
       ) : isError ? (
         <Alert severity="error">
