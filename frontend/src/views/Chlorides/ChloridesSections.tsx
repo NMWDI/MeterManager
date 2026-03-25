@@ -49,6 +49,7 @@ export const ChloridesPlotSection = ({
 type ChloridesTableSectionProps = {
   rows: RegionMeasurementDTO[];
   isRegionSelected: boolean;
+  isLoading: boolean;
   isError: boolean;
   onRetry: () => void;
   onOpenModal: () => void;
@@ -71,6 +72,7 @@ type ChloridesTableSectionProps = {
 export const ChloridesTableSection = ({
   rows,
   isRegionSelected,
+  isLoading,
   isError,
   onRetry,
   onOpenModal,
@@ -91,6 +93,7 @@ export const ChloridesTableSection = ({
     <Table
       rows={rows}
       isRegionSelected={isRegionSelected}
+      isLoading={isLoading}
       onOpenModal={onOpenModal}
       onMeasurementSelect={onMeasurementSelect}
     />

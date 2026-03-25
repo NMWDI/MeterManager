@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Box, Button } from "@mui/material";
+import { Box, Button, CircularProgress, Typography } from "@mui/material";
 import { DataGrid, GridPagination, GridColDef } from "@mui/x-data-grid";
 import { Add } from "@mui/icons-material";
 import dayjs, { Dayjs } from "dayjs";
@@ -20,17 +20,20 @@ declare module "@mui/x-data-grid" {
 interface FooterExtraProps {
   onOpenModal: () => void;
   isRegionSelected: boolean;
+  isLoading: boolean;
 }
 
 export const Table = ({
   rows,
   onOpenModal,
   isRegionSelected,
+  isLoading,
   onMeasurementSelect,
 }: {
   rows: RegionMeasurementDTO[];
   onOpenModal: () => void;
   isRegionSelected: boolean;
+  isLoading: boolean;
   onMeasurementSelect: (data: {
     row: {
       id: number;
@@ -94,6 +97,7 @@ export const Table = ({
       <DataGrid
         rows={rows}
         columns={columns}
+        loading={isLoading}
         pagination
         initialState={{
           pagination: { paginationModel: { page: 0, pageSize: 25 } },
@@ -114,11 +118,13 @@ export const Table = ({
         }}
         slots={{
           footer: Footer,
+          loadingOverlay: LoadingOverlay,
         }}
         slotProps={{
           footer: {
             onOpenModal: onOpenModal,
             isRegionSelected: isRegionSelected,
+            isLoading: isLoading,
           },
         }}
         onRowClick={onMeasurementSelect}
@@ -130,9 +136,11 @@ export const Table = ({
 const Footer = ({
   onOpenModal,
   isRegionSelected,
+  isLoading,
 }: {
   onOpenModal?: () => void;
   isRegionSelected?: boolean;
+  isLoading?: boolean;
 }) => {
   const isAuthenticated = useIsAuthenticated();
   return (
@@ -143,6 +151,7 @@ const Footer = ({
             variant="contained"
             size="small"
             onClick={onOpenModal}
+            disabled={isLoading}
             sx={{ flexShrink: 0, width: { xs: "100%", sm: "auto" }, ml: 1.5 }}
             startIcon={<Add fontSize="small" />}
           >
@@ -154,3 +163,24 @@ const Footer = ({
     </Box>
   );
 };
+
+const LoadingOverlay = () => (
+  <Box
+    sx={{
+      height: "100%",
+      minHeight: 220,
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 1.5,
+      bgcolor: "rgba(255, 255, 255, 0.7)",
+      pointerEvents: "none",
+    }}
+  >
+    <CircularProgress size={36} thickness={4} />
+    <Typography variant="body2" color="text.secondary">
+      Loading table data...
+    </Typography>
+  </Box>
+);

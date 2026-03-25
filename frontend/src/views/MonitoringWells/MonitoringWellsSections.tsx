@@ -84,6 +84,7 @@ type MonitoringWellsTableSectionProps = {
   rows: WellMeasurementDTO[];
   selectedWell?: MonitoredWell;
   isWellSelected: boolean;
+  isLoading: boolean;
   isError: boolean;
   onRetry: () => void;
   onOpenModal: () => void;
@@ -103,6 +104,7 @@ export const MonitoringWellsTableSection = ({
   rows,
   selectedWell,
   isWellSelected,
+  isLoading,
   isError,
   onRetry,
   onOpenModal,
@@ -124,6 +126,7 @@ export const MonitoringWellsTableSection = ({
       rows={rows}
       selectedWell={selectedWell}
       isWellSelected={isWellSelected}
+      isLoading={isLoading}
       onOpenModal={onOpenModal}
       onMeasurementSelect={onMeasurementSelect}
     />

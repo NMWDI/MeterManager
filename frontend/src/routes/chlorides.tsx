@@ -357,6 +357,7 @@ function Chlorides() {
               <ChloridesTableSection
                 rows={manualQuery?.data ?? []}
                 isRegionSelected={!!regionId}
+                isLoading={manualQuery.isLoading}
                 isError={manualQuery.isError}
                 onRetry={() => manualQuery.refetch()}
                 onOpenModal={() => setIsNewModalOpen(true)}

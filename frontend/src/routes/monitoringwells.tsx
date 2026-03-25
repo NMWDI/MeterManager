@@ -441,6 +441,7 @@ function MonitoringWells() {
                   (well) => well.id == wellId,
                 )}
                 isWellSelected={!!wellId}
+                isLoading={isLoadingManual}
                 isError={!!errorManual}
                 onRetry={() => refetchManual()}
                 onOpenModal={() => setIsNewModalOpen(true)}
