@@ -57,7 +57,7 @@ def _serialize_activity(
 ) -> ose.ActivityDTO:
     notes_strings = [note.note for note in activity.notes]
     parts_used_strings = [
-        f"{part.part_type.name} ({part.part_number})" for part in activity.parts_used
+        f"{part.part_type.name} ({part.part_number})" for part in activity.parts_used_links
     ]
     services_performed_strings = [
         service.service_name for service in activity.services_performed
@@ -132,7 +132,7 @@ def get_shared_history(
             select(MeterActivities)
             .options(
                 joinedload(MeterActivities.activity_type),
-                joinedload(MeterActivities.parts_used),
+                joinedload(MeterActivities.parts_used_links),
                 joinedload(MeterActivities.meter),
                 joinedload(MeterActivities.work_order),
                 joinedload(MeterActivities.well),
