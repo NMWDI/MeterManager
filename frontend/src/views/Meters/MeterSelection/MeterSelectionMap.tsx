@@ -121,6 +121,13 @@ export default function MeterSelectionMap({
     "></div>`;
   };
 
+  const getMarkerColor = (meter: MeterMapDTO) => {
+    const markerDate =
+      meter.last_pm_meter_activity ?? meter.last_location_only_meter_activity;
+
+    return markerDate ? getMeterMarkerColor(markerDate) : "black";
+  };
+
   return (
     <>
       <Box
@@ -196,9 +203,7 @@ export default function MeterSelectionMap({
                       return null;
                     }
 
-                    const color = meter.last_pm
-                      ? getMeterMarkerColor(meter.last_pm)
-                      : "black";
+                    const color = getMarkerColor(meter);
 
                     return (
                       <Marker
@@ -235,9 +240,7 @@ export default function MeterSelectionMap({
                 icon={L.divIcon({
                   className: "",
                   html: renderMarkerHtml(
-                    selectedMeter.last_pm
-                      ? getMeterMarkerColor(selectedMeter.last_pm)
-                      : "black",
+                    getMarkerColor(selectedMeter),
                     true,
                   ),
                   iconSize: [22, 22],

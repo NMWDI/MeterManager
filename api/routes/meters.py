@@ -213,28 +213,62 @@ def get_meters_locations(
             ActivityTypeLU.name == "Preventative Maintenance"
         )
     ).first()
+    location_only_activity_type_id = db.scalars(
+        select(ActivityTypeLU.id).where(ActivityTypeLU.name == "Location Only")
+    ).first()
 
     if not pm_activity_type_id:
         raise HTTPException(
             status_code=500,
             detail="Preventative Maintenance activity type is not configured.",
         )
+    if not location_only_activity_type_id:
+        raise HTTPException(
+            status_code=500,
+            detail="Location Only activity type is not configured.",
+        )
 
-    # Query latest PMs for those meters
-    pm_query = text(
+    # Query latest PMs tied directly to the meter
+    meter_pm_query = text(
         """
-        SELECT MAX(timestamp_start) AS last_pm, meter_id
+        SELECT MAX(timestamp_start) AS last_pm_meter_activity, meter_id
         FROM "MeterActivities"
         WHERE activity_type_id = :pm_activity_type_id
           AND meter_id = ANY(:mids)
         GROUP BY meter_id
         """
     )
-    pm_years = db.execute(
-        pm_query,
+    meter_pm_rows = db.execute(
+        meter_pm_query,
         {"mids": meter_ids, "pm_activity_type_id": pm_activity_type_id},
     ).fetchall()
-    pm_dict = {row.meter_id: row.last_pm for row in pm_years}
+    meter_pm_dict = {
+        row.meter_id: row.last_pm_meter_activity for row in meter_pm_rows
+    }
+
+    location_only_dict = {}
+
+    if meter_ids:
+        location_only_query = text(
+            """
+            SELECT MAX(timestamp_start) AS last_location_only_meter_activity, meter_id
+            FROM "MeterActivities"
+            WHERE activity_type_id = :location_only_activity_type_id
+              AND meter_id = ANY(:mids)
+            GROUP BY meter_id
+            """
+        )
+        location_only_rows = db.execute(
+            location_only_query,
+            {
+                "mids": meter_ids,
+                "location_only_activity_type_id": location_only_activity_type_id,
+            },
+        ).fetchall()
+        location_only_dict = {
+            row.meter_id: row.last_location_only_meter_activity
+            for row in location_only_rows
+        }
 
     # Map to DTOs manually for added performance
     meter_map_list = []
@@ -254,7 +288,8 @@ def get_meters_locations(
                     "longitude": row.longitude,
                     "trss": row.trss,
                 },
-                last_pm=pm_dict.get(row.id),
+                last_pm_meter_activity=meter_pm_dict.get(row.id),
+                last_location_only_meter_activity=location_only_dict.get(row.id),
             )
         )
 
