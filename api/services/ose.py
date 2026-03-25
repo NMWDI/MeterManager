@@ -1,6 +1,7 @@
 from datetime import datetime
 import os
 
+from api.models.part import PartsUsed
 from fastapi import HTTPException
 from sqlalchemy import and_, select
 from sqlalchemy.orm import Session, joinedload, selectinload
@@ -57,7 +58,9 @@ def _serialize_activity(
 ) -> ose.ActivityDTO:
     notes_strings = [note.note for note in activity.notes]
     parts_used_strings = [
-        f"{part.part_type.name} ({part.part_number})" for part in activity.parts_used_links
+        f"{part.part.name} x{part.count}"
+        for part in activity.parts_used_links
+        if part.part
     ]
     services_performed_strings = [
         service.service_name for service in activity.services_performed
@@ -132,10 +135,12 @@ def get_shared_history(
             select(MeterActivities)
             .options(
                 joinedload(MeterActivities.activity_type),
-                joinedload(MeterActivities.parts_used_links),
+                joinedload(MeterActivities.parts_used_links).joinedload(PartsUsed.part),
                 joinedload(MeterActivities.meter),
                 joinedload(MeterActivities.work_order),
                 joinedload(MeterActivities.well),
+                joinedload(MeterActivities.notes),
+                joinedload(MeterActivities.services_performed),
                 selectinload(MeterActivities.photos),
             )
             .filter(
