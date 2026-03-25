@@ -72,6 +72,7 @@ export const Topbar = ({
   const user = authUser();
   const role: string = user?.user_role?.name;
   const fullName = user?.full_name ?? user?.display_name ?? "Unknown";
+  const displayName = user?.display_name ?? "Unknown";
   const email = user?.email ?? "No email available";
   const isLoggedIn = !!user;
   const unreadNotificationsQuery = useGetUnreadNotificationCount({
@@ -384,7 +385,7 @@ export const Topbar = ({
                     }}
                     noWrap
                   >
-                    {fullName}
+                    {displayName}
                   </Typography>
                   <Typography
                     variant="caption"
