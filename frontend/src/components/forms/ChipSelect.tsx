@@ -3,6 +3,7 @@ import {
   Chip,
   FormControl,
   InputLabel,
+  ListItemText,
   MenuItem,
   OutlinedInput,
   Select,
@@ -15,16 +16,18 @@ interface chipselectitem {
 }
 
 export default function ChipSelect({
+  selected_ids,
   selected_values,
   options,
   label,
-  onSelect,
+  onChange,
   onDelete,
 }: {
+  selected_ids?: number[];
   selected_values?: chipselectitem[];
   options?: chipselectitem[];
   label: string;
-  onSelect: (selected_id: number) => void;
+  onChange: (selected_ids: number[]) => void;
   onDelete: (delete_id: number) => void;
 }) {
   return (
@@ -32,14 +35,12 @@ export default function ChipSelect({
       <InputLabel>{label}</InputLabel>
       <Select
         multiple
-        value={selected_values ?? []}
-        onChange={(event: any) =>
-          onSelect(event.target.value[event.target.value.length - 1])
-        }
+        value={selected_ids ?? []}
+        onChange={(event: any) => onChange(event.target.value)}
         input={<OutlinedInput label={label} />}
-        renderValue={(selected) => (
+        renderValue={() => (
           <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-            {selected.map((value, _) => (
+            {selected_values?.map((value) => (
               <Chip
                 key={value.id}
                 label={value.name}
@@ -57,7 +58,7 @@ export default function ChipSelect({
       >
         {options?.map((option: chipselectitem) => (
           <MenuItem key={option.id} value={option.id}>
-            {option.name}
+            <ListItemText primary={option.name} />
           </MenuItem>
         ))}
       </Select>

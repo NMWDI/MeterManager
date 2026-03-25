@@ -121,6 +121,18 @@ export const MeterHistory = ({
   };
 
   // Function to convert MeterHistoryDTO to PatchMeterActivity
+  function getHistoryItemParts(historyItem: MeterHistoryDTO) {
+    const directParts = historyItem.history_item.parts_used;
+    if (Array.isArray(directParts)) return directParts;
+
+    const partLinks = historyItem.history_item.parts_used_links;
+    if (!Array.isArray(partLinks)) return [];
+
+    return partLinks
+      .map((link: any) => link.part)
+      .filter((part: any) => part != null);
+  }
+
   function convertHistoryActivity(
     historyItem: MeterHistoryDTO,
   ): PatchActivityForm {
@@ -150,7 +162,7 @@ export const MeterHistory = ({
 
       notes: historyItem.history_item.notes,
       services: historyItem.history_item.services_performed,
-      parts_used: historyItem.history_item.parts_used,
+      parts_used: getHistoryItemParts(historyItem),
 
       ose_share: historyItem.history_item.ose_share,
     };

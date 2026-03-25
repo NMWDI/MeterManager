@@ -15,6 +15,9 @@ export const ServicesChipSelect = ({ name, control }: any) => {
       render={({ field }) => {
         return (
           <ChipSelect
+            selected_ids={
+              field.value?.map((service: ServiceTypeLU) => service.id) ?? []
+            }
             selected_values={
               field.value?.map((service: ServiceTypeLU) => ({
                 id: service.id,
@@ -28,17 +31,20 @@ export const ServicesChipSelect = ({ name, control }: any) => {
               })) ?? []
             }
             label="Services"
-            onSelect={(selected_id) => {
-              field.onChange([
-                ...field.value,
-                servicesList.data?.find(
-                  (service: ServiceTypeLU) => service.id === selected_id,
-                ),
-              ]);
+            onChange={(selected_ids) => {
+              field.onChange(
+                selected_ids
+                  .map((selected_id) =>
+                    servicesList.data?.find(
+                      (service: ServiceTypeLU) => service.id === selected_id,
+                    ),
+                  )
+                  .filter(Boolean),
+              );
             }}
             onDelete={(delete_id) => {
               field.onChange(
-                field.value.filter(
+                (field.value ?? []).filter(
                   (service: ServiceTypeLU) => service.id !== delete_id,
                 ),
               );

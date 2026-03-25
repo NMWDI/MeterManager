@@ -87,7 +87,7 @@ export const SelectedActivityDetails = ({
 
       note_ids: data.notes.map((note: any) => note.id),
       service_ids: data.services.map((service: any) => service.id),
-      part_ids: data.parts_used.map((part: any) => part.id),
+      part_ids: (data.parts_used ?? []).map((part: any) => part.id),
     };
     updateActivity.mutate(activity_data);
   };

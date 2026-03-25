@@ -15,6 +15,7 @@ export const NotesChipSelect = ({ name, control }: any) => {
       render={({ field }) => {
         return (
           <ChipSelect
+            selected_ids={field.value?.map((note: NoteTypeLU) => note.id) ?? []}
             selected_values={
               field.value?.map((note: NoteTypeLU) => ({
                 id: note.id,
@@ -28,17 +29,22 @@ export const NotesChipSelect = ({ name, control }: any) => {
               })) ?? []
             }
             label="Notes"
-            onSelect={(selected_id) => {
-              field.onChange([
-                ...field.value,
-                notesList.data?.find(
-                  (note: NoteTypeLU) => note.id === selected_id,
-                ),
-              ]);
+            onChange={(selected_ids) => {
+              field.onChange(
+                selected_ids
+                  .map((selected_id) =>
+                    notesList.data?.find(
+                      (note: NoteTypeLU) => note.id === selected_id,
+                    ),
+                  )
+                  .filter(Boolean),
+              );
             }}
             onDelete={(delete_id) => {
               field.onChange(
-                field.value.filter((note: NoteTypeLU) => note.id !== delete_id),
+                (field.value ?? []).filter(
+                  (note: NoteTypeLU) => note.id !== delete_id,
+                ),
               );
             }}
           />

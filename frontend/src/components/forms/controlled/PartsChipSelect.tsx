@@ -15,28 +15,40 @@ export const PartsChipSelect = ({ name, control, meterid }: any) => {
       render={({ field }) => {
         return (
           <ChipSelect
+            selected_ids={field.value?.map((part: Part) => part.id) ?? []}
             selected_values={
               field.value?.map((part: Part) => ({
                 id: part.id,
-                name: part.part_type?.name + " " + part.part_number,
+                name: [part.part_type?.name, part.part_number]
+                  .filter(Boolean)
+                  .join(" "),
               })) ?? []
             }
             options={
               partsList.data?.map((part: Part) => ({
                 id: part.id,
-                name: part.part_type?.name + " " + part.part_number,
+                name: [part.part_type?.name, part.part_number]
+                  .filter(Boolean)
+                  .join(" "),
               })) ?? []
             }
             label="Parts Used"
-            onSelect={(selected_id) => {
-              field.onChange([
-                ...field.value,
-                partsList.data?.find((part: Part) => part.id === selected_id),
-              ]);
+            onChange={(selected_ids) => {
+              field.onChange(
+                selected_ids
+                  .map((selected_id) =>
+                    partsList.data?.find(
+                      (part: Part) => part.id === selected_id,
+                    ),
+                  )
+                  .filter(Boolean),
+              );
             }}
             onDelete={(delete_id) => {
               field.onChange(
-                field.value.filter((part: Part) => part.id !== delete_id),
+                (field.value ?? []).filter(
+                  (part: Part) => part.id !== delete_id,
+                ),
               );
             }}
           />
