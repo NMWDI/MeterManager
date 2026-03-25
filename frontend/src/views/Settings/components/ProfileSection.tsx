@@ -171,14 +171,14 @@ export function ProfileSection({
           description="Upload or replace your account image."
         >
           <Grid container spacing={1.5} alignItems="flex-start">
-            <Grid item xs={12} md={8}>
+            <Grid item xs={12} md={6}>
               <ImageUploadWithPreview
                 key={avatarUploadKey}
                 fileLimit={1}
                 onFilesChange={setAvatarFiles}
               />
             </Grid>
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={6}>
               <Stack
                 direction="row"
                 spacing={1}
