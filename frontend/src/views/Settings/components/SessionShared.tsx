@@ -13,19 +13,31 @@ import {
 } from "@mui/icons-material";
 import type { ComponentType } from "react";
 
+function parseUtcDate(value?: string | null) {
+  if (!value) return null;
+
+  const normalizedValue =
+    /[zZ]|[+-]\d{2}:\d{2}$/.test(value) ? value : `${value}Z`;
+  const parsedDate = new Date(normalizedValue);
+
+  return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
+}
+
 export function formatDateTime(value?: string | null) {
-  if (!value) return "Not available";
+  const parsedDate = parseUtcDate(value);
+  if (!parsedDate) return "Not available";
 
   return new Intl.DateTimeFormat("en-US", {
     dateStyle: "medium",
     timeStyle: "short",
-  }).format(new Date(value));
+  }).format(parsedDate);
 }
 
 export function formatRelativeTime(value?: string | null) {
-  if (!value) return "Unknown";
+  const parsedDate = parseUtcDate(value);
+  if (!parsedDate) return "Unknown";
 
-  const timestamp = new Date(value).getTime();
+  const timestamp = parsedDate.getTime();
   const diffMs = timestamp - Date.now();
   const absMinutes = Math.round(Math.abs(diffMs) / (1000 * 60));
 
