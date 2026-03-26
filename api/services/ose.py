@@ -58,7 +58,7 @@ def _serialize_activity(
 ) -> ose.ActivityDTO:
     notes_strings = [note.note for note in activity.notes]
     parts_used_strings = [
-        f"{part.part.name} x{part.count}"
+        f"{part.part.part_number}{f' - {part.part.description}' if part.part.description else ''} x{part.count}"
         for part in activity.parts_used_links
         if part.part
     ]
