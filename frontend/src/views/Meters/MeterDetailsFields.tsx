@@ -4,7 +4,14 @@ import { enqueueSnackbar } from "notistack";
 import { useAuthUser } from "react-auth-kit";
 import { useNavigate } from "@tanstack/react-router";
 import { Add, Grading, Save, SaveAs } from "@mui/icons-material";
-import { Button, Grid, Card, CardContent, InputAdornment } from "@mui/material";
+import {
+  Button,
+  Grid,
+  Card,
+  CardContent,
+  InputAdornment,
+  Skeleton,
+} from "@mui/material";
 import {
   Table,
   TableBody,
@@ -22,6 +29,7 @@ import {
   ControlledWellSelection,
   ControlledMeterStatusTypeSelect,
   ControlledMeterRegisterSelect,
+  FieldLoadingSkeleton,
 } from "@/components";
 import { SecurityScope, Meter } from "@/interfaces";
 import { useCreateMeter, useGetMeter, useUpdateMeter } from "@/service";
@@ -50,6 +58,8 @@ export const MeterDetailsFields = ({
     )
     .includes("admin");
   const [isInitialLoad, setIsInitialLoad] = useState(true); //Use to disable fields on initial load
+  const isSelectedMeterLoading =
+    !meterAddMode && selectedMeterID !== undefined && meterDetails.isLoading;
 
   const {
     handleSubmit,
@@ -115,6 +125,48 @@ export const MeterDetailsFields = ({
       },
     });
   };
+
+  if (isSelectedMeterLoading) {
+    return (
+      <Card>
+        <CustomCardHeader title="Selected Meter Details" icon={Grading} />
+        <CardContent>
+          <Grid container spacing={2}>
+            {Array.from({ length: 6 }).map((_, index) => (
+              <Grid item xs={12} lg={6} key={index}>
+                <FieldLoadingSkeleton />
+              </Grid>
+            ))}
+            <Grid item xs={12}>
+              <Skeleton
+                variant="rounded"
+                height={115}
+                sx={{ borderRadius: 1 }}
+              />
+            </Grid>
+            {Array.from({ length: 4 }).map((_, index) => (
+              <Grid item xs={12} lg={6} key={`tail-${index}`}>
+                <FieldLoadingSkeleton />
+              </Grid>
+            ))}
+            <Grid item xs={12}>
+              <Skeleton
+                variant="rounded"
+                height={90}
+                sx={{ borderRadius: 1 }}
+              />
+            </Grid>
+            <Grid item xs={12} sx={{ display: "flex", gap: 2 }}>
+              <Skeleton variant="rounded" height={42} width={170} />
+              {hasAdminScope && (
+                <Skeleton variant="rounded" height={42} width={170} />
+              )}
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
