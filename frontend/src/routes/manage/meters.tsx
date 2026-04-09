@@ -13,6 +13,7 @@ import {
   optionalTrimmedString,
   pageParam,
   routeSearchHydrator,
+  triStateParam,
 } from "@/utils";
 
 const meterFilterEnum = z.enum([
@@ -64,6 +65,7 @@ const searchSchema = z.object({
   tab: tabSchema.default("list"),
   q: optionalTrimmedString.catch("").default(""),
   filters: filtersSchema,
+  m_sizeSort: triStateParam("all"),
   // all meters list pagination
   m_page: pageParam(0, 0),
   m_pageSize: pageParam(25, 10),
