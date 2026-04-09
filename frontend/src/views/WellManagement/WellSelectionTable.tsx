@@ -108,10 +108,12 @@ export default function WellSelectionTable({
               search={(prev) => ({
                 meter_id: meter.id,
                 activity_id: prev.activity_id ?? undefined,
+                observation_id: prev.observation_id ?? undefined,
                 add: prev.add ?? undefined,
                 tab: prev.tab ?? undefined,
                 q: prev.q ?? undefined,
                 filters: prev.filters ?? undefined,
+                m_sizeSort: prev.m_sizeSort ?? "all",
               })}
             >
               {meter.serial_number}
