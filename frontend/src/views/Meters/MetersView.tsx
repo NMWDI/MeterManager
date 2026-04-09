@@ -19,6 +19,7 @@ export const MetersView = () => {
   const currentTab = search.tab;
   const meterSearchQuery = search.q ?? "";
   const meterFilterButtons = search.filters;
+  const meterSizeSort = search.m_sizeSort;
 
   // If a meter is selected, force add mode off (and reflect in URL)
   useEffect(() => {
@@ -95,6 +96,17 @@ export const MetersView = () => {
     });
   };
 
+  const handleMeterSizeSortChange = (sizeSort: "all" | "true" | "false") => {
+    navigate({
+      to: "/manage/meters",
+      search: (prev) => ({
+        ...(prev as any),
+        m_sizeSort: sizeSort,
+        m_page: 0,
+      }),
+    });
+  };
+
   return (
     <BackgroundBox>
       <Grid
@@ -112,6 +124,8 @@ export const MetersView = () => {
             onSearchQueryChange={handleSearchQueryChange}
             meterFilterButtons={meterFilterButtons}
             onFilterButtonsChange={handleFilterButtonsChange}
+            meterSizeSort={meterSizeSort}
+            onMeterSizeSortChange={handleMeterSizeSortChange}
           />
         </Grid>
         <Grid item xs={12} lg={6}>
