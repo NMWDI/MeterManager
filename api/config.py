@@ -29,6 +29,11 @@ class Settings:
     JWT_SECRET_KEY: str | None = os.getenv("JWT_SECRET_KEY")
     JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
     ACCESS_TOKEN_EXPIRE_HOURS: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_HOURS", "8"))
+    APP_ENV: str = os.getenv(
+        "APP_ENV",
+        "production" if os.getenv("APPDB_ENV") == ".env_production" else "development",
+    )
+    ALLOW_IMPERSONATION: bool = APP_ENV in {"development", "pre-production"}
     DATABASE_URL = f"postgresql+psycopg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
 
 

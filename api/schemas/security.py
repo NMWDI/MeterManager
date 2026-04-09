@@ -51,11 +51,18 @@ class User(ORMBase):
     avatar_img: str | None = None
 
 
+class ImpersonationContext(BaseModel):
+    impersonator_user_id: int
+    impersonator_full_name: str | None = None
+    impersonator_display_name: str | None = None
+
+
 class Token(BaseModel):
     access_token: str
     token_type: str
     user: User
     session_identifier: str | None = None
+    impersonation: ImpersonationContext | None = None
 
 
 class TokenData(ORMBase):
