@@ -1,6 +1,9 @@
 export interface MeterListDTO {
   id: number;
   serial_number: string;
+  meter_type?: {
+    size?: number;
+  };
   status?: { status_name?: string };
   water_users: string;
   location: {
