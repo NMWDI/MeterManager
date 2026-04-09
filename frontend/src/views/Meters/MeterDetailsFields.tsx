@@ -96,16 +96,21 @@ export const MeterDetailsFields = ({
     });
   };
 
-  // Populate the form with the selected meter's details
+  // Populate whenever a selected meter is active,
   useEffect(() => {
-    if (meterDetails.data != undefined) {
-      reset();
-      setIsInitialLoad(false);
-      Object.entries(meterDetails.data).forEach(([field, value]) => {
-        setValue(field as any, value);
-      });
-    }
-  }, [meterDetails.data]);
+    if (
+      meterAddMode ||
+      selectedMeterID === undefined ||
+      meterDetails.data == undefined
+    )
+      return;
+
+    reset();
+    setIsInitialLoad(false);
+    Object.entries(meterDetails.data).forEach(([field, value]) => {
+      setValue(field as any, value);
+    });
+  }, [meterAddMode, selectedMeterID, meterDetails.data, reset, setValue]);
 
   // Empty form if entering add mode
   useEffect(() => {
@@ -113,7 +118,7 @@ export const MeterDetailsFields = ({
       reset();
       setIsInitialLoad(false);
     }
-  }, [meterAddMode]);
+  }, [meterAddMode, reset]);
 
   const navigateToNewActivity = () => {
     navigate({

@@ -75,19 +75,48 @@ export const MeterSelectionTable = ({
       valueGetter: (_, row) => row.well?.ra_number,
       width: 200,
     },
+    {
+      field: "meter_size",
+      headerName: "Meter Size",
+      valueGetter: (_, row) => row.meter_type?.size,
+      valueFormatter: (value) => (value == null ? "" : `${value}"`),
+      width: 120,
+    },
+    {
+      field: "status",
+      headerName: "Status",
+      valueGetter: (_, row) => row.status?.status_name,
+      width: 130,
+      sortable: false,
+    },
   ];
 
   // On any query param change from the table, update meterListQueryParam
   // Ternaries in sorting make sure that the view defaults to showing the backend's defaults
   useEffect(() => {
+    // TriState mapping for size sort:
+    // all   => do not force meter size sorting
+    // true  => sort meter size ascending
+    // false => sort meter size descending
+    const meterSizeSortDirection =
+      search.m_sizeSort === "all"
+        ? undefined
+        : search.m_sizeSort === "true"
+          ? SortDirection.Ascending
+          : SortDirection.Descending;
+
     const newParams = {
       search_string: meterSearchQueryDebounced,
       filter_by_status: meterStatusFilter,
       sort_by:
-        (gridSortModel?.[0]?.field as MeterSortByField) ??
-        MeterSortByField.SerialNumber,
+        meterSizeSortDirection !== undefined
+          ? MeterSortByField.MeterSize
+          : ((gridSortModel?.[0]?.field as MeterSortByField) ??
+            MeterSortByField.SerialNumber),
       sort_direction:
-        (gridSortModel?.[0]?.sort as SortDirection) ?? SortDirection.Ascending,
+        meterSizeSortDirection ??
+        (gridSortModel?.[0]?.sort as SortDirection) ??
+        SortDirection.Ascending,
       limit: search.m_pageSize,
       offset: search.m_page * search.m_pageSize,
     };
@@ -96,6 +125,7 @@ export const MeterSelectionTable = ({
     meterSearchQueryDebounced,
     gridSortModel,
     meterStatusFilter,
+    search.m_sizeSort,
     search.m_page,
     search.m_pageSize,
   ]);
@@ -125,8 +155,42 @@ export const MeterSelectionTable = ({
         }}
         keepNonExistentRowsSelected
         sortingMode="server"
-        sortModel={gridSortModel}
-        onSortModelChange={setGridSortModel}
+        sortModel={
+          search.m_sizeSort === "all"
+            ? gridSortModel
+            : [
+                {
+                  field: MeterSortByField.MeterSize,
+                  sort:
+                    search.m_sizeSort === "true"
+                      ? SortDirection.Ascending
+                      : SortDirection.Descending,
+                },
+              ]
+        }
+        onSortModelChange={(model) => {
+          setGridSortModel(model);
+
+          const firstSort = model[0];
+          const nextSizeSort =
+            firstSort?.field === MeterSortByField.MeterSize
+              ? firstSort.sort === SortDirection.Descending
+                ? "false"
+                : "true"
+              : "all";
+
+          if (nextSizeSort === search.m_sizeSort) return;
+
+          navigate({
+            to: "/manage/meters",
+            search: (prev) => ({
+              ...(prev as any),
+              m_sizeSort: nextSizeSort,
+              m_page: 0,
+            }),
+            replace: true,
+          });
+        }}
         pagination
         paginationMode="server"
         paginationModel={{ page: search.m_page, pageSize: search.m_pageSize }}
