@@ -55,6 +55,9 @@ def get_meters(
             case MeterSortByField.TRSS:
                 return Locations.trss
 
+            case MeterSortByField.MeterSize:
+                return MeterTypeLU.size
+
     # If 'Warehouse' is in the filter, add 'On Hold' to the filter
     if (
         MeterStatus.OnHold not in filter_by_status
@@ -69,10 +72,15 @@ def get_meters(
     # joinedload loads relationships, outer joins on relationship tables makes them search/sortable
     query_statement = (
         select(Meters)
-        .options(joinedload(Meters.well), joinedload(Meters.status))
+        .options(
+            joinedload(Meters.well),
+            joinedload(Meters.status),
+            joinedload(Meters.meter_type),
+        )
         .join(Wells, isouter=True)
         .join(Locations, isouter=True)
         .join(MeterStatusLU, isouter=True)
+        .join(MeterTypeLU, isouter=True)
         .where(MeterStatusLU.status_name.in_(filter_by_status_str))
     )
 

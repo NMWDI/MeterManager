@@ -37,6 +37,9 @@ class MeterRegister(ORMBase):
 
 # The minimal information used by the meters list
 class MeterListDTO(ORMBase):
+    class MeterTypeDTO(ORMBase):
+        size: float | None = None
+
     class WellDTO(ORMBase):
         ra_number: str | None = None
         name: str | None = None
@@ -56,6 +59,7 @@ class MeterListDTO(ORMBase):
     price: Decimal | None = None
     well: WellDTO | None = None
     location: LocationDTO | None = None
+    meter_type: MeterTypeDTO | None = None
     status: StatusDTO | None = None
 
 
@@ -305,6 +309,7 @@ class WorkOrder(ORMBase):
     creator: str | None = None
     meter_id: int  # Might be needed in certain situations
     meter_serial: str
+    meter_status: str | None = None
     title: str
     description: str | None = None
     status: str
