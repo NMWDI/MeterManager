@@ -7,6 +7,8 @@ services:
     build:
       context: ./frontend
       dockerfile: ./Dockerfile
+      args:
+        VITE_APP_ENV: pre-production
     env_file:
       - ./frontend/.env.devserver
     ports:
@@ -31,6 +33,7 @@ services:
       dockerfile: ./Dockerfile
     working_dir: /app
     environment:
+      - APP_ENV=pre-production
       - API_BASE_URL=https://pvacd-dev.newmexicowaterdata.org/api/v1
       - GCP_BUCKET_NAME=pvacd
       - GCP_WOODPECKER_BUCKET_NAME=pvacd-woodpecker
