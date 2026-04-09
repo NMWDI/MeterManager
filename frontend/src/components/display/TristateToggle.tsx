@@ -1,18 +1,40 @@
 import { Chip, type ChipProps } from "@mui/material";
 
 export type TriString = "all" | "true" | "false";
+type TriStateKey = "all" | "true" | "false";
+type TriStateMap<T extends string> = Record<TriStateKey, T>;
 
-export const TristateToggle = ({
+const DEFAULT_STATE_VALUES: TriStateMap<TriString> = {
+  all: "all",
+  true: "true",
+  false: "false",
+};
+
+export const TristateToggle = <T extends string = TriString>({
   label,
   value,
   onToggle,
+  stateValues,
+  stateLabels,
 }: {
   label: string;
-  value: TriString;
-  onToggle: (value: TriString) => void;
+  value: T;
+  onToggle: (value: T) => void;
+  stateValues?: TriStateMap<T>;
+  stateLabels?: Partial<Record<TriStateKey, string>>;
 }) => {
+  const resolvedStateValues = stateValues ?? (DEFAULT_STATE_VALUES as TriStateMap<T>);
+
+  const getCurrentKey = (): TriStateKey => {
+    if (value === resolvedStateValues.true) return "true";
+    if (value === resolvedStateValues.false) return "false";
+    return "all";
+  };
+
+  const currentKey = getCurrentKey();
+
   const getColor = (): ChipProps["color"] | undefined => {
-    switch (value) {
+    switch (currentKey) {
       case "true":
         return "success";
       case "false":
@@ -23,7 +45,11 @@ export const TristateToggle = ({
   };
 
   const getLabel = () => {
-    switch (value) {
+    if (stateLabels?.[currentKey]) {
+      return stateLabels[currentKey];
+    }
+
+    switch (currentKey) {
       case "true":
         return `Is ${label}`;
       case "false":
@@ -33,7 +59,7 @@ export const TristateToggle = ({
     }
   };
 
-  const nextValue = (v: TriString): TriString => {
+  const nextKey = (v: TriStateKey): TriStateKey => {
     switch (v) {
       case "all":
         return "true";
@@ -49,9 +75,13 @@ export const TristateToggle = ({
       sx={{ ml: 2 }}
       label={getLabel()}
       color={getColor()}
-      variant={value === "all" ? "outlined" : "filled"}
-      onDelete={value === "all" ? undefined : () => onToggle("all")}
-      onClick={() => onToggle(nextValue(value))}
+      variant={currentKey === "all" ? "outlined" : "filled"}
+      onDelete={
+        currentKey === "all"
+          ? undefined
+          : () => onToggle(resolvedStateValues.all)
+      }
+      onClick={() => onToggle(resolvedStateValues[nextKey(currentKey)])}
     />
   );
 };
