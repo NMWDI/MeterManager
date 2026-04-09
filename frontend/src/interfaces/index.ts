@@ -8,6 +8,7 @@ export * from "./CreateNotificationPayload";
 export * from "./DeviceAttributes";
 export * from "./DevicePayload";
 export * from "./HomeSummary";
+export * from "./Impersonation";
 export * from "./IncreaseQuantityPayload";
 export * from "./LandOwner";
 export * from "./Location";
