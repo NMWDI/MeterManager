@@ -41,6 +41,34 @@ const STATUS_OPTIONS: WorkOrderStatus[] = [
   WorkOrderStatus.Closed,
 ];
 
+type ManageMeterFilter =
+  | "installed"
+  | "stored"
+  | "sold"
+  | "scrapped"
+  | "unknown";
+
+function getMeterFilterForStatus(
+  meterStatus?: string | null,
+): ManageMeterFilter[] {
+  switch (meterStatus) {
+    case "Installed":
+      return ["installed"];
+    case "Warehouse":
+    case "On Hold":
+      return ["stored"];
+    case "Sold":
+      return ["sold"];
+    case "Scrapped":
+    case "Returned":
+      return ["scrapped"];
+    case "Unknown":
+      return ["unknown"];
+    default:
+      return ["installed", "stored", "sold", "scrapped", "unknown"];
+  }
+}
+
 export const WorkOrdersTable = () => {
   const { enqueueSnackbar } = useSnackbar();
 
@@ -248,13 +276,17 @@ export const WorkOrdersTable = () => {
         return (
           <Link
             to="/manage/meters"
-            search={(prev) => ({
+            search={() => ({
               meter_id: params.row.meter_id,
-              activity_id: prev.activity_id ?? undefined,
-              add: prev.add ?? undefined,
-              tab: prev.tab ?? undefined,
-              q: prev.q ?? undefined,
-              filters: prev.filters ?? undefined,
+              activity_id: undefined,
+              observation_id: undefined,
+              add: false,
+              tab: "list",
+              q: undefined,
+              filters: getMeterFilterForStatus(params.row.meter_status),
+              m_sizeSort: "all",
+              m_page: 0,
+              h_page: 0,
             })}
           >
             {params.value}
@@ -304,13 +336,17 @@ export const WorkOrdersTable = () => {
           <span key={activity.id}>
             <Link
               to="/manage/meters"
-              search={(prev) => ({
+              search={() => ({
                 meter_id: activity.meter_id,
                 activity_id: activity.id,
-                add: prev.add ?? undefined,
-                tab: prev.tab ?? undefined,
-                q: prev.q ?? undefined,
-                filters: prev.filters ?? undefined,
+                observation_id: undefined,
+                add: false,
+                tab: "list",
+                q: undefined,
+                filters: getMeterFilterForStatus(activity.meter_status),
+                m_sizeSort: "all",
+                m_page: 0,
+                h_page: 0,
               })}
             >
               {activity.id}
@@ -503,16 +539,16 @@ export const WorkOrdersTable = () => {
                     />
                     {InputProps.startAdornment}
                   </>
-                ) : InputProps.startAdornment;
+                ) : (
+                  InputProps.startAdornment
+                );
 
                 return (
                   <TextField
                     {...rest}
                     InputProps={{
                       ...InputProps,
-                      ...(startAdornment
-                        ? { startAdornment }
-                        : {}),
+                      ...(startAdornment ? { startAdornment } : {}),
                     }}
                     label={
                       hasAdminScope
