@@ -45,7 +45,9 @@ def open_activity_photo(photo: MeterActivityPhotos):
         blob = bucket.blob(photo.gcs_path)
 
         if not blob.exists(client=client):
-            raise HTTPException(status_code=404, detail="Photo file missing from storage")
+            raise HTTPException(
+                status_code=404, detail="Photo file missing from storage"
+            )
 
         blob.reload(client=client)
         content_type = blob.content_type or "application/octet-stream"
