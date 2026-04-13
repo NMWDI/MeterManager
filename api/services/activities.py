@@ -1,4 +1,5 @@
 from datetime import datetime
+from collections import Counter
 
 from fastapi import HTTPException
 from sqlalchemy import select, text
@@ -17,7 +18,7 @@ from api.models.meter import (
     ServiceTypeLU,
     Units,
 )
-from api.models.part import Parts
+from api.models.part import PartsUsed
 from api.models.user import Users
 from api.models.well import Wells
 from api.schemas import meter
@@ -133,12 +134,12 @@ async def create_activity(
     ).first()
     meter_activity.notes.append(status_note_type)
 
-    used_parts = db.scalars(
-        select(Parts).where(Parts.id.in_(activity_form.part_used_ids))
-    ).all()
-    meter_activity.parts_used = used_parts
-    for used_part in used_parts:
-        used_part.count -= 1
+    part_counts = Counter(activity_form.part_used_ids)
+
+    meter_activity.parts_used_links = [
+        PartsUsed(part_id=part_id, count=count)
+        for part_id, count in part_counts.items()
+    ]
 
     services = db.scalars(
         select(ServiceTypeLU).where(

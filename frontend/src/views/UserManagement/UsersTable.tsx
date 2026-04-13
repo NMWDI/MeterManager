@@ -10,10 +10,14 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { Search, Add, People } from "@mui/icons-material";
+import { Search, Add, People, Fingerprint } from "@mui/icons-material";
 import { useNavigate } from "@tanstack/react-router";
+import { enqueueSnackbar } from "notistack";
+import { useAuthUser, useSignIn } from "react-auth-kit";
 import { Route } from "@/routes/manage/users";
-import { useGetUserAdminList } from "@/service";
+import { ALLOW_IMPERSONATION } from "@/config";
+import { useGetUserAdminList, useImpersonateUser } from "@/service";
+import type { User } from "@/interfaces";
 import {
   CustomCardHeader,
   GridFooterWithButton,
@@ -23,6 +27,11 @@ import {
   TristateToggle,
   UserAvatar,
 } from "@/components";
+import {
+  collectSessionTrackingMetadata,
+  getTrackedSession,
+} from "@/utils/SessionTracking";
+import { beginImpersonationSession } from "@/utils/Impersonation";
 
 export const UsersTable = ({
   onSelectUser,
@@ -34,6 +43,11 @@ export const UsersTable = ({
   const usersList = useGetUserAdminList();
   const navigate = useNavigate();
   const search = Route.useSearch();
+  const authUser = useAuthUser();
+  const signIn = useSignIn();
+  const impersonateUser = useImpersonateUser();
+  const currentUser = authUser() as User | null;
+  const trackedSession = getTrackedSession();
 
   const setSearch = (updater: (prev: typeof search) => any) => {
     navigate({
@@ -114,6 +128,97 @@ export const UsersTable = ({
     { field: "display_name", headerName: "Display Name", width: 150 },
     { field: "redirect_page", headerName: "Redirect Page", width: 200 },
   ];
+
+  if (ALLOW_IMPERSONATION) {
+    cols.push({
+      field: "impersonate",
+      headerName: "Impersonate",
+      width: 180,
+      sortable: false,
+      filterable: false,
+      disableColumnMenu: true,
+      renderCell: (params: any) => {
+        const isCurrentUser = currentUser?.id === params.row.id;
+        const isActiveUser = !params.row.disabled;
+        const isOSEUser = params.row.user_role.name === "OSE";
+
+        return (
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<Fingerprint fontSize="small" />}
+            disabled={
+              isCurrentUser ||
+              impersonateUser.isLoading ||
+              !isActiveUser ||
+              isOSEUser
+            }
+            onClick={async (event) => {
+              event.stopPropagation();
+
+              if (!currentUser) {
+                enqueueSnackbar("Your admin session could not be found.", {
+                  variant: "error",
+                });
+                return;
+              }
+
+              const actorToken = window.localStorage.getItem("_auth");
+              if (!actorToken) {
+                enqueueSnackbar("Your admin token could not be found.", {
+                  variant: "error",
+                });
+                return;
+              }
+
+              try {
+                const sessionTrackingMetadata =
+                  await collectSessionTrackingMetadata();
+                const response = await impersonateUser.mutateAsync(
+                  params.row.id,
+                );
+                const signedIn = beginImpersonationSession({
+                  signIn,
+                  actorUser: currentUser,
+                  actorToken,
+                  actorSessionIdentifier:
+                    trackedSession?.sessionIdentifier ?? null,
+                  response,
+                  fingerprintHash: sessionTrackingMetadata.fingerprintHash,
+                });
+
+                if (!signedIn) {
+                  enqueueSnackbar("Failed to start impersonation.", {
+                    variant: "error",
+                  });
+                  return;
+                }
+
+                enqueueSnackbar(`Now impersonating ${params.row.full_name}.`, {
+                  variant: "success",
+                });
+                navigate({
+                  to: response.user.redirect_page ?? "/",
+                  search: {},
+                });
+              } catch (error) {
+                enqueueSnackbar(
+                  error instanceof Error
+                    ? error.message
+                    : "Failed to start impersonation.",
+                  {
+                    variant: "error",
+                  },
+                );
+              }
+            }}
+          >
+            Impersonate
+          </Button>
+        );
+      },
+    });
+  }
 
   return (
     <Card>

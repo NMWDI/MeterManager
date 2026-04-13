@@ -6,6 +6,7 @@ class MeterSortByField(Enum):
     RANumber = "ra_number"
     WaterUsers = "water_users"
     TRSS = "trss"
+    MeterSize = "meter_size"
 
 
 class WellSortByField(Enum):

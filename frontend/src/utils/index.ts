@@ -3,6 +3,7 @@ export * from "./DateUtils";
 export * from "./DataStreamUtils";
 export * from "./EmptyToNull";
 export * from "./HttpUtils";
+export * from "./Impersonation";
 export * from "./MapCache";
 export * from "./MapUrlState";
 export * from "./GetMeterMarkerColor";

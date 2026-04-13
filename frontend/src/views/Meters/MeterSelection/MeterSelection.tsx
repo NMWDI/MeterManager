@@ -13,8 +13,14 @@ import {
 } from "@mui/material";
 import { Search, SpeedOutlined } from "@mui/icons-material";
 import { MeterStatusNames } from "@/enums";
-import { CustomCardHeader, ManageBreadcrumbTitle, TabPanel } from "@/components";
+import {
+  CustomCardHeader,
+  ManageBreadcrumbTitle,
+  TabPanel,
+  TristateToggle,
+} from "@/components";
 import { useMemo } from "react";
+import type { TriString } from "@/components";
 
 type MeterFilterKey = "installed" | "stored" | "sold" | "scrapped" | "unknown";
 
@@ -27,6 +33,8 @@ export const MeterSelection = ({
   onSearchQueryChange,
   meterFilterButtons,
   onFilterButtonsChange,
+  meterSizeSort,
+  onMeterSizeSortChange,
 }: {
   onMeterSelection: (meterId?: number) => void;
   setMeterAddMode: (addMode: boolean) => void;
@@ -36,6 +44,8 @@ export const MeterSelection = ({
   onSearchQueryChange: (query: string) => void;
   meterFilterButtons: MeterFilterKey[];
   onFilterButtonsChange: (filters: MeterFilterKey[]) => void;
+  meterSizeSort: TriString;
+  onMeterSizeSortChange: (value: TriString) => void;
 }) => {
   const handleTabChange = (_: React.SyntheticEvent, newTabIndex: number) =>
     onTabChange(newTabIndex);
@@ -112,30 +122,51 @@ export const MeterSelection = ({
           </Grid>
         </Grid>
         <TabPanel currentTabIndex={currentTabIndex} tabIndex={0}>
-          <Grid item sx={{ mt: 1 }}>
-            <ToggleButtonGroup
-              value={meterFilterButtons}
-              exclusive={false}
-              onChange={handleFilterSelect}
-              size="small"
-              aria-label="button group"
-            >
-              <ToggleButton value="installed" aria-label="Installed">
-                Installed
-              </ToggleButton>
-              <ToggleButton value="stored" aria-label="Stored">
-                Stored
-              </ToggleButton>
-              <ToggleButton value="sold" aria-label="Sold">
-                Sold
-              </ToggleButton>
-              <ToggleButton value="scrapped" aria-label="Scrapped">
-                Scrapped
-              </ToggleButton>
-              <ToggleButton value="unknown" aria-label="Unknown">
-                Unknown
-              </ToggleButton>
-            </ToggleButtonGroup>
+          <Grid
+            container
+            item
+            sx={{ mt: 1 }}
+            spacing={1}
+            alignItems="center"
+            justifyContent="space-between"
+          >
+            <Grid item>
+              <ToggleButtonGroup
+                value={meterFilterButtons}
+                exclusive={false}
+                onChange={handleFilterSelect}
+                size="small"
+                aria-label="button group"
+              >
+                <ToggleButton value="installed" aria-label="Installed">
+                  Installed
+                </ToggleButton>
+                <ToggleButton value="stored" aria-label="Stored">
+                  Stored
+                </ToggleButton>
+                <ToggleButton value="sold" aria-label="Sold">
+                  Sold
+                </ToggleButton>
+                <ToggleButton value="scrapped" aria-label="Scrapped">
+                  Scrapped
+                </ToggleButton>
+                <ToggleButton value="unknown" aria-label="Unknown">
+                  Unknown
+                </ToggleButton>
+              </ToggleButtonGroup>
+            </Grid>
+            <Grid item>
+              <TristateToggle
+                label="Size Sort"
+                value={meterSizeSort}
+                onToggle={onMeterSizeSortChange}
+                stateLabels={{
+                  all: "Size Sort: None",
+                  true: "Size Sort: Ascending",
+                  false: "Size Sort: Descending",
+                }}
+              />
+            </Grid>
           </Grid>
           <MeterSelectionTable
             onMeterSelection={onMeterSelection}

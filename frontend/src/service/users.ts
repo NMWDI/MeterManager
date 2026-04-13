@@ -1,7 +1,7 @@
 import { useSnackbar } from "notistack";
 import { useMutation, useQuery, useQueryClient, UseQueryOptions } from "react-query";
 import { useApiClient } from "@/hooks";
-import { UpdatedUserPassword, User, UserRole } from "@/interfaces";
+import { AuthTokenResponse, UpdatedUserPassword, User, UserRole } from "@/interfaces";
 
 export function useGetRoles(options?: UseQueryOptions<UserRole[], Error>) {
   const apiClient = useApiClient();
@@ -33,6 +33,22 @@ export function useGetUser(id: number, options = {}) {
     () => apiClient.get(`${route}/${id}`),
     options,
   );
+}
+
+export function useImpersonateUser() {
+  const apiClient = useApiClient();
+
+  return useMutation({
+    mutationFn: async (userId: number) => {
+      const response = await apiClient.post(`users/${userId}/impersonate`, undefined);
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+
+      return (await response.json()) as AuthTokenResponse;
+    },
+    retry: 0,
+  });
 }
 
 export function useCreateUser(onSuccess: Function) {

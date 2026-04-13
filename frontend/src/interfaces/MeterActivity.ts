@@ -11,6 +11,7 @@ export interface MeterActivity {
   notes?: string;
   submitting_user_id: int;
   meter_id: int;
+  meter_status?: string;
   activity_type_id: int;
   location_id: int;
 

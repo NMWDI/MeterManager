@@ -16,7 +16,7 @@ def _work_order_query():
         select(workOrders)
         .options(
             joinedload(workOrders.status),
-            joinedload(workOrders.meter),
+            joinedload(workOrders.meter).joinedload(Meters.status),
             joinedload(workOrders.assigned_user),
         )
     )
@@ -28,7 +28,10 @@ def _load_associated_activities(db: Session, work_order_ids: list[int]):
 
     relevant_activities = db.scalars(
         select(MeterActivities)
-        .options(joinedload(MeterActivities.location))
+        .options(
+            joinedload(MeterActivities.location),
+            joinedload(MeterActivities.meter).joinedload(Meters.status),
+        )
         .where(MeterActivities.work_order_id.in_(work_order_ids))
     ).all()
 
@@ -42,6 +45,9 @@ def _load_associated_activities(db: Session, work_order_ids: list[int]):
                 "description": activity.description,
                 "submitting_user_id": activity.submitting_user_id,
                 "meter_id": activity.meter_id,
+                "meter_status": activity.meter.status.status_name
+                if activity.meter and activity.meter.status
+                else None,
                 "activity_type_id": activity.activity_type_id,
                 "location_id": activity.location_id,
                 "location_name": activity.location.name if activity.location else None,
@@ -64,6 +70,9 @@ def _serialize_work_order(
         creator=work_order.creator,
         meter_id=work_order.meter.id,
         meter_serial=work_order.meter.serial_number,
+        meter_status=work_order.meter.status.status_name
+        if work_order.meter and work_order.meter.status
+        else None,
         title=work_order.title,
         description=work_order.description,
         status=work_order.status.name,
@@ -122,6 +131,9 @@ def list_work_orders(
             "creator": work_order.creator,
             "meter_id": work_order.meter.id,
             "meter_serial": work_order.meter.serial_number,
+            "meter_status": work_order.meter.status.status_name
+            if work_order.meter and work_order.meter.status
+            else None,
             "title": work_order.title,
             "description": work_order.description,
             "status": work_order.status.name,

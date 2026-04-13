@@ -1,4 +1,5 @@
 import { enqueueSnackbar } from "notistack";
+import { clearStoredImpersonation } from "@/utils/Impersonation";
 import { clearTrackedSession, notifyTrackedLogout } from "@/utils/SessionTracking";
 
 let isHandlingExpiredSession = false;
@@ -18,6 +19,7 @@ export function handleExpiredSession(options: {
   localStorage.removeItem("loggedIn");
   localStorage.removeItem("_auth");
   clearTrackedSession();
+  clearStoredImpersonation();
   options.navigate({ to: "/" });
   options.signOut();
   enqueueSnackbar(

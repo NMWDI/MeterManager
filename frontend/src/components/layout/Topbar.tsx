@@ -14,6 +14,7 @@ import {
   useMediaQuery,
   useTheme,
 } from "@mui/material";
+import { enqueueSnackbar } from "notistack";
 import MenuIcon from "@mui/icons-material/Menu";
 import CloseIcon from "@mui/icons-material/Close";
 import {
@@ -25,9 +26,10 @@ import {
   Public,
   Science,
   Settings,
+  SwapHoriz,
 } from "@mui/icons-material";
 import { useNavigate } from "@tanstack/react-router";
-import { useAuthUser, useSignOut } from "react-auth-kit";
+import { useAuthUser, useSignIn, useSignOut } from "react-auth-kit";
 import { TopbarUserButton, UserAvatar } from "@/components";
 import {
   DESKTOP_COLLAPSED_WIDTH,
@@ -38,8 +40,14 @@ import { useIsActiveRoute } from "@/hooks";
 import { useGetUnreadNotificationCount } from "@/service";
 import {
   clearTrackedSession,
+  collectSessionTrackingMetadata,
   notifyTrackedLogout,
 } from "@/utils/SessionTracking";
+import {
+  clearStoredImpersonation,
+  endImpersonationSession,
+  getStoredImpersonation,
+} from "@/utils/Impersonation";
 
 export const Topbar = ({
   open,
@@ -56,6 +64,7 @@ export const Topbar = ({
   const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
   const navigate = useNavigate();
   const signOut = useSignOut();
+  const signIn = useSignIn();
   const authUser = useAuthUser();
   const isHomeActive = useIsActiveRoute("/");
   const isChloridesActive = useIsActiveRoute("/chlorides");
@@ -70,11 +79,19 @@ export const Topbar = ({
     useState<null | HTMLElement>(null);
 
   const user = authUser();
+  const impersonation = getStoredImpersonation();
   const role: string = user?.user_role?.name;
   const fullName = user?.full_name ?? user?.display_name ?? "Unknown";
   const displayName = user?.display_name ?? "Unknown";
   const email = user?.email ?? "No email available";
   const isLoggedIn = !!user;
+  const isImpersonating = !!impersonation;
+  const impersonationLabel =
+    impersonation?.impersonatedUser.full_name ?? user?.full_name ?? "Unknown User";
+  const impersonatorLabel =
+    impersonation?.actorUser.display_name ??
+    impersonation?.actorUser.full_name ??
+    "Unknown Admin";
   const unreadNotificationsQuery = useGetUnreadNotificationCount({
     enabled: isLoggedIn,
   });
@@ -119,7 +136,36 @@ export const Topbar = ({
     localStorage.removeItem("loggedIn");
     localStorage.removeItem("_auth");
     clearTrackedSession();
+    clearStoredImpersonation();
     signOut();
+  };
+
+  const stopImpersonating = async () => {
+    const sessionTrackingMetadata = await collectSessionTrackingMetadata();
+    await notifyTrackedLogout("manual_logout");
+
+    const restored = endImpersonationSession({
+      signIn,
+      fingerprintHash: sessionTrackingMetadata.fingerprintHash,
+    });
+
+    if (!restored) {
+      clearStoredImpersonation();
+      localStorage.removeItem("loggedIn");
+      localStorage.removeItem("_auth");
+      clearTrackedSession();
+      signOut();
+      navigate({ to: "/login", search: {} });
+      enqueueSnackbar("Failed to restore the original admin session.", {
+        variant: "error",
+      });
+      return;
+    }
+
+    enqueueSnackbar("Returned to the original admin session.", {
+      variant: "success",
+    });
+    navigate({ to: "/manage/users", search: {} });
   };
 
   return (
@@ -292,6 +338,32 @@ export const Topbar = ({
           </Box>
         ) : null}
 
+        {isLoggedIn && isImpersonating ? (
+          <Box
+            sx={{
+              position: "absolute",
+              left: "50%",
+              transform: "translateX(-50%)",
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              px: 1.5,
+              py: 0.75,
+              borderRadius: 999,
+              border: "1px solid rgba(0, 0, 139, 0.18)",
+              backgroundColor: "rgba(0, 0, 139, 0.08)",
+            }}
+          >
+            <SwapHoriz fontSize="small" sx={{ color: "darkblue" }} />
+            <Typography
+              variant="body2"
+              sx={{ color: "darkblue", fontWeight: 700, whiteSpace: "nowrap" }}
+            >
+              Impersonating {impersonationLabel} as {impersonatorLabel}
+            </Typography>
+          </Box>
+        ) : null}
+
         {isLoggedIn ? (
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
             <IconButton
@@ -440,16 +512,24 @@ export const Topbar = ({
               />
               <MenuItem
                 onClick={() => {
-                  fullSignOut();
+                  if (isImpersonating) {
+                    void stopImpersonating();
+                  } else {
+                    void fullSignOut();
+                  }
                   handleMenuClose();
                 }}
                 sx={{ minHeight: 36, gap: 1, px: 1.5 }}
               >
                 <ListItemIcon>
-                  <Logout fontSize="small" />
+                  {isImpersonating ? (
+                    <SwapHoriz fontSize="small" />
+                  ) : (
+                    <Logout fontSize="small" />
+                  )}
                 </ListItemIcon>
                 <Typography variant="body2" fontWeight={500}>
-                  Log out
+                  {isImpersonating ? "Stop Impersonating" : "Log out"}
                 </Typography>
               </MenuItem>
             </Menu>

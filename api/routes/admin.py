@@ -1,4 +1,6 @@
-from fastapi import Depends, APIRouter, HTTPException
+from datetime import timedelta
+
+from fastapi import Depends, APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session, joinedload, undefer
 from sqlalchemy import select
@@ -12,6 +14,9 @@ from api.schemas import admin
 from api.session import get_db
 from api.routes.utils import _patch
 from api.auth.dependencies import ScopedUser
+from api.auth.session_tracking import create_user_session
+from api.security import create_access_token, ACCESS_TOKEN_EXPIRE_HOURS
+from api.config import settings
 
 from pathlib import Path
 from google.cloud import storage
@@ -161,6 +166,72 @@ def get_users_admin(db: Session = Depends(get_db)):
         .unique()
         .all()
     )
+
+
+@admin_router.post(
+    "/users/{id}/impersonate",
+    response_model=security.Token,
+    dependencies=[Depends(ScopedUser.Admin)],
+    tags=["Admin"],
+)
+def impersonate_user(
+    id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_admin: Users = Depends(ScopedUser.Admin),
+):
+    if not settings.ALLOW_IMPERSONATION:
+        raise HTTPException(
+            status_code=403,
+            detail="User impersonation is only available in development and pre-production environments.",
+        )
+
+    target_user = db.scalars(
+        select(Users)
+        .options(
+            undefer(Users.username),
+            undefer(Users.user_role_id),
+            undefer(Users.email),
+            joinedload(Users.user_role).joinedload(UserRoles.security_scopes),
+        )
+        .where(Users.id == id)
+    ).first()
+
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if target_user.disabled:
+        raise HTTPException(status_code=400, detail="Cannot impersonate a disabled user")
+
+    user_session = create_user_session(db=db, user=target_user, request=request)
+
+    access_token = create_access_token(
+        data={
+            "sub": target_user.username,
+            "sid": user_session.session_identifier,
+            "scopes": list(
+                map(
+                    lambda scope: scope.scope_string,
+                    target_user.user_role.security_scopes,
+                )
+            ),
+        },
+        expires_delta=timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS),
+    )
+    user_response = security.User(**target_user.__dict__)
+    db.commit()
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": user_response,
+        "session_identifier": user_session.session_identifier,
+        "impersonation": security.ImpersonationContext(
+            impersonator_user_id=current_admin.id,
+            impersonator_full_name=current_admin.full_name,
+            impersonator_display_name=current_admin.display_name,
+        ),
+    }
 
 
 @admin_router.get(

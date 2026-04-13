@@ -43,10 +43,14 @@ export default function MeterActivityEntry() {
       search: {
         meter_id,
         activity_id,
+        observation_id: undefined,
         add: false,
-        tab: undefined,
+        tab: "list",
         q: undefined,
-        filters: undefined,
+        filters: ["installed", "stored", "sold", "scrapped", "unknown"],
+        m_sizeSort: "all",
+        m_page: 0,
+        h_page: 0,
       },
     });
   };

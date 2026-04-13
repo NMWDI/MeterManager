@@ -3,4 +3,5 @@ export enum MeterSortByField {
   RANumber = "ra_number",
   LandOwner = "land_owner_name",
   TRSS = "trss",
+  MeterSize = "meter_size",
 }

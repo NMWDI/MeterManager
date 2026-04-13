@@ -2,7 +2,9 @@ export interface WorkOrder {
   work_order_id: number;
   date_created: Date;
   creator?: String;
+  meter_id?: number;
   meter_serial: String;
+  meter_status?: string;
   title: String;
   description: String;
   status: String;
