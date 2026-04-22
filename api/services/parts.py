@@ -5,11 +5,11 @@ from typing import Optional
 
 from fastapi import HTTPException
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-from sqlalchemy import func, literal, select, union_all, case
+from sqlalchemy import DateTime, case, cast, func, literal, select, union_all
 from sqlalchemy.orm import Session, selectinload
 from weasyprint import HTML
 
-from api.models.meter import MeterActivities, meterRegisters
+from api.models.meter import ActivityTypeLU, MeterActivities, meterRegisters
 from api.models.part import Parts, PartsAdded, PartsUsed
 from api.schemas import parts
 
@@ -59,22 +59,32 @@ def build_part_history_response(part_id: int, db: Session) -> parts.PartHistoryR
         PartsAdded.note.label("note"),
         PartsAdded.count.label("delta"),
         literal(None).label("work_order_id"),
+        literal(None).label("meter_activity_type"),
     ).where(PartsAdded.part_id == part_id)
 
     used_q = (
         select(
             PartsUsed.id.label("ref_id"),
             PartsUsed.part_id.label("part_id"),
-            MeterActivities.timestamp_start.label("event_date"),
+            func.coalesce(
+                cast(PartsUsed.date, DateTime),
+                MeterActivities.timestamp_start,
+                func.now(),
+            ).label("event_date"),
             case(
                 (MeterActivities.work_order_id.is_not(None), literal("workorder")),
                 else_=literal("used"),
             ).label("event_type"),
-            func.nullif(func.trim(MeterActivities.description), "").label("note"),
+            func.coalesce(
+                func.nullif(func.trim(PartsUsed.note), ""),
+                func.nullif(func.trim(MeterActivities.description), ""),
+            ).label("note"),
             (-PartsUsed.count).label("delta"),
             MeterActivities.work_order_id.label("work_order_id"),
+            ActivityTypeLU.name.label("meter_activity_type"),
         )
-        .join(MeterActivities, MeterActivities.id == PartsUsed.meter_activity_id)
+        .outerjoin(MeterActivities, MeterActivities.id == PartsUsed.meter_activity_id)
+        .outerjoin(ActivityTypeLU, ActivityTypeLU.id == MeterActivities.activity_type_id)
         .where(PartsUsed.part_id == part_id)
     )
 
@@ -88,6 +98,7 @@ def build_part_history_response(part_id: int, db: Session) -> parts.PartHistoryR
             events.c.note,
             events.c.delta,
             events.c.work_order_id,
+            events.c.meter_activity_type,
         ).order_by(events.c.event_date.asc(), events.c.ref_id.asc())
     ).all()
 
@@ -103,10 +114,20 @@ def build_part_history_response(part_id: int, db: Session) -> parts.PartHistoryR
             delta=0,
             total_after=running,
             work_order_id=None,
+            meter_activity_type=None,
         )
     ]
 
-    for ref_id, pid, event_date, event_type, note, delta, work_order_id in rows:
+    for (
+        ref_id,
+        pid,
+        event_date,
+        event_type,
+        note,
+        delta,
+        work_order_id,
+        meter_activity_type,
+    ) in rows:
         if not isinstance(event_date, datetime):
             event_date = datetime.combine(event_date, time.min)
         running += int(delta)
@@ -121,6 +142,7 @@ def build_part_history_response(part_id: int, db: Session) -> parts.PartHistoryR
                 delta=int(delta),
                 total_after=running,
                 work_order_id=work_order_id,
+                meter_activity_type=meter_activity_type,
             )
         )
 
@@ -279,6 +301,37 @@ def add_parts(db: Session, payload: parts.PartsAddRequest):
     return part_obj
 
 
+def decrease_parts(db: Session, payload: parts.PartsDecreaseRequest):
+    part = db.scalars(select(Parts).where(Parts.id == payload.part_id)).first()
+    if not part:
+        raise HTTPException(status_code=404, detail="Part not found")
+
+    db.add(
+        PartsUsed(
+            part_id=payload.part_id,
+            count=payload.count,
+            date=payload.date,
+            note=payload.note,
+            meter_activity_id=None,
+        )
+    )
+    db.commit()
+
+    used_subq, added_subq, current_count = _part_count_subqueries()
+    row = db.execute(
+        select(Parts, current_count)
+        .outerjoin(used_subq, used_subq.c.part_id == Parts.id)
+        .outerjoin(added_subq, added_subq.c.part_id == Parts.id)
+        .where(Parts.id == payload.part_id)
+        .options(selectinload(Parts.part_type), selectinload(Parts.meter_types))
+    ).first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Part not found")
+    part_obj, curr = row
+    part_obj.current_count = curr
+    return part_obj
+
+
 def patch_part_history(
     db: Session, part_id: int, payload: parts.PartHistoryUpdateRequest
 ):
@@ -325,6 +378,13 @@ def patch_part_history(
         ).first()
         if not parts_used_row:
             raise HTTPException(status_code=404, detail="Parts used row not found.")
+        parts_used_row.count = abs(row.delta)
+        parts_used_row.note = normalized_note
+
+        if parts_used_row.meter_activity_id is None:
+            parts_used_row.date = row.event_date.date()
+            continue
+
         activity = db.scalars(
             select(MeterActivities).where(
                 MeterActivities.id == parts_used_row.meter_activity_id
@@ -340,9 +400,7 @@ def patch_part_history(
             if activity.timestamp_end and activity.timestamp_start
             else None
         )
-        parts_used_row.count = abs(row.delta)
         activity.timestamp_start = row.event_date
-        activity.description = normalized_note
         activity.timestamp_end = (
             row.event_date + duration if duration is not None else row.event_date
         )

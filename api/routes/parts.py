@@ -202,6 +202,18 @@ def add_parts(payload: parts.PartsAddRequest, db: Session = Depends(get_db)):
     return part_service.add_parts(db, payload)
 
 
+@part_router.post(
+    "/parts/decrease",
+    response_model=parts.Part,
+    dependencies=[Depends(ScopedUser.Admin)],
+    tags=["Parts"],
+)
+def decrease_parts(
+    payload: parts.PartsDecreaseRequest, db: Session = Depends(get_db)
+):
+    return part_service.decrease_parts(db, payload)
+
+
 @part_router.get(
     "/parts/{part_id}/history",
     response_model=parts.PartHistoryResponse,

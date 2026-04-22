@@ -50,14 +50,16 @@ class PartsUsed(Base):
     __tablename__ = "PartsUsed"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    meter_activity_id: Mapped[int] = mapped_column(
-        ForeignKey("MeterActivities.id"), nullable=False
+    meter_activity_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("MeterActivities.id"), nullable=True
     )
     part_id: Mapped[int] = mapped_column(ForeignKey("Parts.id"), nullable=False)
     count: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    note: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
     part: Mapped["Parts"] = relationship(back_populates="parts_used_links")
-    meter_activity: Mapped["MeterActivities"] = relationship(
+    meter_activity: Mapped[Optional["MeterActivities"]] = relationship(
         back_populates="parts_used_links"
     )
 

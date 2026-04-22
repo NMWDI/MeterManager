@@ -59,6 +59,13 @@ class PartsAddRequest(ORMBase):
     note: Optional[str] = None
 
 
+class PartsDecreaseRequest(ORMBase):
+    part_id: int
+    count: int
+    date: date
+    note: Optional[str] = None
+
+
 class PartHistoryRow(ORMBase):
     row_id: str
     part_id: int
@@ -66,6 +73,7 @@ class PartHistoryRow(ORMBase):
     event_type: Literal["initial", "added", "used", "workorder"]
     ref_id: int | None = None
     work_order_id: int | None = None
+    meter_activity_type: str | None = None
     note: str | None = None
     delta: int
     total_after: int

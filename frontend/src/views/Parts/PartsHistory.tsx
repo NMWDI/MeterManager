@@ -25,6 +25,7 @@ import {
   InfoOutlined,
   NavigateNext,
   PlusOne,
+  Remove,
   Save,
   Search,
 } from "@mui/icons-material";
@@ -43,10 +44,12 @@ import {
   EventTypeChip,
   ControlledDatepicker,
   ControlledSelectNonObject,
+  DecreaseQuantityModal,
   IncreaseQuantityModal,
 } from "@/components";
 import {
   useAddParts,
+  useDecreaseParts,
   useGetPartHistory,
   useGetParts,
   useUpdatePartHistory,
@@ -305,6 +308,7 @@ export const PartsHistory = () => {
   const history = useGetPartHistory(id);
   const partsList = useGetParts();
   const addParts = useAddParts();
+  const decreaseParts = useDecreaseParts();
   const { enqueueSnackbar } = useSnackbar();
   const updateHistory = useUpdatePartHistory(id, (response) => {
     const nextRows = hydrateRows(response, id);
@@ -317,6 +321,7 @@ export const PartsHistory = () => {
   const [originalRows, setOriginalRows] = useState<any[]>([]);
   const [hasChanges, setHasChanges] = useState(false);
   const [increaseOpen, setIncreaseOpen] = useState(false);
+  const [decreaseOpen, setDecreaseOpen] = useState(false);
   const [snackbar, setSnackbar] = useState<{
     message: string;
     severity: "success" | "error";
@@ -565,9 +570,12 @@ export const PartsHistory = () => {
     {
       field: "event_type",
       headerName: "Type",
-      width: 140,
+      width: 260,
       renderCell: (params) => (
-        <EventTypeChip event_type={params.value as string} />
+        <EventTypeChip
+          event_type={params.value as string}
+          meter_activity_type={params.row.meter_activity_type}
+        />
       ),
     },
     {
@@ -840,21 +848,43 @@ export const PartsHistory = () => {
                 >
                   Reset
                 </Button>
-                <Button
-                  variant="outlined"
-                  color="secondary"
-                  size="small"
-                  onClick={() => setIncreaseOpen(true)}
-                  disabled={
-                    partsList.isLoading ||
-                    !partsList.data ||
-                    partsList.data.length === 0
-                  }
-                  startIcon={<PlusOne fontSize="small" />}
-                  sx={{ alignSelf: { xs: "stretch", sm: "center" } }}
+                <Box
+                  sx={{
+                    display: "flex",
+                    gap: 2,
+                  }}
                 >
-                  Increase Quantity
-                </Button>
+                  <Button
+                    variant="outlined"
+                    color="warning"
+                    size="small"
+                    onClick={() => setDecreaseOpen(true)}
+                    disabled={
+                      partsList.isLoading ||
+                      !partsList.data ||
+                      partsList.data.length === 0
+                    }
+                    startIcon={<Remove fontSize="small" />}
+                    sx={{ alignSelf: { xs: "stretch", sm: "center" } }}
+                  >
+                    Decrease Quantity
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    color="secondary"
+                    size="small"
+                    onClick={() => setIncreaseOpen(true)}
+                    disabled={
+                      partsList.isLoading ||
+                      !partsList.data ||
+                      partsList.data.length === 0
+                    }
+                    startIcon={<PlusOne fontSize="small" />}
+                    sx={{ alignSelf: { xs: "stretch", sm: "center" } }}
+                  >
+                    Increase Quantity
+                  </Button>
+                </Box>
               </Box>
             </Grid>
           </Grid>
@@ -887,6 +917,32 @@ export const PartsHistory = () => {
             onError: () => {
               enqueueSnackbar(
                 "Failed to submit quantity increase. Please try again.",
+                {
+                  variant: "error",
+                },
+              );
+            },
+          });
+        }}
+      />
+      <DecreaseQuantityModal
+        open={decreaseOpen}
+        onClose={() => setDecreaseOpen(false)}
+        parts={partsList.data ?? []}
+        defaultPartId={id ? Number(id) : undefined}
+        loading={decreaseParts.isLoading}
+        onSubmit={(payload) => {
+          decreaseParts.mutate(payload, {
+            onSuccess: async () => {
+              enqueueSnackbar("Quantity decrease submitted successfully.", {
+                variant: "success",
+              });
+              setDecreaseOpen(false);
+              await Promise.all([partsList.refetch(), history.refetch()]);
+            },
+            onError: () => {
+              enqueueSnackbar(
+                "Failed to submit quantity decrease. Please try again.",
                 {
                   variant: "error",
                 },

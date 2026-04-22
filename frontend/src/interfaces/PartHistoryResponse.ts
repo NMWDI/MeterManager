@@ -5,6 +5,7 @@ export type PartHistoryRow = {
   event_type: "initial" | "added" | "used" | "workorder";
   ref_id?: number | null;
   work_order_id?: number | null;
+  meter_activity_type?: string | null;
   note?: string | null;
   delta: number;
   total_after: number;

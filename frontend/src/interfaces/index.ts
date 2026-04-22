@@ -5,6 +5,7 @@ export * from "./BackupRow";
 export * from "./BaseWell";
 export * from "./CreateUser";
 export * from "./CreateNotificationPayload";
+export * from "./DecreaseQuantityPayload";
 export * from "./DeviceAttributes";
 export * from "./DevicePayload";
 export * from "./HomeSummary";
