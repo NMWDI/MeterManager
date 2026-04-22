@@ -104,6 +104,10 @@ export function useCreateMeterType(onSuccess: Function) {
       } else {
         onSuccess();
 
+        queryClient.invalidateQueries({
+          queryKey: [route],
+        });
+
         const responseJson = await response.json();
         queryClient.setQueryData(
           ["meter_types"],
@@ -211,6 +215,10 @@ export function useCreatePart(onSuccess: Function) {
         } else {
           onSuccess();
 
+          queryClient.invalidateQueries({
+            queryKey: [route],
+          });
+
           const responseJson = await response.json();
           queryClient.setQueryData(["parts"], (old: Part[] | undefined) => {
             if (old != undefined) {
@@ -308,7 +316,10 @@ export function useUpdatePartHistory(
         throw new Error("Missing part id");
       }
 
-      const response = await apiClient.patch(`parts/${partId}/history`, payload);
+      const response = await apiClient.patch(
+        `parts/${partId}/history`,
+        payload,
+      );
 
       if (!response.ok) {
         let detail = "";
