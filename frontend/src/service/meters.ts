@@ -112,13 +112,20 @@ export function useCreateMeter(onSuccess: Function) {
           enqueueSnackbar("Unknown Error Occurred!", { variant: "error" });
           throw Error("Unknown Error: " + response.status);
         }
-      } else {
-        onSuccess();
-
-        const responseJson = await response.json();
-        invalidateMapDataCaches(queryClient);
-        return responseJson;
       }
+
+      return response.json();
+    },
+    onSuccess: (responseJson) => {
+      onSuccess();
+
+      invalidateMapDataCaches(queryClient);
+
+      queryClient.invalidateQueries({
+        queryKey: [route],
+      });
+
+      return responseJson;
     },
     retry: 0,
   });
