@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import datetime
 from typing import List, Literal, Optional
 
 from api.schemas.base import ORMBase
@@ -55,14 +55,14 @@ class PartUsed(ORMBase):
 class PartsAddRequest(ORMBase):
     part_id: int
     count: int
-    date: date
+    date: datetime
     note: Optional[str] = None
 
 
 class PartsDecreaseRequest(ORMBase):
     part_id: int
     count: int
-    date: date
+    date: datetime
     note: Optional[str] = None
 
 

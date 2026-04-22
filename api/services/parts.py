@@ -1,11 +1,11 @@
-from datetime import date, datetime, time
+from datetime import date, datetime
 from io import BytesIO
 from pathlib import Path
 from typing import Optional
 
 from fastapi import HTTPException
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-from sqlalchemy import DateTime, case, cast, func, literal, select, union_all
+from sqlalchemy import case, func, literal, select, union_all
 from sqlalchemy.orm import Session, selectinload
 from weasyprint import HTML
 
@@ -67,7 +67,7 @@ def build_part_history_response(part_id: int, db: Session) -> parts.PartHistoryR
             PartsUsed.id.label("ref_id"),
             PartsUsed.part_id.label("part_id"),
             func.coalesce(
-                cast(PartsUsed.date, DateTime),
+                PartsUsed.date,
                 MeterActivities.timestamp_start,
                 func.now(),
             ).label("event_date"),
@@ -128,8 +128,6 @@ def build_part_history_response(part_id: int, db: Session) -> parts.PartHistoryR
         work_order_id,
         meter_activity_type,
     ) in rows:
-        if not isinstance(event_date, datetime):
-            event_date = datetime.combine(event_date, time.min)
         running += int(delta)
         history.append(
             parts.PartHistoryRow(
@@ -361,7 +359,7 @@ def patch_part_history(
                     status_code=404, detail="Parts added row not found."
                 )
             added_row.count = row.delta
-            added_row.date = row.event_date.date()
+            added_row.date = row.event_date
             added_row.note = normalized_note
             continue
 
@@ -382,7 +380,7 @@ def patch_part_history(
         parts_used_row.note = normalized_note
 
         if parts_used_row.meter_activity_id is None:
-            parts_used_row.date = row.event_date.date()
+            parts_used_row.date = row.event_date
             continue
 
         activity = db.scalars(

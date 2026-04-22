@@ -120,6 +120,17 @@ function sameStringArray(a: string[], b: string[]) {
   return a.length === b.length && a.every((value, index) => value === b[index]);
 }
 
+function serializePartTimestamp(value: Dayjs) {
+  return value.format("YYYY-MM-DDTHH:mm:ss");
+}
+
+function formatPartTimestamp(value: unknown) {
+  if (!value) return "-";
+
+  const parsed = dayjs(String(value));
+  return parsed.isValid() ? parsed.format("MMM D, YYYY h:mm A") : String(value);
+}
+
 function recalculateRows(sourceRows: any[]) {
   const initialRow = sourceRows.find((row) => row.event_type === "initial");
   const currentRow = sourceRows.find((row) => row.event_type === "current");
@@ -156,7 +167,7 @@ function hydrateRows(data: PartHistoryResponse, partId?: string) {
       ? {
           row_id: `current-${partId ?? "unknown"}`,
           part_id: Number(partId),
-          event_date: dayjs().toISOString(),
+          event_date: serializePartTimestamp(dayjs()),
           event_type: "current",
           ref_id: null,
           note: "Current count",
@@ -489,7 +500,7 @@ export const PartsHistory = () => {
           (row): EditablePartHistoryRow => ({
             ref_id: Number(row.ref_id),
             event_type: row.event_type,
-            event_date: dayjs(row.event_date).toISOString(),
+            event_date: serializePartTimestamp(dayjs(row.event_date)),
             note: row.note ?? null,
             delta: Number(row.delta),
           }),
@@ -525,13 +536,8 @@ export const PartsHistory = () => {
       renderCell: (params) => {
         const row = params.row;
         if (row.event_type === "initial") return "-";
-
-        const d =
-          row.event_type === "current" ? new Date() : new Date(params.value);
-
-        return isNaN(d.getTime())
-          ? String(params.value)
-          : dayjs(d).format("MMM D, YYYY h:mm A");
+        if (row.event_type === "current") return formatPartTimestamp(dayjs());
+        return formatPartTimestamp(params.value);
       },
       renderEditCell: (params) => {
         const { id, value, api } = params;
@@ -544,7 +550,7 @@ export const PartsHistory = () => {
                 api.setEditCellValue({
                   id,
                   field: "event_date",
-                  value: newValue.toISOString(),
+                  value: serializePartTimestamp(newValue),
                 });
               }
             }}

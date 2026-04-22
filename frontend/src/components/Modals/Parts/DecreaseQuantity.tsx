@@ -10,7 +10,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { DatePicker } from "@mui/x-date-pickers";
+import { DateTimePicker } from "@mui/x-date-pickers";
 import dayjs, { Dayjs } from "dayjs";
 import { DecreaseQuantityPayload, Part } from "@/interfaces";
 import { Save } from "@mui/icons-material";
@@ -76,7 +76,7 @@ export const DecreaseQuantityModal = ({
     onSubmit({
       part_id: selectedPart.id,
       count: Math.trunc(decreaseByNum),
-      date: date.format("YYYY-MM-DD"),
+      date: date.format("YYYY-MM-DDTHH:mm:ss"),
       note: note.trim().length ? note.trim() : undefined,
     });
   };
@@ -132,14 +132,15 @@ export const DecreaseQuantityModal = ({
             helperText={qtyError ? "Enter a number greater than 0." : " "}
           />
 
-          <DatePicker
-            label="Date"
+          <DateTimePicker
+            label="Date & Time"
             value={date}
             onChange={(newDate) => setDate(newDate)}
             disableFuture
+            format="MMM D, YYYY h:mm A"
             slotProps={{
               textField: {
-                helperText: dateError ? "Date is required." : "Required.",
+                helperText: dateError ? "Date and time are required." : "Required.",
                 error: dateError,
                 fullWidth: true,
                 size: "small",
