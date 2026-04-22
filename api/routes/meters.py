@@ -111,9 +111,7 @@ def get_meters(
     dependencies=[Depends(ScopedUser.Admin)],
     tags=["Meters"],
 )
-def create_meter(
-    new_meter: meter.SubmitNewMeter, db: Session = Depends(get_db)
-):
+def create_meter(new_meter: meter.SubmitNewMeter, db: Session = Depends(get_db)):
     """
     Create a new meter. This requires a SN and meter type.
     Status is infered from based on if a well is provided.
@@ -131,6 +129,7 @@ def create_meter(
         serial_number=new_meter.serial_number,
         contact_name=new_meter.contact_name,
         contact_phone=new_meter.contact_phone,
+        notes=new_meter.notes,
         meter_type_id=new_meter.meter_type.id,
         price=new_meter.price,
         status_id=warehouse_status_id,
@@ -250,9 +249,7 @@ def get_meters_locations(
         meter_pm_query,
         {"mids": meter_ids, "pm_activity_type_id": pm_activity_type_id},
     ).fetchall()
-    meter_pm_dict = {
-        row.meter_id: row.last_pm_meter_activity for row in meter_pm_rows
-    }
+    meter_pm_dict = {row.meter_id: row.last_pm_meter_activity for row in meter_pm_rows}
 
     location_only_dict = {}
 
@@ -404,9 +401,7 @@ def update_meter_type(
     dependencies=[Depends(ScopedUser.Admin)],
     tags=["Meters"],
 )
-def create_meter_type(
-    new_meter_type: meter.MeterTypeLU, db: Session = Depends(get_db)
-):
+def create_meter_type(new_meter_type: meter.MeterTypeLU, db: Session = Depends(get_db)):
     new_type_model = MeterTypeLU(
         brand=new_meter_type.brand,
         series=new_meter_type.series,
@@ -441,9 +436,7 @@ def get_land_owners(
     response_model=meter.Meter,
     tags=["Meters"],
 )
-def patch_meter(
-    updated_meter: meter.SubmitMeterUpdate, db: Session = Depends(get_db)
-):
+def patch_meter(updated_meter: meter.SubmitMeterUpdate, db: Session = Depends(get_db)):
     """
     Update the current state of a meter. This is only used by Meter Details on the frontend.
 
