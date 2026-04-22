@@ -5,7 +5,7 @@ from typing import Optional
 
 from fastapi import HTTPException
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-from sqlalchemy import func, literal, select, union_all
+from sqlalchemy import func, literal, select, union_all, case
 from sqlalchemy.orm import Session, selectinload
 from weasyprint import HTML
 
@@ -46,9 +46,7 @@ def _part_count_subqueries():
     return used_subq, added_subq, current_count
 
 
-def build_part_history_response(
-    part_id: int, db: Session
-) -> parts.PartHistoryResponse:
+def build_part_history_response(part_id: int, db: Session) -> parts.PartHistoryResponse:
     part = db.scalars(select(Parts).where(Parts.id == part_id)).first()
     if not part:
         raise HTTPException(status_code=404, detail="Part not found")
@@ -68,7 +66,10 @@ def build_part_history_response(
             PartsUsed.id.label("ref_id"),
             PartsUsed.part_id.label("part_id"),
             MeterActivities.timestamp_start.label("event_date"),
-            literal("used").label("event_type"),
+            case(
+                (MeterActivities.work_order_id.is_not(None), literal("workorder")),
+                else_=literal("used"),
+            ).label("event_type"),
             func.nullif(func.trim(MeterActivities.description), "").label("note"),
             (-PartsUsed.count).label("delta"),
             MeterActivities.work_order_id.label("work_order_id"),
@@ -150,7 +151,9 @@ def list_parts(db: Session, in_use: Optional[bool] = None):
     return results
 
 
-def get_parts_used_summary(db: Session, from_date: date, to_date: date, parts: list[int]):
+def get_parts_used_summary(
+    db: Session, from_date: date, to_date: date, parts: list[int]
+):
     start_dt = datetime.combine(from_date, datetime.min.time())
     end_dt = datetime.combine(to_date, datetime.max.time())
     usage_subq = (
@@ -236,8 +239,8 @@ def get_part(db: Session, part_id: int):
         ).first()
         register_details_obj = None
         if register_details is not None:
-            register_details_obj = (
-                parts.Register.register_details.model_validate(register_details)
+            register_details_obj = parts.Register.register_details.model_validate(
+                register_details
             )
         returned_part = parts.Register(
             **returned_part.model_dump(exclude_unset=True),
@@ -301,7 +304,9 @@ def patch_part_history(
                 )
             ).first()
             if not added_row:
-                raise HTTPException(status_code=404, detail="Parts added row not found.")
+                raise HTTPException(
+                    status_code=404, detail="Parts added row not found."
+                )
             added_row.count = row.delta
             added_row.date = row.event_date.date()
             added_row.note = normalized_note

@@ -60,8 +60,14 @@ import {
 } from "@/interfaces/PartHistoryResponse";
 import { useSnackbar } from "notistack";
 
-type EventType = "initial" | "used" | "added" | "current";
-const EVENT_TYPE_ORDER: EventType[] = ["initial", "used", "added", "current"];
+type EventType = "initial" | "used" | "added" | "workorder" | "current";
+const EVENT_TYPE_ORDER: EventType[] = [
+  "initial",
+  "used",
+  "added",
+  "workorder",
+  "current",
+];
 
 type PartsHistoryFormValues = {
   from?: Dayjs | null;
@@ -81,7 +87,12 @@ const schema = yup.object().shape({
     }),
   event_types: yup
     .array()
-    .of(yup.string().oneOf(["initial", "used", "added", "current"]).required())
+    .of(
+      yup
+        .string()
+        .oneOf(["initial", "used", "added", "workorder", "current"])
+        .required(),
+    )
     .min(1, "Select at least one event type")
     .required(),
 });
@@ -451,7 +462,10 @@ export const PartsHistory = () => {
     try {
       const changedRows = rows
         .filter(
-          (row) => row.event_type === "added" || row.event_type === "used",
+          (row) =>
+            row.event_type === "added" ||
+            row.event_type === "used" ||
+            row.event_type === "workorder",
         )
         .filter((row) => {
           const originalRow = originalRows.find(
@@ -680,16 +694,23 @@ export const PartsHistory = () => {
                 control={control}
                 name="event_types"
                 multiple
-                options={["initial", "used", "added", "current"]}
-                getOptionLabel={(opt: EventType) =>
-                  opt === "used"
-                    ? "Work Orders"
-                    : opt === "added"
-                      ? "Parts Added"
-                      : opt === "current"
-                        ? "Current"
-                        : "Initial"
-                }
+                options={["initial", "used", "added", "workorder", "current"]}
+                getOptionLabel={(opt: EventType) => {
+                  switch (opt) {
+                    case "initial":
+                      return "Initial";
+                    case "added":
+                      return "Parts Added";
+                    case "used":
+                      return "Parts Used";
+                    case "workorder":
+                      return "Work Orders";
+                    case "current":
+                      return "Current";
+                    default:
+                      return opt;
+                  }
+                }}
               />
             </Grid>
             <Grid item xs={12} md={6} lg={3}>

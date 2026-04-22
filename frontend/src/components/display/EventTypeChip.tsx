@@ -3,7 +3,7 @@ import { Chip } from "@mui/material";
 export const EventTypeChip = ({
   event_type,
 }: {
-  event_type: "added" | "used" | "initial" | "current" | string;
+  event_type: "added" | "used" | "workorder" | "initial" | "current" | string;
 }) => {
   switch (event_type) {
     case "added": {
@@ -21,8 +21,18 @@ export const EventTypeChip = ({
         <Chip
           sx={{ fontFamily: "monospace" }}
           size="small"
-          label="Work Order"
+          label="Parts Used"
           color="error"
+        />
+      );
+    }
+    case "workorder": {
+      return (
+        <Chip
+          sx={{ fontFamily: "monospace" }}
+          size="small"
+          label="Work Order"
+          color="warning"
         />
       );
     }

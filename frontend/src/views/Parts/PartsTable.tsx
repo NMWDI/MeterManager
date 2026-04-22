@@ -13,13 +13,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import {
-  PlusOne,
-  Search,
-  Add,
-  History,
-  Build,
-} from "@mui/icons-material";
+import { PlusOne, Search, Add, History, Build } from "@mui/icons-material";
 import { useSnackbar } from "notistack";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useGetParts, useAddParts } from "@/service";
@@ -85,7 +79,7 @@ export const PartsTable = ({
             params={{ id: String(params.row.id) }}
             search={{
               to: dayjs().endOf("month").format("YYYY-MM-DD"),
-              type: ["initial", "used", "added", "current"],
+              type: ["initial", "used", "added", "workorder", "current"],
               q: "",
               page: 0,
               pageSize: 25,
@@ -233,8 +227,7 @@ export const PartsTable = ({
                 setSearch((prev) => ({
                   ...prev,
                   p_pageSize: model.pageSize,
-                  p_page:
-                    model.pageSize !== prev.p_pageSize ? 0 : model.page,
+                  p_page: model.pageSize !== prev.p_pageSize ? 0 : model.page,
                 }))
               }
               pageSizeOptions={[10, 25, 50, 100]}
