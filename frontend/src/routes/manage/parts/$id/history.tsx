@@ -4,44 +4,49 @@ import dayjs from "dayjs";
 import { PartsHistory } from "@/views";
 import { ProtectedRoute } from "@/ProtectedRoute";
 import { API_URL } from "@/config";
-import {
-  dayjsDateParam,
-  pageParam,
-} from "@/utils";
+import { dayjsDateParam, pageParam } from "@/utils";
 import { PartHistoryResponse } from "@/interfaces/PartHistoryResponse";
 
-const eventTypeValues = ["initial", "used", "added", "current"] as const;
+const eventTypeValues = [
+  "initial",
+  "used",
+  "added",
+  "workorder",
+  "current",
+] as const;
 const defaultEventTypes: [
   (typeof eventTypeValues)[number],
   ...(typeof eventTypeValues)[number][],
-] = ["initial", "used", "added", "current"];
+] = ["initial", "used", "added", "workorder", "current"];
 
 const eventTypesSchema = z
-  .preprocess((val) => {
-    if (val == null || val === "") return undefined;
+  .preprocess(
+    (val) => {
+      if (val == null || val === "") return undefined;
 
-    let rawValue = val;
-    if (typeof rawValue === "string") {
-      try {
-        const parsed = JSON.parse(rawValue);
-        if (Array.isArray(parsed)) rawValue = parsed;
-      } catch {
-        // keep raw string and process as CSV
+      let rawValue = val;
+      if (typeof rawValue === "string") {
+        try {
+          const parsed = JSON.parse(rawValue);
+          if (Array.isArray(parsed)) rawValue = parsed;
+        } catch {
+          // keep raw string and process as CSV
+        }
       }
-    }
 
-    const raw = Array.isArray(rawValue) ? rawValue : [rawValue];
-    const values = raw
-      .flatMap((v) => (typeof v === "string" ? v.split(",") : [v]))
-      .map((v) => String(v).trim())
-      .filter(
-        (v): v is (typeof eventTypeValues)[number] =>
+      const raw = Array.isArray(rawValue) ? rawValue : [rawValue];
+      const values = raw
+        .flatMap((v) => (typeof v === "string" ? v.split(",") : [v]))
+        .map((v) => String(v).trim())
+        .filter((v): v is (typeof eventTypeValues)[number] =>
           eventTypeValues.includes(v as (typeof eventTypeValues)[number]),
-      );
+        );
 
-    const set = new Set(values);
-    return eventTypeValues.filter((type) => set.has(type));
-  }, z.array(z.enum(eventTypeValues)).nonempty().optional())
+      const set = new Set(values);
+      return eventTypeValues.filter((type) => set.has(type));
+    },
+    z.array(z.enum(eventTypeValues)).nonempty().optional(),
+  )
   .catch(defaultEventTypes)
   .default(defaultEventTypes);
 

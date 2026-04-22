@@ -12,24 +12,23 @@ import {
 } from "@mui/material";
 import { DateTimePicker } from "@mui/x-date-pickers";
 import dayjs, { Dayjs } from "dayjs";
-import { Part } from "@/interfaces";
-import { IncreaseQuantityPayload } from "@/interfaces/IncreaseQuantityPayload";
+import { DecreaseQuantityPayload, Part } from "@/interfaces";
 import { Save } from "@mui/icons-material";
 
-export const IncreaseQuantityModal = ({
+export const DecreaseQuantityModal = ({
   open,
   onClose,
   parts,
   defaultPartId,
   onSubmit,
-  title = "Increase Part Quantity",
+  title = "Decrease Part Quantity",
   loading,
 }: {
   open: boolean;
   onClose: () => void;
   parts: Part[];
   defaultPartId?: number | string;
-  onSubmit: (payload: IncreaseQuantityPayload) => void;
+  onSubmit: (payload: DecreaseQuantityPayload) => void;
   title?: string;
   loading?: boolean;
 }) => {
@@ -40,42 +39,44 @@ export const IncreaseQuantityModal = ({
   }, [parts]);
 
   const [selectedPart, setSelectedPart] = useState<Part | null>(null);
-  const [increaseBy, setIncreaseBy] = useState<string>("1");
+  const [decreaseBy, setDecreaseBy] = useState<string>("1");
   const [date, setDate] = useState<Dayjs | null>(dayjs());
   const [note, setNote] = useState<string>("");
 
-  const increaseByNum = Number(increaseBy);
-
+  const decreaseByNum = Number(decreaseBy);
   const partError = !selectedPart;
   const qtyError =
-    increaseBy.trim().length === 0 ||
-    Number.isNaN(increaseByNum) ||
-    !Number.isFinite(increaseByNum) ||
-    increaseByNum <= 0;
+    decreaseBy.trim().length === 0 ||
+    Number.isNaN(decreaseByNum) ||
+    !Number.isFinite(decreaseByNum) ||
+    decreaseByNum <= 0;
+  const dateError = !date;
 
-  // When opening, set defaults (today + optional part)
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      return;
+    }
 
     setDate(dayjs());
-    setIncreaseBy("1");
+    setDecreaseBy("1");
     setNote("");
 
     if (defaultPartId !== undefined) {
-      const p = partsById.get(defaultPartId) ?? null;
-      setSelectedPart(p);
+      setSelectedPart(partsById.get(defaultPartId) ?? null);
     } else {
       setSelectedPart(null);
     }
   }, [open, defaultPartId, partsById]);
 
   const handleSubmit = () => {
-    if (!selectedPart || qtyError) return;
+    if (!selectedPart || qtyError || !date) {
+      return;
+    }
 
     onSubmit({
       part_id: selectedPart.id,
-      count: Math.trunc(increaseByNum),
-      date: date?.format("YYYY-MM-DDTHH:mm:ss"),
+      count: Math.trunc(decreaseByNum),
+      date: date.format("YYYY-MM-DDTHH:mm:ss"),
       note: note.trim().length ? note.trim() : undefined,
     });
   };
@@ -86,15 +87,16 @@ export const IncreaseQuantityModal = ({
       onClose={loading ? undefined : onClose}
       fullWidth
       maxWidth="sm"
-      aria-labelledby="increase-qty-title"
+      aria-labelledby="decrease-qty-title"
       PaperProps={{ sx: { overflowX: "hidden" } }}
     >
-      <DialogTitle id="increase-qty-title">{title}</DialogTitle>
+      <DialogTitle id="decrease-qty-title">{title}</DialogTitle>
 
       <DialogContent dividers>
         <Stack spacing={2}>
           <Typography variant="body2" color="text.secondary">
-            Select a part, enter how many to add, and confirm the date.
+            Select a part, enter how many to remove, and choose the date for the
+            parts used record.
           </Typography>
 
           <Autocomplete
@@ -120,11 +122,11 @@ export const IncreaseQuantityModal = ({
           />
 
           <TextField
-            label="Increase by"
+            label="Decrease by"
             type="number"
             size="small"
-            value={increaseBy}
-            onChange={(e) => setIncreaseBy(e.target.value)}
+            value={decreaseBy}
+            onChange={(e) => setDecreaseBy(e.target.value)}
             inputProps={{ min: 1, step: 1 }}
             error={qtyError}
             helperText={qtyError ? "Enter a number greater than 0." : " "}
@@ -138,7 +140,8 @@ export const IncreaseQuantityModal = ({
             format="MMM D, YYYY h:mm A"
             slotProps={{
               textField: {
-                helperText: "Defaults to now.",
+                helperText: dateError ? "Date and time are required." : "Required.",
+                error: dateError,
                 fullWidth: true,
                 size: "small",
               },
@@ -150,7 +153,7 @@ export const IncreaseQuantityModal = ({
             size="small"
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="Optional note (e.g., received shipment, inventory correction)"
+            placeholder="Optional inventory note"
             multiline
             minRows={2}
             maxRows={4}
@@ -174,7 +177,7 @@ export const IncreaseQuantityModal = ({
           onClick={handleSubmit}
           variant="contained"
           color="success"
-          disabled={!selectedPart || qtyError || loading}
+          disabled={!selectedPart || qtyError || dateError || loading}
           sx={{
             flexShrink: 0,
             width: { xs: "100%", sm: "auto" },

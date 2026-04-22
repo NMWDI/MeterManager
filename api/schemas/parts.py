@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import datetime
 from typing import List, Literal, Optional
 
 from api.schemas.base import ORMBase
@@ -55,7 +55,14 @@ class PartUsed(ORMBase):
 class PartsAddRequest(ORMBase):
     part_id: int
     count: int
-    date: date
+    date: datetime
+    note: Optional[str] = None
+
+
+class PartsDecreaseRequest(ORMBase):
+    part_id: int
+    count: int
+    date: datetime
     note: Optional[str] = None
 
 
@@ -63,9 +70,10 @@ class PartHistoryRow(ORMBase):
     row_id: str
     part_id: int
     event_date: datetime
-    event_type: Literal["initial", "added", "used"]
+    event_type: Literal["initial", "added", "used", "workorder"]
     ref_id: int | None = None
     work_order_id: int | None = None
+    meter_activity_type: str | None = None
     note: str | None = None
     delta: int
     total_after: int
@@ -74,7 +82,7 @@ class PartHistoryRow(ORMBase):
 class PartHistoryUpdateRow(ORMBase):
     ref_id: int
     event_date: datetime
-    event_type: Literal["added", "used"]
+    event_type: Literal["added", "used", "workorder"]
     note: str | None = None
     delta: int
 

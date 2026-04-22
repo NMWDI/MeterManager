@@ -25,6 +25,7 @@ import {
   InfoOutlined,
   NavigateNext,
   PlusOne,
+  Remove,
   Save,
   Search,
 } from "@mui/icons-material";
@@ -43,10 +44,12 @@ import {
   EventTypeChip,
   ControlledDatepicker,
   ControlledSelectNonObject,
+  DecreaseQuantityModal,
   IncreaseQuantityModal,
 } from "@/components";
 import {
   useAddParts,
+  useDecreaseParts,
   useGetPartHistory,
   useGetParts,
   useUpdatePartHistory,
@@ -60,8 +63,14 @@ import {
 } from "@/interfaces/PartHistoryResponse";
 import { useSnackbar } from "notistack";
 
-type EventType = "initial" | "used" | "added" | "current";
-const EVENT_TYPE_ORDER: EventType[] = ["initial", "used", "added", "current"];
+type EventType = "initial" | "used" | "added" | "workorder" | "current";
+const EVENT_TYPE_ORDER: EventType[] = [
+  "initial",
+  "used",
+  "added",
+  "workorder",
+  "current",
+];
 
 type PartsHistoryFormValues = {
   from?: Dayjs | null;
@@ -81,7 +90,12 @@ const schema = yup.object().shape({
     }),
   event_types: yup
     .array()
-    .of(yup.string().oneOf(["initial", "used", "added", "current"]).required())
+    .of(
+      yup
+        .string()
+        .oneOf(["initial", "used", "added", "workorder", "current"])
+        .required(),
+    )
     .min(1, "Select at least one event type")
     .required(),
 });
@@ -104,6 +118,17 @@ function normalizeEventTypes(input: unknown): EventType[] {
 
 function sameStringArray(a: string[], b: string[]) {
   return a.length === b.length && a.every((value, index) => value === b[index]);
+}
+
+function serializePartTimestamp(value: Dayjs) {
+  return value.format("YYYY-MM-DDTHH:mm:ss");
+}
+
+function formatPartTimestamp(value: unknown) {
+  if (!value) return "-";
+
+  const parsed = dayjs(String(value));
+  return parsed.isValid() ? parsed.format("MMM D, YYYY h:mm A") : String(value);
 }
 
 function recalculateRows(sourceRows: any[]) {
@@ -142,7 +167,7 @@ function hydrateRows(data: PartHistoryResponse, partId?: string) {
       ? {
           row_id: `current-${partId ?? "unknown"}`,
           part_id: Number(partId),
-          event_date: dayjs().toISOString(),
+          event_date: serializePartTimestamp(dayjs()),
           event_type: "current",
           ref_id: null,
           note: "Current count",
@@ -294,6 +319,7 @@ export const PartsHistory = () => {
   const history = useGetPartHistory(id);
   const partsList = useGetParts();
   const addParts = useAddParts();
+  const decreaseParts = useDecreaseParts();
   const { enqueueSnackbar } = useSnackbar();
   const updateHistory = useUpdatePartHistory(id, (response) => {
     const nextRows = hydrateRows(response, id);
@@ -306,6 +332,7 @@ export const PartsHistory = () => {
   const [originalRows, setOriginalRows] = useState<any[]>([]);
   const [hasChanges, setHasChanges] = useState(false);
   const [increaseOpen, setIncreaseOpen] = useState(false);
+  const [decreaseOpen, setDecreaseOpen] = useState(false);
   const [snackbar, setSnackbar] = useState<{
     message: string;
     severity: "success" | "error";
@@ -451,7 +478,10 @@ export const PartsHistory = () => {
     try {
       const changedRows = rows
         .filter(
-          (row) => row.event_type === "added" || row.event_type === "used",
+          (row) =>
+            row.event_type === "added" ||
+            row.event_type === "used" ||
+            row.event_type === "workorder",
         )
         .filter((row) => {
           const originalRow = originalRows.find(
@@ -470,7 +500,7 @@ export const PartsHistory = () => {
           (row): EditablePartHistoryRow => ({
             ref_id: Number(row.ref_id),
             event_type: row.event_type,
-            event_date: dayjs(row.event_date).toISOString(),
+            event_date: serializePartTimestamp(dayjs(row.event_date)),
             note: row.note ?? null,
             delta: Number(row.delta),
           }),
@@ -506,13 +536,8 @@ export const PartsHistory = () => {
       renderCell: (params) => {
         const row = params.row;
         if (row.event_type === "initial") return "-";
-
-        const d =
-          row.event_type === "current" ? new Date() : new Date(params.value);
-
-        return isNaN(d.getTime())
-          ? String(params.value)
-          : dayjs(d).format("MMM D, YYYY h:mm A");
+        if (row.event_type === "current") return formatPartTimestamp(dayjs());
+        return formatPartTimestamp(params.value);
       },
       renderEditCell: (params) => {
         const { id, value, api } = params;
@@ -525,7 +550,7 @@ export const PartsHistory = () => {
                 api.setEditCellValue({
                   id,
                   field: "event_date",
-                  value: newValue.toISOString(),
+                  value: serializePartTimestamp(newValue),
                 });
               }
             }}
@@ -551,9 +576,12 @@ export const PartsHistory = () => {
     {
       field: "event_type",
       headerName: "Type",
-      width: 140,
+      width: 260,
       renderCell: (params) => (
-        <EventTypeChip event_type={params.value as string} />
+        <EventTypeChip
+          event_type={params.value as string}
+          meter_activity_type={params.row.meter_activity_type}
+        />
       ),
     },
     {
@@ -680,16 +708,23 @@ export const PartsHistory = () => {
                 control={control}
                 name="event_types"
                 multiple
-                options={["initial", "used", "added", "current"]}
-                getOptionLabel={(opt: EventType) =>
-                  opt === "used"
-                    ? "Work Orders"
-                    : opt === "added"
-                      ? "Parts Added"
-                      : opt === "current"
-                        ? "Current"
-                        : "Initial"
-                }
+                options={["initial", "used", "added", "workorder", "current"]}
+                getOptionLabel={(opt: EventType) => {
+                  switch (opt) {
+                    case "initial":
+                      return "Initial";
+                    case "added":
+                      return "Parts Added";
+                    case "used":
+                      return "Parts Used";
+                    case "workorder":
+                      return "Work Orders";
+                    case "current":
+                      return "Current";
+                    default:
+                      return opt;
+                  }
+                }}
               />
             </Grid>
             <Grid item xs={12} md={6} lg={3}>
@@ -819,21 +854,43 @@ export const PartsHistory = () => {
                 >
                   Reset
                 </Button>
-                <Button
-                  variant="outlined"
-                  color="secondary"
-                  size="small"
-                  onClick={() => setIncreaseOpen(true)}
-                  disabled={
-                    partsList.isLoading ||
-                    !partsList.data ||
-                    partsList.data.length === 0
-                  }
-                  startIcon={<PlusOne fontSize="small" />}
-                  sx={{ alignSelf: { xs: "stretch", sm: "center" } }}
+                <Box
+                  sx={{
+                    display: "flex",
+                    gap: 2,
+                  }}
                 >
-                  Increase Quantity
-                </Button>
+                  <Button
+                    variant="outlined"
+                    color="warning"
+                    size="small"
+                    onClick={() => setDecreaseOpen(true)}
+                    disabled={
+                      partsList.isLoading ||
+                      !partsList.data ||
+                      partsList.data.length === 0
+                    }
+                    startIcon={<Remove fontSize="small" />}
+                    sx={{ alignSelf: { xs: "stretch", sm: "center" } }}
+                  >
+                    Decrease Quantity
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    color="secondary"
+                    size="small"
+                    onClick={() => setIncreaseOpen(true)}
+                    disabled={
+                      partsList.isLoading ||
+                      !partsList.data ||
+                      partsList.data.length === 0
+                    }
+                    startIcon={<PlusOne fontSize="small" />}
+                    sx={{ alignSelf: { xs: "stretch", sm: "center" } }}
+                  >
+                    Increase Quantity
+                  </Button>
+                </Box>
               </Box>
             </Grid>
           </Grid>
@@ -866,6 +923,32 @@ export const PartsHistory = () => {
             onError: () => {
               enqueueSnackbar(
                 "Failed to submit quantity increase. Please try again.",
+                {
+                  variant: "error",
+                },
+              );
+            },
+          });
+        }}
+      />
+      <DecreaseQuantityModal
+        open={decreaseOpen}
+        onClose={() => setDecreaseOpen(false)}
+        parts={partsList.data ?? []}
+        defaultPartId={id ? Number(id) : undefined}
+        loading={decreaseParts.isLoading}
+        onSubmit={(payload) => {
+          decreaseParts.mutate(payload, {
+            onSuccess: async () => {
+              enqueueSnackbar("Quantity decrease submitted successfully.", {
+                variant: "success",
+              });
+              setDecreaseOpen(false);
+              await Promise.all([partsList.refetch(), history.refetch()]);
+            },
+            onError: () => {
+              enqueueSnackbar(
+                "Failed to submit quantity decrease. Please try again.",
                 {
                   variant: "error",
                 },

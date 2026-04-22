@@ -2,9 +2,10 @@ export type PartHistoryRow = {
   row_id: string;
   part_id: number;
   event_date: string;
-  event_type: "initial" | "added" | "used";
+  event_type: "initial" | "added" | "used" | "workorder";
   ref_id?: number | null;
   work_order_id?: number | null;
+  meter_activity_type?: string | null;
   note?: string | null;
   delta: number;
   total_after: number;
@@ -13,7 +14,7 @@ export type PartHistoryRow = {
 export type EditablePartHistoryRow = {
   ref_id: number;
   event_date: string;
-  event_type: "added" | "used";
+  event_type: "added" | "used" | "workorder";
   note?: string | null;
   delta: number;
 };

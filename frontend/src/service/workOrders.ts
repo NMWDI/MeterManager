@@ -1,5 +1,10 @@
 import { useSnackbar } from "notistack";
-import { useMutation, useQuery, UseQueryOptions } from "react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  UseQueryOptions,
+} from "react-query";
 import { useApiClient } from "@/hooks";
 import { NewWorkOrder, PatchWorkOrder, WorkOrder } from "@/interfaces";
 import { WorkOrderStatus } from "@/enums";
@@ -91,6 +96,7 @@ export function useDeleteWorkOrder(onSuccess: Function) {
 
 export function useCreateWorkOrder() {
   const { enqueueSnackbar } = useSnackbar();
+  const queryClient = useQueryClient();
   const apiClient = useApiClient();
   const route = "work_orders";
 
@@ -115,6 +121,10 @@ export function useCreateWorkOrder() {
           throw Error("Unknown Error: " + response.status);
         }
       } else {
+        queryClient.invalidateQueries({
+          queryKey: [route],
+        });
+
         const responseJson = await response.json();
         return responseJson;
       }

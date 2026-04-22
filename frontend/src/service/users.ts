@@ -1,13 +1,27 @@
 import { useSnackbar } from "notistack";
-import { useMutation, useQuery, useQueryClient, UseQueryOptions } from "react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  UseQueryOptions,
+} from "react-query";
 import { useApiClient } from "@/hooks";
-import { AuthTokenResponse, UpdatedUserPassword, User, UserRole } from "@/interfaces";
+import {
+  AuthTokenResponse,
+  UpdatedUserPassword,
+  User,
+  UserRole,
+} from "@/interfaces";
 
 export function useGetRoles(options?: UseQueryOptions<UserRole[], Error>) {
   const apiClient = useApiClient();
   const route = "roles";
 
-  return useQuery<UserRole[], Error>([route], () => apiClient.get(route), options);
+  return useQuery<UserRole[], Error>(
+    [route],
+    () => apiClient.get(route),
+    options,
+  );
 }
 
 export function useGetUserAdminList(options?: UseQueryOptions<User[], Error>) {
@@ -40,7 +54,10 @@ export function useImpersonateUser() {
 
   return useMutation({
     mutationFn: async (userId: number) => {
-      const response = await apiClient.post(`users/${userId}/impersonate`, undefined);
+      const response = await apiClient.post(
+        `users/${userId}/impersonate`,
+        undefined,
+      );
       if (!response.ok) {
         throw new Error(await response.text());
       }
@@ -73,6 +90,10 @@ export function useCreateUser(onSuccess: Function) {
         }
       } else {
         onSuccess();
+
+        queryClient.invalidateQueries({
+          queryKey: [route],
+        });
 
         const responseJson = await response.json();
         queryClient.setQueryData(["usersadmin"], (old: User[] | undefined) => {

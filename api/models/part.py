@@ -1,7 +1,7 @@
-from datetime import date
+from datetime import datetime
 from typing import List, Optional
 
-from sqlalchemy import Boolean, Column, Date, Float, ForeignKey, Integer, String, Table
+from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String, Table
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from api.models.base import Base
@@ -50,14 +50,16 @@ class PartsUsed(Base):
     __tablename__ = "PartsUsed"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    meter_activity_id: Mapped[int] = mapped_column(
-        ForeignKey("MeterActivities.id"), nullable=False
+    meter_activity_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("MeterActivities.id"), nullable=True
     )
     part_id: Mapped[int] = mapped_column(ForeignKey("Parts.id"), nullable=False)
     count: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    date: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    note: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
     part: Mapped["Parts"] = relationship(back_populates="parts_used_links")
-    meter_activity: Mapped["MeterActivities"] = relationship(
+    meter_activity: Mapped[Optional["MeterActivities"]] = relationship(
         back_populates="parts_used_links"
     )
 
@@ -68,7 +70,7 @@ class PartsAdded(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     part_id: Mapped[int] = mapped_column(ForeignKey("Parts.id"), nullable=False)
     count: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
-    date: Mapped[date] = mapped_column(Date, nullable=False)
+    date: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     note: Mapped[str | None] = mapped_column(String, nullable=True)
 
     part: Mapped["Parts"] = relationship()

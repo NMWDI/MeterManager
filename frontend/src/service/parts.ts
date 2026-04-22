@@ -1,7 +1,7 @@
 import { useSnackbar } from "notistack";
 import { useMutation, useQuery, useQueryClient } from "react-query";
 import { useApiClient } from "@/hooks";
-import { IncreaseQuantityPayload } from "@/interfaces";
+import { DecreaseQuantityPayload, IncreaseQuantityPayload } from "@/interfaces";
 import { MeterTypeLU, Part } from "@/interfaces";
 import {
   PartHistoryResponse,
@@ -103,6 +103,10 @@ export function useCreateMeterType(onSuccess: Function) {
         }
       } else {
         onSuccess();
+
+        queryClient.invalidateQueries({
+          queryKey: [route],
+        });
 
         const responseJson = await response.json();
         queryClient.setQueryData(
@@ -211,6 +215,10 @@ export function useCreatePart(onSuccess: Function) {
         } else {
           onSuccess();
 
+          queryClient.invalidateQueries({
+            queryKey: [route],
+          });
+
           const responseJson = await response.json();
           queryClient.setQueryData(["parts"], (old: Part[] | undefined) => {
             if (old != undefined) {
@@ -284,6 +292,56 @@ export function useAddParts(onSuccess?: () => void) {
   });
 }
 
+export function useDecreaseParts(onSuccess?: () => void) {
+  const { enqueueSnackbar } = useSnackbar();
+  const queryClient = useQueryClient();
+  const apiClient = useApiClient();
+  const route = "parts/decrease";
+
+  return useMutation({
+    mutationFn: async (payload: DecreaseQuantityPayload) => {
+      const response = await apiClient.post(route, payload);
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          enqueueSnackbar("Part not found.", { variant: "error" });
+          throw new Error("Part not found (404)");
+        }
+
+        if (response.status === 422) {
+          enqueueSnackbar("Missing or invalid fields.", { variant: "error" });
+          throw new Error("Validation error (422)");
+        }
+
+        let detail = "";
+        try {
+          const j = await response.json();
+          detail = j?.detail ? ` (${j.detail})` : "";
+        } catch {}
+
+        enqueueSnackbar(
+          `Unknown error occurred! (${response.status})${detail}`,
+          {
+            variant: "error",
+          },
+        );
+        throw new Error(`Unknown Error: ${response.status}${detail}`);
+      }
+
+      const updatedPart: Part = await response.json();
+
+      queryClient.setQueryData<Part[]>(["parts"], (old) => {
+        const safeOld = old ?? [];
+        return safeOld.map((p) => (p.id === updatedPart.id ? updatedPart : p));
+      });
+
+      onSuccess?.();
+      return updatedPart;
+    },
+    retry: 0,
+  });
+}
+
 export function useGetPartHistory(partId?: string) {
   const apiClient = useApiClient();
 
@@ -308,7 +366,10 @@ export function useUpdatePartHistory(
         throw new Error("Missing part id");
       }
 
-      const response = await apiClient.patch(`parts/${partId}/history`, payload);
+      const response = await apiClient.patch(
+        `parts/${partId}/history`,
+        payload,
+      );
 
       if (!response.ok) {
         let detail = "";
