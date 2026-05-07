@@ -413,6 +413,27 @@ export const PartsUsedReportView = () => {
     });
   };
 
+  const hasSelectedParts = selectedPartIds.length > 0;
+
+  const handleToggleParts = () => {
+    if (hasSelectedParts) {
+      setValue("part_types", [], { shouldDirty: true, shouldValidate: true });
+      setValue("parts", [], { shouldDirty: true, shouldValidate: true });
+      return;
+    }
+
+    setValue("part_types", partTypeOptions, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+
+    setValue(
+      "parts",
+      (partsQuery.data ?? []).map((part) => part.id),
+      { shouldDirty: true, shouldValidate: true },
+    );
+  };
+
   return (
     <BackgroundBox>
       <Card sx={{ height: "fit-content" }}>
@@ -500,54 +521,71 @@ export const PartsUsedReportView = () => {
               {partsQuery.isLoading ? (
                 <Skeleton variant="rounded" width="100%" height={40} />
               ) : (
-                <Controller
-                  name="parts"
-                  control={control}
-                  render={({ field }) => {
-                    // Convert stored IDs to Part objects for the `value` prop
-                    const selectedParts = (partsQuery?.data ?? []).filter(
-                      (part) => field?.value?.includes(part.id),
-                    );
+                <Grid container spacing={2} alignItems="center">
+                  <Grid item xs>
+                    <Controller
+                      name="parts"
+                      control={control}
+                      render={({ field }) => {
+                        // Convert stored IDs to Part objects for the `value` prop
+                        const selectedParts = (partsQuery?.data ?? []).filter(
+                          (part) => field?.value?.includes(part.id),
+                        );
 
-                    return (
-                      <Autocomplete
-                        multiple
-                        disableClearable
-                        options={groupedFilteredParts}
-                        groupBy={(option: Part) =>
-                          option.part_type?.name ?? "Other"
-                        }
-                        getOptionLabel={(option: Part) =>
-                          `${option.part_number} ${option.description}`
-                        }
-                        isOptionEqualToValue={(a: Part, b: Part) =>
-                          a.id === b.id
-                        }
-                        value={selectedParts}
-                        onChange={(_, selectedOptions) =>
-                          field.onChange(selectedOptions.map((p) => p.id))
-                        }
-                        filterOptions={(options: Part[], state: any) =>
-                          options.filter((opt) =>
-                            `${opt.part_number} ${opt.description}`
-                              .toLowerCase()
-                              .includes(state.inputValue.toLowerCase()),
-                          )
-                        }
-                        loading={partsQuery.isLoading}
-                        renderInput={(params) => (
-                          <TextField
-                            {...params}
-                            size="small"
-                            sx={{ width: "100%" }}
-                            label="Parts"
-                            placeholder="Begin typing to search"
+                        return (
+                          <Autocomplete
+                            multiple
+                            disableClearable
+                            options={groupedFilteredParts}
+                            groupBy={(option: Part) =>
+                              option.part_type?.name ?? "Other"
+                            }
+                            getOptionLabel={(option: Part) =>
+                              `${option.part_number} ${option.description}`
+                            }
+                            isOptionEqualToValue={(a: Part, b: Part) =>
+                              a.id === b.id
+                            }
+                            value={selectedParts}
+                            onChange={(_, selectedOptions) =>
+                              field.onChange(selectedOptions.map((p) => p.id))
+                            }
+                            filterOptions={(options: Part[], state: any) =>
+                              options.filter((opt) =>
+                                `${opt.part_number} ${opt.description}`
+                                  .toLowerCase()
+                                  .includes(state.inputValue.toLowerCase()),
+                              )
+                            }
+                            loading={partsQuery.isLoading}
+                            renderInput={(params) => (
+                              <TextField
+                                {...params}
+                                size="small"
+                                sx={{ width: "100%" }}
+                                label="Parts"
+                                placeholder="Begin typing to search"
+                              />
+                            )}
                           />
-                        )}
-                      />
-                    );
-                  }}
-                />
+                        );
+                      }}
+                    />
+                  </Grid>
+                  <Grid item>
+                    <Button
+                      variant="outlined"
+                      onClick={handleToggleParts}
+                      disabled={partsQuery.isFetching}
+                      sx={{
+                        whiteSpace: "nowrap",
+                        height: hasSelectedParts ? 50 : 40,
+                      }}
+                    >
+                      {hasSelectedParts ? "Deselect All" : "Select All"}
+                    </Button>
+                  </Grid>
+                </Grid>
               )}
             </Grid>
             <Grid item xs={12} sx={{ display: "flex", alignItems: "center" }}>
