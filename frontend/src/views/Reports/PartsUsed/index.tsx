@@ -11,6 +11,7 @@ import {
   Switch,
   TextField,
   Tooltip,
+  Skeleton,
 } from "@mui/material";
 import { useNavigate } from "@tanstack/react-router";
 import { Controller, useForm } from "react-hook-form";
@@ -452,17 +453,21 @@ export const PartsUsedReportView = () => {
               />
             </Grid>
             <Grid item xs sx={{ flexGrow: 1 }}>
-              <ControlledSelect
-                sx={{ width: "100%" }}
-                size="small"
-                label="Part Types"
-                control={control}
-                name="part_types"
-                multiple
-                disabled={partsQuery.isFetching}
-                options={partTypeOptions}
-                getOptionLabel={(option: any) => option.type.name}
-              />
+              {partsQuery.isLoading ? (
+                <Skeleton variant="rounded" width="100%" height={40} />
+              ) : (
+                <ControlledSelect
+                  sx={{ width: "100%" }}
+                  size="small"
+                  label="Part Types"
+                  control={control}
+                  name="part_types"
+                  multiple
+                  disabled={partsQuery.isFetching}
+                  options={partTypeOptions}
+                  getOptionLabel={(option: any) => option.type.name}
+                />
+              )}
             </Grid>
             <Grid
               item
@@ -492,50 +497,58 @@ export const PartsUsedReportView = () => {
               </Tooltip>
             </Grid>
             <Grid item xs={12}>
-              <Controller
-                name="parts"
-                control={control}
-                render={({ field }) => {
-                  // Convert stored IDs to Part objects for the `value` prop
-                  const selectedParts = (partsQuery?.data ?? []).filter(
-                    (part) => field?.value?.includes(part.id),
-                  );
+              {partsQuery.isLoading ? (
+                <Skeleton variant="rounded" width="100%" height={40} />
+              ) : (
+                <Controller
+                  name="parts"
+                  control={control}
+                  render={({ field }) => {
+                    // Convert stored IDs to Part objects for the `value` prop
+                    const selectedParts = (partsQuery?.data ?? []).filter(
+                      (part) => field?.value?.includes(part.id),
+                    );
 
-                  return (
-                    <Autocomplete
-                      multiple
-                      disableClearable
-                      options={groupedFilteredParts}
-                      groupBy={(option: Part) => option.part_type?.name ?? "Other"}
-                      getOptionLabel={(option: Part) =>
-                        `${option.part_number} ${option.description}`
-                      }
-                      isOptionEqualToValue={(a: Part, b: Part) => a.id === b.id}
-                      value={selectedParts}
-                      onChange={(_, selectedOptions) =>
-                        field.onChange(selectedOptions.map((p) => p.id))
-                      }
-                      filterOptions={(options: Part[], state: any) =>
-                        options.filter((opt) =>
-                          `${opt.part_number} ${opt.description}`
-                            .toLowerCase()
-                            .includes(state.inputValue.toLowerCase()),
-                        )
-                      }
-                      loading={partsQuery.isLoading}
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          size="small"
-                          sx={{ width: "100%" }}
-                          label="Parts"
-                          placeholder="Begin typing to search"
-                        />
-                      )}
-                    />
-                  );
-                }}
-              />
+                    return (
+                      <Autocomplete
+                        multiple
+                        disableClearable
+                        options={groupedFilteredParts}
+                        groupBy={(option: Part) =>
+                          option.part_type?.name ?? "Other"
+                        }
+                        getOptionLabel={(option: Part) =>
+                          `${option.part_number} ${option.description}`
+                        }
+                        isOptionEqualToValue={(a: Part, b: Part) =>
+                          a.id === b.id
+                        }
+                        value={selectedParts}
+                        onChange={(_, selectedOptions) =>
+                          field.onChange(selectedOptions.map((p) => p.id))
+                        }
+                        filterOptions={(options: Part[], state: any) =>
+                          options.filter((opt) =>
+                            `${opt.part_number} ${opt.description}`
+                              .toLowerCase()
+                              .includes(state.inputValue.toLowerCase()),
+                          )
+                        }
+                        loading={partsQuery.isLoading}
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                            size="small"
+                            sx={{ width: "100%" }}
+                            label="Parts"
+                            placeholder="Begin typing to search"
+                          />
+                        )}
+                      />
+                    );
+                  }}
+                />
+              )}
             </Grid>
             <Grid item xs={12} sx={{ display: "flex", alignItems: "center" }}>
               <Controller
