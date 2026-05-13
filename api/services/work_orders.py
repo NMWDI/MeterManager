@@ -6,19 +6,16 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
 from api.models.meter import Meters, MeterActivities
-from api.models.user import Users
+from api.models.user import Notifications, NotificationTypeLU, Users
 from api.models.work_order import workOrders, workOrderStatusLU
 from api.schemas import meter
 
 
 def _work_order_query():
-    return (
-        select(workOrders)
-        .options(
-            joinedload(workOrders.status),
-            joinedload(workOrders.meter).joinedload(Meters.status),
-            joinedload(workOrders.assigned_user),
-        )
+    return select(workOrders).options(
+        joinedload(workOrders.status),
+        joinedload(workOrders.meter).joinedload(Meters.status),
+        joinedload(workOrders.assigned_user),
     )
 
 
@@ -175,13 +172,23 @@ def create_work_order(
 
     try:
         db.add(work_order)
+        db.flush()
+
+        _create_work_order_notifications(
+            db=db,
+            work_order=work_order,
+            action="created",
+        )
+
         db.commit()
     except IntegrityError:
         raise HTTPException(
             status_code=409, detail="Title empty or already exists for this meter."
         )
 
-    work_order = db.scalars(_work_order_query().where(workOrders.id == work_order.id)).first()
+    work_order = db.scalars(
+        _work_order_query().where(workOrders.id == work_order.id)
+    ).first()
     return _serialize_work_order(work_order)
 
 
@@ -196,7 +203,9 @@ def update_work_order(
         notes=patch_work_order_form.notes,
     )
 
-    update_scope = "Technician" if comparison_work_order == patch_work_order_form else "Admin"
+    update_scope = (
+        "Technician" if comparison_work_order == patch_work_order_form else "Admin"
+    )
 
     if user.user_role.name not in [update_scope, "Admin"]:
         raise HTTPException(
@@ -236,9 +245,20 @@ def update_work_order(
         work_order.assigned_user_id = patch_work_order_form.assigned_user_id
 
     try:
+        db.flush()
+
+        _create_work_order_notifications(
+            db=db,
+            work_order=work_order,
+            action="updated",
+            created_by_user_id=user.id,
+        )
+
         db.commit()
     except IntegrityError:
-        raise HTTPException(status_code=409, detail="Title already exists for this meter.")
+        raise HTTPException(
+            status_code=409, detail="Title already exists for this meter."
+        )
 
     work_order = db.scalars(
         _work_order_query()
@@ -249,7 +269,9 @@ def update_work_order(
         select(MeterActivities).where(MeterActivities.work_order_id == work_order.id)
     ).all()
 
-    return _serialize_work_order(work_order, associated_activities=list(associated_activities))
+    return _serialize_work_order(
+        work_order, associated_activities=list(associated_activities)
+    )
 
 
 def delete_work_order(db: Session, work_order_id: int):
@@ -260,7 +282,66 @@ def delete_work_order(db: Session, work_order_id: int):
     if not work_order:
         raise HTTPException(status_code=404, detail="Work order not found.")
 
-    db.delete(work_order)
-    db.commit()
+    try:
+        db.delete(work_order)
+        db.flush()
+
+        _create_work_order_notifications(
+            db=db,
+            work_order=work_order,
+            action="deleted",
+        )
+
+        db.commit()
+    except IntegrityError:
+        raise HTTPException(status_code=409, detail="Failed to delete work order.")
 
     return {"status": "success"}
+
+
+def _create_work_order_notifications(
+    db: Session,
+    work_order: workOrders,
+    action: str,  # "created" or "updated" or "deleted"
+    created_by_user_id: int | None = None,
+):
+    notification_type = db.scalars(
+        select(NotificationTypeLU).where(NotificationTypeLU.name == "work_order")
+    ).first()
+
+    if not notification_type:
+        return
+
+    admin_user_ids = db.scalars(
+        select(Users.id)
+        .join(Users.user_role)
+        .where(
+            Users.user_role.has(name="Admin"),
+            Users.disabled.is_(False),
+        )
+    ).all()
+
+    recipient_user_ids = set(admin_user_ids)
+
+    if work_order.assigned_user_id:
+        recipient_user_ids.add(work_order.assigned_user_id)
+
+    if not recipient_user_ids:
+        return
+
+    title = f"Work order {action}: {work_order.title}"
+    message = f"Work order #{work_order.id} has been {action}."
+
+    notifications = [
+        Notifications(
+            user_id=user_id,
+            notification_type_id=notification_type.id,
+            created_by=created_by_user_id,
+            title=title,
+            message=message,
+            link=f"/workorders?work_order_id={work_order.id}",
+        )
+        for user_id in recipient_user_ids
+    ]
+
+    db.add_all(notifications)
