@@ -61,7 +61,9 @@ class Meters(Base):
     status_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("MeterStatusLU.id"), nullable=False
     )
-    well_id: Mapped[int] = mapped_column(Integer, ForeignKey("Wells.id"), nullable=False)
+    well_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("Wells.id"), nullable=False
+    )
     location_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("Locations.id"), nullable=False
     )
@@ -98,11 +100,13 @@ class MeterActivities(Base):
     __tablename__ = "MeterActivities"
     timestamp_start: Mapped[DateTime] = mapped_column(DateTime, nullable=False)
     timestamp_end: Mapped[DateTime] = mapped_column(DateTime, nullable=False)
-    description: Mapped[DateTime] = mapped_column(String)
+    description: Mapped[str] = mapped_column(String)
     submitting_user_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("Users.id"), nullable=False
     )
-    meter_id: Mapped[int] = mapped_column(Integer, ForeignKey("Meters.id"), nullable=False)
+    meter_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("Meters.id"), nullable=False
+    )
     activity_type_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("ActivityTypeLU.id"), nullable=False
     )
@@ -171,11 +175,15 @@ class MeterObservations(Base):
     notes: Mapped[str] = mapped_column(String)
     ose_share: Mapped[bool] = mapped_column(Boolean, nullable=False)
     submitting_user_id: Mapped[int] = mapped_column(Integer, ForeignKey("Users.id"))
-    meter_id: Mapped[int] = mapped_column(Integer, ForeignKey("Meters.id"), nullable=False)
+    meter_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("Meters.id"), nullable=False
+    )
     observed_property_type_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("ObservedPropertyTypeLU.id"), nullable=False
     )
-    unit_id: Mapped[int] = mapped_column(Integer, ForeignKey("Units.id"), nullable=False)
+    unit_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("Units.id"), nullable=False
+    )
     location_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("Locations.id"), nullable=False
     )
