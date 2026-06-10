@@ -19,7 +19,8 @@ from api.models.meter import (
 )
 from api.models.well import Wells
 from api.models.work_order import workOrders
-from api.schemas import meter, ose
+from api.schemas import ose
+from api.schemas.meter import PublicMeter, DBTypesForOSE
 
 
 API_BASE_URL = os.getenv("API_BASE_URL", "")
@@ -83,7 +84,9 @@ def _serialize_activity(
 
     return ose.ActivityDTO(
         activity_id=activity.id,
-        ose_request_id=activity.work_order.ose_request_id if activity.work_order else None,
+        ose_request_id=activity.work_order.ose_request_id
+        if activity.work_order
+        else None,
         activity_type=activity.activity_type.name,
         activity_start=activity.timestamp_start,
         activity_end=activity.timestamp_end,
@@ -105,7 +108,9 @@ def reorganize_history(
     for activity in activities:
         activity_date = activity.timestamp_start.strftime("%Y-%m-%d")
         meter_serial = activity.meter.serial_number
-        history.setdefault(activity_date, {}).setdefault(meter_serial, []).append(activity)
+        history.setdefault(activity_date, {}).setdefault(meter_serial, []).append(
+            activity
+        )
 
     history_list: list[ose.DateHistoryDTO] = []
     for activity_date, meters in history.items():
@@ -186,7 +191,7 @@ def get_maintenance_by_request_ids(
             select(MeterActivities)
             .options(
                 joinedload(MeterActivities.activity_type),
-                joinedload(MeterActivities.parts_used),
+                joinedload(MeterActivities.parts_used_links),
                 joinedload(MeterActivities.meter).joinedload(Meters.well),
                 joinedload(MeterActivities.work_order),
                 selectinload(MeterActivities.photos),
@@ -207,7 +212,9 @@ def get_maintenance_by_request_ids(
     if not activities_list:
         return []
 
-    activities_start_date = min(activity.timestamp_start for activity in activities_list)
+    activities_start_date = min(
+        activity.timestamp_start for activity in activities_list
+    )
     activities_end_date = max(activity.timestamp_end for activity in activities_list)
     observations = (
         db.scalars(
@@ -232,7 +239,7 @@ def get_maintenance_by_request_ids(
     return reorganize_history(activities_list, list(observations))
 
 
-def get_meter_information(db: Session, serial_number: str) -> meter.PublicMeter:
+def get_meter_information(db: Session, serial_number: str) -> PublicMeter:
     query = select(Meters).options(
         joinedload(Meters.meter_type),
         joinedload(Meters.well).joinedload(Wells.location),
@@ -245,10 +252,10 @@ def get_meter_information(db: Session, serial_number: str) -> meter.PublicMeter:
     if not meter:
         raise HTTPException(status_code=404, detail="Meter not found")
 
-    return meter.PublicMeter(
+    return PublicMeter(
         serial_number=meter.serial_number,
         status=meter.status.status_name,
-        well=meter.PublicMeter.PublicWell(
+        well=PublicMeter.PublicWell(
             ra_number=meter.well.ra_number,
             osetag=meter.well.osetag,
             trss=meter.well.location.trss,
@@ -258,12 +265,12 @@ def get_meter_information(db: Session, serial_number: str) -> meter.PublicMeter:
         if meter.well
         else None,
         notes=meter.notes,
-        meter_type=meter.PublicMeter.MeterType(
+        meter_type=PublicMeter.MeterType(
             brand=meter.meter_type.brand,
             model=meter.meter_type.model,
             size=meter.meter_type.size,
         ),
-        meter_register=meter.PublicMeter.MeterRegister(
+        meter_register=PublicMeter.MeterRegister(
             ratio=meter.meter_register.ratio,
             number_of_digits=meter.meter_register.number_of_digits,
             decimal_digits=meter.meter_register.decimal_digits,
@@ -276,9 +283,7 @@ def get_meter_information(db: Session, serial_number: str) -> meter.PublicMeter:
     )
 
 
-def get_disapproval_response(
-    db: Session, ose_request_id: int
-) -> ose.DisapprovalStatus:
+def get_disapproval_response(db: Session, ose_request_id: int) -> ose.DisapprovalStatus:
     work_order = db.scalars(
         select(workOrders)
         .options(joinedload(workOrders.status))
@@ -350,34 +355,28 @@ def get_disapproval_response(
     )
 
 
-def get_db_types(db: Session) -> meter.DBTypesForOSE:
-    return meter.DBTypesForOSE(
+def get_db_types(db: Session) -> DBTypesForOSE:
+    return DBTypesForOSE(
         activity_types=[
-            meter.DBTypesForOSE.GeneralTypeInfo(
-                name=item.name, description=item.description
-            )
+            DBTypesForOSE.GeneralTypeInfo(name=item.name, description=item.description)
             for item in db.scalars(select(ActivityTypeLU)).all()
         ],
         observed_property_types=[
-            meter.DBTypesForOSE.GeneralTypeInfo(
-                name=item.name, description=item.description
-            )
+            DBTypesForOSE.GeneralTypeInfo(name=item.name, description=item.description)
             for item in db.scalars(select(ObservedPropertyTypeLU)).all()
         ],
         service_types=[
-            meter.DBTypesForOSE.GeneralTypeInfo(
+            DBTypesForOSE.GeneralTypeInfo(
                 name=item.service_name, description=item.description
             )
             for item in db.scalars(select(ServiceTypeLU)).all()
         ],
         note_types=[
-            meter.DBTypesForOSE.GeneralTypeInfo(
-                name=item.note, description=item.details
-            )
+            DBTypesForOSE.GeneralTypeInfo(name=item.note, description=item.details)
             for item in db.scalars(select(NoteTypeLU)).all()
         ],
         meter_status_types=[
-            meter.DBTypesForOSE.GeneralTypeInfo(
+            DBTypesForOSE.GeneralTypeInfo(
                 name=item.status_name, description=item.description
             )
             for item in db.scalars(select(MeterStatusLU)).all()
