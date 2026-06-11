@@ -256,8 +256,11 @@ export const WorkOrdersTable = () => {
       field: "work_order_id",
       headerName: "ID",
       type: "number",
+      headerAlign: "left",
+      align: "left",
       flex: 1,
-      minWidth: 50,
+      minWidth: 75,
+      valueFormatter: (value: number) => `#${value}`,
     },
     {
       field: "date_created",
@@ -607,7 +610,7 @@ export const WorkOrdersTable = () => {
             pagination: { paginationModel: { page: 0, pageSize: 25 } },
             columns: {
               columnVisibilityModel: {
-                work_order_id: false,
+                work_order_id: true,
                 creator: hasAdminScope,
                 associated_activities: hasAdminScope,
                 assigned_user_id: hasAdminScope,

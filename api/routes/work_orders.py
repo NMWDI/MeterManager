@@ -48,9 +48,13 @@ def get_work_orders(
     tags=["Work Orders"],
 )
 def create_work_order(
-    new_work_order: meter.CreateWorkOrder, db: Session = Depends(get_db)
+    new_work_order: meter.CreateWorkOrder,
+    user: Users = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
-    return work_order_service.create_work_order(db=db, new_work_order=new_work_order)
+    return work_order_service.create_work_order(
+        db=db, user=user, new_work_order=new_work_order
+    )
 
 
 @work_orders_router.patch(
@@ -73,5 +77,11 @@ def patch_work_order(
     dependencies=[Depends(ScopedUser.Admin)],
     tags=["Work Orders"],
 )
-def delete_work_order(work_order_id: int, db: Session = Depends(get_db)):
-    return work_order_service.delete_work_order(db=db, work_order_id=work_order_id)
+def delete_work_order(
+    work_order_id: int,
+    user: Users = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return work_order_service.delete_work_order(
+        db=db, user=user, work_order_id=work_order_id
+    )

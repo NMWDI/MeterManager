@@ -3,7 +3,7 @@ from datetime import datetime
 from fastapi import HTTPException
 from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, undefer
 
 from api.models.meter import Meters, MeterActivities
 from api.models.user import Notifications, NotificationTypeLU, Users
@@ -146,7 +146,7 @@ def list_work_orders(
 
 
 def create_work_order(
-    db: Session, new_work_order: meter.CreateWorkOrder
+    db: Session, user: Users, new_work_order: meter.CreateWorkOrder
 ) -> meter.WorkOrder:
     open_status = db.scalars(
         select(workOrderStatusLU).where(workOrderStatusLU.name == "Open")
@@ -178,6 +178,7 @@ def create_work_order(
             db=db,
             work_order=work_order,
             action="created",
+            created_by_user_id=user.id,
         )
 
         db.commit()
@@ -217,6 +218,15 @@ def update_work_order(
         _work_order_query().where(workOrders.id == patch_work_order_form.work_order_id)
     ).first()
 
+    old_values = {
+        "title": work_order.title,
+        "description": work_order.description,
+        "status_id": work_order.status_id,
+        "notes": work_order.notes,
+        "creator": work_order.creator,
+        "assigned_user_id": work_order.assigned_user_id,
+    }
+
     if user.user_role.name == "Technician" and work_order.assigned_user_id != user.id:
         raise HTTPException(
             status_code=403,
@@ -252,6 +262,7 @@ def update_work_order(
             work_order=work_order,
             action="updated",
             created_by_user_id=user.id,
+            old_values=old_values,
         )
 
         db.commit()
@@ -274,7 +285,7 @@ def update_work_order(
     )
 
 
-def delete_work_order(db: Session, work_order_id: int):
+def delete_work_order(db: Session, user: Users, work_order_id: int):
     work_order = db.scalars(
         select(workOrders).where(workOrders.id == work_order_id)
     ).first()
@@ -290,6 +301,7 @@ def delete_work_order(db: Session, work_order_id: int):
             db=db,
             work_order=work_order,
             action="deleted",
+            created_by_user_id=user.id,
         )
 
         db.commit()
@@ -299,11 +311,82 @@ def delete_work_order(db: Session, work_order_id: int):
     return {"status": "success"}
 
 
+def _format_user_display(user: Users | None) -> str:
+    if not user:
+        return "Unassigned"
+
+    name = user.display_name or user.full_name or user.email or str(user.id)
+    email = user.email
+
+    return f"{name} ({email})" if email and email != name else name
+
+
+def _get_user_display_by_id(db: Session, user_id: int | None) -> str:
+    if not user_id:
+        return "Unassigned"
+
+    user = db.scalars(
+        select(Users).options(undefer(Users.email)).where(Users.id == user_id)
+    ).first()
+
+    return _format_user_display(user)
+
+
+def _build_work_order_change_messages(
+    db: Session,
+    old_values: dict,
+    work_order: workOrders,
+) -> list[str]:
+    changes = []
+
+    field_labels = {
+        "title": "Title",
+        "description": "Description",
+        "notes": "Notes",
+        "creator": "Creator",
+    }
+
+    for field, label in field_labels.items():
+        old_value = old_values.get(field)
+        new_value = getattr(work_order, field)
+
+        if old_value != new_value:
+            changes.append(
+                f"{label} changed from {old_value or 'blank'} to {new_value or 'blank'}"
+            )
+
+    if old_values.get("status_id") != work_order.status_id:
+        old_status = db.scalars(
+            select(workOrderStatusLU.name).where(
+                workOrderStatusLU.id == old_values.get("status_id")
+            )
+        ).first()
+
+        new_status = db.scalars(
+            select(workOrderStatusLU.name).where(
+                workOrderStatusLU.id == work_order.status_id
+            )
+        ).first()
+
+        changes.append(
+            f"Status changed from {old_status or 'blank'} to {new_status or 'blank'}"
+        )
+
+    if old_values.get("assigned_user_id") != work_order.assigned_user_id:
+        old_user = _get_user_display_by_id(db, old_values.get("assigned_user_id"))
+        new_user = _get_user_display_by_id(db, work_order.assigned_user_id)
+
+        changes.append(f"Assigned user changed from {old_user} to {new_user}")
+
+    return changes
+
+
 def _create_work_order_notifications(
     db: Session,
     work_order: workOrders,
-    action: str,  # "created" or "updated" or "deleted"
+    action: str,
     created_by_user_id: int | None = None,
+    old_values: dict | None = None,
 ):
     notification_type = db.scalars(
         select(NotificationTypeLU).where(NotificationTypeLU.name == "work_order")
@@ -329,8 +412,26 @@ def _create_work_order_notifications(
     if not recipient_user_ids:
         return
 
+    changed_by = _get_user_display_by_id(db, created_by_user_id)
+
     title = f"Work order {action}: {work_order.title}"
-    message = f"Work order #{work_order.id} has been {action}."
+
+    if action == "updated" and old_values:
+        change_messages = _build_work_order_change_messages(
+            db=db,
+            old_values=old_values,
+            work_order=work_order,
+        )
+
+        if change_messages:
+            message = (
+                f"{changed_by} updated Work order #{work_order.id}. "
+                f"Changes: {'; '.join(change_messages)}."
+            )
+        else:
+            message = f"{changed_by} updated Work order #{work_order.id}."
+    else:
+        message = f"{changed_by} {action} Work order #{work_order.id}."
 
     notifications = [
         Notifications(
