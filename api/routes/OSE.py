@@ -67,9 +67,7 @@ def get_disapproval_response_by_request_id(
     return ose_service.get_disapproval_response(db, ose_request_id)
 
 
-@ose_router.get(
-    "/get_DB_types", tags=["OSE"], response_model=meter.DBTypesForOSE
-)
+@ose_router.get("/get_DB_types", tags=["OSE"], response_model=meter.DBTypesForOSE)
 def get_DB_types(db: Session = Depends(get_db)):
     """
     Return DB types from lookup tables
