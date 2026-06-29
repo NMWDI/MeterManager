@@ -19,6 +19,10 @@ class UpdatedUserPassword(ORMBase):
     new_password: str
 
 
+class GeneratedPasswordResponse(BaseModel):
+    password: str
+
+
 class UpdatedUser(ORMBase):
     id: int
     username: str

@@ -1,4 +1,6 @@
 from datetime import datetime, timezone, timedelta
+import secrets
+import string
 
 from fastapi import Depends, APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
@@ -37,6 +39,27 @@ BACKUP_PREFIX = os.getenv("GCP_BACKUP_PREFIX", "")
 BACKUP_RETENTION_DAYS = int(os.getenv("BACKUP_RETENTION_DAYS", "30"))
 load_dotenv(os.getenv("APPDB_ENV", ".env"))
 DATABASE_URL = os.getenv("DATABASE_URL", "")
+PASSWORD_GENERATION_ATTEMPTS = 8
+PASSWORD_GENERATION_LENGTH = 20
+PASSWORD_SYMBOLS = "!@#$%^&*()-_=+[]{}:,.?"
+
+
+def _generate_password_candidate() -> str:
+    random = secrets.SystemRandom()
+    required_characters = [
+        secrets.choice(string.ascii_lowercase),
+        secrets.choice(string.ascii_uppercase),
+        secrets.choice(string.digits),
+        secrets.choice(PASSWORD_SYMBOLS),
+    ]
+    alphabet = string.ascii_letters + string.digits + PASSWORD_SYMBOLS
+    remaining_characters = [
+        secrets.choice(alphabet)
+        for _ in range(PASSWORD_GENERATION_LENGTH - len(required_characters))
+    ]
+    characters = required_characters + remaining_characters
+    random.shuffle(characters)
+    return "".join(characters)
 
 
 def _validate_new_password(password: str, user: Users) -> None:
@@ -63,6 +86,33 @@ def _validate_new_password(password: str, user: Users) -> None:
     user.hashed_password = get_password_hash(password)
     user.password_changed_at = datetime.now(timezone.utc)
     apply_password_evaluation(user, evaluation)
+
+
+@admin_router.post(
+    "/users/{id}/generate_password",
+    response_model=security.GeneratedPasswordResponse,
+    dependencies=[Depends(ScopedUser.Admin)],
+    tags=["Admin"],
+)
+def generate_user_password(id: int, db: Session = Depends(get_db)):
+    user = db.scalars(select(Users).where(Users.id == id)).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    for _ in range(PASSWORD_GENERATION_ATTEMPTS):
+        password = _generate_password_candidate()
+        evaluation = evaluate_password(
+            password,
+            user=user,
+            include_compromised_check=True,
+        )
+        if evaluation.is_policy_compliant and evaluation.compromised_count == 0:
+            return security.GeneratedPasswordResponse(password=password)
+
+    raise HTTPException(
+        status_code=503,
+        detail="Unable to generate a verified uncompromised password. Please try again.",
+    )
 
 
 # define response models

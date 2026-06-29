@@ -282,3 +282,23 @@ export function useUpdateUserPassword(onSuccess: Function) {
     retry: 0,
   });
 }
+
+export function useGenerateUserPassword() {
+  const apiClient = useApiClient();
+
+  return useMutation({
+    mutationFn: async (userId: number): Promise<{ password: string }> => {
+      const response = await apiClient.post(
+        `users/${userId}/generate_password`,
+        undefined,
+      );
+
+      if (!response.ok) {
+        throw new Error(await getErrorMessage(response));
+      }
+
+      return response.json();
+    },
+    retry: 0,
+  });
+}
