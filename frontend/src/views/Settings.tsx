@@ -19,7 +19,12 @@ import { useFetchWithAuth } from "@/hooks";
 import { SecurityScope, UserSessionsResponse } from "@/interfaces";
 import { Route } from "@/routes/settings";
 import { getTrackedSession } from "@/utils/SessionTracking";
-import { clearSavedQueryLocalStorage } from "@/utils";
+import {
+  PasswordEvaluation,
+  PasswordStatus,
+  clearSavedQueryLocalStorage,
+  evaluatePasswordLocally,
+} from "@/utils";
 import {
   KnownDevicesSection,
   PreferencesSection,
@@ -36,7 +41,12 @@ const passwordSchema = yup.object().shape({
   currentPassword: yup.string().required("Current password is required"),
   newPassword: yup
     .string()
-    .min(8, "New password must be at least 8 characters")
+    .test(
+      "password-policy",
+      "New password does not meet password requirements",
+      (value) =>
+        !!value && evaluatePasswordLocally(value).is_policy_compliant,
+    )
     .required("New password is required"),
   confirmPassword: yup
     .string()
@@ -224,12 +234,31 @@ export const Settings = () => {
       setShowCurrentPassword(false);
       setShowNewPassword(false);
       setShowConfirmPassword(false);
+      queryClient.invalidateQueries(["passwordStatus"]);
     },
     onError: (error: Error) => {
       enqueueSnackbar(error.message || "Failed to update password.", {
         variant: "error",
       });
     },
+  });
+
+  const passwordStatusQuery = useQuery<PasswordStatus>({
+    queryKey: ["passwordStatus"],
+    queryFn: async () =>
+      fetchWithAuth({
+        method: "GET",
+        route: "/settings/password_status",
+      }),
+  });
+
+  const passwordEvaluationMutation = useMutation({
+    mutationFn: async (password: string): Promise<PasswordEvaluation> =>
+      fetchWithAuth({
+        method: "POST",
+        route: "/settings/password/evaluate",
+        body: { password },
+      }),
   });
 
   const {
@@ -255,6 +284,11 @@ export const Settings = () => {
       currentPassword: data.currentPassword,
       newPassword: data.newPassword,
     });
+  };
+
+  const onNewPasswordBlur = (password: string) => {
+    if (!password) return;
+    passwordEvaluationMutation.mutate(password);
   };
 
   const avatarMutation = useMutation({
@@ -469,6 +503,11 @@ export const Settings = () => {
                 showConfirmPassword={showConfirmPassword}
                 setShowConfirmPassword={setShowConfirmPassword}
                 isSavingPassword={passwordMutation.isLoading}
+                passwordStatus={passwordStatusQuery.data}
+                passwordEvaluation={passwordEvaluationMutation.data}
+                checkedPassword={passwordEvaluationMutation.variables}
+                isCheckingPassword={passwordEvaluationMutation.isLoading}
+                onNewPasswordBlur={onNewPasswordBlur}
               />
             </SectionCard>
           </Stack>

@@ -1,11 +1,10 @@
-from datetime import timedelta
+from datetime import datetime, timezone, timedelta
 
 from fastapi import Depends, APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session, joinedload, undefer
 from sqlalchemy import select
 from typing import List
-from passlib.context import CryptContext
 
 from api.models.user import Users, UserRoles, SecurityScopes
 
@@ -15,7 +14,12 @@ from api.session import get_db
 from api.routes.utils import _patch
 from api.auth.dependencies import ScopedUser
 from api.auth.session_tracking import create_user_session
-from api.security import create_access_token, ACCESS_TOKEN_EXPIRE_HOURS
+from api.auth.password_policy import apply_password_evaluation, evaluate_password
+from api.security import (
+    create_access_token,
+    ACCESS_TOKEN_EXPIRE_HOURS,
+    get_password_hash,
+)
 from api.config import settings
 
 from pathlib import Path
@@ -24,16 +28,41 @@ from dotenv import load_dotenv
 
 import os
 import subprocess
-import datetime
+import datetime as dt
 
 admin_router = APIRouter()
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 BUCKET_NAME = os.getenv("GCP_BUCKET_NAME", "")
 BACKUP_PREFIX = os.getenv("GCP_BACKUP_PREFIX", "")
 BACKUP_RETENTION_DAYS = int(os.getenv("BACKUP_RETENTION_DAYS", "30"))
 load_dotenv(os.getenv("APPDB_ENV", ".env"))
 DATABASE_URL = os.getenv("DATABASE_URL", "")
+
+
+def _validate_new_password(password: str, user: Users) -> None:
+    evaluation = evaluate_password(
+        password,
+        user=user,
+        include_compromised_check=True,
+    )
+    if not evaluation.is_policy_compliant:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "message": "Password does not meet password requirements.",
+                "missing_requirements": evaluation.missing_requirements,
+            },
+        )
+
+    if evaluation.compromised_count is not None and evaluation.compromised_count > 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Password appears in known compromised password lists.",
+        )
+
+    user.hashed_password = get_password_hash(password)
+    user.password_changed_at = datetime.now(timezone.utc)
+    apply_password_evaluation(user, evaluation)
 
 
 # define response models
@@ -50,8 +79,10 @@ def update_user_password(
     user = db.scalars(
         select(Users).where(Users.id == updatedUserPassword.user_id)
     ).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
 
-    user.hashed_password = pwd_context.hash(updatedUserPassword.new_password)
+    _validate_new_password(updatedUserPassword.new_password, user)
     db.commit()
     db.refresh(user)
 
@@ -97,8 +128,9 @@ def create_user(user: security.NewUser, db: Session = Depends(get_db)):
         display_name=user.display_name,
         user_role_id=user.user_role_id,
         disabled=user.disabled,
-        hashed_password=pwd_context.hash(user.password),
+        hashed_password="",
     )
+    _validate_new_password(user.password, new_user)
 
     db.add(new_user)
     db.commit()
@@ -423,7 +455,7 @@ def backup_and_send():
         raise ValueError("DATABASE_URL environment variable is not set")
 
     # Use UTC-aware timestamp
-    timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d-%H%M%S")
+    timestamp = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d-%H%M%S")
     filename = f"backup-{timestamp}.dump"
     local_path = Path(f"/tmp/{filename}")
 
@@ -441,7 +473,7 @@ def backup_and_send():
     local_path.unlink(missing_ok=True)
 
     # Delete old backups (> BACKUP_RETENTION_DAYS) using UTC-aware cutoff
-    cutoff_date = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(
+    cutoff_date = dt.datetime.now(dt.timezone.utc) - dt.timedelta(
         days=BACKUP_RETENTION_DAYS
     )
     blobs = client.list_blobs(BUCKET_NAME, prefix=BACKUP_PREFIX)

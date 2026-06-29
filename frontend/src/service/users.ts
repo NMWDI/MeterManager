@@ -13,6 +13,20 @@ import {
   UserRole,
 } from "@/interfaces";
 
+async function getErrorMessage(response: Response) {
+  try {
+    const body = await response.json();
+    const detail = body?.detail;
+    if (typeof detail === "string") return detail;
+    if (detail?.message && Array.isArray(detail?.missing_requirements)) {
+      return `${detail.message} ${detail.missing_requirements.join(" ")}`;
+    }
+    if (detail?.message) return detail.message;
+  } catch {}
+
+  return `Request failed with status ${response.status}`;
+}
+
 export function useGetRoles(options?: UseQueryOptions<UserRole[], Error>) {
   const apiClient = useApiClient();
   const route = "roles";
@@ -85,8 +99,9 @@ export function useCreateUser(onSuccess: Function) {
           });
           throw Error("Incomplete form, check network logs for details");
         } else {
-          enqueueSnackbar("Unknown Error Occurred!", { variant: "error" });
-          throw Error("Unknown Error: " + response.status);
+          const message = await getErrorMessage(response);
+          enqueueSnackbar(message, { variant: "error" });
+          throw Error(message);
         }
       } else {
         onSuccess();
@@ -254,8 +269,9 @@ export function useUpdateUserPassword(onSuccess: Function) {
           });
           throw Error("Incomplete form, check network logs for details");
         } else {
-          enqueueSnackbar("Unknown Error Occurred!", { variant: "error" });
-          throw Error("Unknown Error: " + response.status);
+          const message = await getErrorMessage(response);
+          enqueueSnackbar(message, { variant: "error" });
+          throw Error(message);
         }
       } else {
         onSuccess();

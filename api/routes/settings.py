@@ -1,4 +1,5 @@
 from base64 import b64encode
+from datetime import datetime, timezone
 from io import BytesIO
 
 from fastapi import Depends, APIRouter, HTTPException, File, UploadFile
@@ -9,6 +10,10 @@ from api.schemas import settings
 from api.session import get_db
 from api.security import get_current_user, get_password_hash, verify_password
 from api.models.user import Users
+from api.auth.password_policy import (
+    apply_password_evaluation,
+    evaluate_password,
+)
 
 
 settings_router = APIRouter()
@@ -20,6 +25,22 @@ ALLOWED_AVATAR_FORMATS = {
     "WEBP": "image/webp",
     "GIF": "image/gif",
 }
+
+
+def _serialize_datetime(value):
+    return value.isoformat() if value else None
+
+
+def _password_evaluation_response(evaluation):
+    return settings.PasswordEvaluationResponse(
+        score=evaluation.score,
+        label=evaluation.label,
+        is_policy_compliant=evaluation.is_policy_compliant,
+        missing_requirements=evaluation.missing_requirements,
+        compromised_count=evaluation.compromised_count,
+        compromised_checked_at=_serialize_datetime(evaluation.compromised_checked_at),
+        compromised_check_error=evaluation.compromised_check_error,
+    )
 
 
 @settings_router.get(
@@ -75,6 +96,53 @@ def post_redirect_page(
     return {"message": "Display name updated", "display_name": db_user.display_name}
 
 
+@settings_router.get(
+    "/settings/password_status",
+    response_model=settings.PasswordStatusResponse,
+    tags=["settings"],
+)
+def get_password_status(
+    db: Session = Depends(get_db),
+    user: Users = Depends(get_current_user),
+):
+    db_user = db.query(Users).filter(Users.id == user.id).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return settings.PasswordStatusResponse(
+        password_changed_at=_serialize_datetime(db_user.password_changed_at),
+        password_strength_score=db_user.password_strength_score,
+        password_strength_label=db_user.password_strength_label,
+        password_policy_compliant=db_user.password_policy_compliant,
+        password_compromised_checked_at=_serialize_datetime(
+            db_user.password_compromised_checked_at
+        ),
+        password_compromised_count=db_user.password_compromised_count,
+    )
+
+
+@settings_router.post(
+    "/settings/password/evaluate",
+    response_model=settings.PasswordEvaluationResponse,
+    tags=["settings"],
+)
+def post_password_evaluate(
+    request: settings.PasswordEvaluateRequest,
+    db: Session = Depends(get_db),
+    user: Users = Depends(get_current_user),
+):
+    db_user = db.query(Users).filter(Users.id == user.id).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    evaluation = evaluate_password(
+        request.password,
+        user=db_user,
+        include_compromised_check=True,
+    )
+    return _password_evaluation_response(evaluation)
+
+
 @settings_router.post(
     "/settings/password_reset",
     tags=["settings"],
@@ -97,13 +165,29 @@ def post_password_reset(
             detail="New password must be different from current password",
         )
 
-    if len(update.new_password) < 8:
+    evaluation = evaluate_password(
+        update.new_password,
+        user=db_user,
+        include_compromised_check=True,
+    )
+    if not evaluation.is_policy_compliant:
         raise HTTPException(
             status_code=400,
-            detail="New password must be at least 8 characters long",
+            detail={
+                "message": "New password does not meet password requirements.",
+                "missing_requirements": evaluation.missing_requirements,
+            },
+        )
+
+    if evaluation.compromised_count is not None and evaluation.compromised_count > 0:
+        raise HTTPException(
+            status_code=400,
+            detail="New password appears in known compromised password lists.",
         )
 
     db_user.hashed_password = get_password_hash(update.new_password)
+    db_user.password_changed_at = datetime.now(timezone.utc)
+    apply_password_evaluation(db_user, evaluation)
 
     try:
         db.commit()

@@ -22,6 +22,20 @@ class Users(Base):
     display_name: Mapped[str] = mapped_column(String, nullable=True)
     redirect_page: Mapped[str] = mapped_column(String, nullable=True, default="/")
     avatar_img: Mapped[str] = mapped_column(String, nullable=True)
+    password_changed_at: Mapped[Optional[DateTime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    password_strength_score: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    password_strength_label: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    password_policy_compliant: Mapped[Optional[bool]] = mapped_column(
+        Boolean, nullable=True
+    )
+    password_compromised_checked_at: Mapped[Optional[DateTime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    password_compromised_count: Mapped[Optional[int]] = mapped_column(
+        Integer, nullable=True
+    )
     notifications: Mapped[List["Notifications"]] = relationship(
         "Notifications",
         back_populates="user",

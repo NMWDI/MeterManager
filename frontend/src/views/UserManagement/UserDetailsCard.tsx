@@ -37,6 +37,7 @@ import {
   CustomCardHeader,
 } from "@/components";
 import { UpdatedUserPassword, User, UserRole } from "@/interfaces";
+import { evaluatePasswordLocally } from "@/utils";
 
 const UserResolverSchema: Yup.ObjectSchema<any> = Yup.object().shape({
   full_name: Yup.string().required("Please enter a full name."),
@@ -45,7 +46,11 @@ const UserResolverSchema: Yup.ObjectSchema<any> = Yup.object().shape({
   email: Yup.string().required("Please enter an email."),
   disabled: Yup.boolean().required("Please indicate if user is active."),
   user_role: Yup.object().required("Please indicate the users role."),
-  password: Yup.string(),
+  password: Yup.string().test(
+    "password-policy",
+    "Password does not meet password requirements.",
+    (value) => !value || evaluatePasswordLocally(value).is_policy_compliant,
+  ),
 });
 
 const formatSubmission = (user: User) => {
@@ -147,6 +152,11 @@ export const UserDetailsCard = ({
       enqueueSnackbar("Please provide a password.", { variant: "error" });
       return;
     }
+    const evaluation = evaluatePasswordLocally(user.password);
+    if (!evaluation.is_policy_compliant) {
+      enqueueSnackbar(evaluation.missing_requirements[0], { variant: "error" });
+      return;
+    }
     createUser.mutate(formatSubmission(user));
   };
 
@@ -156,6 +166,11 @@ export const UserDetailsCard = ({
   ) => {
     if (!newPassword || newPassword.length < 1) {
       enqueueSnackbar("Please provide a new password.", { variant: "error" });
+      return;
+    }
+    const evaluation = evaluatePasswordLocally(newPassword);
+    if (!evaluation.is_policy_compliant) {
+      enqueueSnackbar(evaluation.missing_requirements[0], { variant: "error" });
       return;
     }
     const updatedUserPassword: UpdatedUserPassword = {

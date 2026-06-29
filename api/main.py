@@ -26,6 +26,7 @@ from api.routes.well_measurements import (
 )
 from api.routes.wells import authenticated_well_router, public_well_router
 from api.auth.session_tracking import create_user_session, touch_user_session
+from api.auth.password_policy import apply_password_evaluation, evaluate_password
 from api.security import (
     authenticate_user,
     create_access_token,
@@ -107,6 +108,13 @@ def login_for_access_token(
             detail="This account is disabled",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    password_evaluation = evaluate_password(
+        form_data.password,
+        user=user,
+        include_compromised_check=True,
+    )
+    apply_password_evaluation(user, password_evaluation)
 
     user_session = create_user_session(db=db, user=user, request=request)
 

@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from api.schemas.base import ORMBase
 from pydantic import BaseModel
 
@@ -49,6 +51,12 @@ class User(ORMBase):
     display_name: str | None = None
     redirect_page: str | None = None
     avatar_img: str | None = None
+    password_changed_at: datetime | None = None
+    password_strength_score: int | None = None
+    password_strength_label: str | None = None
+    password_policy_compliant: bool | None = None
+    password_compromised_checked_at: datetime | None = None
+    password_compromised_count: int | None = None
 
 
 class ImpersonationContext(BaseModel):

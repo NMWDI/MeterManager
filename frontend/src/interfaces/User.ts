@@ -13,4 +13,10 @@ export interface User {
   redirect_page?: string;
   avatar_img?: string | null;
   password?: string;
+  password_changed_at?: string | null;
+  password_strength_score?: number | null;
+  password_strength_label?: string | null;
+  password_policy_compliant?: boolean | null;
+  password_compromised_checked_at?: string | null;
+  password_compromised_count?: number | null;
 }

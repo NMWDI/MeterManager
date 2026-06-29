@@ -11,4 +11,5 @@ export * from "./GetRoleColor";
 export * from "./MemoryUtils";
 export * from "./MonitoredWellsUtils";
 export * from "./NumberDataFormatter";
+export * from "./PasswordPolicy";
 export * from "./RouteSearch";
