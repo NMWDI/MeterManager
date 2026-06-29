@@ -30,6 +30,9 @@ class Settings:
     JWT_SECRET_KEY: Optional[str] = os.getenv("JWT_SECRET_KEY")
     JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
     ACCESS_TOKEN_EXPIRE_HOURS: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_HOURS", "8"))
+    USER_SESSION_RETENTION_DAYS: int = int(
+        os.getenv("USER_SESSION_RETENTION_DAYS", "14")
+    )
     APP_ENV: str = os.getenv(
         "APP_ENV",
         "production" if os.getenv("APPDB_ENV") == ".env_production" else "development",
