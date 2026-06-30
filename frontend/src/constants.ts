@@ -12,6 +12,7 @@ import {
   WaterDrop,
   SpeedOutlined,
   Engineering,
+  SellOutlined,
 } from "@mui/icons-material";
 import { SvgIconProps } from "@mui/material";
 import { ComponentType } from "react";
@@ -83,6 +84,13 @@ export const navConfig: NavItem[] = [
     path: "/reports/partsused",
     label: "Parts Used",
     icon: BuildOutlined,
+    role: "Technician",
+    parent: "reports",
+  },
+  {
+    path: "/reports/soldmeters",
+    label: "Sold Meters",
+    icon: SellOutlined,
     role: "Technician",
     parent: "reports",
   },
