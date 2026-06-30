@@ -2,6 +2,7 @@ import {
   AssessmentOutlined,
   BuildOutlined,
   ConstructionOutlined,
+  EngineeringOutlined,
   MonitorHeartOutlined,
   ScienceOutlined,
   SellOutlined,
@@ -35,6 +36,11 @@ export const ReportsView = () => {
               route="/reports/partsused"
               label="Parts Used"
               icon={BuildOutlined}
+            />
+            <NavLink
+              route="/reports/installedmeters"
+              label="Installed Meters"
+              icon={EngineeringOutlined}
             />
             <NavLink
               route="/reports/soldmeters"

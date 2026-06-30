@@ -155,6 +155,56 @@ def download_sold_meters_pdf(
     )
 
 
+@authenticated_meter_router.get(
+    "/meters/installed-report",
+    dependencies=[Depends(ScopedUser.Read)],
+    tags=["Meters"],
+)
+def get_installed_meters_report(
+    from_date: date = Query(..., description="Start date YYYY-MM-DD"),
+    to_date: date = Query(..., description="End date YYYY-MM-DD"),
+    min_size: int | None = Query(None, ge=0),
+    max_size: int | None = Query(None, ge=0),
+    db: Session = Depends(get_db),
+):
+    return meter_service.get_installed_meters_report(
+        db,
+        from_date,
+        to_date,
+        min_size,
+        max_size,
+    )
+
+
+@authenticated_meter_router.get(
+    "/meters/installed-report/pdf",
+    dependencies=[Depends(ScopedUser.Read)],
+    tags=["Meters"],
+)
+def download_installed_meters_pdf(
+    from_date: date = Query(..., description="Start date YYYY-MM-DD"),
+    to_date: date = Query(..., description="End date YYYY-MM-DD"),
+    min_size: int | None = Query(None, ge=0),
+    max_size: int | None = Query(None, ge=0),
+    db: Session = Depends(get_db),
+):
+    pdf_io = meter_service.build_installed_meters_pdf(
+        db,
+        from_date,
+        to_date,
+        min_size,
+        max_size,
+    )
+
+    return StreamingResponse(
+        pdf_io,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": "attachment; filename=installed_meters_report.pdf"
+        },
+    )
+
+
 @authenticated_meter_router.post(
     "/meters",
     response_model=meter.Meter,

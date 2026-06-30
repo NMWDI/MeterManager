@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Installed Meters Report</title>
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 12px; color: #1f2937; }
+    h1, h2 { margin-bottom: 6px; }
+    .meta { margin-bottom: 18px; color: #4b5563; }
+    .summary { display: table; margin-bottom: 18px; }
+    .summary div { display: table-row; }
+    .summary strong, .summary span { display: table-cell; padding: 2px 18px 2px 0; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 18px; }
+    th, td { border: 1px solid #d1d5db; padding: 6px; text-align: left; }
+    th { background: #f3f4f6; }
+    td.number, th.number { text-align: right; }
+    tr { page-break-inside: avoid; }
+  </style>
+</head>
+<body>
+  <h1>Installed Meters Report</h1>
+  <div class="meta">
+    {{ from_date.strftime("%Y-%m-%d") }} to {{ to_date.strftime("%Y-%m-%d") }}
+    {% if min_size is not none or max_size is not none %}
+      | Meter size:
+      {{ min_size if min_size is not none else "Any" }}
+      to
+      {{ max_size if max_size is not none else "Any" }}
+    {% endif %}
+  </div>
+
+  <div class="summary">
+    <div><strong>Total meters installed</strong><span>{{ summary.quantity }}</span></div>
+    <div><strong>Total value</strong><span>${{ "%.2f"|format(summary.total_value) }}</span></div>
+  </div>
+
+  <h2>Meter Type Totals</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Meter Type</th>
+        <th class="number">Size</th>
+        <th class="number">Quantity Installed</th>
+        <th class="number">Total Value</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in type_totals %}
+      <tr>
+        <td>{{ row.meter_type }}</td>
+        <td class="number">{{ "%g"|format(row.size) }}</td>
+        <td class="number">{{ row.quantity }}</td>
+        <td class="number">${{ "%.2f"|format(row.total_value) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2>Installed Meters</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Installed Date</th>
+        <th>Serial Number</th>
+        <th>Meter Type</th>
+        <th class="number">Size</th>
+        <th>RA Number</th>
+        <th>TRSS</th>
+        <th>Water Users</th>
+        <th class="number">Value</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td>{{ row.installed_date.strftime("%Y-%m-%d") }}</td>
+        <td>{{ row.serial_number }}</td>
+        <td>{{ row.meter_type }}</td>
+        <td class="number">{{ "%g"|format(row.size) }}</td>
+        <td>{{ row.well_ra_number or "" }}</td>
+        <td>{{ row.trss or "" }}</td>
+        <td>{{ row.water_users or "" }}</td>
+        <td class="number">${{ "%.2f"|format(row.price) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>
