@@ -11,3 +11,6 @@ class ScopedUser(Enum):
     WellMeasurementWrite = scoped_user(["well_measurement:write"])
     MeterWrite = scoped_user(["meters:write"])
     WellWrite = scoped_user(["well:write"])
+    WorkOrderRead = scoped_user(["work_orders:read"])
+    WorkOrderCreate = scoped_user(["work_orders:create"])
+    WorkOrderUpdate = scoped_user(["work_orders:update"])

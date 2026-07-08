@@ -11,6 +11,9 @@ class Users(Base):
 
     full_name: Mapped[str] = mapped_column(String)
     disabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_service_account: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
     username: Mapped[str] = deferred(mapped_column(String, nullable=False))
     email: Mapped[str] = deferred(mapped_column(String))
     hashed_password: Mapped[str] = deferred(mapped_column(String, nullable=False))
@@ -51,6 +54,33 @@ class Users(Base):
         "UserSessions",
         back_populates="user",
         cascade="all, delete-orphan",
+    )
+    service_account_api_keys: Mapped[List["ServiceAccountApiKeys"]] = relationship(
+        "ServiceAccountApiKeys",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
+
+class ServiceAccountApiKeys(Base):
+    __tablename__ = "service_account_api_keys"
+
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("Users.id", ondelete="CASCADE", onupdate="CASCADE"), index=True
+    )
+    key_identifier: Mapped[str] = mapped_column(
+        String(32), nullable=False, unique=True, index=True
+    )
+    key_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    key_prefix: Mapped[str] = mapped_column(String(32), nullable=False)
+    created_at: Mapped[DateTime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now(), index=True
+    )
+    last_used_at: Mapped[Optional[DateTime]] = mapped_column(DateTime, index=True)
+    revoked_at: Mapped[Optional[DateTime]] = mapped_column(DateTime, index=True)
+
+    user: Mapped["Users"] = relationship(
+        "Users", back_populates="service_account_api_keys"
     )
 
 

@@ -1,4 +1,7 @@
 from datetime import timedelta, datetime
+import hashlib
+import hmac
+import secrets
 from typing import Union, Annotated
 
 from fastapi import HTTPException, Depends, APIRouter, Security
@@ -10,7 +13,12 @@ from sqlalchemy import or_
 from sqlalchemy.orm import joinedload, undefer, Session
 from sqlalchemy.sql import select
 
-from api.models.user import Users, UserRoles, SecurityScopes, UserSessions
+from api.models.user import (
+    ServiceAccountApiKeys,
+    Users,
+    UserRoles,
+    UserSessions,
+)
 from api.schemas import security as security_schema
 from api.config import settings
 from api.session import get_db
@@ -21,6 +29,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 SECRET_KEY = settings.JWT_SECRET_KEY
 ALGORITHM = settings.JWT_ALGORITHM
 ACCESS_TOKEN_EXPIRE_HOURS = settings.ACCESS_TOKEN_EXPIRE_HOURS
+SERVICE_ACCOUNT_KEY_PREFIX = "wmdb_sa"
 
 if not SECRET_KEY:
     raise RuntimeError("JWT_SECRET_KEY environment variable must be set.")
@@ -54,6 +63,8 @@ inactive_session_exception = HTTPException(
 def authenticate_user(login_identifier: str, password: str, db: Session):
     user = get_user_by_login(login_identifier, db)
     if not user:
+        return False
+    if user.is_service_account:
         return False
     if not verify_password(password, user.hashed_password):
         return False
@@ -115,10 +126,74 @@ def get_user(username: str, db: Session) -> Users:
         return dbuser
 
 
+def _hash_service_account_key(api_key: str) -> str:
+    return hashlib.sha256(api_key.encode("utf-8")).hexdigest()
+
+
+def create_service_account_api_key(db: Session, user: Users) -> tuple[ServiceAccountApiKeys, str]:
+    key_identifier = secrets.token_urlsafe(12).replace("-", "").replace("_", "")[:16]
+    secret = secrets.token_urlsafe(32)
+    api_key = f"{SERVICE_ACCOUNT_KEY_PREFIX}_{key_identifier}_{secret}"
+    key = ServiceAccountApiKeys(
+        user_id=user.id,
+        key_identifier=key_identifier,
+        key_hash=_hash_service_account_key(api_key),
+        key_prefix=api_key[:24],
+    )
+    db.add(key)
+    return key, api_key
+
+
+def get_user_by_service_account_key(api_key: str, db: Session) -> Users | None:
+    parts = api_key.split("_", 3)
+    if len(parts) != 4 or "_".join(parts[:2]) != SERVICE_ACCOUNT_KEY_PREFIX:
+        return None
+
+    key_identifier = parts[2]
+    key = (
+        db.scalars(
+            select(ServiceAccountApiKeys)
+            .options(
+                joinedload(ServiceAccountApiKeys.user).options(
+                    undefer(Users.username),
+                    undefer(Users.user_role_id),
+                    undefer(Users.email),
+                    joinedload(Users.user_role).joinedload(UserRoles.security_scopes),
+                ),
+            )
+            .where(
+                ServiceAccountApiKeys.key_identifier == key_identifier,
+                ServiceAccountApiKeys.revoked_at.is_(None),
+            )
+        )
+        .unique()
+        .first()
+    )
+
+    if key is None:
+        return None
+
+    if not hmac.compare_digest(key.key_hash, _hash_service_account_key(api_key)):
+        return None
+
+    user = key.user
+    if user is None or not user.is_service_account or user.disabled:
+        return None
+
+    key.last_used_at = datetime.utcnow()
+    db.add(key)
+    db.commit()
+    return user
+
+
 def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)],
     db: Annotated[Session, Depends(get_db)],
     ) -> Users:
+    service_account_user = get_user_by_service_account_key(token, db)
+    if service_account_user:
+        return service_account_user
+
     try:
         payload = decode_access_token(token)
 

@@ -18,7 +18,7 @@ work_orders_router = APIRouter()
 
 @work_orders_router.get(
     "/work_orders",
-    dependencies=[Depends(ScopedUser.Read)],
+    dependencies=[Depends(ScopedUser.WorkOrderRead)],
     tags=["Work Orders"],
 )
 def get_work_orders(
@@ -43,7 +43,7 @@ def get_work_orders(
 
 @work_orders_router.post(
     "/work_orders",
-    dependencies=[Depends(ScopedUser.Admin)],
+    dependencies=[Depends(ScopedUser.WorkOrderCreate)],
     response_model=meter.WorkOrder,
     tags=["Work Orders"],
 )
@@ -59,6 +59,7 @@ def create_work_order(
 
 @work_orders_router.patch(
     "/work_orders",
+    dependencies=[Depends(ScopedUser.WorkOrderUpdate)],
     response_model=meter.WorkOrder,
     tags=["Work Orders"],
 )

@@ -229,3 +229,7 @@ cython_debug/
 # dependencies
 /node_modules
 /frontend/node_modules
+
+# Mise Envs
+mise.toml
+
