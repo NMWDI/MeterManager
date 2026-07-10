@@ -1,0 +1,9 @@
+# Local terraform working dir + provider binaries
+.terraform/
+# State (may contain secrets) — use remote backend instead
+*.tfstate
+*.tfstate.*
+# Local var overrides
+terraform.tfvars
+*.auto.tfvars
+crash.log

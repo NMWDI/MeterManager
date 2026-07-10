@@ -1,0 +1,8 @@
+# Copy to terraform.tfvars and fill in.
+project_id = "your-gcp-project-id"
+region     = "us-central1"
+
+# Everything hitting this service 301s here, path + query preserved.
+redirect_host   = "metermanager.pvacd.com"
+redirect_scheme = "https"
+redirect_code   = 301
