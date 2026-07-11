@@ -5,6 +5,7 @@ import {
   Science,
   People,
   Storage,
+  ManageAccounts,
   MonitorHeartOutlined,
   ConstructionOutlined,
   BuildOutlined,
@@ -106,6 +107,12 @@ export const navConfig: NavItem[] = [
   // Admin
   { path: "/manage/parts", label: "Manage Parts", icon: Build, role: "Admin" },
   { path: "/manage/users", label: "Manage Users", icon: People, role: "Admin" },
+  {
+    path: "/manage/serviceaccounts",
+    label: "Service Accounts",
+    icon: ManageAccounts,
+    role: "Admin",
+  },
   {
     path: "/manage/backups",
     label: "Manage Backups",

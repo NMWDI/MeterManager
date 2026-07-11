@@ -27,6 +27,7 @@ import { Route as ReportsInstalledmetersRouteImport } from './routes/reports/ins
 import { Route as ReportsChloridesRouteImport } from './routes/reports/chlorides'
 import { Route as ManageWellsRouteImport } from './routes/manage/wells'
 import { Route as ManageUsersRouteImport } from './routes/manage/users'
+import { Route as ManageServiceaccountsRouteImport } from './routes/manage/serviceaccounts'
 import { Route as ManagePartsRouteImport } from './routes/manage/parts'
 import { Route as ManageMetersRouteImport } from './routes/manage/meters'
 import { Route as ManageBackupsRouteImport } from './routes/manage/backups'
@@ -125,6 +126,11 @@ const ManageUsersRoute = ManageUsersRouteImport.update({
   path: '/manage/users',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ManageServiceaccountsRoute = ManageServiceaccountsRouteImport.update({
+  id: '/manage/serviceaccounts',
+  path: '/manage/serviceaccounts',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ManagePartsRoute = ManagePartsRouteImport.update({
   id: '/manage/parts',
   path: '/manage/parts',
@@ -175,6 +181,7 @@ export interface FileRoutesByFullPath {
   '/manage/backups': typeof ManageBackupsRoute
   '/manage/meters': typeof ManageMetersRoute
   '/manage/parts': typeof ManagePartsRouteWithChildren
+  '/manage/serviceaccounts': typeof ManageServiceaccountsRoute
   '/manage/users': typeof ManageUsersRoute
   '/manage/wells': typeof ManageWellsRoute
   '/reports/chlorides': typeof ReportsChloridesRoute
@@ -201,6 +208,7 @@ export interface FileRoutesByTo {
   '/internal/error-preview': typeof InternalErrorPreviewRoute
   '/manage/backups': typeof ManageBackupsRoute
   '/manage/meters': typeof ManageMetersRoute
+  '/manage/serviceaccounts': typeof ManageServiceaccountsRoute
   '/manage/users': typeof ManageUsersRoute
   '/manage/wells': typeof ManageWellsRoute
   '/reports/chlorides': typeof ReportsChloridesRoute
@@ -229,6 +237,7 @@ export interface FileRoutesById {
   '/manage/backups': typeof ManageBackupsRoute
   '/manage/meters': typeof ManageMetersRoute
   '/manage/parts': typeof ManagePartsRouteWithChildren
+  '/manage/serviceaccounts': typeof ManageServiceaccountsRoute
   '/manage/users': typeof ManageUsersRoute
   '/manage/wells': typeof ManageWellsRoute
   '/reports/chlorides': typeof ReportsChloridesRoute
@@ -258,6 +267,7 @@ export interface FileRouteTypes {
     | '/manage/backups'
     | '/manage/meters'
     | '/manage/parts'
+    | '/manage/serviceaccounts'
     | '/manage/users'
     | '/manage/wells'
     | '/reports/chlorides'
@@ -284,6 +294,7 @@ export interface FileRouteTypes {
     | '/internal/error-preview'
     | '/manage/backups'
     | '/manage/meters'
+    | '/manage/serviceaccounts'
     | '/manage/users'
     | '/manage/wells'
     | '/reports/chlorides'
@@ -311,6 +322,7 @@ export interface FileRouteTypes {
     | '/manage/backups'
     | '/manage/meters'
     | '/manage/parts'
+    | '/manage/serviceaccounts'
     | '/manage/users'
     | '/manage/wells'
     | '/reports/chlorides'
@@ -339,6 +351,7 @@ export interface RootRouteChildren {
   ManageBackupsRoute: typeof ManageBackupsRoute
   ManageMetersRoute: typeof ManageMetersRoute
   ManagePartsRoute: typeof ManagePartsRouteWithChildren
+  ManageServiceaccountsRoute: typeof ManageServiceaccountsRoute
   ManageUsersRoute: typeof ManageUsersRoute
   ManageWellsRoute: typeof ManageWellsRoute
   ReportsChloridesRoute: typeof ReportsChloridesRoute
@@ -479,6 +492,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ManageUsersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/manage/serviceaccounts': {
+      id: '/manage/serviceaccounts'
+      path: '/manage/serviceaccounts'
+      fullPath: '/manage/serviceaccounts'
+      preLoaderRoute: typeof ManageServiceaccountsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/manage/parts': {
       id: '/manage/parts'
       path: '/manage/parts'
@@ -571,6 +591,7 @@ const rootRouteChildren: RootRouteChildren = {
   ManageBackupsRoute: ManageBackupsRoute,
   ManageMetersRoute: ManageMetersRoute,
   ManagePartsRoute: ManagePartsRouteWithChildren,
+  ManageServiceaccountsRoute: ManageServiceaccountsRoute,
   ManageUsersRoute: ManageUsersRoute,
   ManageWellsRoute: ManageWellsRoute,
   ReportsChloridesRoute: ReportsChloridesRoute,
