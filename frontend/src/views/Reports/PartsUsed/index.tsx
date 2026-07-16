@@ -349,13 +349,15 @@ export const PartsUsedReportView = () => {
 
   let runningTotal = 0;
 
-  const rows: PartsUsedReportRow[] = (partsUsedQuery?.data ?? []).map((part) => {
-    runningTotal += part.total;
-    return {
-      ...part,
-      running_total: runningTotal,
-    };
-  });
+  const rows: PartsUsedReportRow[] = (partsUsedQuery?.data ?? []).map(
+    (part) => {
+      runningTotal += part.total;
+      return {
+        ...part,
+        running_total: runningTotal,
+      };
+    },
+  );
 
   const summaryRows: PartsUsedTypeSummaryRow[] = useMemo(() => {
     const summaries = rows.reduce<Record<string, PartsUsedTypeSummaryRow>>(
@@ -408,6 +410,8 @@ export const PartsUsedReportView = () => {
     { field: "part_type", headerName: "Type", flex: 1 },
     {
       field: "quantity",
+      align: "left",
+      headerAlign: "left",
       headerName: "Number of units",
       flex: 1,
       type: "number",
@@ -428,15 +432,20 @@ export const PartsUsedReportView = () => {
 
   const columns: GridColDef[] = [
     { field: "part_number", headerName: "Part", flex: 1 },
+    { field: "part_type", headerName: "Part Type", flex: 1 },
     { field: "description", headerName: "Description", flex: 2 },
     {
       field: "price",
+      align: "left",
+      headerAlign: "left",
       headerName: "Cost per unit",
       flex: 1,
       valueFormatter: currencyFormatter,
     },
     {
       field: "quantity",
+      align: "left",
+      headerAlign: "left",
       headerName: "Number of units",
       flex: 1,
       type: "number",
