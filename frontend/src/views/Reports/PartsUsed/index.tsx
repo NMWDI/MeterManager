@@ -422,12 +422,6 @@ export const PartsUsedReportView = () => {
       flex: 1,
       valueFormatter: currencyFormatter,
     },
-    {
-      field: "running_total",
-      headerName: "Running Total",
-      flex: 1,
-      valueFormatter: currencyFormatter,
-    },
   ];
 
   const columns: GridColDef[] = [

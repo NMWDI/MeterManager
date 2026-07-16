@@ -39,7 +39,6 @@
         <th>Type</th>
         <th>Number of units</th>
         <th>Total cost</th>
-        <th>Running Total</th>
       </tr>
     </thead>
     <tbody>
@@ -48,7 +47,6 @@
         <td><strong>{{ row.part_type }}</strong></td>
         <td>{{ row.quantity }}</td>
         <td>${{ "%.2f"|format(row.total) }}</td>
-        <td>${{ "%.2f"|format(row.running_total) }}</td>
       </tr>
       {% endfor %}
     </tbody>
