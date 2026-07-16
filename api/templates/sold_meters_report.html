@@ -15,6 +15,8 @@
     th { background: #f3f4f6; }
     td.number, th.number { text-align: right; }
     tr { page-break-inside: avoid; }
+    .chart { margin: 12px 0 18px; text-align: center; }
+    .chart img { max-width: 100%; }
   </style>
 </head>
 <body>
@@ -35,6 +37,12 @@
   </div>
 
   <h2>Meter Type Totals</h2>
+  {% if meter_type_chart %}
+  <div class="chart">
+    <img src="data:image/png;base64,{{ meter_type_chart }}" />
+  </div>
+  {% endif %}
+
   <table>
     <thead>
       <tr>

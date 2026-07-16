@@ -1,9 +1,14 @@
+from base64 import b64encode
 from enum import Enum
 from datetime import date, datetime
 from io import BytesIO
 from pathlib import Path
 
+import matplotlib
+matplotlib.use("Agg")
+
 from jinja2 import Environment, FileSystemLoader, select_autoescape
+from matplotlib.pyplot import close, figure
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
 from weasyprint import HTML
@@ -129,6 +134,33 @@ def _meter_type_label(meter_type: MeterTypeLU) -> str:
             ],
         )
     )
+
+
+def _make_meter_type_bar_chart(type_totals: list[dict], series_label: str) -> str:
+    if not type_totals:
+        return ""
+
+    labels = [row["meter_type"] for row in type_totals]
+    quantities = [row["quantity"] for row in type_totals]
+    width = max(8, min(14, len(labels) * 1.2))
+
+    fig = figure(figsize=(width, 5))
+    ax = fig.add_subplot(111)
+    bars = ax.bar(labels, quantities, label=series_label, color="#1976d2")
+
+    ax.set_title("Meter Type Totals")
+    ax.set_xlabel("Meter Type")
+    ax.set_ylabel("Quantity")
+    ax.set_ylim(0, max(quantities) + 1)
+    ax.legend()
+    ax.bar_label(bars, padding=3)
+    ax.tick_params(axis="x", labelrotation=35)
+
+    fig.tight_layout()
+    buf = BytesIO()
+    fig.savefig(buf, format="png", bbox_inches="tight")
+    close(fig)
+    return b64encode(buf.getvalue()).decode("utf-8")
 
 
 def get_sold_meters_report(
@@ -316,11 +348,16 @@ def build_sold_meters_pdf(
     max_size: int | None = None,
 ):
     report = get_sold_meters_report(db, from_date, to_date, min_size, max_size)
+    meter_type_chart = _make_meter_type_bar_chart(
+        report["type_totals"],
+        "Meters Sold",
+    )
 
     html_content = templates.get_template("sold_meters_report.html").render(
         rows=report["rows"],
         summary=report["summary"],
         type_totals=report["type_totals"],
+        meter_type_chart=meter_type_chart,
         from_date=from_date,
         to_date=to_date,
         min_size=min_size,
@@ -340,11 +377,16 @@ def build_installed_meters_pdf(
     max_size: int | None = None,
 ):
     report = get_installed_meters_report(db, from_date, to_date, min_size, max_size)
+    meter_type_chart = _make_meter_type_bar_chart(
+        report["type_totals"],
+        "Meters Installed",
+    )
 
     html_content = templates.get_template("installed_meters_report.html").render(
         rows=report["rows"],
         summary=report["summary"],
         type_totals=report["type_totals"],
+        meter_type_chart=meter_type_chart,
         from_date=from_date,
         to_date=to_date,
         min_size=min_size,
