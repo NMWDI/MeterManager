@@ -6,6 +6,7 @@ import {
   Button,
   Card,
   CardContent,
+  Chip,
   FormControlLabel,
   Grid,
   Switch,
@@ -30,6 +31,9 @@ import {
   ReportBreadcrumbTitle,
 } from "@/components";
 import { Route } from "@/routes/reports/partsused";
+
+const MAX_VISIBLE_PART_CHIPS = 3;
+const MAX_VISIBLE_PART_TYPE_NAMES = 3;
 
 export interface MeterType {
   id: number;
@@ -478,7 +482,14 @@ export const PartsUsedReportView = () => {
                 <Skeleton variant="rounded" width="100%" height={40} />
               ) : (
                 <ControlledSelect
-                  sx={{ width: "100%" }}
+                  sx={{
+                    width: "100%",
+                    "& .MuiSelect-select": {
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    },
+                  }}
                   size="small"
                   label="Part Types"
                   control={control}
@@ -487,6 +498,17 @@ export const PartsUsedReportView = () => {
                   disabled={partsQuery.isFetching}
                   options={partTypeOptions}
                   getOptionLabel={(option: any) => option.type.name}
+                  renderValue={(selectedOptions: any[]) => {
+                    const visibleLabels = selectedOptions
+                      .slice(0, MAX_VISIBLE_PART_TYPE_NAMES)
+                      .map((option) => option.type.name);
+
+                    if (selectedOptions.length > MAX_VISIBLE_PART_TYPE_NAMES) {
+                      visibleLabels.push("...");
+                    }
+
+                    return visibleLabels.join(", ");
+                  }}
                 />
               )}
             </Grid>
@@ -550,6 +572,36 @@ export const PartsUsedReportView = () => {
                             onChange={(_, selectedOptions) =>
                               field.onChange(selectedOptions.map((p) => p.id))
                             }
+                            renderTags={(value: Part[], getTagProps) => {
+                              const visibleParts = value.slice(
+                                0,
+                                MAX_VISIBLE_PART_CHIPS,
+                              );
+                              const overflowCount =
+                                value.length - visibleParts.length;
+
+                              return [
+                                ...visibleParts.map((option, index) => (
+                                  <Chip
+                                    {...getTagProps({ index })}
+                                    key={option.id}
+                                    size="small"
+                                    label={`${option.part_number} ${option.description}`}
+                                    sx={{ maxWidth: 180 }}
+                                  />
+                                )),
+                                ...(overflowCount > 0
+                                  ? [
+                                      <Chip
+                                        key="parts-overflow"
+                                        size="small"
+                                        label={`+${overflowCount}`}
+                                        sx={{ flexShrink: 0 }}
+                                      />,
+                                    ]
+                                  : []),
+                              ];
+                            }}
                             filterOptions={(options: Part[], state: any) =>
                               options.filter((opt) =>
                                 `${opt.part_number} ${opt.description}`
@@ -558,6 +610,18 @@ export const PartsUsedReportView = () => {
                               )
                             }
                             loading={partsQuery.isLoading}
+                            sx={{
+                              "& .MuiAutocomplete-inputRoot": {
+                                flexWrap: "nowrap",
+                                overflow: "hidden",
+                              },
+                              "& .MuiAutocomplete-tag": {
+                                flexShrink: 1,
+                              },
+                              "& .MuiAutocomplete-input": {
+                                minWidth: "64px !important",
+                              },
+                            }}
                             renderInput={(params) => (
                               <TextField
                                 {...params}
@@ -579,7 +643,7 @@ export const PartsUsedReportView = () => {
                       disabled={partsQuery.isFetching}
                       sx={{
                         whiteSpace: "nowrap",
-                        height: hasSelectedParts ? 50 : 40,
+                        height: 40,
                       }}
                     >
                       {hasSelectedParts ? "Deselect All" : "Select All"}
