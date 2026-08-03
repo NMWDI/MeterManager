@@ -18,7 +18,7 @@ services:
       - traefik
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=Host(`pvacd-dev.newmexicowaterdata.org`)"
+      - "traefik.http.routers.frontend.rule=Host(`metermanager-dev.pvacd.com`)"
       - "traefik.http.routers.frontend.entrypoints=websecure,web"
       - "traefik.http.routers.frontend.tls=true"
       - "traefik.http.routers.frontend.tls.certresolver=myresolver"
@@ -34,9 +34,9 @@ services:
     working_dir: /app
     environment:
       - APP_ENV=pre-production
-      - API_BASE_URL=https://pvacd-dev.newmexicowaterdata.org/api/v1
-      - GCP_BUCKET_NAME=pvacd
-      - GCP_WOODPECKER_BUCKET_NAME=pvacd-woodpecker
+      - API_BASE_URL=https://metermanager-dev.pvacd.com/api/v1
+      - GCP_BUCKET_NAME=meter-manager-bucket
+      - GCP_WOODPECKER_BUCKET_NAME=meter-manager-woodpecker-bucket
       - GCP_BACKUP_PREFIX=pre-prod-db-backups
       - GCP_PHOTO_PREFIX=pre-prod-meter-activities-photos
       - BACKUP_RETENTION_DAYS=14
@@ -57,14 +57,14 @@ services:
       - ./api/.env_devserver
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.api.rule=Host(`pvacd-dev.newmexicowaterdata.org`) && PathPrefix(`/api/v1`)"
+      - "traefik.http.routers.api.rule=Host(`metermanager-dev.pvacd.com`) && PathPrefix(`/api/v1`)"
       - "traefik.http.routers.api.entrypoints=websecure"
       - "traefik.http.routers.api.tls=true"
       - "traefik.http.routers.api.tls.certresolver=myresolver"
       - "traefik.http.routers.api.middlewares=api-sp"
       - "traefik.http.middlewares.api-sp.stripprefix.prefixes=/api/v1"
       - "traefik.http.middlewares.api-sp.stripprefix.forceSlash=false"
-      - "traefik.http.routers.api-insecure.rule=Host(`pvacd-dev.newmexicowaterdata.org`) && PathPrefix(`/api/v1`)"
+      - "traefik.http.routers.api-insecure.rule=Host(`metermanager-dev.pvacd.com`) && PathPrefix(`/api/v1`)"
       - "traefik.http.routers.api-insecure.entrypoints=web"
 
       # - "traefik.http.routers.api-insecure.middlewares=force-secure"
