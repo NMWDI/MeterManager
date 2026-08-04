@@ -51,7 +51,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./api:/api
+      - ./api:/app/api
     depends_on:
       - traefik
     env_file:
