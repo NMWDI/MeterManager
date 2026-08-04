@@ -9,6 +9,7 @@ services:
       dockerfile: ./Dockerfile
       args:
         VITE_APP_ENV: pre-production
+        VITE_API_URL: https://metermanager-dev.pvacd.com/api/v1
     env_file:
       - ./frontend/.env.devserver
     ports:
