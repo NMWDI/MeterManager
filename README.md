@@ -20,6 +20,26 @@
 
 ---
 
+### Password Security
+
+New and changed passwords must be at least 12 characters and include lowercase
+letters, uppercase letters, numbers, and symbols. Passwords that include obvious
+account identifiers such as the username, email, full name, or display name are
+rejected.
+
+Existing weak passwords do not block users from signing in. After a successful
+sign-in, the application records the current password's last known strength
+status so the Settings page can warn the user if their current password is weak.
+The Settings password section also shows when the password was last changed.
+
+When users type a new password, the UI shows strength feedback immediately. On
+blur, the backend checks the candidate password against the Have I Been Pwned
+Pwned Passwords range API using k-anonymity: only the first five characters of a
+SHA-1 hash are sent, and the raw password is never sent to the third-party
+service. Known compromised passwords are rejected when a password is changed.
+
+---
+
 ### Tech Stack
 
 | Layer         | Technology           |

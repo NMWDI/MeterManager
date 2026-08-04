@@ -6,6 +6,7 @@ import {
   Button,
   Card,
   CardContent,
+  Chip,
   FormControlLabel,
   Grid,
   Switch,
@@ -30,6 +31,9 @@ import {
   ReportBreadcrumbTitle,
 } from "@/components";
 import { Route } from "@/routes/reports/partsused";
+
+const MAX_VISIBLE_PART_CHIPS = 3;
+const MAX_VISIBLE_PART_TYPE_NAMES = 3;
 
 export interface MeterType {
   id: number;
@@ -60,6 +64,26 @@ export interface Part {
   part_type_id: number;
   part_type: PartType;
   meter_types: MeterType[];
+}
+
+interface PartsUsedReportRow {
+  id: number;
+  part_number: string;
+  description: string;
+  part_type: string | null;
+  price: number;
+  quantity: number;
+  total: number;
+  running_total: number;
+}
+
+interface PartsUsedTypeSummaryRow {
+  id: string;
+  part_type: string;
+  quantity: number;
+  total: number;
+  running_total: number;
+  isGrandTotal?: boolean;
 }
 
 const schema = yup.object().shape({
@@ -295,7 +319,7 @@ export const PartsUsedReportView = () => {
     });
   }, [from, to, partTypes, selectedPartIds, inUse]);
 
-  const partsUsedQuery = useQuery<any[]>({
+  const partsUsedQuery = useQuery<Omit<PartsUsedReportRow, "running_total">[]>({
     queryKey: ["Inventory", "report", "partsused", from, to, selectedPartIds],
     queryFn: async () => {
       const searchParams = new URLSearchParams({
@@ -325,26 +349,69 @@ export const PartsUsedReportView = () => {
 
   let runningTotal = 0;
 
-  const rows = partsUsedQuery?.data?.map((part) => {
-    runningTotal += part.total;
-    return {
-      ...part,
-      running_total: runningTotal,
-    };
-  });
-
-  const columns: GridColDef[] = [
-    { field: "part_number", headerName: "Part", flex: 1 },
-    { field: "description", headerName: "Description", flex: 2 },
-    {
-      field: "price",
-      headerName: "Cost per unit",
-      flex: 1,
-      valueFormatter: (param: number) =>
-        typeof param === "number" ? `$${param?.toFixed(2)}` : "$0.00",
+  const rows: PartsUsedReportRow[] = (partsUsedQuery?.data ?? []).map(
+    (part) => {
+      runningTotal += part.total;
+      return {
+        ...part,
+        running_total: runningTotal,
+      };
     },
+  );
+
+  const summaryRows: PartsUsedTypeSummaryRow[] = useMemo(() => {
+    const summaries = rows.reduce<Record<string, PartsUsedTypeSummaryRow>>(
+      (acc, row) => {
+        const partType = row.part_type || "Other";
+
+        if (!acc[partType]) {
+          acc[partType] = {
+            id: partType,
+            part_type: partType,
+            quantity: 0,
+            total: 0,
+            running_total: 0,
+          };
+        }
+
+        acc[partType].quantity += row.quantity;
+        acc[partType].total += row.total;
+        acc[partType].running_total += row.running_total;
+
+        return acc;
+      },
+      {},
+    );
+
+    const groupedRows = Object.values(summaries);
+
+    if (!groupedRows.length) return [];
+
+    return [
+      ...groupedRows,
+      {
+        id: "grand-total",
+        part_type: "Grand total",
+        quantity: groupedRows.reduce((total, row) => total + row.quantity, 0),
+        total: groupedRows.reduce((total, row) => total + row.total, 0),
+        running_total: groupedRows.reduce(
+          (total, row) => total + row.running_total,
+          0,
+        ),
+        isGrandTotal: true,
+      },
+    ];
+  }, [rows]);
+
+  const currencyFormatter = (param: number) =>
+    typeof param === "number" ? `$${param.toFixed(2)}` : "$0.00";
+
+  const summaryColumns: GridColDef[] = [
+    { field: "part_type", headerName: "Type", flex: 1 },
     {
       field: "quantity",
+      align: "left",
+      headerAlign: "left",
       headerName: "Number of units",
       flex: 1,
       type: "number",
@@ -353,15 +420,41 @@ export const PartsUsedReportView = () => {
       field: "total",
       headerName: "Total cost",
       flex: 1,
-      valueFormatter: (param: number) =>
-        typeof param === "number" ? `$${param?.toFixed(2)}` : "$0.00",
+      valueFormatter: currencyFormatter,
+    },
+  ];
+
+  const columns: GridColDef[] = [
+    { field: "part_number", headerName: "Part", flex: 1 },
+    { field: "part_type", headerName: "Part Type", flex: 1 },
+    { field: "description", headerName: "Description", flex: 2 },
+    {
+      field: "price",
+      align: "left",
+      headerAlign: "left",
+      headerName: "Cost per unit",
+      flex: 1,
+      valueFormatter: currencyFormatter,
+    },
+    {
+      field: "quantity",
+      align: "left",
+      headerAlign: "left",
+      headerName: "Number of units",
+      flex: 1,
+      type: "number",
+    },
+    {
+      field: "total",
+      headerName: "Total cost",
+      flex: 1,
+      valueFormatter: currencyFormatter,
     },
     {
       field: "running_total",
       headerName: "Running Total",
       flex: 1,
-      valueFormatter: (param: number) =>
-        typeof param === "number" ? `$${param.toFixed(2)}` : "$0.00",
+      valueFormatter: currencyFormatter,
     },
   ];
 
@@ -478,7 +571,14 @@ export const PartsUsedReportView = () => {
                 <Skeleton variant="rounded" width="100%" height={40} />
               ) : (
                 <ControlledSelect
-                  sx={{ width: "100%" }}
+                  sx={{
+                    width: "100%",
+                    "& .MuiSelect-select": {
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    },
+                  }}
                   size="small"
                   label="Part Types"
                   control={control}
@@ -487,6 +587,17 @@ export const PartsUsedReportView = () => {
                   disabled={partsQuery.isFetching}
                   options={partTypeOptions}
                   getOptionLabel={(option: any) => option.type.name}
+                  renderValue={(selectedOptions: any[]) => {
+                    const visibleLabels = selectedOptions
+                      .slice(0, MAX_VISIBLE_PART_TYPE_NAMES)
+                      .map((option) => option.type.name);
+
+                    if (selectedOptions.length > MAX_VISIBLE_PART_TYPE_NAMES) {
+                      visibleLabels.push("...");
+                    }
+
+                    return visibleLabels.join(", ");
+                  }}
                 />
               )}
             </Grid>
@@ -550,6 +661,36 @@ export const PartsUsedReportView = () => {
                             onChange={(_, selectedOptions) =>
                               field.onChange(selectedOptions.map((p) => p.id))
                             }
+                            renderTags={(value: Part[], getTagProps) => {
+                              const visibleParts = value.slice(
+                                0,
+                                MAX_VISIBLE_PART_CHIPS,
+                              );
+                              const overflowCount =
+                                value.length - visibleParts.length;
+
+                              return [
+                                ...visibleParts.map((option, index) => (
+                                  <Chip
+                                    {...getTagProps({ index })}
+                                    key={option.id}
+                                    size="small"
+                                    label={`${option.part_number} ${option.description}`}
+                                    sx={{ maxWidth: 180 }}
+                                  />
+                                )),
+                                ...(overflowCount > 0
+                                  ? [
+                                      <Chip
+                                        key="parts-overflow"
+                                        size="small"
+                                        label={`+${overflowCount}`}
+                                        sx={{ flexShrink: 0 }}
+                                      />,
+                                    ]
+                                  : []),
+                              ];
+                            }}
                             filterOptions={(options: Part[], state: any) =>
                               options.filter((opt) =>
                                 `${opt.part_number} ${opt.description}`
@@ -558,6 +699,18 @@ export const PartsUsedReportView = () => {
                               )
                             }
                             loading={partsQuery.isLoading}
+                            sx={{
+                              "& .MuiAutocomplete-inputRoot": {
+                                flexWrap: "nowrap",
+                                overflow: "hidden",
+                              },
+                              "& .MuiAutocomplete-tag": {
+                                flexShrink: 1,
+                              },
+                              "& .MuiAutocomplete-input": {
+                                minWidth: "64px !important",
+                              },
+                            }}
                             renderInput={(params) => (
                               <TextField
                                 {...params}
@@ -579,7 +732,7 @@ export const PartsUsedReportView = () => {
                       disabled={partsQuery.isFetching}
                       sx={{
                         whiteSpace: "nowrap",
-                        height: hasSelectedParts ? 50 : 40,
+                        height: 40,
                       }}
                     >
                       {hasSelectedParts ? "Deselect All" : "Select All"}
@@ -607,6 +760,25 @@ export const PartsUsedReportView = () => {
                 }}
               />
             </Grid>
+          </Grid>
+          <Grid item xs={12} padding={2} pt={0}>
+            <DataGrid
+              rows={summaryRows}
+              columns={summaryColumns}
+              disableColumnMenu
+              hideFooter
+              hideFooterSelectedRowCount
+              getRowClassName={(params) =>
+                params.row.isGrandTotal ? "parts-used-grand-total" : ""
+              }
+              sx={{
+                mb: 2,
+                "& .parts-used-grand-total": {
+                  fontWeight: 700,
+                  bgcolor: "action.hover",
+                },
+              }}
+            />
           </Grid>
           <Grid item xs={12} padding={2}>
             <DataGrid

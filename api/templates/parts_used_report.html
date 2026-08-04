@@ -36,6 +36,24 @@
   <table>
     <thead>
       <tr>
+        <th>Type</th>
+        <th>Number of units</th>
+        <th>Total cost</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in summary_rows %}
+      <tr>
+        <td><strong>{{ row.part_type }}</strong></td>
+        <td>{{ row.quantity }}</td>
+        <td>${{ "%.2f"|format(row.total) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <table>
+    <thead>
+      <tr>
         <th>Part #</th>
         <th>Description</th>
         <th>Price</th>

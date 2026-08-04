@@ -19,12 +19,15 @@ import { Route as ActivitiesRouteImport } from './routes/activities'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ReportsIndexRouteImport } from './routes/reports/index'
 import { Route as ManageIndexRouteImport } from './routes/manage/index'
+import { Route as ReportsSoldmetersRouteImport } from './routes/reports/soldmeters'
 import { Route as ReportsPartsusedRouteImport } from './routes/reports/partsused'
 import { Route as ReportsMonitoringwellsRouteImport } from './routes/reports/monitoringwells'
 import { Route as ReportsMaintenanceRouteImport } from './routes/reports/maintenance'
+import { Route as ReportsInstalledmetersRouteImport } from './routes/reports/installedmeters'
 import { Route as ReportsChloridesRouteImport } from './routes/reports/chlorides'
 import { Route as ManageWellsRouteImport } from './routes/manage/wells'
 import { Route as ManageUsersRouteImport } from './routes/manage/users'
+import { Route as ManageServiceaccountsRouteImport } from './routes/manage/serviceaccounts'
 import { Route as ManagePartsRouteImport } from './routes/manage/parts'
 import { Route as ManageMetersRouteImport } from './routes/manage/meters'
 import { Route as ManageBackupsRouteImport } from './routes/manage/backups'
@@ -83,6 +86,11 @@ const ManageIndexRoute = ManageIndexRouteImport.update({
   path: '/manage/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReportsSoldmetersRoute = ReportsSoldmetersRouteImport.update({
+  id: '/reports/soldmeters',
+  path: '/reports/soldmeters',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ReportsPartsusedRoute = ReportsPartsusedRouteImport.update({
   id: '/reports/partsused',
   path: '/reports/partsused',
@@ -98,6 +106,11 @@ const ReportsMaintenanceRoute = ReportsMaintenanceRouteImport.update({
   path: '/reports/maintenance',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReportsInstalledmetersRoute = ReportsInstalledmetersRouteImport.update({
+  id: '/reports/installedmeters',
+  path: '/reports/installedmeters',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ReportsChloridesRoute = ReportsChloridesRouteImport.update({
   id: '/reports/chlorides',
   path: '/reports/chlorides',
@@ -111,6 +124,11 @@ const ManageWellsRoute = ManageWellsRouteImport.update({
 const ManageUsersRoute = ManageUsersRouteImport.update({
   id: '/manage/users',
   path: '/manage/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ManageServiceaccountsRoute = ManageServiceaccountsRouteImport.update({
+  id: '/manage/serviceaccounts',
+  path: '/manage/serviceaccounts',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ManagePartsRoute = ManagePartsRouteImport.update({
@@ -163,12 +181,15 @@ export interface FileRoutesByFullPath {
   '/manage/backups': typeof ManageBackupsRoute
   '/manage/meters': typeof ManageMetersRoute
   '/manage/parts': typeof ManagePartsRouteWithChildren
+  '/manage/serviceaccounts': typeof ManageServiceaccountsRoute
   '/manage/users': typeof ManageUsersRoute
   '/manage/wells': typeof ManageWellsRoute
   '/reports/chlorides': typeof ReportsChloridesRoute
+  '/reports/installedmeters': typeof ReportsInstalledmetersRoute
   '/reports/maintenance': typeof ReportsMaintenanceRoute
   '/reports/monitoringwells': typeof ReportsMonitoringwellsRoute
   '/reports/partsused': typeof ReportsPartsusedRoute
+  '/reports/soldmeters': typeof ReportsSoldmetersRoute
   '/manage/': typeof ManageIndexRoute
   '/reports/': typeof ReportsIndexRoute
   '/manage/parts/': typeof ManagePartsIndexRoute
@@ -187,12 +208,15 @@ export interface FileRoutesByTo {
   '/internal/error-preview': typeof InternalErrorPreviewRoute
   '/manage/backups': typeof ManageBackupsRoute
   '/manage/meters': typeof ManageMetersRoute
+  '/manage/serviceaccounts': typeof ManageServiceaccountsRoute
   '/manage/users': typeof ManageUsersRoute
   '/manage/wells': typeof ManageWellsRoute
   '/reports/chlorides': typeof ReportsChloridesRoute
+  '/reports/installedmeters': typeof ReportsInstalledmetersRoute
   '/reports/maintenance': typeof ReportsMaintenanceRoute
   '/reports/monitoringwells': typeof ReportsMonitoringwellsRoute
   '/reports/partsused': typeof ReportsPartsusedRoute
+  '/reports/soldmeters': typeof ReportsSoldmetersRoute
   '/manage': typeof ManageIndexRoute
   '/reports': typeof ReportsIndexRoute
   '/manage/parts': typeof ManagePartsIndexRoute
@@ -213,12 +237,15 @@ export interface FileRoutesById {
   '/manage/backups': typeof ManageBackupsRoute
   '/manage/meters': typeof ManageMetersRoute
   '/manage/parts': typeof ManagePartsRouteWithChildren
+  '/manage/serviceaccounts': typeof ManageServiceaccountsRoute
   '/manage/users': typeof ManageUsersRoute
   '/manage/wells': typeof ManageWellsRoute
   '/reports/chlorides': typeof ReportsChloridesRoute
+  '/reports/installedmeters': typeof ReportsInstalledmetersRoute
   '/reports/maintenance': typeof ReportsMaintenanceRoute
   '/reports/monitoringwells': typeof ReportsMonitoringwellsRoute
   '/reports/partsused': typeof ReportsPartsusedRoute
+  '/reports/soldmeters': typeof ReportsSoldmetersRoute
   '/manage/': typeof ManageIndexRoute
   '/reports/': typeof ReportsIndexRoute
   '/manage/parts/': typeof ManagePartsIndexRoute
@@ -240,12 +267,15 @@ export interface FileRouteTypes {
     | '/manage/backups'
     | '/manage/meters'
     | '/manage/parts'
+    | '/manage/serviceaccounts'
     | '/manage/users'
     | '/manage/wells'
     | '/reports/chlorides'
+    | '/reports/installedmeters'
     | '/reports/maintenance'
     | '/reports/monitoringwells'
     | '/reports/partsused'
+    | '/reports/soldmeters'
     | '/manage/'
     | '/reports/'
     | '/manage/parts/'
@@ -264,12 +294,15 @@ export interface FileRouteTypes {
     | '/internal/error-preview'
     | '/manage/backups'
     | '/manage/meters'
+    | '/manage/serviceaccounts'
     | '/manage/users'
     | '/manage/wells'
     | '/reports/chlorides'
+    | '/reports/installedmeters'
     | '/reports/maintenance'
     | '/reports/monitoringwells'
     | '/reports/partsused'
+    | '/reports/soldmeters'
     | '/manage'
     | '/reports'
     | '/manage/parts'
@@ -289,12 +322,15 @@ export interface FileRouteTypes {
     | '/manage/backups'
     | '/manage/meters'
     | '/manage/parts'
+    | '/manage/serviceaccounts'
     | '/manage/users'
     | '/manage/wells'
     | '/reports/chlorides'
+    | '/reports/installedmeters'
     | '/reports/maintenance'
     | '/reports/monitoringwells'
     | '/reports/partsused'
+    | '/reports/soldmeters'
     | '/manage/'
     | '/reports/'
     | '/manage/parts/'
@@ -315,12 +351,15 @@ export interface RootRouteChildren {
   ManageBackupsRoute: typeof ManageBackupsRoute
   ManageMetersRoute: typeof ManageMetersRoute
   ManagePartsRoute: typeof ManagePartsRouteWithChildren
+  ManageServiceaccountsRoute: typeof ManageServiceaccountsRoute
   ManageUsersRoute: typeof ManageUsersRoute
   ManageWellsRoute: typeof ManageWellsRoute
   ReportsChloridesRoute: typeof ReportsChloridesRoute
+  ReportsInstalledmetersRoute: typeof ReportsInstalledmetersRoute
   ReportsMaintenanceRoute: typeof ReportsMaintenanceRoute
   ReportsMonitoringwellsRoute: typeof ReportsMonitoringwellsRoute
   ReportsPartsusedRoute: typeof ReportsPartsusedRoute
+  ReportsSoldmetersRoute: typeof ReportsSoldmetersRoute
   ManageIndexRoute: typeof ManageIndexRoute
   ReportsIndexRoute: typeof ReportsIndexRoute
 }
@@ -397,6 +436,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ManageIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reports/soldmeters': {
+      id: '/reports/soldmeters'
+      path: '/reports/soldmeters'
+      fullPath: '/reports/soldmeters'
+      preLoaderRoute: typeof ReportsSoldmetersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reports/partsused': {
       id: '/reports/partsused'
       path: '/reports/partsused'
@@ -418,6 +464,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReportsMaintenanceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reports/installedmeters': {
+      id: '/reports/installedmeters'
+      path: '/reports/installedmeters'
+      fullPath: '/reports/installedmeters'
+      preLoaderRoute: typeof ReportsInstalledmetersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reports/chlorides': {
       id: '/reports/chlorides'
       path: '/reports/chlorides'
@@ -437,6 +490,13 @@ declare module '@tanstack/react-router' {
       path: '/manage/users'
       fullPath: '/manage/users'
       preLoaderRoute: typeof ManageUsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/manage/serviceaccounts': {
+      id: '/manage/serviceaccounts'
+      path: '/manage/serviceaccounts'
+      fullPath: '/manage/serviceaccounts'
+      preLoaderRoute: typeof ManageServiceaccountsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/manage/parts': {
@@ -531,12 +591,15 @@ const rootRouteChildren: RootRouteChildren = {
   ManageBackupsRoute: ManageBackupsRoute,
   ManageMetersRoute: ManageMetersRoute,
   ManagePartsRoute: ManagePartsRouteWithChildren,
+  ManageServiceaccountsRoute: ManageServiceaccountsRoute,
   ManageUsersRoute: ManageUsersRoute,
   ManageWellsRoute: ManageWellsRoute,
   ReportsChloridesRoute: ReportsChloridesRoute,
+  ReportsInstalledmetersRoute: ReportsInstalledmetersRoute,
   ReportsMaintenanceRoute: ReportsMaintenanceRoute,
   ReportsMonitoringwellsRoute: ReportsMonitoringwellsRoute,
   ReportsPartsusedRoute: ReportsPartsusedRoute,
+  ReportsSoldmetersRoute: ReportsSoldmetersRoute,
   ManageIndexRoute: ManageIndexRoute,
   ReportsIndexRoute: ReportsIndexRoute,
 }

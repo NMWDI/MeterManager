@@ -5,6 +5,7 @@ import {
   Science,
   People,
   Storage,
+  ManageAccounts,
   MonitorHeartOutlined,
   ConstructionOutlined,
   BuildOutlined,
@@ -12,6 +13,8 @@ import {
   WaterDrop,
   SpeedOutlined,
   Engineering,
+  EngineeringOutlined,
+  SellOutlined,
 } from "@mui/icons-material";
 import { SvgIconProps } from "@mui/material";
 import { ComponentType } from "react";
@@ -86,10 +89,30 @@ export const navConfig: NavItem[] = [
     role: "Technician",
     parent: "reports",
   },
+  {
+    path: "/reports/installedmeters",
+    label: "Installed Meters",
+    icon: EngineeringOutlined,
+    role: "Technician",
+    parent: "reports",
+  },
+  {
+    path: "/reports/soldmeters",
+    label: "Sold Meters",
+    icon: SellOutlined,
+    role: "Technician",
+    parent: "reports",
+  },
 
   // Admin
   { path: "/manage/parts", label: "Manage Parts", icon: Build, role: "Admin" },
   { path: "/manage/users", label: "Manage Users", icon: People, role: "Admin" },
+  {
+    path: "/manage/serviceaccounts",
+    label: "Service Accounts",
+    icon: ManageAccounts,
+    role: "Admin",
+  },
   {
     path: "/manage/backups",
     label: "Manage Backups",

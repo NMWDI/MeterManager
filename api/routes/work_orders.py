@@ -18,7 +18,7 @@ work_orders_router = APIRouter()
 
 @work_orders_router.get(
     "/work_orders",
-    dependencies=[Depends(ScopedUser.Read)],
+    dependencies=[Depends(ScopedUser.WorkOrderRead)],
     tags=["Work Orders"],
 )
 def get_work_orders(
@@ -43,18 +43,23 @@ def get_work_orders(
 
 @work_orders_router.post(
     "/work_orders",
-    dependencies=[Depends(ScopedUser.Admin)],
+    dependencies=[Depends(ScopedUser.WorkOrderCreate)],
     response_model=meter.WorkOrder,
     tags=["Work Orders"],
 )
 def create_work_order(
-    new_work_order: meter.CreateWorkOrder, db: Session = Depends(get_db)
+    new_work_order: meter.CreateWorkOrder,
+    user: Users = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
-    return work_order_service.create_work_order(db=db, new_work_order=new_work_order)
+    return work_order_service.create_work_order(
+        db=db, user=user, new_work_order=new_work_order
+    )
 
 
 @work_orders_router.patch(
     "/work_orders",
+    dependencies=[Depends(ScopedUser.WorkOrderUpdate)],
     response_model=meter.WorkOrder,
     tags=["Work Orders"],
 )
@@ -73,5 +78,11 @@ def patch_work_order(
     dependencies=[Depends(ScopedUser.Admin)],
     tags=["Work Orders"],
 )
-def delete_work_order(work_order_id: int, db: Session = Depends(get_db)):
-    return work_order_service.delete_work_order(db=db, work_order_id=work_order_id)
+def delete_work_order(
+    work_order_id: int,
+    user: Users = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return work_order_service.delete_work_order(
+        db=db, user=user, work_order_id=work_order_id
+    )

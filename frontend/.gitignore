@@ -28,3 +28,6 @@ dist-ssr
 # But keep .env.example and .env.*.example
 !.env.example
 !.env.*.example
+
+# Mise Envs
+mise.toml

@@ -62,6 +62,7 @@ export * from "./ST2WaterLevelQueryParams";
 export * from "./SecurityScope";
 export * from "./SensorAttributes";
 export * from "./SensorData";
+export * from "./ServiceAccount";
 export * from "./ServiceTypeLU";
 export * from "./SubmitWellCreate";
 export * from "./Unit";

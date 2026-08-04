@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session, selectinload
 from weasyprint import HTML
 
 from api.models.meter import ActivityTypeLU, MeterActivities, meterRegisters
-from api.models.part import Parts, PartsAdded, PartsUsed
+from api.models.part import PartTypeLU, Parts, PartsAdded, PartsUsed
 from api.schemas import parts
 
 
@@ -196,11 +196,13 @@ def get_parts_used_summary(
             Parts.part_number,
             Parts.description,
             Parts.price,
+            PartTypeLU.name.label("part_type"),
             func.coalesce(usage_subq.c.quantity, 0).label("quantity"),
         )
         .outerjoin(usage_subq, Parts.id == usage_subq.c.used_part_id)
+        .join(PartTypeLU, PartTypeLU.id == Parts.part_type_id)
         .filter(Parts.id.in_(parts))
-        .order_by(Parts.part_number)
+        .order_by(PartTypeLU.name, Parts.part_number)
     )
     results = []
     for row in query.all():
@@ -211,6 +213,7 @@ def get_parts_used_summary(
                 "id": row.id,
                 "part_number": row.part_number,
                 "description": row.description,
+                "part_type": row.part_type,
                 "price": price,
                 "quantity": quantity,
                 "total": price * quantity,
@@ -226,8 +229,11 @@ def build_parts_used_pdf(db: Session, from_date: date, to_date: date, parts: lis
         running_total += row["total"]
         row["running_total"] = running_total
 
+    summary_rows = build_parts_used_type_summary(results)
+
     html_content = templates.get_template("parts_used_report.html").render(
         rows=results,
+        summary_rows=summary_rows,
         from_date=from_date,
         to_date=to_date,
     )
@@ -235,6 +241,35 @@ def build_parts_used_pdf(db: Session, from_date: date, to_date: date, parts: lis
     HTML(string=html_content).write_pdf(pdf_io)
     pdf_io.seek(0)
     return pdf_io
+
+
+def build_parts_used_type_summary(rows: list[dict]):
+    summary_by_type = {}
+
+    for row in rows:
+        part_type = row.get("part_type") or "Other"
+        if part_type not in summary_by_type:
+            summary_by_type[part_type] = {
+                "part_type": part_type,
+                "quantity": 0,
+                "total": 0.0,
+                "running_total": 0.0,
+            }
+
+        summary_by_type[part_type]["quantity"] += row["quantity"]
+        summary_by_type[part_type]["total"] += row["total"]
+        summary_by_type[part_type]["running_total"] += row.get("running_total", 0)
+
+    summary_rows = list(summary_by_type.values())
+    summary_rows.append(
+        {
+            "part_type": "Grand total",
+            "quantity": sum(row["quantity"] for row in summary_rows),
+            "total": sum(row["total"] for row in summary_rows),
+            "running_total": sum(row["running_total"] for row in summary_rows),
+        }
+    )
+    return summary_rows
 
 
 def get_part(db: Session, part_id: int):

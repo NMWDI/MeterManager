@@ -60,18 +60,21 @@ export function ControlledSelect({
               onChange={handleChange}
               defaultValue={isMultiple ? [] : ""}
               label={childProps.label}
-              renderValue={(selected: any) =>
-                isMultiple
-                  ? options
-                      .filter((opt: any) => selected.includes(opt.id))
+              renderValue={(selected: any) => {
+                const selectedOptions = isMultiple
+                  ? options.filter((opt: any) => selected.includes(opt.id))
+                  : [options.find((opt: any) => opt.id === selected) ?? {}];
+
+                if (childProps.renderValue) {
+                  return childProps.renderValue(selectedOptions);
+                }
+
+                return isMultiple
+                  ? selectedOptions
                       .map((opt: any) => childProps.getOptionLabel(opt))
                       .join(", ")
-                  : childProps.getOptionLabel(
-                      options.find(
-                        (opt: any) => opt.id === selected,
-                      ) ?? {},
-                    )
-              }
+                  : childProps.getOptionLabel(selectedOptions[0]);
+              }}
             >
               {options.map((option: any) => (
                 <MenuItem key={option.id} value={option.id}>
