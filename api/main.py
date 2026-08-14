@@ -117,15 +117,19 @@ def login_for_access_token(
     apply_password_evaluation(user, password_evaluation)
 
     user_session = create_user_session(db=db, user=user, request=request)
+    token_data = {
+        "sub": user.username,
+        "scopes": list(
+            map(lambda scope: scope.scope_string, user.user_role.security_scopes)
+        ),
+    }
+    if user_session is not None:
+        token_data["sid"] = user_session.session_identifier
+    else:
+        token_data["session_tracking_disabled"] = True
 
     access_token = create_access_token(
-        data={
-            "sub": user.username,
-            "sid": user_session.session_identifier,
-            "scopes": list(
-                map(lambda scope: scope.scope_string, user.user_role.security_scopes)
-            ),
-        },
+        data=token_data,
         expires_delta=timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS),
     )
     user_response = security_schema.User(**user.__dict__)
@@ -135,7 +139,9 @@ def login_for_access_token(
         "access_token": access_token,
         "token_type": "bearer",
         "user": user_response,
-        "session_identifier": user_session.session_identifier,
+        "session_identifier": (
+            user_session.session_identifier if user_session is not None else None
+        ),
     }
 
 

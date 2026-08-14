@@ -201,13 +201,16 @@ def get_current_user(
         if username is None:
             raise invalid_credentials_exception
 
-        session_identifier: str | None = payload.get("sid")
-        if session_identifier is None:
-            raise invalid_credentials_exception
-
         user = get_user(username=username, db=db)
 
         if user is None:
+            raise invalid_credentials_exception
+
+        session_identifier: str | None = payload.get("sid")
+        if session_identifier is None:
+            if payload.get("session_tracking_disabled") is True:
+                return user
+
             raise invalid_credentials_exception
 
         session = (

@@ -540,18 +540,22 @@ def impersonate_user(
         raise HTTPException(status_code=400, detail="Cannot impersonate a service account")
 
     user_session = create_user_session(db=db, user=target_user, request=request)
+    token_data = {
+        "sub": target_user.username,
+        "scopes": list(
+            map(
+                lambda scope: scope.scope_string,
+                target_user.user_role.security_scopes,
+            )
+        ),
+    }
+    if user_session is not None:
+        token_data["sid"] = user_session.session_identifier
+    else:
+        token_data["session_tracking_disabled"] = True
 
     access_token = create_access_token(
-        data={
-            "sub": target_user.username,
-            "sid": user_session.session_identifier,
-            "scopes": list(
-                map(
-                    lambda scope: scope.scope_string,
-                    target_user.user_role.security_scopes,
-                )
-            ),
-        },
+        data=token_data,
         expires_delta=timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS),
     )
     user_response = security.User(**target_user.__dict__)
@@ -561,7 +565,9 @@ def impersonate_user(
         "access_token": access_token,
         "token_type": "bearer",
         "user": user_response,
-        "session_identifier": user_session.session_identifier,
+        "session_identifier": (
+            user_session.session_identifier if user_session is not None else None
+        ),
         "impersonation": security.ImpersonationContext(
             impersonator_user_id=current_admin.id,
             impersonator_full_name=current_admin.full_name,
