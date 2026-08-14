@@ -12,6 +12,7 @@ from api.config import settings
 from api.models.user import SignOutReasonTypeLU, UserSessions, Users
 
 LAST_SEEN_UPDATE_INTERVAL = timedelta(minutes=5)
+UNTRACKED_USER_AGENT_TOKENS = ("curl", "python-requests", "guzzlehttp")
 
 
 def normalize_header_value(value: Optional[str]) -> Optional[str]:
@@ -20,6 +21,14 @@ def normalize_header_value(value: Optional[str]) -> Optional[str]:
 
     normalized = value.strip()
     return normalized or None
+
+
+def should_track_user_session(user_agent: Optional[str]) -> bool:
+    if not user_agent:
+        return True
+
+    lowered_user_agent = user_agent.lower()
+    return not any(token in lowered_user_agent for token in UNTRACKED_USER_AGENT_TOKENS)
 
 
 def extract_client_ip(request: Request) -> Optional[str]:
@@ -188,8 +197,13 @@ def close_existing_machine_session(
         close_user_session(db, session, "forced_logout", signed_out_at)
 
 
-def create_user_session(db: Session, user: Users, request: Request) -> UserSessions:
+def create_user_session(
+    db: Session, user: Users, request: Request
+) -> Optional[UserSessions]:
     user_agent = normalize_header_value(request.headers.get("user-agent"))
+    if not should_track_user_session(user_agent):
+        return None
+
     browser = normalize_header_value(request.headers.get("x-browser")) or parse_browser(
         user_agent
     )

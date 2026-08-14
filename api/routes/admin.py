@@ -30,6 +30,7 @@ from google.cloud import storage
 from dotenv import load_dotenv
 
 import os
+import re
 import subprocess
 import datetime as dt
 
@@ -43,6 +44,29 @@ DATABASE_URL = os.getenv("DATABASE_URL", "")
 PASSWORD_GENERATION_ATTEMPTS = 8
 PASSWORD_GENERATION_LENGTH = 20
 PASSWORD_SYMBOLS = "!@#$%^&*()-_=+[]{}:,.?"
+BACKUP_FILENAME_DATE_RE = re.compile(r"^backup-(\d{4}-\d{2}-\d{2})-\d+\.dump$")
+
+
+def _backup_filename_date(file_name: str) -> dt.date | None:
+    match = BACKUP_FILENAME_DATE_RE.match(file_name)
+    if not match:
+        return None
+
+    try:
+        return dt.date.fromisoformat(match.group(1))
+    except ValueError:
+        return None
+
+
+def _backup_sort_key(backup: admin.BackupFile) -> tuple[dt.date, float, str]:
+    created_timestamp = (
+        backup.created_utc.timestamp() if backup.created_utc is not None else 0
+    )
+    return (
+        _backup_filename_date(backup.name) or dt.date.min,
+        created_timestamp,
+        backup.name,
+    )
 
 
 def _generate_password_candidate() -> str:
@@ -516,18 +540,22 @@ def impersonate_user(
         raise HTTPException(status_code=400, detail="Cannot impersonate a service account")
 
     user_session = create_user_session(db=db, user=target_user, request=request)
+    token_data = {
+        "sub": target_user.username,
+        "scopes": list(
+            map(
+                lambda scope: scope.scope_string,
+                target_user.user_role.security_scopes,
+            )
+        ),
+    }
+    if user_session is not None:
+        token_data["sid"] = user_session.session_identifier
+    else:
+        token_data["session_tracking_disabled"] = True
 
     access_token = create_access_token(
-        data={
-            "sub": target_user.username,
-            "sid": user_session.session_identifier,
-            "scopes": list(
-                map(
-                    lambda scope: scope.scope_string,
-                    target_user.user_role.security_scopes,
-                )
-            ),
-        },
+        data=token_data,
         expires_delta=timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS),
     )
     user_response = security.User(**target_user.__dict__)
@@ -537,7 +565,9 @@ def impersonate_user(
         "access_token": access_token,
         "token_type": "bearer",
         "user": user_response,
-        "session_identifier": user_session.session_identifier,
+        "session_identifier": (
+            user_session.session_identifier if user_session is not None else None
+        ),
         "impersonation": security.ImpersonationContext(
             impersonator_user_id=current_admin.id,
             impersonator_full_name=current_admin.full_name,
@@ -651,10 +681,7 @@ def list_db_backups(
     blobs_iter = client.list_blobs(BUCKET_NAME, prefix=prefix)
 
     results: list[admin.BackupFile] = []
-    for i, blob in enumerate(blobs_iter):
-        if i >= limit:
-            break
-
+    for blob in blobs_iter:
         # Skip folder marker objects if any
         if blob.name.endswith("/") and (blob.size or 0) == 0:
             continue
@@ -685,9 +712,8 @@ def list_db_backups(
             )
         )
 
-    # newest first
-    results.sort(key=lambda x: x.created_utc or 0, reverse=True)
-    return results
+    results.sort(key=_backup_sort_key, reverse=True)
+    return results[:limit]
 
 
 @admin_router.get(
