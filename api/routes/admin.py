@@ -30,6 +30,7 @@ from google.cloud import storage
 from dotenv import load_dotenv
 
 import os
+import re
 import subprocess
 import datetime as dt
 
@@ -43,6 +44,29 @@ DATABASE_URL = os.getenv("DATABASE_URL", "")
 PASSWORD_GENERATION_ATTEMPTS = 8
 PASSWORD_GENERATION_LENGTH = 20
 PASSWORD_SYMBOLS = "!@#$%^&*()-_=+[]{}:,.?"
+BACKUP_FILENAME_DATE_RE = re.compile(r"^backup-(\d{4}-\d{2}-\d{2})-\d+\.dump$")
+
+
+def _backup_filename_date(file_name: str) -> dt.date | None:
+    match = BACKUP_FILENAME_DATE_RE.match(file_name)
+    if not match:
+        return None
+
+    try:
+        return dt.date.fromisoformat(match.group(1))
+    except ValueError:
+        return None
+
+
+def _backup_sort_key(backup: admin.BackupFile) -> tuple[dt.date, float, str]:
+    created_timestamp = (
+        backup.created_utc.timestamp() if backup.created_utc is not None else 0
+    )
+    return (
+        _backup_filename_date(backup.name) or dt.date.min,
+        created_timestamp,
+        backup.name,
+    )
 
 
 def _generate_password_candidate() -> str:
@@ -651,10 +675,7 @@ def list_db_backups(
     blobs_iter = client.list_blobs(BUCKET_NAME, prefix=prefix)
 
     results: list[admin.BackupFile] = []
-    for i, blob in enumerate(blobs_iter):
-        if i >= limit:
-            break
-
+    for blob in blobs_iter:
         # Skip folder marker objects if any
         if blob.name.endswith("/") and (blob.size or 0) == 0:
             continue
@@ -685,9 +706,8 @@ def list_db_backups(
             )
         )
 
-    # newest first
-    results.sort(key=lambda x: x.created_utc or 0, reverse=True)
-    return results
+    results.sort(key=_backup_sort_key, reverse=True)
+    return results[:limit]
 
 
 @admin_router.get(
