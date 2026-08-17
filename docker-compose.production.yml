@@ -19,10 +19,24 @@ services:
       - traefik
     labels:
       - "traefik.enable=true"
+
+      # Current PVACD hostname
       - "traefik.http.routers.frontend.rule=Host(`metermanager.pvacd.com`)"
       - "traefik.http.routers.frontend.entrypoints=websecure,web"
       - "traefik.http.routers.frontend.tls=true"
       - "traefik.http.routers.frontend.tls.certresolver=myresolver"
+
+      # Old PVACD hostname
+      - "traefik.http.routers.pvacd-old.rule=Host(`pvacd.newmexicowaterdata.org`)"
+      - "traefik.http.routers.pvacd-old.entrypoints=websecure"
+      - "traefik.http.routers.pvacd-old.tls=true"
+      - "traefik.http.routers.pvacd-old.tls.certresolver=myresolver"
+      - "traefik.http.routers.pvacd-old.middlewares=pvacd-redirect"
+
+      # Permanent redirect to new hostname
+      - "traefik.http.middlewares.pvacd-redirect.redirectregex.regex=^https://pvacd\\.newmexicowaterdata\\.org/(.*)"
+      - "traefik.http.middlewares.pvacd-redirect.redirectregex.replacement=https://metermanager.pvacd.com/$${1}"
+      - "traefik.http.middlewares.pvacd-redirect.redirectregex.permanent=true"
 
       # - "traefik.http.routers.frontend-insecure.middlewares=force-secure"
       # - "traefik.http.middlewares.force-secure.redirectscheme.scheme=https"
