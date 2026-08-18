@@ -6,14 +6,25 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
 # Install system dependencies (trixie) + JDK (default is 21) + PostgreSQL client
+# Install base dependencies needed to add the PostgreSQL repository
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
+      ca-certificates \
+      curl \
       libpango-1.0-0 \
       libcairo2 \
       libgdk-pixbuf-2.0-0 \
       libffi-dev \
       default-jdk-headless \
-      postgresql-client \
+ && install -d /usr/share/postgresql-common/pgdg \
+ && curl -fsSL \
+      https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+      -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc \
+ && echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt trixie-pgdg main" \
+      > /etc/apt/sources.list.d/pgdg.list \
+ && apt-get update \
+ && apt-get install -y --no-install-recommends \
+      postgresql-client-18 \
  && rm -rf /var/lib/apt/lists/*
 
 # Make Java headers discoverable by builds
