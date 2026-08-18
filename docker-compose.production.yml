@@ -20,7 +20,7 @@ services:
 
       # Current PVACD hostname
       - "traefik.http.routers.frontend.rule=Host(`metermanager.pvacd.com`)"
-      - "traefik.http.routers.frontend.entrypoints=websecure,web"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
       - "traefik.http.routers.frontend.tls=true"
       - "traefik.http.routers.frontend.tls.certresolver=myresolver"
 
@@ -36,9 +36,8 @@ services:
       - "traefik.http.middlewares.pvacd-redirect.redirectregex.replacement=https://metermanager.pvacd.com/$${1}"
       - "traefik.http.middlewares.pvacd-redirect.redirectregex.permanent=true"
 
-      # - "traefik.http.routers.frontend-insecure.middlewares=force-secure"
-      # - "traefik.http.middlewares.force-secure.redirectscheme.scheme=https"
-      # - "traefik.http.middlewares.force-secure.redirectscheme.permanent=true"
+      - "traefik.http.routers.frontend.priority=10"
+      - "traefik.http.services.frontend.loadbalancer.server.port=80"
 
   api:
     build:
@@ -69,19 +68,18 @@ services:
       - ./api/.env_production
     labels:
       - "traefik.enable=true"
+
       - "traefik.http.routers.api.rule=Host(`metermanager.pvacd.com`) && PathPrefix(`/api/v1`)"
       - "traefik.http.routers.api.entrypoints=websecure"
       - "traefik.http.routers.api.tls=true"
       - "traefik.http.routers.api.tls.certresolver=myresolver"
+      - "traefik.http.routers.api.priority=100"
+
       - "traefik.http.routers.api.middlewares=api-sp"
       - "traefik.http.middlewares.api-sp.stripprefix.prefixes=/api/v1"
       - "traefik.http.middlewares.api-sp.stripprefix.forceSlash=false"
-      - "traefik.http.routers.api-insecure.rule=Host(`metermanager.pvacd.com`) && PathPrefix(`/api/v1`)"
-      - "traefik.http.routers.api-insecure.entrypoints=web"
 
-      # - "traefik.http.routers.api-insecure.middlewares=force-secure"
-      # - "traefik.http.middlewares.force-secure.redirectscheme.scheme=https"
-      # - "traefik.http.middlewares.force-secure.redirectscheme.permanent=true"
+      - "traefik.http.services.api.loadbalancer.server.port=8000"
 
   traefik:
     image: "traefik:v2.11"
