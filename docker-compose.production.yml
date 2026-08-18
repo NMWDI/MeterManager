@@ -12,8 +12,6 @@ services:
         VITE_API_URL: https://metermanager.pvacd.com/api/v1
     env_file:
       - ./frontend/.env.production
-    ports:
-      - "5173:80"
     depends_on:
       - api
       - traefik
@@ -63,8 +61,6 @@ services:
       --port 8000
       --proxy-headers
       --root-path /api/v1
-    ports:
-      - "8000:8000"
     volumes:
       - ./api:/app/api
     depends_on:
@@ -90,7 +86,6 @@ services:
   traefik:
     image: "traefik:v2.11"
     command:
-      - "--api.insecure=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
@@ -106,7 +101,6 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      - "8080:8080"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
       - ./letsencrypt:/letsencrypt
