@@ -54,6 +54,7 @@ services:
       - GCP_WOODPECKER_BUCKET_NAME=meter-manager-woodpecker-bucket
       - GCP_BACKUP_PREFIX=pre-prod-db-backups
       - GCP_PHOTO_PREFIX=pre-prod-meter-activities-photos
+      - GCP_SERVICE_ACCOUNT=13393509252-compute@developer.gserviceaccount.com
       - BACKUP_RETENTION_DAYS=14
       - APPDB_ENV=.env_devserver
     command: >

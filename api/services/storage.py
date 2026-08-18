@@ -15,9 +15,7 @@ from api.models.meter import MeterActivities, MeterActivityPhotos
 BUCKET_NAME = os.getenv("GCP_BUCKET_NAME", "")
 PHOTO_PREFIX = os.getenv("GCP_PHOTO_PREFIX", "")
 PHOTO_JWT_EXPIRE_SECONDS = 600
-TARGET_SERVICE_ACCOUNT = (
-    "pvacd-meterapp@waterdatainitiative-271000.iam.gserviceaccount.com"
-)
+TARGET_SERVICE_ACCOUNT = os.getenv("GCP_SERVICE_ACCOUNT", "")
 
 
 def get_activity_photo_record(
