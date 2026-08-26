@@ -15,6 +15,7 @@ import {
   Engineering,
   EngineeringOutlined,
   SellOutlined,
+  StorageOutlined,
 } from "@mui/icons-material";
 import { SvgIconProps } from "@mui/material";
 import { ComponentType } from "react";
@@ -100,6 +101,13 @@ export const navConfig: NavItem[] = [
     path: "/reports/soldmeters",
     label: "Sold Meters",
     icon: SellOutlined,
+    role: "Technician",
+    parent: "reports",
+  },
+  {
+    path: "/reports/storedmeters",
+    label: "Stored Meters",
+    icon: StorageOutlined,
     role: "Technician",
     parent: "reports",
   },

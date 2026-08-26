@@ -156,6 +156,48 @@ def download_sold_meters_pdf(
 
 
 @authenticated_meter_router.get(
+    "/meters/stored-report",
+    dependencies=[Depends(ScopedUser.Read)],
+    tags=["Meters"],
+)
+def get_stored_meters_report(
+    min_size: int | None = Query(None, ge=0),
+    max_size: int | None = Query(None, ge=0),
+    db: Session = Depends(get_db),
+):
+    return meter_service.get_stored_meters_report(
+        db,
+        min_size,
+        max_size,
+    )
+
+
+@authenticated_meter_router.get(
+    "/meters/stored-report/pdf",
+    dependencies=[Depends(ScopedUser.Read)],
+    tags=["Meters"],
+)
+def download_stored_meters_pdf(
+    min_size: int | None = Query(None, ge=0),
+    max_size: int | None = Query(None, ge=0),
+    db: Session = Depends(get_db),
+):
+    pdf_io = meter_service.build_stored_meters_pdf(
+        db,
+        min_size,
+        max_size,
+    )
+
+    return StreamingResponse(
+        pdf_io,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": "attachment; filename=stored_meters_report.pdf"
+        },
+    )
+
+
+@authenticated_meter_router.get(
     "/meters/installed-report",
     dependencies=[Depends(ScopedUser.Read)],
     tags=["Meters"],

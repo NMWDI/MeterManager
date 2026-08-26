@@ -56,7 +56,7 @@
       {% for row in type_totals %}
       <tr>
         <td>{{ row.meter_type }}</td>
-        <td class="number">{{ "%g"|format(row.size) }}</td>
+        <td class="number">{{ "%g"|format(row.size) if row.size is not none else "" }}</td>
         <td class="number">{{ row.quantity }}</td>
         <td class="number">${{ "%.2f"|format(row.total_value) }}</td>
       </tr>
@@ -83,7 +83,7 @@
         <td>{{ row.sold_date.strftime("%Y-%m-%d") }}</td>
         <td>{{ row.serial_number }}</td>
         <td>{{ row.meter_type }}</td>
-        <td class="number">{{ "%g"|format(row.size) }}</td>
+        <td class="number">{{ "%g"|format(row.size) if row.size is not none else "" }}</td>
         <td>{{ row.contact_name or "" }}</td>
         <td>{{ row.meter_owner or "" }}</td>
         <td class="number">${{ "%.2f"|format(row.price) }}</td>

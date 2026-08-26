@@ -19,6 +19,7 @@ import { Route as ActivitiesRouteImport } from './routes/activities'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ReportsIndexRouteImport } from './routes/reports/index'
 import { Route as ManageIndexRouteImport } from './routes/manage/index'
+import { Route as ReportsStoredmetersRouteImport } from './routes/reports/storedmeters'
 import { Route as ReportsSoldmetersRouteImport } from './routes/reports/soldmeters'
 import { Route as ReportsPartsusedRouteImport } from './routes/reports/partsused'
 import { Route as ReportsMonitoringwellsRouteImport } from './routes/reports/monitoringwells'
@@ -84,6 +85,11 @@ const ReportsIndexRoute = ReportsIndexRouteImport.update({
 const ManageIndexRoute = ManageIndexRouteImport.update({
   id: '/manage/',
   path: '/manage/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportsStoredmetersRoute = ReportsStoredmetersRouteImport.update({
+  id: '/reports/storedmeters',
+  path: '/reports/storedmeters',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReportsSoldmetersRoute = ReportsSoldmetersRouteImport.update({
@@ -190,6 +196,7 @@ export interface FileRoutesByFullPath {
   '/reports/monitoringwells': typeof ReportsMonitoringwellsRoute
   '/reports/partsused': typeof ReportsPartsusedRoute
   '/reports/soldmeters': typeof ReportsSoldmetersRoute
+  '/reports/storedmeters': typeof ReportsStoredmetersRoute
   '/manage/': typeof ManageIndexRoute
   '/reports/': typeof ReportsIndexRoute
   '/manage/parts/': typeof ManagePartsIndexRoute
@@ -217,6 +224,7 @@ export interface FileRoutesByTo {
   '/reports/monitoringwells': typeof ReportsMonitoringwellsRoute
   '/reports/partsused': typeof ReportsPartsusedRoute
   '/reports/soldmeters': typeof ReportsSoldmetersRoute
+  '/reports/storedmeters': typeof ReportsStoredmetersRoute
   '/manage': typeof ManageIndexRoute
   '/reports': typeof ReportsIndexRoute
   '/manage/parts': typeof ManagePartsIndexRoute
@@ -246,6 +254,7 @@ export interface FileRoutesById {
   '/reports/monitoringwells': typeof ReportsMonitoringwellsRoute
   '/reports/partsused': typeof ReportsPartsusedRoute
   '/reports/soldmeters': typeof ReportsSoldmetersRoute
+  '/reports/storedmeters': typeof ReportsStoredmetersRoute
   '/manage/': typeof ManageIndexRoute
   '/reports/': typeof ReportsIndexRoute
   '/manage/parts/': typeof ManagePartsIndexRoute
@@ -276,6 +285,7 @@ export interface FileRouteTypes {
     | '/reports/monitoringwells'
     | '/reports/partsused'
     | '/reports/soldmeters'
+    | '/reports/storedmeters'
     | '/manage/'
     | '/reports/'
     | '/manage/parts/'
@@ -303,6 +313,7 @@ export interface FileRouteTypes {
     | '/reports/monitoringwells'
     | '/reports/partsused'
     | '/reports/soldmeters'
+    | '/reports/storedmeters'
     | '/manage'
     | '/reports'
     | '/manage/parts'
@@ -331,6 +342,7 @@ export interface FileRouteTypes {
     | '/reports/monitoringwells'
     | '/reports/partsused'
     | '/reports/soldmeters'
+    | '/reports/storedmeters'
     | '/manage/'
     | '/reports/'
     | '/manage/parts/'
@@ -360,6 +372,7 @@ export interface RootRouteChildren {
   ReportsMonitoringwellsRoute: typeof ReportsMonitoringwellsRoute
   ReportsPartsusedRoute: typeof ReportsPartsusedRoute
   ReportsSoldmetersRoute: typeof ReportsSoldmetersRoute
+  ReportsStoredmetersRoute: typeof ReportsStoredmetersRoute
   ManageIndexRoute: typeof ManageIndexRoute
   ReportsIndexRoute: typeof ReportsIndexRoute
 }
@@ -434,6 +447,13 @@ declare module '@tanstack/react-router' {
       path: '/manage'
       fullPath: '/manage/'
       preLoaderRoute: typeof ManageIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reports/storedmeters': {
+      id: '/reports/storedmeters'
+      path: '/reports/storedmeters'
+      fullPath: '/reports/storedmeters'
+      preLoaderRoute: typeof ReportsStoredmetersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reports/soldmeters': {
@@ -600,6 +620,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReportsMonitoringwellsRoute: ReportsMonitoringwellsRoute,
   ReportsPartsusedRoute: ReportsPartsusedRoute,
   ReportsSoldmetersRoute: ReportsSoldmetersRoute,
+  ReportsStoredmetersRoute: ReportsStoredmetersRoute,
   ManageIndexRoute: ManageIndexRoute,
   ReportsIndexRoute: ReportsIndexRoute,
 }

@@ -6,6 +6,7 @@ import {
   MonitorHeartOutlined,
   ScienceOutlined,
   SellOutlined,
+  StorageOutlined,
 } from "@mui/icons-material";
 import { Box, Card, CardContent } from "@mui/material";
 import { BackgroundBox, CustomCardHeader, NavLink } from "@/components";
@@ -46,6 +47,11 @@ export const ReportsView = () => {
               route="/reports/soldmeters"
               label="Sold Meters"
               icon={SellOutlined}
+            />
+            <NavLink
+              route="/reports/storedmeters"
+              label="Stored Meters"
+              icon={StorageOutlined}
             />
           </Box>
         </CardContent>
