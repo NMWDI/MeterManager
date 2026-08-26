@@ -73,10 +73,14 @@ const schema = yup.object().shape({
     .nullable()
     .min(0)
     .integer()
-    .test("is-at-least-min", "Max size must be at least min size", function (value) {
-      const { min_size } = this.parent;
-      return value == null || min_size == null || value >= min_size;
-    }),
+    .test(
+      "is-at-least-min",
+      "Max size must be at least min size",
+      function (value) {
+        const { min_size } = this.parent;
+        return value == null || min_size == null || value >= min_size;
+      },
+    ),
 });
 
 const formatCurrency = (value: number | null | undefined) =>
@@ -195,7 +199,12 @@ export const StoredMetersReportView = () => {
   const summary = reportQuery.data?.summary ?? { quantity: 0, total_value: 0 };
 
   const columns: GridColDef[] = [
-    { field: "serial_number", headerName: "Serial Number", flex: 1, minWidth: 140 },
+    {
+      field: "serial_number",
+      headerName: "Serial Number",
+      flex: 1,
+      minWidth: 140,
+    },
     { field: "meter_type", headerName: "Meter Type", flex: 1.6, minWidth: 220 },
     {
       field: "size",
@@ -204,6 +213,8 @@ export const StoredMetersReportView = () => {
       minWidth: 80,
       type: "number",
       valueFormatter: (value: number | null) => formatSize(value),
+      align: "left",
+      headerAlign: "left",
     },
     { field: "status", headerName: "Status", flex: 0.8, minWidth: 120 },
     {
@@ -213,6 +224,8 @@ export const StoredMetersReportView = () => {
       minWidth: 110,
       type: "number",
       valueFormatter: (value: number) => formatCurrency(value),
+      align: "left",
+      headerAlign: "left",
     },
     { field: "contact_name", headerName: "Contact", flex: 1, minWidth: 140 },
     { field: "meter_owner", headerName: "Owner", flex: 1, minWidth: 120 },
@@ -310,7 +323,10 @@ export const StoredMetersReportView = () => {
               item
               xs={12}
               md={6}
-              sx={{ display: "flex", justifyContent: { xs: "center", md: "flex-end" } }}
+              sx={{
+                display: "flex",
+                justifyContent: { xs: "center", md: "flex-end" },
+              }}
             >
               <Tooltip title="Export report as PDF" placement="top">
                 <span>
@@ -331,7 +347,14 @@ export const StoredMetersReportView = () => {
 
           <Grid container spacing={2} px={2} pb={2}>
             <Grid item xs={12} md={4}>
-              <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 1, p: 2 }}>
+              <Box
+                sx={{
+                  border: "1px solid",
+                  borderColor: "divider",
+                  borderRadius: 1,
+                  p: 2,
+                }}
+              >
                 <Typography variant="body2" color="text.secondary">
                   Total Meters Stored
                 </Typography>
@@ -341,7 +364,14 @@ export const StoredMetersReportView = () => {
               </Box>
             </Grid>
             <Grid item xs={12} md={4}>
-              <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 1, p: 2 }}>
+              <Box
+                sx={{
+                  border: "1px solid",
+                  borderColor: "divider",
+                  borderRadius: 1,
+                  p: 2,
+                }}
+              >
                 <Typography variant="body2" color="text.secondary">
                   Total Value
                 </Typography>
@@ -351,7 +381,14 @@ export const StoredMetersReportView = () => {
               </Box>
             </Grid>
             <Grid item xs={12} md={4}>
-              <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 1, p: 2 }}>
+              <Box
+                sx={{
+                  border: "1px solid",
+                  borderColor: "divider",
+                  borderRadius: 1,
+                  p: 2,
+                }}
+              >
                 <Typography variant="body2" color="text.secondary">
                   Meter Types Stored
                 </Typography>
