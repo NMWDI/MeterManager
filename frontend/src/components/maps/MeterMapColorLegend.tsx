@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useLeafletContext } from "@react-leaflet/core";
 import L from "leaflet";
-import { PM_COLORS } from "@/constants";
+import { PM_SEASON_COLORS } from "@/constants";
 
 export const MeterMapColorLegend = () => {
   const context = useLeafletContext();
@@ -23,7 +23,7 @@ export const MeterMapColorLegend = () => {
       title.textContent = "PM Season";
       title.style.margin = "0 0 8px 0";
 
-      for (const season in PM_COLORS) {
+      for (const season in PM_SEASON_COLORS) {
         const row = L.DomUtil.create("div", "", div);
         row.style.display = "flex";
         row.style.alignItems = "center";
@@ -32,7 +32,7 @@ export const MeterMapColorLegend = () => {
         const colorBox = L.DomUtil.create("div", "", row);
         colorBox.style.width = "20px";
         colorBox.style.height = "20px";
-        colorBox.style.background = PM_COLORS[season];
+        colorBox.style.background = PM_SEASON_COLORS[season];
         colorBox.style.marginRight = "8px";
         colorBox.style.border = "1px solid #ccc";
         colorBox.style.borderRadius = "4px";

@@ -121,7 +121,7 @@ export const navConfig: NavItem[] = [
   },
 ];
 
-export const PM_COLORS: { [key: string]: string } = {
+export const PM_SEASON_COLORS: { [key: string]: string } = {
   "2020/2021": "brown",
   "2021/2022": "green",
   "2022/2023": "purple",

@@ -1,4 +1,4 @@
-import { PM_COLORS } from "../constants";
+import { PM_SEASON_COLORS } from "@/constants";
 
 export const getMeterMarkerColor = (last_pm: string) => {
   const dateParts = last_pm.match(/^(\d{4})-(\d{2})-(\d{2})/);
@@ -12,12 +12,12 @@ export const getMeterMarkerColor = (last_pm: string) => {
   const fiscalYearStart = month >= 7 ? year : year - 1;
   const fiscalYearKey = `${fiscalYearStart}/${fiscalYearStart + 1}`;
 
-  return PM_COLORS[fiscalYearKey] ?? "black";
+  return PM_SEASON_COLORS[fiscalYearKey] ?? "black";
 };
 
 export const getLatestMeterActivityDate = (
   activityDates: Array<string | null>,
-) => {
+): string | null => {
   return activityDates.reduce<string | null>((latestDate, activityDate) => {
     if (!activityDate) {
       return latestDate;
