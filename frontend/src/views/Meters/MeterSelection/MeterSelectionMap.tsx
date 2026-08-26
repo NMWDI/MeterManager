@@ -40,6 +40,7 @@ import {
   DEFAULT_MAP_CENTER,
   DEFAULT_MAP_ZOOM,
   getMapLayersControlKey,
+  getLatestMeterActivityDate,
   getMeterMarkerColor,
   normalizeMapBaseLayer,
   normalizeMapOverlayNames,
@@ -122,8 +123,11 @@ export default function MeterSelectionMap({
   };
 
   const getMarkerColor = (meter: MeterMapDTO) => {
-    const markerDate =
-      meter.last_pm_meter_activity ?? meter.last_location_only_meter_activity;
+    const markerDate = getLatestMeterActivityDate([
+      meter.last_pm_meter_activity,
+      meter.last_repair_meter_activity,
+      meter.last_location_only_meter_activity,
+    ]);
 
     return markerDate ? getMeterMarkerColor(markerDate) : "black";
   };
