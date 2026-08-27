@@ -21,6 +21,10 @@ class ActivityDTO(BaseModel):
     activity_start: datetime
     activity_end: datetime
     activity_type: str
+    meter_owner_names: list[str] = Field(default_factory=list)
+    trss: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
     well_ra_number: str | None
     well_ose_tag: str | None
     description: str
@@ -47,4 +51,3 @@ class DisapprovalStatus(BaseModel):
     notes: str | None = None
     disapproval_activity: ActivityDTO | None = None
     new_activities: list[ActivityDTO] | None = None
-
