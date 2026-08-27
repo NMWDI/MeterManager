@@ -15,6 +15,7 @@ import {
   Engineering,
   EngineeringOutlined,
   SellOutlined,
+  StorageOutlined,
 } from "@mui/icons-material";
 import { SvgIconProps } from "@mui/material";
 import { ComponentType } from "react";
@@ -103,6 +104,13 @@ export const navConfig: NavItem[] = [
     role: "Technician",
     parent: "reports",
   },
+  {
+    path: "/reports/storedmeters",
+    label: "Stored Meters",
+    icon: StorageOutlined,
+    role: "Technician",
+    parent: "reports",
+  },
 
   // Admin
   { path: "/manage/parts", label: "Manage Parts", icon: Build, role: "Admin" },
@@ -121,7 +129,7 @@ export const navConfig: NavItem[] = [
   },
 ];
 
-export const PM_COLORS: { [key: string]: string } = {
+export const PM_SEASON_COLORS: { [key: string]: string } = {
   "2020/2021": "brown",
   "2021/2022": "green",
   "2022/2023": "purple",

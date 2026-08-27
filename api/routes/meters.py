@@ -156,6 +156,48 @@ def download_sold_meters_pdf(
 
 
 @authenticated_meter_router.get(
+    "/meters/stored-report",
+    dependencies=[Depends(ScopedUser.Read)],
+    tags=["Meters"],
+)
+def get_stored_meters_report(
+    min_size: int | None = Query(None, ge=0),
+    max_size: int | None = Query(None, ge=0),
+    db: Session = Depends(get_db),
+):
+    return meter_service.get_stored_meters_report(
+        db,
+        min_size,
+        max_size,
+    )
+
+
+@authenticated_meter_router.get(
+    "/meters/stored-report/pdf",
+    dependencies=[Depends(ScopedUser.Read)],
+    tags=["Meters"],
+)
+def download_stored_meters_pdf(
+    min_size: int | None = Query(None, ge=0),
+    max_size: int | None = Query(None, ge=0),
+    db: Session = Depends(get_db),
+):
+    pdf_io = meter_service.build_stored_meters_pdf(
+        db,
+        min_size,
+        max_size,
+    )
+
+    return StreamingResponse(
+        pdf_io,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": "attachment; filename=stored_meters_report.pdf"
+        },
+    )
+
+
+@authenticated_meter_router.get(
     "/meters/installed-report",
     dependencies=[Depends(ScopedUser.Read)],
     tags=["Meters"],
@@ -323,6 +365,9 @@ def get_meters_locations(
     location_only_activity_type_id = db.scalars(
         select(ActivityTypeLU.id).where(ActivityTypeLU.name == "Location Only")
     ).first()
+    repair_activity_type_id = db.scalars(
+        select(ActivityTypeLU.id).where(ActivityTypeLU.name == "Repair")
+    ).first()
 
     if not pm_activity_type_id:
         raise HTTPException(
@@ -333,6 +378,11 @@ def get_meters_locations(
         raise HTTPException(
             status_code=500,
             detail="Location Only activity type is not configured.",
+        )
+    if not repair_activity_type_id:
+        raise HTTPException(
+            status_code=500,
+            detail="Repair activity type is not configured.",
         )
 
     # Query latest PMs tied directly to the meter
@@ -350,6 +400,23 @@ def get_meters_locations(
         {"mids": meter_ids, "pm_activity_type_id": pm_activity_type_id},
     ).fetchall()
     meter_pm_dict = {row.meter_id: row.last_pm_meter_activity for row in meter_pm_rows}
+
+    repair_query = text(
+        """
+        SELECT MAX(timestamp_start) AS last_repair_meter_activity, meter_id
+        FROM "MeterActivities"
+        WHERE activity_type_id = :repair_activity_type_id
+          AND meter_id = ANY(:mids)
+        GROUP BY meter_id
+        """
+    )
+    repair_rows = db.execute(
+        repair_query,
+        {"mids": meter_ids, "repair_activity_type_id": repair_activity_type_id},
+    ).fetchall()
+    repair_dict = {
+        row.meter_id: row.last_repair_meter_activity for row in repair_rows
+    }
 
     location_only_dict = {}
 
@@ -394,6 +461,7 @@ def get_meters_locations(
                     "trss": row.trss,
                 },
                 last_pm_meter_activity=meter_pm_dict.get(row.id),
+                last_repair_meter_activity=repair_dict.get(row.id),
                 last_location_only_meter_activity=location_only_dict.get(row.id),
             )
         )

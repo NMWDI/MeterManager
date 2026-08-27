@@ -18,6 +18,7 @@ from api.models.meter import (
     MeterActivities,
     MeterObservations,
     Meters,
+    MeterStatusLU,
     MeterTypeLU,
 )
 from api.models.location import Locations
@@ -123,6 +124,8 @@ def get_meter_history(db: Session, meter_id: int):
 
 
 def _meter_type_label(meter_type: MeterTypeLU) -> str:
+    size_label = f'{meter_type.size:g}"' if meter_type.size is not None else None
+
     return " ".join(
         filter(
             None,
@@ -130,7 +133,7 @@ def _meter_type_label(meter_type: MeterTypeLU) -> str:
                 meter_type.brand,
                 meter_type.series,
                 meter_type.model,
-                f'{meter_type.size:g}"',
+                size_label,
             ],
         )
     )
@@ -236,7 +239,86 @@ def get_sold_meters_report(
 
     type_totals = sorted(
         type_totals_by_id.values(),
-        key=lambda row: (row["size"], row["meter_type"]),
+        key=lambda row: (row["size"] is None, row["size"] or 0, row["meter_type"]),
+    )
+
+    return {
+        "rows": rows,
+        "summary": {
+            "quantity": len(rows),
+            "total_value": total_value,
+        },
+        "type_totals": type_totals,
+    }
+
+
+def get_stored_meters_report(
+    db: Session,
+    min_size: int | None = None,
+    max_size: int | None = None,
+):
+    stmt = (
+        select(Meters, MeterTypeLU, MeterStatusLU)
+        .join(MeterTypeLU, MeterTypeLU.id == Meters.meter_type_id)
+        .join(MeterStatusLU, MeterStatusLU.id == Meters.status_id)
+        .where(MeterStatusLU.status_name.in_(["Warehouse", "On Hold"]))
+        .order_by(
+            MeterTypeLU.size.asc(),
+            MeterTypeLU.brand.asc(),
+            Meters.serial_number.asc(),
+        )
+    )
+
+    if min_size is not None:
+        stmt = stmt.where(MeterTypeLU.size >= min_size)
+    if max_size is not None:
+        stmt = stmt.where(MeterTypeLU.size <= max_size)
+
+    rows = []
+    type_totals_by_id = {}
+    total_value = 0.0
+
+    for meter, meter_type, status in db.execute(stmt).all():
+        price = float(meter.price or 0)
+        total_value += price
+        meter_type_label = _meter_type_label(meter_type)
+
+        rows.append(
+            {
+                "id": meter.id,
+                "serial_number": meter.serial_number,
+                "meter_owner": meter.meter_owner,
+                "contact_name": meter.contact_name,
+                "status": status.status_name,
+                "price": price,
+                "meter_type_id": meter_type.id,
+                "meter_type": meter_type_label,
+                "brand": meter_type.brand,
+                "series": meter_type.series,
+                "model": meter_type.model,
+                "size": meter_type.size,
+                "description": meter_type.description,
+            }
+        )
+
+        if meter_type.id not in type_totals_by_id:
+            type_totals_by_id[meter_type.id] = {
+                "id": meter_type.id,
+                "meter_type": meter_type_label,
+                "brand": meter_type.brand,
+                "series": meter_type.series,
+                "model": meter_type.model,
+                "size": meter_type.size,
+                "description": meter_type.description,
+                "quantity": 0,
+                "total_value": 0.0,
+            }
+        type_totals_by_id[meter_type.id]["quantity"] += 1
+        type_totals_by_id[meter_type.id]["total_value"] += price
+
+    type_totals = sorted(
+        type_totals_by_id.values(),
+        key=lambda row: (row["size"] is None, row["size"] or 0, row["meter_type"]),
     )
 
     return {
@@ -327,7 +409,7 @@ def get_installed_meters_report(
 
     type_totals = sorted(
         type_totals_by_id.values(),
-        key=lambda row: (row["size"], row["meter_type"]),
+        key=lambda row: (row["size"] is None, row["size"] or 0, row["meter_type"]),
     )
 
     return {
@@ -360,6 +442,31 @@ def build_sold_meters_pdf(
         meter_type_chart=meter_type_chart,
         from_date=from_date,
         to_date=to_date,
+        min_size=min_size,
+        max_size=max_size,
+    )
+    pdf_io = BytesIO()
+    HTML(string=html_content).write_pdf(pdf_io)
+    pdf_io.seek(0)
+    return pdf_io
+
+
+def build_stored_meters_pdf(
+    db: Session,
+    min_size: int | None = None,
+    max_size: int | None = None,
+):
+    report = get_stored_meters_report(db, min_size, max_size)
+    meter_type_chart = _make_meter_type_bar_chart(
+        report["type_totals"],
+        "Meters Stored",
+    )
+
+    html_content = templates.get_template("stored_meters_report.html").render(
+        rows=report["rows"],
+        summary=report["summary"],
+        type_totals=report["type_totals"],
+        meter_type_chart=meter_type_chart,
         min_size=min_size,
         max_size=max_size,
     )

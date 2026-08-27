@@ -79,6 +79,7 @@ class MeterMapDTO(ORMBase):
     well: WellDTO | None = None
     location: LocationDTO | None = None
     last_pm_meter_activity: datetime | None = None
+    last_repair_meter_activity: datetime | None = None
     last_location_only_meter_activity: datetime | None = None
 
 

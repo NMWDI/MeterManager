@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { useAuthHeader } from "react-auth-kit";
-import { EngineeringOutlined, PictureAsPdf } from "@mui/icons-material";
+import { PictureAsPdf, Storage } from "@mui/icons-material";
 import {
   Box,
   Button,
@@ -19,47 +19,41 @@ import { useMutation, useQuery } from "react-query";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
-import dayjs, { Dayjs } from "dayjs";
 
 import { API_URL } from "@/config";
 import {
   BackgroundBox,
-  ControlledDatepicker,
   CustomCardHeader,
   ReportBreadcrumbTitle,
 } from "@/components";
-import { Route } from "@/routes/reports/installedmeters";
+import { Route } from "@/routes/reports/storedmeters";
 
-type InstalledMeterRow = {
+type StoredMeterRow = {
   id: number;
-  activity_id: number;
-  installed_date: string;
   serial_number: string;
   meter_owner: string | null;
   contact_name: string | null;
-  water_users: string | null;
-  well_ra_number: string | null;
-  trss: string | null;
+  status: string;
   price: number;
   meter_type_id: number;
   meter_type: string;
   brand: string;
   series: string | null;
   model: string;
-  size: number;
+  size: number | null;
   description: string;
 };
 
 type MeterTypeTotal = {
   id: number;
   meter_type: string;
-  size: number;
+  size: number | null;
   quantity: number;
   total_value: number;
 };
 
-type InstalledMetersReport = {
-  rows: InstalledMeterRow[];
+type StoredMetersReport = {
+  rows: StoredMeterRow[];
   summary: {
     quantity: number;
     total_value: number;
@@ -68,22 +62,11 @@ type InstalledMetersReport = {
 };
 
 type FormValues = {
-  from: Dayjs;
-  to: Dayjs;
   min_size?: number | null;
   max_size?: number | null;
 };
 
 const schema = yup.object().shape({
-  from: yup.mixed<Dayjs>().nullable().required("From date is required"),
-  to: yup
-    .mixed<Dayjs>()
-    .nullable()
-    .required("To date is required")
-    .test("is-after", "'To' date must be on or after 'From'", function (value) {
-      const { from } = this.parent;
-      return !from || !value || !dayjs(value).isBefore(dayjs(from), "day");
-    }),
   min_size: yup.number().nullable().min(0).integer(),
   max_size: yup
     .number()
@@ -103,24 +86,20 @@ const schema = yup.object().shape({
 const formatCurrency = (value: number | null | undefined) =>
   `$${(value ?? 0).toFixed(2)}`;
 
-const defaultDateSearch = {
-  from: dayjs().startOf("month").format("YYYY-MM-DD"),
-  to: dayjs().endOf("month").format("YYYY-MM-DD"),
-};
+const formatSize = (value: number | null | undefined) =>
+  value == null ? "" : value.toString();
 
-export const InstalledMetersReportView = () => {
+export const StoredMetersReportView = () => {
   const navigate = useNavigate();
   const search = Route.useSearch();
   const authHeader = useAuthHeader();
 
   const defaultValues = useMemo<FormValues>(
     () => ({
-      from: dayjs(search.from, "YYYY-MM-DD"),
-      to: dayjs(search.to, "YYYY-MM-DD"),
       min_size: search.min_size ?? null,
       max_size: search.max_size ?? null,
     }),
-    [search.from, search.to, search.min_size, search.max_size],
+    [search.min_size, search.max_size],
   );
 
   const { control, reset, watch } = useForm<FormValues>({
@@ -132,51 +111,37 @@ export const InstalledMetersReportView = () => {
     reset(defaultValues);
   }, [defaultValues, reset]);
 
-  const from = watch("from");
-  const to = watch("to");
   const minSize = watch("min_size");
   const maxSize = watch("max_size");
 
   const setSearch = (updater: (prev: typeof search) => any) => {
     navigate({
-      to: "/reports/installedmeters",
+      to: "/reports/storedmeters",
       search: (prev) => updater(prev as any),
       replace: true,
     });
   };
 
   useEffect(() => {
-    const nextFrom = from?.format("YYYY-MM-DD");
-    const nextTo = to?.format("YYYY-MM-DD");
     const nextMinSize = minSize ?? undefined;
     const nextMaxSize = maxSize ?? undefined;
 
     setSearch((prev) => {
-      if (
-        prev.from === nextFrom &&
-        prev.to === nextTo &&
-        prev.min_size === nextMinSize &&
-        prev.max_size === nextMaxSize
-      ) {
+      if (prev.min_size === nextMinSize && prev.max_size === nextMaxSize) {
         return prev;
       }
 
       return {
         ...prev,
-        from: nextFrom,
-        to: nextTo,
         min_size: nextMinSize,
         max_size: nextMaxSize,
         page: 0,
       };
     });
-  }, [from, to, minSize, maxSize]);
+  }, [minSize, maxSize]);
 
   const buildParams = () => {
-    const params = new URLSearchParams({
-      from_date: search.from,
-      to_date: search.to,
-    });
+    const params = new URLSearchParams();
 
     if (search.min_size != null) {
       params.set("min_size", search.min_size.toString());
@@ -188,29 +153,28 @@ export const InstalledMetersReportView = () => {
     return params;
   };
 
-  const reportQuery = useQuery<InstalledMetersReport>({
-    queryKey: ["Meters", "report", "installedmeters", search],
+  const reportQuery = useQuery<StoredMetersReport>({
+    queryKey: ["Meters", "report", "storedmeters", search],
     queryFn: async () => {
       const response = await fetch(
-        `${API_URL}/meters/installed-report?${buildParams().toString()}`,
+        `${API_URL}/meters/stored-report?${buildParams().toString()}`,
         {
           headers: { Authorization: authHeader() },
         },
       );
 
       if (!response.ok) {
-        throw new Error("Failed to fetch installed meters report");
+        throw new Error("Failed to fetch stored meters report");
       }
 
       return response.json();
     },
-    enabled: Boolean(search.from && search.to),
   });
 
   const downloadPDFMutation = useMutation({
     mutationFn: async () => {
       const response = await fetch(
-        `${API_URL}/meters/installed-report/pdf?${buildParams().toString()}`,
+        `${API_URL}/meters/stored-report/pdf?${buildParams().toString()}`,
         {
           headers: { Authorization: authHeader() },
         },
@@ -224,7 +188,7 @@ export const InstalledMetersReportView = () => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "installed_meters_report.pdf";
+      a.download = "stored_meters_report.pdf";
       a.click();
       window.URL.revokeObjectURL(url);
     },
@@ -235,13 +199,6 @@ export const InstalledMetersReportView = () => {
   const summary = reportQuery.data?.summary ?? { quantity: 0, total_value: 0 };
 
   const columns: GridColDef[] = [
-    {
-      field: "installed_date",
-      headerName: "Installed Date",
-      flex: 1,
-      minWidth: 130,
-      valueFormatter: (value: string) => dayjs(value).format("YYYY-MM-DD"),
-    },
     {
       field: "serial_number",
       headerName: "Serial Number",
@@ -255,32 +212,23 @@ export const InstalledMetersReportView = () => {
       flex: 0.6,
       minWidth: 80,
       type: "number",
+      valueFormatter: (value: number | null) => formatSize(value),
       align: "left",
       headerAlign: "left",
     },
-    {
-      field: "well_ra_number",
-      headerName: "RA Number",
-      flex: 0.8,
-      minWidth: 120,
-    },
-    { field: "trss", headerName: "TRSS", flex: 0.8, minWidth: 120 },
-    {
-      field: "water_users",
-      headerName: "Water Users",
-      flex: 1.2,
-      minWidth: 160,
-    },
+    { field: "status", headerName: "Status", flex: 0.8, minWidth: 120 },
     {
       field: "price",
       headerName: "Value",
       flex: 0.8,
       minWidth: 110,
       type: "number",
+      valueFormatter: (value: number) => formatCurrency(value),
       align: "left",
       headerAlign: "left",
-      valueFormatter: (value: number) => formatCurrency(value),
     },
+    { field: "contact_name", headerName: "Contact", flex: 1, minWidth: 140 },
+    { field: "meter_owner", headerName: "Owner", flex: 1, minWidth: 120 },
   ];
 
   const typeTotalColumns: GridColDef[] = [
@@ -291,12 +239,13 @@ export const InstalledMetersReportView = () => {
       flex: 0.5,
       minWidth: 80,
       type: "number",
+      valueFormatter: (value: number | null) => formatSize(value),
     },
     {
       field: "quantity",
-      headerName: "Installed",
+      headerName: "Stored",
       flex: 0.5,
-      minWidth: 90,
+      minWidth: 80,
       type: "number",
     },
     {
@@ -313,36 +262,12 @@ export const InstalledMetersReportView = () => {
     <BackgroundBox>
       <Card sx={{ height: "fit-content" }}>
         <CustomCardHeader
-          title={<ReportBreadcrumbTitle current="Installed Meters" />}
-          icon={EngineeringOutlined}
+          title={<ReportBreadcrumbTitle current="Stored Meters" />}
+          icon={Storage}
         />
         <CardContent>
           <Grid container spacing={2} padding={2} alignItems="center">
             <Grid item xs={12} sm={6} md={3}>
-              <ControlledDatepicker
-                sx={{ width: "100%" }}
-                size="small"
-                label="From"
-                control={control}
-                name="from"
-                views={["year", "month", "day"]}
-                openTo="year"
-                format="YYYY MMMM DD"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <ControlledDatepicker
-                sx={{ width: "100%" }}
-                size="small"
-                label="To"
-                control={control}
-                name="to"
-                views={["year", "month", "day"]}
-                openTo="year"
-                format="YYYY MMMM DD"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={2}>
               <Controller
                 name="min_size"
                 control={control}
@@ -368,7 +293,7 @@ export const InstalledMetersReportView = () => {
                 )}
               />
             </Grid>
-            <Grid item xs={12} sm={6} md={2}>
+            <Grid item xs={12} sm={6} md={3}>
               <Controller
                 name="max_size"
                 control={control}
@@ -397,7 +322,7 @@ export const InstalledMetersReportView = () => {
             <Grid
               item
               xs={12}
-              md={2}
+              md={6}
               sx={{
                 display: "flex",
                 justifyContent: { xs: "center", md: "flex-end" },
@@ -431,7 +356,7 @@ export const InstalledMetersReportView = () => {
                 }}
               >
                 <Typography variant="body2" color="text.secondary">
-                  Total Meters Installed
+                  Total Meters Stored
                 </Typography>
                 <Typography variant="h5" sx={{ fontWeight: 700 }}>
                   {summary.quantity}
@@ -465,7 +390,7 @@ export const InstalledMetersReportView = () => {
                 }}
               >
                 <Typography variant="body2" color="text.secondary">
-                  Meter Types Installed
+                  Meter Types Stored
                 </Typography>
                 <Typography variant="h5" sx={{ fontWeight: 700 }}>
                   {typeTotals.length}
@@ -494,13 +419,13 @@ export const InstalledMetersReportView = () => {
                     series={[
                       {
                         data: typeTotals.map((row) => row.quantity),
-                        label: "Meters Installed",
+                        label: "Meters Stored",
                       },
                     ]}
                   />
                 ) : (
                   <Typography color="text.secondary">
-                    No installed meters found.
+                    No stored meters found.
                   </Typography>
                 )}
               </Grid>
@@ -545,14 +470,11 @@ export const InstalledMetersReportView = () => {
             <Button
               onClick={() => {
                 reset({
-                  from: dayjs(defaultDateSearch.from, "YYYY-MM-DD"),
-                  to: dayjs(defaultDateSearch.to, "YYYY-MM-DD"),
                   min_size: null,
                   max_size: null,
                 });
                 setSearch((prev) => ({
                   ...prev,
-                  ...defaultDateSearch,
                   min_size: undefined,
                   max_size: undefined,
                   page: 0,
