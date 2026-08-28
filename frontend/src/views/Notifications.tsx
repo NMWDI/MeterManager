@@ -50,7 +50,6 @@ import {
 import { Route } from "@/routes/notifications";
 import {
   useCreateNotifications,
-  useAcceptAllOwnerChangeRequests,
   useAcceptOwnerChangeRequest,
   useGetNotifications,
   useGetNotificationTypes,
@@ -208,7 +207,6 @@ export const Notifications = () => {
   });
   const acceptOwnerChangeRequest = useAcceptOwnerChangeRequest();
   const rejectOwnerChangeRequest = useRejectOwnerChangeRequest();
-  const acceptAllOwnerChangeRequests = useAcceptAllOwnerChangeRequests();
   const createNotifications = useCreateNotifications(() => {
     setIsCreateModalOpen(false);
   });
@@ -715,8 +713,8 @@ export const Notifications = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12}>
-          {isAdmin && ownerChangeRequests.length > 0 ? (
+        {isAdmin ? (
+          <Grid item xs={12}>
             <Card sx={{ height: "fit-content", overflow: "hidden" }}>
               <CustomCardHeader title="Owner Change Review" icon={TaskAlt} />
               <CardContent>
@@ -751,6 +749,17 @@ export const Notifications = () => {
                         </TableRow>
                       </TableHead>
                       <TableBody>
+                        {ownerChangeRequests.length === 0 ? (
+                          <TableRow>
+                            <TableCell
+                              colSpan={4}
+                              align="center"
+                              sx={{ height: 600 }}
+                            >
+                              No rows
+                            </TableCell>
+                          </TableRow>
+                        ) : null}
                         {paginatedOwnerChangeRequests.map(
                           (request: MeterOwnerChangeRequest) => {
                             const selected = ownerChangeSelections[
@@ -953,16 +962,12 @@ export const Notifications = () => {
                       setOwnerChangePageSize(Number(event.target.value));
                       setOwnerChangePage(0);
                     }}
-                    sx={{
-                      borderTop: "1px solid",
-                      borderColor: "divider",
-                    }}
                   />
                 </Box>
               </CardContent>
             </Card>
-          ) : null}
-        </Grid>
+          </Grid>
+        ) : null}
       </Grid>
     </BackgroundBox>
   );
