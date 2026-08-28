@@ -14,13 +14,6 @@ import {
   InputLabel,
   MenuItem,
   Select,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TablePagination,
-  TableRow,
   TextField,
 } from "@mui/material";
 import {
@@ -222,14 +215,6 @@ export const Notifications = () => {
   const ownerChangeRequests = useMemo(
     () => ownerChangeRequestsQuery.data ?? [],
     [ownerChangeRequestsQuery.data],
-  );
-  const paginatedOwnerChangeRequests = useMemo(
-    () =>
-      ownerChangeRequests.slice(
-        ownerChangePage * ownerChangePageSize,
-        ownerChangePage * ownerChangePageSize + ownerChangePageSize,
-      ),
-    [ownerChangePage, ownerChangePageSize, ownerChangeRequests],
   );
 
   const setSearch = useCallback(
@@ -463,6 +448,243 @@ export const Notifications = () => {
       ...baseColumns.slice(2),
     ];
   }, [getAvatarRole, isAdmin, updateNotificationReadStatus]);
+
+  const ownerChangeColumns = useMemo<GridColDef<MeterOwnerChangeRequest>[]>(
+    () => [
+      {
+        field: "serial_number",
+        headerName: "Meter",
+        minWidth: 120,
+        flex: 0.7,
+      },
+      {
+        field: "diff",
+        headerName: "Diff",
+        minWidth: 520,
+        flex: 2.8,
+        sortable: false,
+        filterable: false,
+        cellClassName: "owner-change-top-cell",
+        renderCell: (params) => {
+          const selected = ownerChangeSelections[params.row.id] ?? {
+            apply_water_users: true,
+            apply_contacts: true,
+          };
+          const diffLines = buildOwnerChangeDiffLines(params.row);
+
+          return (
+            <Box
+              component="pre"
+              sx={{
+                width: "100%",
+                maxWidth: "100%",
+                minWidth: 0,
+                boxSizing: "border-box",
+                m: 0,
+                py: 1,
+                px: 1.25,
+                borderRadius: 1,
+                bgcolor: "grey.50",
+                border: "1px solid",
+                borderColor: "divider",
+                fontFamily:
+                  '"SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace',
+                fontSize: 13,
+                lineHeight: 1.45,
+                whiteSpace: "pre-wrap",
+                overflowWrap: "anywhere",
+                overflow: "hidden",
+              }}
+            >
+              {diffLines.map((line, index) => {
+                const isLineApplied =
+                  line.field === "water_users"
+                    ? selected.apply_water_users
+                    : line.field === "contacts"
+                      ? selected.apply_contacts
+                      : true;
+
+                return (
+                  <Box
+                    component="span"
+                    key={`${line.prefix}-${line.text}-${index}`}
+                    sx={{
+                      display: "grid",
+                      gridTemplateColumns: "2ch minmax(0, 1fr)",
+                      color: !isLineApplied
+                        ? "text.disabled"
+                        : line.prefix === "+"
+                          ? "success.dark"
+                          : line.prefix === "-"
+                            ? "error.dark"
+                            : line.prefix === "@"
+                              ? "text.secondary"
+                              : "text.primary",
+                      fontWeight: line.prefix === "@" ? 600 : undefined,
+                      opacity: isLineApplied ? 1 : 0.72,
+                      textDecoration: isLineApplied
+                        ? undefined
+                        : "line-through",
+                    }}
+                  >
+                    <Box
+                      component="span"
+                      sx={{
+                        flex: "0 0 2ch",
+                        userSelect: "none",
+                      }}
+                    >
+                      {line.prefix === "@" ? "@@" : line.prefix}
+                    </Box>
+                    <Box
+                      component="span"
+                      sx={{
+                        minWidth: 0,
+                        overflowWrap: "anywhere",
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      {line.text}
+                    </Box>
+                  </Box>
+                );
+              })}
+            </Box>
+          );
+        },
+      },
+      {
+        field: "apply",
+        headerName: "Apply",
+        minWidth: 170,
+        flex: 0.8,
+        sortable: false,
+        filterable: false,
+        cellClassName: "owner-change-top-cell",
+        renderCell: (params) => {
+          const selected = ownerChangeSelections[params.row.id] ?? {
+            apply_water_users: true,
+            apply_contacts: true,
+          };
+
+          return (
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 0.5,
+              }}
+            >
+              <Box
+                component="label"
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 0.5,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                <Checkbox
+                  size="small"
+                  checked={selected.apply_water_users}
+                  onChange={(_, checked) =>
+                    setOwnerChangeSelections((prev) => ({
+                      ...prev,
+                      [params.row.id]: {
+                        ...selected,
+                        apply_water_users: checked,
+                      },
+                    }))
+                  }
+                />
+                Water users
+              </Box>
+              <Box
+                component="label"
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 0.5,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                <Checkbox
+                  size="small"
+                  checked={selected.apply_contacts}
+                  onChange={(_, checked) =>
+                    setOwnerChangeSelections((prev) => ({
+                      ...prev,
+                      [params.row.id]: {
+                        ...selected,
+                        apply_contacts: checked,
+                      },
+                    }))
+                  }
+                />
+                Contacts
+              </Box>
+            </Box>
+          );
+        },
+      },
+      {
+        field: "actions",
+        headerName: "Actions",
+        minWidth: 170,
+        flex: 0.8,
+        sortable: false,
+        filterable: false,
+        align: "right",
+        headerAlign: "right",
+        renderCell: (params) => {
+          const selected = ownerChangeSelections[params.row.id] ?? {
+            apply_water_users: true,
+            apply_contacts: true,
+          };
+
+          return (
+            <Box
+              sx={{
+                width: "100%",
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: 0.5,
+              }}
+            >
+              <Button
+                size="small"
+                onClick={() =>
+                  acceptOwnerChangeRequest.mutate({
+                    id: params.row.id,
+                    payload: selected,
+                  })
+                }
+                disabled={
+                  acceptOwnerChangeRequest.isLoading ||
+                  (!selected.apply_water_users && !selected.apply_contacts)
+                }
+              >
+                Accept
+              </Button>
+              <Button
+                size="small"
+                color="error"
+                onClick={() => rejectOwnerChangeRequest.mutate(params.row.id)}
+                disabled={rejectOwnerChangeRequest.isLoading}
+              >
+                Reject
+              </Button>
+            </Box>
+          );
+        },
+      },
+    ],
+    [
+      acceptOwnerChangeRequest,
+      ownerChangeSelections,
+      rejectOwnerChangeRequest,
+    ],
+  );
 
   return (
     <BackgroundBox>
@@ -718,249 +940,57 @@ export const Notifications = () => {
             <Card sx={{ height: "fit-content", overflow: "hidden" }}>
               <CustomCardHeader title="Owner Change Review" icon={TaskAlt} />
               <CardContent>
-                <Box
-                  sx={{
-                    border: "1px solid",
-                    borderColor: "divider",
-                    borderRadius: 1,
-                    bgcolor: "background.paper",
-                    overflow: "hidden",
-                  }}
-                >
-                  <TableContainer>
-                    <Table
-                      size="small"
-                      sx={{
-                        "& .MuiTableCell-root": {
-                          borderColor: "divider",
+                <Box sx={{ width: "100%", height: 640 }}>
+                  <DataGrid
+                    rows={ownerChangeRequests}
+                    columns={ownerChangeColumns}
+                    loading={ownerChangeRequestsQuery.isLoading}
+                    pagination
+                    pageSizeOptions={[5, 10, 25, 50]}
+                    paginationModel={{
+                      page: ownerChangePage,
+                      pageSize: ownerChangePageSize,
+                    }}
+                    onPaginationModelChange={(model) => {
+                      setOwnerChangePageSize(model.pageSize);
+                      setOwnerChangePage(
+                        model.pageSize !== ownerChangePageSize
+                          ? 0
+                          : model.page,
+                      );
+                    }}
+                    disableRowSelectionOnClick
+                    rowSelection={false}
+                    disableColumnMenu
+                    getRowHeight={() => "auto"}
+                    getRowClassName={(params) =>
+                      search.owner_change_request_id === params.row.id
+                        ? "owner-change-linked-row"
+                        : ""
+                    }
+                    sx={{
+                      "& .owner-change-top-cell": {
+                        alignItems: "flex-start",
+                        py: 1,
+                      },
+                      "& .MuiDataGrid-cell": {
+                        py: 1.25,
+                        outline: "none",
+                      },
+                      "& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within": {
+                        outline: "none",
+                      },
+                      "& .MuiDataGrid-row.Mui-selected, & .MuiDataGrid-row.Mui-selected:hover":
+                        {
+                          bgcolor: "transparent",
                         },
-                        "& .MuiTableHead-root .MuiTableCell-root": {
-                          bgcolor: "action.hover",
-                          fontWeight: 600,
-                        },
-                      }}
-                    >
-                      <TableHead>
-                        <TableRow>
-                          <TableCell>Meter</TableCell>
-                          <TableCell>Diff</TableCell>
-                          <TableCell>Apply</TableCell>
-                          <TableCell align="right">Actions</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {ownerChangeRequests.length === 0 ? (
-                          <TableRow>
-                            <TableCell
-                              colSpan={4}
-                              align="center"
-                              sx={{ height: 600 }}
-                            >
-                              No rows
-                            </TableCell>
-                          </TableRow>
-                        ) : null}
-                        {paginatedOwnerChangeRequests.map(
-                          (request: MeterOwnerChangeRequest) => {
-                            const selected = ownerChangeSelections[
-                              request.id
-                            ] ?? {
-                              apply_water_users: true,
-                              apply_contacts: true,
-                            };
-                            const isLinkedRequest =
-                              search.owner_change_request_id === request.id;
-                            const diffLines =
-                              buildOwnerChangeDiffLines(request);
-
-                            return (
-                              <TableRow
-                                key={request.id}
-                                sx={{
-                                  bgcolor: isLinkedRequest
-                                    ? "action.selected"
-                                    : undefined,
-                                }}
-                              >
-                                <TableCell>{request.serial_number}</TableCell>
-                                <TableCell>
-                                  <Box
-                                    component="pre"
-                                    sx={{
-                                      m: 0,
-                                      py: 1,
-                                      px: 1.25,
-                                      borderRadius: 1,
-                                      bgcolor: "grey.50",
-                                      border: "1px solid",
-                                      borderColor: "divider",
-                                      fontFamily:
-                                        '"SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace',
-                                      fontSize: 13,
-                                      lineHeight: 1.45,
-                                      whiteSpace: "pre-wrap",
-                                      overflowWrap: "anywhere",
-                                    }}
-                                  >
-                                    {diffLines.map((line, index) => {
-                                      const isLineApplied =
-                                        line.field === "water_users"
-                                          ? selected.apply_water_users
-                                          : line.field === "contacts"
-                                            ? selected.apply_contacts
-                                            : true;
-
-                                      return (
-                                        <Box
-                                          component="span"
-                                          key={`${line.prefix}-${line.text}-${index}`}
-                                          sx={{
-                                            display: "flex",
-                                            color: !isLineApplied
-                                              ? "text.disabled"
-                                              : line.prefix === "+"
-                                                ? "success.dark"
-                                                : line.prefix === "-"
-                                                  ? "error.dark"
-                                                  : line.prefix === "@"
-                                                    ? "text.secondary"
-                                                    : "text.primary",
-                                            fontWeight:
-                                              line.prefix === "@"
-                                                ? 600
-                                                : undefined,
-                                            opacity: isLineApplied ? 1 : 0.72,
-                                            textDecoration: isLineApplied
-                                              ? undefined
-                                              : "line-through",
-                                          }}
-                                        >
-                                          <Box
-                                            component="span"
-                                            sx={{
-                                              flex: "0 0 2ch",
-                                              userSelect: "none",
-                                            }}
-                                          >
-                                            {line.prefix === "@"
-                                              ? "@@"
-                                              : line.prefix}
-                                          </Box>
-                                          <Box component="span">
-                                            {line.text}
-                                          </Box>
-                                        </Box>
-                                      );
-                                    })}
-                                  </Box>
-                                </TableCell>
-                                <TableCell>
-                                  <Box
-                                    sx={{
-                                      display: "flex",
-                                      flexDirection: "column",
-                                      gap: 0.5,
-                                    }}
-                                  >
-                                    <Box
-                                      component="label"
-                                      sx={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: 0.5,
-                                        whiteSpace: "nowrap",
-                                      }}
-                                    >
-                                      <Checkbox
-                                        size="small"
-                                        checked={selected.apply_water_users}
-                                        onChange={(_, checked) =>
-                                          setOwnerChangeSelections((prev) => ({
-                                            ...prev,
-                                            [request.id]: {
-                                              ...selected,
-                                              apply_water_users: checked,
-                                            },
-                                          }))
-                                        }
-                                      />
-                                      Water users
-                                    </Box>
-                                    <Box
-                                      component="label"
-                                      sx={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: 0.5,
-                                        whiteSpace: "nowrap",
-                                      }}
-                                    >
-                                      <Checkbox
-                                        size="small"
-                                        checked={selected.apply_contacts}
-                                        onChange={(_, checked) =>
-                                          setOwnerChangeSelections((prev) => ({
-                                            ...prev,
-                                            [request.id]: {
-                                              ...selected,
-                                              apply_contacts: checked,
-                                            },
-                                          }))
-                                        }
-                                      />
-                                      Contacts
-                                    </Box>
-                                  </Box>
-                                </TableCell>
-                                <TableCell align="right">
-                                  <Button
-                                    size="small"
-                                    onClick={() =>
-                                      acceptOwnerChangeRequest.mutate({
-                                        id: request.id,
-                                        payload: selected,
-                                      })
-                                    }
-                                    disabled={
-                                      acceptOwnerChangeRequest.isLoading ||
-                                      (!selected.apply_water_users &&
-                                        !selected.apply_contacts)
-                                    }
-                                  >
-                                    Accept
-                                  </Button>
-                                  <Button
-                                    size="small"
-                                    color="error"
-                                    onClick={() =>
-                                      rejectOwnerChangeRequest.mutate(
-                                        request.id,
-                                      )
-                                    }
-                                    disabled={
-                                      rejectOwnerChangeRequest.isLoading
-                                    }
-                                  >
-                                    Reject
-                                  </Button>
-                                </TableCell>
-                              </TableRow>
-                            );
-                          },
-                        )}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                  <TablePagination
-                    component="div"
-                    count={ownerChangeRequests.length}
-                    page={ownerChangePage}
-                    rowsPerPage={ownerChangePageSize}
-                    rowsPerPageOptions={[5, 10, 25, 50]}
-                    onPageChange={(_, page) => setOwnerChangePage(page)}
-                    onRowsPerPageChange={(event) => {
-                      setOwnerChangePageSize(Number(event.target.value));
-                      setOwnerChangePage(0);
+                      "& .MuiDataGrid-row:hover": {
+                        bgcolor: "transparent",
+                      },
+                      "& .owner-change-linked-row": {
+                        boxShadow: (theme) =>
+                          `inset 3px 0 0 ${theme.palette.primary.main}`,
+                      },
                     }}
                   />
                 </Box>
