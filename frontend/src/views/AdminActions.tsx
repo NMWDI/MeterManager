@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Alert,
   AlertTitle,
@@ -17,11 +18,16 @@ import { useCreateDatabaseBackup, useRunOSEOwnerSync } from "@/service";
 export const AdminActions = () => {
   const runOSEOwnerSync = useRunOSEOwnerSync();
   const createDatabaseBackup = useCreateDatabaseBackup();
+  const [oseSyncWarningAcknowledged, setOSESyncWarningAcknowledged] =
+    useState(false);
 
   return (
     <BackgroundBox>
       <Card sx={{ height: "fit-content" }}>
-        <CustomCardHeader title="Admin Actions" icon={AdminPanelSettingsOutlined} />
+        <CustomCardHeader
+          title="Admin Actions"
+          icon={AdminPanelSettingsOutlined}
+        />
         <CardContent>
           <Grid container spacing={3}>
             <Grid item xs={12} md={6}>
@@ -33,6 +39,34 @@ export const AdminActions = () => {
                     notifications for admin review.
                   </Typography>
                 </Box>
+                <Alert
+                  severity="warning"
+                  action={
+                    <Button
+                      color="inherit"
+                      size="small"
+                      disabled={
+                        oseSyncWarningAcknowledged ||
+                        runOSEOwnerSync.isLoading
+                      }
+                      onClick={() => setOSESyncWarningAcknowledged(true)}
+                    >
+                      {oseSyncWarningAcknowledged
+                        ? "Acknowledged"
+                        : "Acknowledge"}
+                    </Button>
+                  }
+                >
+                  <AlertTitle>Review Before Running</AlertTitle>
+                  OSE owner sync is an expensive operation that takes several
+                  minutes to complete. Do not change pages or close this tab
+                  while the sync is running.
+                </Alert>
+                <Alert severity="info">
+                  <AlertTitle>Recommended Schedule</AlertTitle>
+                  Run OSE owner sync once per month, preferably at the beginning
+                  of the month.
+                </Alert>
                 <Box>
                   <Button
                     variant="contained"
@@ -43,10 +77,15 @@ export const AdminActions = () => {
                         <Sync />
                       )
                     }
-                    disabled={runOSEOwnerSync.isLoading}
+                    disabled={
+                      runOSEOwnerSync.isLoading ||
+                      !oseSyncWarningAcknowledged
+                    }
                     onClick={() => runOSEOwnerSync.mutate()}
                   >
-                    {runOSEOwnerSync.isLoading ? "Running Sync" : "Run OSE Sync"}
+                    {runOSEOwnerSync.isLoading
+                      ? "Running Sync"
+                      : "Run OSE Sync"}
                   </Button>
                 </Box>
                 {runOSEOwnerSync.data ? (
@@ -70,6 +109,12 @@ export const AdminActions = () => {
                     backup bucket.
                   </Typography>
                 </Box>
+                <Alert severity="info">
+                  <AlertTitle>Review Before Running</AlertTitle>
+                  Automatic production database backups are performed daily.
+                  Test database backups are performed weekly. Use this action if
+                  you require an additional on-demand backup.
+                </Alert>
                 <Box>
                   <Button
                     variant="contained"
