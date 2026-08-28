@@ -91,9 +91,6 @@ class MeterStatusLU(ORMBase):
 class MeterContact(ORMBase):
     meter_id: int | None = None
     name: str | None = None
-    phone: str | None = None
-    cell: str | None = None
-    email: str | None = None
     address: str | None = None
 
 

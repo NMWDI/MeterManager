@@ -103,9 +103,6 @@ class MeterContacts(Base):
         Integer, ForeignKey("Meters.id", ondelete="CASCADE", onupdate="CASCADE"), index=True
     )
     name: Mapped[Optional[str]] = mapped_column(String)
-    phone: Mapped[Optional[str]] = mapped_column(String)
-    cell: Mapped[Optional[str]] = mapped_column(String)
-    email: Mapped[Optional[str]] = mapped_column(String)
     address: Mapped[Optional[str]] = mapped_column(String)
 
     meter: Mapped["Meters"] = relationship("Meters", back_populates="contacts")

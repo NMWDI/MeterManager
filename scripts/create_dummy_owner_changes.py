@@ -60,9 +60,6 @@ STREETS = [
 def contact_snapshot(contact) -> dict[str, str | None]:
     return {
         "name": contact.name,
-        "phone": contact.phone,
-        "cell": contact.cell,
-        "email": contact.email,
         "address": contact.address,
     }
 
@@ -73,13 +70,10 @@ def existing_contacts(meter: Meters) -> list[dict[str, str | None]]:
     if contacts:
         return contacts
 
-    if meter.contact_name or meter.contact_phone:
+    if meter.contact_name:
         return [
             {
                 "name": meter.contact_name,
-                "phone": meter.contact_phone,
-                "cell": None,
-                "email": None,
                 "address": None,
             }
         ]
@@ -90,20 +84,13 @@ def existing_contacts(meter: Meters) -> list[dict[str, str | None]]:
 def new_contacts_for(index: int) -> list[dict[str, str | None]]:
     primary_name = CONTACT_NAMES[index % len(CONTACT_NAMES)]
     secondary_name = CONTACT_NAMES[(index + 2) % len(CONTACT_NAMES)]
-    phone_suffix = f"{1000 + index:04d}"
     return [
         {
             "name": primary_name,
-            "phone": f"575-555-{phone_suffix}",
-            "cell": f"575-777-{phone_suffix}",
-            "email": f"owner-change-{index + 1}@example.test",
             "address": f"{STREETS[index % len(STREETS)]}, Artesia, NM 88210",
         },
         {
             "name": secondary_name,
-            "phone": None,
-            "cell": f"575-888-{phone_suffix}",
-            "email": f"billing-{index + 1}@example.test",
             "address": None,
         },
     ]
@@ -234,9 +221,6 @@ def create_dummy_owner_changes(
                 old_contacts = [
                     {
                         "name": meter.meter_owner or "PVACD",
-                        "phone": meter.contact_phone,
-                        "cell": None,
-                        "email": None,
                         "address": None,
                     }
                 ]

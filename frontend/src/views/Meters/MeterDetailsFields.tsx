@@ -130,9 +130,6 @@ export const MeterDetailsFields = ({
           ? [
               {
                 name: meterDetails.data.contact_name,
-                phone: meterDetails.data.contact_phone,
-                cell: null,
-                email: null,
                 address: null,
               },
             ]
@@ -349,9 +346,6 @@ export const MeterDetailsFields = ({
                     onClick={() =>
                       append({
                         name: "",
-                        phone: "",
-                        cell: "",
-                        email: "",
                         address: "",
                       })
                     }
@@ -369,7 +363,7 @@ export const MeterDetailsFields = ({
           ) : (
             fields.map((field, index) => (
               <Grid container item xs={12} spacing={2} key={field.id}>
-                <Grid item xs={12} lg={3}>
+                <Grid item xs={12} lg={5}>
                   <ControlledTextbox
                     name={`contacts.${index}.name`}
                     control={control}
@@ -377,31 +371,7 @@ export const MeterDetailsFields = ({
                     disabled={!hasAdminScope || isInitialLoad}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6} lg={2}>
-                  <ControlledTextbox
-                    name={`contacts.${index}.phone`}
-                    control={control}
-                    label="Phone"
-                    disabled={!hasAdminScope || isInitialLoad}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6} lg={2}>
-                  <ControlledTextbox
-                    name={`contacts.${index}.cell`}
-                    control={control}
-                    label="Cell"
-                    disabled={!hasAdminScope || isInitialLoad}
-                  />
-                </Grid>
-                <Grid item xs={12} lg={2}>
-                  <ControlledTextbox
-                    name={`contacts.${index}.email`}
-                    control={control}
-                    label="Email"
-                    disabled={!hasAdminScope || isInitialLoad}
-                  />
-                </Grid>
-                <Grid item xs={12} lg={2}>
+                <Grid item xs={12} lg={6}>
                   <ControlledTextbox
                     name={`contacts.${index}.address`}
                     control={control}

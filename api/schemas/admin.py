@@ -15,9 +15,6 @@ class BackupFile(ORMBase):
 
 class MeterContactSnapshot(BaseModel):
     name: str | None = None
-    phone: str | None = None
-    cell: str | None = None
-    email: str | None = None
     address: str | None = None
 
 

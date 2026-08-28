@@ -33,9 +33,6 @@ def _contact_has_value(contact: meter.MeterContact) -> bool:
     return any(
         [
             contact.name,
-            contact.phone,
-            contact.cell,
-            contact.email,
             contact.address,
         ]
     )
@@ -51,9 +48,6 @@ def _replace_meter_contacts(
         meter_db.contacts.append(
             MeterContacts(
                 name=contact.name,
-                phone=contact.phone,
-                cell=contact.cell,
-                email=contact.email,
                 address=contact.address,
             )
         )
@@ -62,7 +56,6 @@ def _replace_meter_contacts(
         (contact for contact in contacts if _contact_has_value(contact)), None
     )
     meter_db.contact_name = first_contact.name if first_contact else None
-    meter_db.contact_phone = first_contact.phone if first_contact else None
     db.add(meter_db)
 
 
@@ -331,11 +324,10 @@ def create_meter(new_meter: meter.SubmitNewMeter, db: Session = Depends(get_db))
         new_meter_model.location_id = new_meter.well.location_id
 
     contacts = new_meter.contacts
-    if not contacts and (new_meter.contact_name or new_meter.contact_phone):
+    if not contacts and new_meter.contact_name:
         contacts = [
             meter.MeterContact(
                 name=new_meter.contact_name,
-                phone=new_meter.contact_phone,
             )
         ]
     _replace_meter_contacts(db, new_meter_model, contacts)
@@ -687,11 +679,10 @@ def patch_meter(updated_meter: meter.SubmitMeterUpdate, db: Session = Depends(ge
         meter_db.status_id = updated_meter.status.id
 
     contacts = updated_meter.contacts
-    if not contacts and (updated_meter.contact_name or updated_meter.contact_phone):
+    if not contacts and updated_meter.contact_name:
         contacts = [
             meter.MeterContact(
                 name=updated_meter.contact_name,
-                phone=updated_meter.contact_phone,
             )
         ]
     _replace_meter_contacts(db, meter_db, contacts)

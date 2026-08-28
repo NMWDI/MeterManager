@@ -117,9 +117,6 @@ def _contacts_from_ose_meter(ose_meter: dict) -> list[dict]:
             contacts.append(
                 {
                     "name": contact.get("name"),
-                    "phone": contact.get("phone"),
-                    "cell": contact.get("cell"),
-                    "email": contact.get("email"),
                     "address": contact.get("address"),
                 }
             )
@@ -131,21 +128,15 @@ def _contacts_from_meter(meter: Meters) -> list[dict]:
         return [
             {
                 "name": contact.name,
-                "phone": contact.phone,
-                "cell": contact.cell,
-                "email": contact.email,
                 "address": contact.address,
             }
             for contact in meter.contacts
         ]
 
-    if meter.contact_name or meter.contact_phone:
+    if meter.contact_name:
         return [
             {
                 "name": meter.contact_name,
-                "phone": meter.contact_phone,
-                "cell": None,
-                "email": None,
                 "address": None,
             }
         ]
@@ -161,16 +152,12 @@ def _set_meter_contacts(meter: Meters, contacts: list[dict]) -> None:
         meter.contacts.append(
             MeterContacts(
                 name=contact.get("name"),
-                phone=contact.get("phone"),
-                cell=contact.get("cell"),
-                email=contact.get("email"),
                 address=contact.get("address"),
             )
         )
 
     first_contact = next((contact for contact in contacts if any(contact.values())), None)
     meter.contact_name = first_contact.get("name") if first_contact else None
-    meter.contact_phone = first_contact.get("phone") if first_contact else None
 
 
 def _admin_user_ids(db: Session) -> list[int]:

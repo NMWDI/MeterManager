@@ -66,13 +66,7 @@ const formatContacts = (contacts: MeterContact[] | undefined) => {
   if (!contacts?.length) return "-";
   return contacts
     .map((contact) =>
-      [
-        contact.name,
-        contact.phone,
-        contact.cell,
-        contact.email,
-        contact.address,
-      ]
+      [contact.name, contact.address]
         .filter(Boolean)
         .join(" | "),
     )
@@ -88,14 +82,11 @@ type OwnerChangeDiffLine = {
 const contactDiffFields: Array<{
   key: keyof Pick<
     MeterContact,
-    "name" | "phone" | "cell" | "email" | "address"
+    "name" | "address"
   >;
   label: string;
 }> = [
   { key: "name", label: "name" },
-  { key: "phone", label: "phone" },
-  { key: "cell", label: "cell" },
-  { key: "email", label: "email" },
   { key: "address", label: "address" },
 ];
 
