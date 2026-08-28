@@ -1,14 +1,26 @@
 from datetime import datetime, timezone, timedelta
+import json
 import secrets
 import string
+from urllib.error import HTTPError, URLError
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+from urllib.request import Request as URLRequest, urlopen
 
-from fastapi import Depends, APIRouter, HTTPException, Request
+from fastapi import Depends, APIRouter, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session, joinedload, undefer
 from sqlalchemy import select
 from typing import List
 
-from api.models.user import ServiceAccountApiKeys, Users, UserRoles, SecurityScopes
+from api.models.meter import MeterContacts, MeterOwnerChangeRequests, Meters
+from api.models.user import (
+    NotificationTypeLU,
+    Notifications,
+    ServiceAccountApiKeys,
+    Users,
+    UserRoles,
+    SecurityScopes,
+)
 
 from api.schemas import security
 from api.schemas import admin
@@ -45,6 +57,201 @@ PASSWORD_GENERATION_ATTEMPTS = 8
 PASSWORD_GENERATION_LENGTH = 20
 PASSWORD_SYMBOLS = "!@#$%^&*()-_=+[]{}:,.?"
 BACKUP_FILENAME_DATE_RE = re.compile(r"^backup-(\d{4}-\d{2}-\d{2})-\d+\.dump$")
+
+
+def _build_ose_bulk_url(offset: int, limit: int) -> str:
+    if not settings.OSE_BULK_EXPORT_URL:
+        raise HTTPException(status_code=500, detail="OSE_BULK_EXPORT_URL is not set")
+
+    parsed_url = urlsplit(settings.OSE_BULK_EXPORT_URL)
+    query_params = dict(parse_qsl(parsed_url.query, keep_blank_values=True))
+    query_params["offset"] = str(offset)
+    query_params["limit"] = str(limit)
+
+    return urlunsplit(
+        (
+            parsed_url.scheme,
+            parsed_url.netloc,
+            parsed_url.path,
+            urlencode(query_params),
+            parsed_url.fragment,
+        )
+    )
+
+
+def _fetch_ose_bulk_page(offset: int, limit: int) -> dict:
+    request = URLRequest(
+        _build_ose_bulk_url(offset, limit),
+        headers={"Accept": "application/json"},
+        method="GET",
+    )
+
+    try:
+        with urlopen(request, timeout=60) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except HTTPError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=f"OSE bulk export returned HTTP {exc.code}",
+        )
+    except (URLError, TimeoutError, json.JSONDecodeError) as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Unable to fetch OSE bulk export: {exc}",
+        )
+
+
+def _owner_names_from_ose_meter(ose_meter: dict) -> str | None:
+    names = [
+        owner.get("name")
+        for owner in ose_meter.get("owners") or []
+        if owner.get("name") is not None
+    ]
+    return ", ".join(names) if names else None
+
+
+def _contacts_from_ose_meter(ose_meter: dict) -> list[dict]:
+    contacts = []
+    for owner in ose_meter.get("owners") or []:
+        for contact in owner.get("contacts") or []:
+            contacts.append(
+                {
+                    "name": contact.get("name"),
+                    "phone": contact.get("phone"),
+                    "cell": contact.get("cell"),
+                    "email": contact.get("email"),
+                    "address": contact.get("address"),
+                }
+            )
+    return contacts
+
+
+def _contacts_from_meter(meter: Meters) -> list[dict]:
+    if meter.contacts:
+        return [
+            {
+                "name": contact.name,
+                "phone": contact.phone,
+                "cell": contact.cell,
+                "email": contact.email,
+                "address": contact.address,
+            }
+            for contact in meter.contacts
+        ]
+
+    if meter.contact_name or meter.contact_phone:
+        return [
+            {
+                "name": meter.contact_name,
+                "phone": meter.contact_phone,
+                "cell": None,
+                "email": None,
+                "address": None,
+            }
+        ]
+
+    return []
+
+
+def _set_meter_contacts(meter: Meters, contacts: list[dict]) -> None:
+    meter.contacts.clear()
+    for contact in contacts:
+        if not any(contact.values()):
+            continue
+        meter.contacts.append(
+            MeterContacts(
+                name=contact.get("name"),
+                phone=contact.get("phone"),
+                cell=contact.get("cell"),
+                email=contact.get("email"),
+                address=contact.get("address"),
+            )
+        )
+
+    first_contact = next((contact for contact in contacts if any(contact.values())), None)
+    meter.contact_name = first_contact.get("name") if first_contact else None
+    meter.contact_phone = first_contact.get("phone") if first_contact else None
+
+
+def _admin_user_ids(db: Session) -> list[int]:
+    return db.scalars(
+        select(Users.id)
+        .join(UserRoles, Users.user_role_id == UserRoles.id)
+        .join(UserRoles.security_scopes)
+        .where(SecurityScopes.scope_string == "admin", Users.disabled.is_(False))
+    ).all()
+
+
+def _owner_change_type_id(db: Session) -> int:
+    notification_type_id = db.scalar(
+        select(NotificationTypeLU.id).where(NotificationTypeLU.name == "owner_change")
+    )
+    if not notification_type_id:
+        raise HTTPException(
+            status_code=500,
+            detail="Notification type owner_change does not exist",
+        )
+    return notification_type_id
+
+
+def _create_owner_change_notifications(
+    db: Session,
+    change_request: MeterOwnerChangeRequests,
+    created_by: int | None,
+) -> int:
+    notification_type_id = _owner_change_type_id(db)
+    notifications = [
+        Notifications(
+            user_id=user_id,
+            notification_type_id=notification_type_id,
+            created_by=created_by,
+            title=f"Owner Change: Meter {change_request.serial_number}",
+            message=(
+                "OSE owner or contact information differs from Meter Manager. "
+                "Review and accept the selected changes."
+            ),
+            link=f"/notifications?owner_change_request_id={change_request.id}",
+        )
+        for user_id in _admin_user_ids(db)
+    ]
+    db.add_all(notifications)
+    return len(notifications)
+
+
+def _apply_owner_change_request(
+    db: Session,
+    change_request: MeterOwnerChangeRequests,
+    current_admin: Users,
+    apply_water_users: bool,
+    apply_contacts: bool,
+) -> MeterOwnerChangeRequests:
+    if change_request.status not in {"pending", "partially_accepted"}:
+        raise HTTPException(status_code=400, detail="Owner change request is resolved")
+
+    if not apply_water_users and not apply_contacts:
+        raise HTTPException(status_code=400, detail="No changes selected")
+
+    meter = db.scalars(
+        select(Meters)
+        .options(joinedload(Meters.contacts))
+        .where(Meters.id == change_request.meter_id)
+    ).unique().first()
+    if not meter:
+        raise HTTPException(status_code=404, detail="Meter not found")
+
+    if apply_water_users:
+        meter.water_users = change_request.new_water_users
+    if apply_contacts:
+        _set_meter_contacts(meter, change_request.new_contacts)
+
+    change_request.status = (
+        "accepted" if apply_water_users and apply_contacts else "partially_accepted"
+    )
+    change_request.resolved_by = current_admin.id
+    change_request.resolved_at = datetime.now(timezone.utc)
+    db.add(meter)
+    db.add(change_request)
+    return change_request
 
 
 def _backup_filename_date(file_name: str) -> dt.date | None:
@@ -111,6 +318,230 @@ def _validate_new_password(password: str, user: Users) -> None:
     user.hashed_password = get_password_hash(password)
     user.password_changed_at = datetime.now(timezone.utc)
     apply_password_evaluation(user, evaluation)
+
+
+@admin_router.post(
+    "/admin/ose-owner-sync",
+    response_model=admin.OSEOwnerSyncResult,
+    dependencies=[Depends(ScopedUser.Admin)],
+    tags=["Admin"],
+)
+def sync_ose_owner_changes(
+    db: Session = Depends(get_db),
+    current_admin: Users = Depends(ScopedUser.Admin),
+):
+    limit = settings.OSE_BULK_EXPORT_LIMIT
+    offset = 0
+    fetched_count = 0
+    matched_count = 0
+    changed_count = 0
+    created_request_count = 0
+    notification_count = 0
+    unmatched_count = 0
+    skipped_pending_count = 0
+
+    while True:
+        page = _fetch_ose_bulk_page(offset=offset, limit=limit)
+        ose_meters = page.get("data") or []
+        meta = page.get("meta") or {}
+
+        if not ose_meters:
+            break
+
+        fetched_count += len(ose_meters)
+        serial_numbers = [
+            ose_meter.get("serial_number")
+            for ose_meter in ose_meters
+            if ose_meter.get("serial_number") is not None
+        ]
+        local_meters = {
+            local_meter.serial_number: local_meter
+            for local_meter in db.scalars(
+                select(Meters)
+                .options(joinedload(Meters.contacts))
+                .where(Meters.serial_number.in_(serial_numbers))
+            ).unique()
+        }
+
+        for ose_meter in ose_meters:
+            serial_number = ose_meter.get("serial_number")
+            local_meter = local_meters.get(serial_number)
+            if not local_meter:
+                unmatched_count += 1
+                continue
+
+            matched_count += 1
+            new_water_users = _owner_names_from_ose_meter(ose_meter)
+            new_contacts = _contacts_from_ose_meter(ose_meter)
+            old_contacts = _contacts_from_meter(local_meter)
+
+            if (
+                local_meter.water_users == new_water_users
+                and old_contacts == new_contacts
+            ):
+                continue
+
+            changed_count += 1
+            pending_exists = db.scalar(
+                select(MeterOwnerChangeRequests.id).where(
+                    MeterOwnerChangeRequests.meter_id == local_meter.id,
+                    MeterOwnerChangeRequests.status.in_(
+                        ["pending", "partially_accepted"]
+                    ),
+                )
+            )
+            if pending_exists:
+                skipped_pending_count += 1
+                continue
+
+            change_request = MeterOwnerChangeRequests(
+                meter_id=local_meter.id,
+                serial_number=local_meter.serial_number,
+                ose_meter_id=ose_meter.get("meter_id"),
+                old_water_users=local_meter.water_users,
+                new_water_users=new_water_users,
+                old_contacts=old_contacts,
+                new_contacts=new_contacts,
+                created_by=current_admin.id,
+            )
+            db.add(change_request)
+            db.flush()
+            notification_count += _create_owner_change_notifications(
+                db,
+                change_request,
+                current_admin.id,
+            )
+            created_request_count += 1
+
+        offset += int(meta.get("limit") or limit)
+        total_count = meta.get("count")
+        if len(ose_meters) < limit or (
+            total_count is not None and offset >= int(total_count)
+        ):
+            break
+
+    db.commit()
+
+    return {
+        "fetched_count": fetched_count,
+        "matched_count": matched_count,
+        "changed_count": changed_count,
+        "created_request_count": created_request_count,
+        "notification_count": notification_count,
+        "unmatched_count": unmatched_count,
+        "skipped_pending_count": skipped_pending_count,
+    }
+
+
+@admin_router.get(
+    "/admin/ose-owner-change-requests",
+    response_model=list[admin.MeterOwnerChangeRequest],
+    dependencies=[Depends(ScopedUser.Admin)],
+    tags=["Admin"],
+)
+def get_ose_owner_change_requests(
+    status: list[str] | None = Query(["pending", "partially_accepted"]),
+    db: Session = Depends(get_db),
+):
+    query = select(MeterOwnerChangeRequests).order_by(
+        MeterOwnerChangeRequests.created_at.desc(),
+        MeterOwnerChangeRequests.id.desc(),
+    )
+    if status:
+        query = query.where(MeterOwnerChangeRequests.status.in_(status))
+    return db.scalars(query).all()
+
+
+@admin_router.post(
+    "/admin/ose-owner-change-requests/{request_id}/accept",
+    response_model=admin.MeterOwnerChangeRequest,
+    dependencies=[Depends(ScopedUser.Admin)],
+    tags=["Admin"],
+)
+def accept_ose_owner_change_request(
+    request_id: int,
+    payload: admin.MeterOwnerChangeAcceptRequest,
+    db: Session = Depends(get_db),
+    current_admin: Users = Depends(ScopedUser.Admin),
+):
+    change_request = db.scalars(
+        select(MeterOwnerChangeRequests).where(
+            MeterOwnerChangeRequests.id == request_id
+        )
+    ).first()
+    if not change_request:
+        raise HTTPException(status_code=404, detail="Owner change request not found")
+
+    _apply_owner_change_request(
+        db,
+        change_request,
+        current_admin,
+        payload.apply_water_users,
+        payload.apply_contacts,
+    )
+    db.commit()
+    db.refresh(change_request)
+    return change_request
+
+
+@admin_router.post(
+    "/admin/ose-owner-change-requests/{request_id}/reject",
+    response_model=admin.MeterOwnerChangeRequest,
+    dependencies=[Depends(ScopedUser.Admin)],
+    tags=["Admin"],
+)
+def reject_ose_owner_change_request(
+    request_id: int,
+    db: Session = Depends(get_db),
+    current_admin: Users = Depends(ScopedUser.Admin),
+):
+    change_request = db.scalars(
+        select(MeterOwnerChangeRequests).where(
+            MeterOwnerChangeRequests.id == request_id
+        )
+    ).first()
+    if not change_request:
+        raise HTTPException(status_code=404, detail="Owner change request not found")
+
+    if change_request.status not in {"pending", "partially_accepted"}:
+        raise HTTPException(status_code=400, detail="Owner change request is resolved")
+
+    change_request.status = "rejected"
+    change_request.resolved_by = current_admin.id
+    change_request.resolved_at = datetime.now(timezone.utc)
+    db.add(change_request)
+    db.commit()
+    db.refresh(change_request)
+    return change_request
+
+
+@admin_router.post(
+    "/admin/ose-owner-change-requests/accept-all",
+    response_model=admin.MeterOwnerChangeBulkAcceptResult,
+    dependencies=[Depends(ScopedUser.Admin)],
+    tags=["Admin"],
+)
+def accept_all_ose_owner_change_requests(
+    db: Session = Depends(get_db),
+    current_admin: Users = Depends(ScopedUser.Admin),
+):
+    pending_requests = db.scalars(
+        select(MeterOwnerChangeRequests).where(
+            MeterOwnerChangeRequests.status.in_(["pending", "partially_accepted"])
+        )
+    ).all()
+
+    for change_request in pending_requests:
+        _apply_owner_change_request(
+            db,
+            change_request,
+            current_admin,
+            apply_water_users=True,
+            apply_contacts=True,
+        )
+
+    db.commit()
+    return {"accepted_count": len(pending_requests)}
 
 
 def _serialize_service_account(

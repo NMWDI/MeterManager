@@ -12,6 +12,7 @@ from api.schemas import well
 from api.models.location import LandOwners, Locations
 from api.models.meter import (
     ActivityTypeLU,
+    MeterContacts,
     Meters,
     MeterStatusLU,
     MeterTypeLU,
@@ -26,6 +27,43 @@ from api.enums import MeterSortByField, MeterStatus, SortDirection
 
 authenticated_meter_router = APIRouter()
 public_meter_router = APIRouter()
+
+
+def _contact_has_value(contact: meter.MeterContact) -> bool:
+    return any(
+        [
+            contact.name,
+            contact.phone,
+            contact.cell,
+            contact.email,
+            contact.address,
+        ]
+    )
+
+
+def _replace_meter_contacts(
+    db: Session, meter_db: Meters, contacts: list[meter.MeterContact]
+) -> None:
+    meter_db.contacts.clear()
+    for contact in contacts:
+        if not _contact_has_value(contact):
+            continue
+        meter_db.contacts.append(
+            MeterContacts(
+                name=contact.name,
+                phone=contact.phone,
+                cell=contact.cell,
+                email=contact.email,
+                address=contact.address,
+            )
+        )
+
+    first_contact = next(
+        (contact for contact in contacts if _contact_has_value(contact)), None
+    )
+    meter_db.contact_name = first_contact.name if first_contact else None
+    meter_db.contact_phone = first_contact.phone if first_contact else None
+    db.add(meter_db)
 
 
 # Get paginated, sorted list of meters, filtered by a search string if applicable
@@ -292,6 +330,16 @@ def create_meter(new_meter: meter.SubmitNewMeter, db: Session = Depends(get_db))
         new_meter_model.well_id = new_meter.well.id
         new_meter_model.location_id = new_meter.well.location_id
 
+    contacts = new_meter.contacts
+    if not contacts and (new_meter.contact_name or new_meter.contact_phone):
+        contacts = [
+            meter.MeterContact(
+                name=new_meter.contact_name,
+                phone=new_meter.contact_phone,
+            )
+        ]
+    _replace_meter_contacts(db, new_meter_model, contacts)
+
     # Try adding the meter, if it fails due to integrety error...
     try:
         db.add(new_meter_model)
@@ -495,6 +543,7 @@ def get_meter(
         joinedload(Meters.meter_type),
         joinedload(Meters.well).joinedload(Wells.location),
         joinedload(Meters.status),
+        joinedload(Meters.contacts),
         joinedload(Meters.meter_register).joinedload(meterRegisters.dial_units),
         joinedload(Meters.meter_register).joinedload(meterRegisters.totalizer_units),
     )
@@ -505,7 +554,7 @@ def get_meter(
     else:
         query = query.filter(Meters.serial_number == serial_number)
 
-    return db.scalars(query).first()
+    return db.scalars(query).unique().first()
 
 
 @authenticated_meter_router.get(
@@ -613,8 +662,6 @@ def patch_meter(updated_meter: meter.SubmitMeterUpdate, db: Session = Depends(ge
     meter_db = _get(db, Meters, updated_meter.id)
 
     meter_db.serial_number = updated_meter.serial_number
-    meter_db.contact_name = updated_meter.contact_name
-    meter_db.contact_phone = updated_meter.contact_phone
     meter_db.notes = updated_meter.notes
     meter_db.price = updated_meter.price
     meter_db.meter_type_id = updated_meter.meter_type.id
@@ -639,6 +686,16 @@ def patch_meter(updated_meter: meter.SubmitMeterUpdate, db: Session = Depends(ge
     if updated_meter.status:
         meter_db.status_id = updated_meter.status.id
 
+    contacts = updated_meter.contacts
+    if not contacts and (updated_meter.contact_name or updated_meter.contact_phone):
+        contacts = [
+            meter.MeterContact(
+                name=updated_meter.contact_name,
+                phone=updated_meter.contact_phone,
+            )
+        ]
+    _replace_meter_contacts(db, meter_db, contacts)
+
     try:
         db.add(meter_db)
         db.commit()
@@ -651,9 +708,10 @@ def patch_meter(updated_meter: meter.SubmitMeterUpdate, db: Session = Depends(ge
             joinedload(Meters.meter_type),
             joinedload(Meters.well).joinedload(Wells.location),
             joinedload(Meters.status),
+            joinedload(Meters.contacts),
         )
         .filter(Meters.id == updated_meter.id)
-    ).first()
+    ).unique().first()
 
 
 @authenticated_meter_router.get(

@@ -1,4 +1,6 @@
-from typing import List, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, List, Optional
 
 from sqlalchemy import (
     Boolean,
@@ -12,9 +14,17 @@ from sqlalchemy import (
     Table,
     func,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from api.models.base import Base
+
+if TYPE_CHECKING:
+    from api.models.location import Locations
+    from api.models.part import PartsUsed
+    from api.models.user import Users
+    from api.models.well import Wells
+    from api.models.work_order import workOrders
 
 
 class ServiceTypeLU(Base):
@@ -78,6 +88,54 @@ class Meters(Base):
     status: Mapped["MeterStatusLU"] = relationship()
     well: Mapped["Wells"] = relationship("Wells", back_populates="meters")
     location: Mapped["Locations"] = relationship()
+    contacts: Mapped[List["MeterContacts"]] = relationship(
+        "MeterContacts",
+        back_populates="meter",
+        cascade="all, delete-orphan",
+        order_by="MeterContacts.id",
+    )
+
+
+class MeterContacts(Base):
+    __tablename__ = "meter_contacts"
+
+    meter_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("Meters.id", ondelete="CASCADE", onupdate="CASCADE"), index=True
+    )
+    name: Mapped[Optional[str]] = mapped_column(String)
+    phone: Mapped[Optional[str]] = mapped_column(String)
+    cell: Mapped[Optional[str]] = mapped_column(String)
+    email: Mapped[Optional[str]] = mapped_column(String)
+    address: Mapped[Optional[str]] = mapped_column(String)
+
+    meter: Mapped["Meters"] = relationship("Meters", back_populates="contacts")
+
+
+class MeterOwnerChangeRequests(Base):
+    __tablename__ = "meter_owner_change_requests"
+
+    meter_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("Meters.id", ondelete="CASCADE", onupdate="CASCADE"), index=True
+    )
+    serial_number: Mapped[str] = mapped_column(String, nullable=False)
+    ose_meter_id: Mapped[Optional[int]] = mapped_column(Integer)
+    old_water_users: Mapped[Optional[str]] = mapped_column(String)
+    new_water_users: Mapped[Optional[str]] = mapped_column(String)
+    old_contacts: Mapped[list[dict]] = mapped_column(JSONB, nullable=False, default=list)
+    new_contacts: Mapped[list[dict]] = mapped_column(JSONB, nullable=False, default=list)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
+    created_by: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("Users.id", ondelete="SET NULL", onupdate="CASCADE"), index=True
+    )
+    resolved_by: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("Users.id", ondelete="SET NULL", onupdate="CASCADE"), index=True
+    )
+    created_at: Mapped[DateTime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now(), index=True
+    )
+    resolved_at: Mapped[Optional[DateTime]] = mapped_column(DateTime)
+
+    meter: Mapped["Meters"] = relationship()
 
 
 class MeterTypeLU(Base):

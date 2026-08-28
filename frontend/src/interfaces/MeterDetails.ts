@@ -3,12 +3,14 @@ import type { MeterRegister } from "./MeterRegister";
 import type { MeterStatus } from "./MeterStatus";
 import type { MeterType } from "./MeterType";
 import type { Well } from "./Well";
+import type { MeterContact } from "./MeterContact";
 
 export interface MeterDetails {
   id?: number | null;
   serial_number?: string | null;
   contact_name?: string | null;
   contact_phone?: string | null;
+  contacts?: MeterContact[];
   water_users?: string | null;
   meter_owner?: string | null;
   ra_number?: string | null;

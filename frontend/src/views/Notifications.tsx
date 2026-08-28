@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import {
   Alert,
@@ -14,9 +14,15 @@ import {
   InputLabel,
   MenuItem,
   Select,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
   TextField,
 } from "@mui/material";
-import { Add, NotificationsOutlined, Search } from "@mui/icons-material";
+import { Add, NotificationsOutlined, Search, TaskAlt } from "@mui/icons-material";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import { DatePicker } from "@mui/x-date-pickers";
 import { useNavigate } from "@tanstack/react-router";
@@ -28,13 +34,23 @@ import {
   TristateToggle,
   UserAvatar,
 } from "@/components";
-import { Notification, SecurityScope, User } from "@/interfaces";
+import {
+  MeterContact,
+  MeterOwnerChangeRequest,
+  Notification,
+  SecurityScope,
+  User,
+} from "@/interfaces";
 import { Route } from "@/routes/notifications";
 import {
   useCreateNotifications,
+  useAcceptAllOwnerChangeRequests,
+  useAcceptOwnerChangeRequest,
   useGetNotifications,
   useGetNotificationTypes,
+  useGetOwnerChangeRequests,
   useGetRoles,
+  useRejectOwnerChangeRequest,
   useUpdateNotificationReadStatus,
   useGetUserAdminList,
 } from "@/service";
@@ -48,10 +64,36 @@ const formatNotificationTypeName = (value: string) =>
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
 
+const formatContacts = (contacts: MeterContact[] | undefined) => {
+  if (!contacts?.length) return "-";
+  return contacts
+    .map((contact) =>
+      [
+        contact.name,
+        contact.phone,
+        contact.cell,
+        contact.email,
+        contact.address,
+      ]
+        .filter(Boolean)
+        .join(" | "),
+    )
+    .join("; ");
+};
+
+type NotificationSearch = ReturnType<typeof Route.useSearch> & {
+  created_from?: string;
+  created_to?: string;
+  owner_change_request_id?: number;
+};
+
 export const Notifications = () => {
   const navigate = useNavigate();
   const authUser = useAuthUser();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [ownerChangeSelections, setOwnerChangeSelections] = useState<
+    Record<number, { apply_water_users: boolean; apply_contacts: boolean }>
+  >({});
   const search = Route.useSearch();
   const isAdmin =
     authUser()?.user_role?.security_scopes?.some(
@@ -60,6 +102,12 @@ export const Notifications = () => {
   const notificationTypesQuery = useGetNotificationTypes();
   const rolesQuery = useGetRoles({ enabled: isAdmin });
   const usersQuery = useGetUserAdminList({ enabled: isAdmin });
+  const ownerChangeRequestsQuery = useGetOwnerChangeRequests({
+    enabled: isAdmin,
+  });
+  const acceptOwnerChangeRequest = useAcceptOwnerChangeRequest();
+  const rejectOwnerChangeRequest = useRejectOwnerChangeRequest();
+  const acceptAllOwnerChangeRequests = useAcceptAllOwnerChangeRequests();
   const createNotifications = useCreateNotifications(() => {
     setIsCreateModalOpen(false);
   });
@@ -68,8 +116,21 @@ export const Notifications = () => {
     () => (notificationTypesQuery.data ?? []).map((type) => type.id),
     [notificationTypesQuery.data],
   );
-  const getAvatarRole = (user: User | null | undefined) =>
-    user ? getRoleLabel(user) : undefined;
+  const getAvatarRole = useCallback(
+    (user: User | null | undefined) => (user ? getRoleLabel(user) : undefined),
+    [],
+  );
+
+  const setSearch = useCallback(
+    (updater: (prev: NotificationSearch) => NotificationSearch) => {
+      navigate({
+        to: "/notifications",
+        search: (prev) => updater(prev as NotificationSearch),
+        replace: true,
+      });
+    },
+    [navigate],
+  );
 
   useEffect(() => {
     if (!notificationTypeIds.length || search.notification_type_id.length)
@@ -80,7 +141,25 @@ export const Notifications = () => {
       notification_type_id: notificationTypeIds,
       page: 0,
     }));
-  }, [notificationTypeIds, search.notification_type_id.length]);
+  }, [notificationTypeIds, search.notification_type_id.length, setSearch]);
+
+  useEffect(() => {
+    setOwnerChangeSelections((prev) => {
+      const next = { ...prev };
+      for (const request of ownerChangeRequestsQuery.data ?? []) {
+        if (!next[request.id]) {
+          next[request.id] = {
+            apply_water_users:
+              request.old_water_users !== request.new_water_users,
+            apply_contacts:
+              formatContacts(request.old_contacts) !==
+              formatContacts(request.new_contacts),
+          };
+        }
+      }
+      return next;
+    });
+  }, [ownerChangeRequestsQuery.data]);
 
   const notificationsQuery = useGetNotifications({
     q: search.q || undefined,
@@ -101,14 +180,6 @@ export const Notifications = () => {
     limit: search.pageSize,
     offset: search.page * search.pageSize,
   });
-
-  const setSearch = (updater: (prev: typeof search) => any) => {
-    navigate({
-      to: "/notifications",
-      search: (prev) => updater(prev as typeof search),
-      replace: true,
-    });
-  };
 
   const columns = useMemo<GridColDef<Notification>[]>(
     () => {
@@ -395,6 +466,139 @@ export const Notifications = () => {
             <Alert severity="error" sx={{ mb: 2 }}>
               Failed to load notifications.
             </Alert>
+          ) : null}
+
+          {isAdmin && (ownerChangeRequestsQuery.data?.length ?? 0) > 0 ? (
+            <Box sx={{ mb: 3 }}>
+              <Grid
+                container
+                justifyContent="space-between"
+                alignItems="center"
+                sx={{ mb: 1.5 }}
+              >
+                <Grid item>
+                  <CustomCardHeader
+                    title="Owner Change Review"
+                    icon={TaskAlt}
+                  />
+                </Grid>
+                <Grid item>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    onClick={() => acceptAllOwnerChangeRequests.mutate()}
+                    disabled={acceptAllOwnerChangeRequests.isLoading}
+                  >
+                    Accept All
+                  </Button>
+                </Grid>
+              </Grid>
+              <TableContainer>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Meter</TableCell>
+                      <TableCell>Current Water Users</TableCell>
+                      <TableCell>OSE Water Users</TableCell>
+                      <TableCell>Current Contacts</TableCell>
+                      <TableCell>OSE Contacts</TableCell>
+                      <TableCell align="center">Water Users</TableCell>
+                      <TableCell align="center">Contacts</TableCell>
+                      <TableCell align="right">Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {(ownerChangeRequestsQuery.data ?? []).map(
+                      (request: MeterOwnerChangeRequest) => {
+                        const selected = ownerChangeSelections[request.id] ?? {
+                          apply_water_users: true,
+                          apply_contacts: true,
+                        };
+                        const isLinkedRequest =
+                          search.owner_change_request_id === request.id;
+
+                        return (
+                          <TableRow
+                            key={request.id}
+                            sx={{
+                              bgcolor: isLinkedRequest
+                                ? "action.selected"
+                                : undefined,
+                            }}
+                          >
+                            <TableCell>{request.serial_number}</TableCell>
+                            <TableCell>{request.old_water_users ?? "-"}</TableCell>
+                            <TableCell>{request.new_water_users ?? "-"}</TableCell>
+                            <TableCell>
+                              {formatContacts(request.old_contacts)}
+                            </TableCell>
+                            <TableCell>
+                              {formatContacts(request.new_contacts)}
+                            </TableCell>
+                            <TableCell align="center">
+                              <Checkbox
+                                checked={selected.apply_water_users}
+                                onChange={(_, checked) =>
+                                  setOwnerChangeSelections((prev) => ({
+                                    ...prev,
+                                    [request.id]: {
+                                      ...selected,
+                                      apply_water_users: checked,
+                                    },
+                                  }))
+                                }
+                              />
+                            </TableCell>
+                            <TableCell align="center">
+                              <Checkbox
+                                checked={selected.apply_contacts}
+                                onChange={(_, checked) =>
+                                  setOwnerChangeSelections((prev) => ({
+                                    ...prev,
+                                    [request.id]: {
+                                      ...selected,
+                                      apply_contacts: checked,
+                                    },
+                                  }))
+                                }
+                              />
+                            </TableCell>
+                            <TableCell align="right">
+                              <Button
+                                size="small"
+                                onClick={() =>
+                                  acceptOwnerChangeRequest.mutate({
+                                    id: request.id,
+                                    payload: selected,
+                                  })
+                                }
+                                disabled={
+                                  acceptOwnerChangeRequest.isLoading ||
+                                  (!selected.apply_water_users &&
+                                    !selected.apply_contacts)
+                                }
+                              >
+                                Accept
+                              </Button>
+                              <Button
+                                size="small"
+                                color="error"
+                                onClick={() =>
+                                  rejectOwnerChangeRequest.mutate(request.id)
+                                }
+                                disabled={rejectOwnerChangeRequest.isLoading}
+                              >
+                                Reject
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      },
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Box>
           ) : null}
 
           <Box sx={{ width: "100%", height: 640 }}>

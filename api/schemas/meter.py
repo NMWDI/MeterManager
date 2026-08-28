@@ -88,6 +88,15 @@ class MeterStatusLU(ORMBase):
     description: str | None = None
 
 
+class MeterContact(ORMBase):
+    meter_id: int | None = None
+    name: str | None = None
+    phone: str | None = None
+    cell: str | None = None
+    email: str | None = None
+    address: str | None = None
+
+
 class NoteTypeLU(ORMBase):
     note: str | None = None
     details: str | None = None
@@ -100,6 +109,7 @@ class SubmitNewMeter(ORMBase):
 
     contact_name: str | None = None
     contact_phone: str | None = None
+    contacts: list["MeterContact"] = []
     notes: str | None = None
     price: Decimal | None = None
     well: Well | None = None
@@ -110,6 +120,7 @@ class SubmitMeterUpdate(ORMBase):
     serial_number: str
     contact_name: str | None = None
     contact_phone: str | None = None
+    contacts: list["MeterContact"] = []
     notes: str | None = None
     price: Decimal | None = None
     meter_type: MeterTypeLU
@@ -124,6 +135,7 @@ class Meter(ORMBase):
     serial_number: str
     contact_name: str | None = None
     contact_phone: str | None = None
+    contacts: list["MeterContact"] = []
     notes: str | None = None
 
     meter_type_id: int
@@ -135,6 +147,7 @@ class Meter(ORMBase):
     status: MeterStatusLU | None = None
     well: Well | None = None
     location: Location | None = None
+
 
 class PublicMeter(BaseModel):
     '''

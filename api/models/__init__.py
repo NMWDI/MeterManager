@@ -2,8 +2,10 @@ from api.models.base import Base
 from api.models.location import LandOwners, Locations, LocationTypeLU
 from api.models.meter import (
     ActivityTypeLU,
+    MeterContacts,
     MeterActivities,
     MeterActivityPhotos,
+    MeterOwnerChangeRequests,
     MeterObservations,
     MeterStatusLU,
     MeterTypeLU,
@@ -40,7 +42,9 @@ __all__ = [
     "LocationTypeLU",
     "MeterActivities",
     "MeterActivityPhotos",
+    "MeterContacts",
     "MeterObservations",
+    "MeterOwnerChangeRequests",
     "MeterStatusLU",
     "MeterTypeLU",
     "Meters",
