@@ -9,7 +9,7 @@ from urllib.request import Request as URLRequest, urlopen
 from fastapi import Depends, APIRouter, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session, joinedload, undefer
-from sqlalchemy import select
+from sqlalchemy import select, update
 from typing import List
 
 from api.models.meter import MeterContacts, MeterOwnerChangeRequests, Meters
@@ -218,6 +218,21 @@ def _create_owner_change_notifications(
     return len(notifications)
 
 
+def _mark_owner_change_notifications_read(
+    db: Session,
+    change_request: MeterOwnerChangeRequests,
+) -> None:
+    db.execute(
+        update(Notifications)
+        .where(
+            Notifications.link
+            == f"/notifications?owner_change_request_id={change_request.id}",
+            Notifications.is_read.is_(False),
+        )
+        .values(is_read=True, read_at=datetime.now())
+    )
+
+
 def _apply_owner_change_request(
     db: Session,
     change_request: MeterOwnerChangeRequests,
@@ -251,6 +266,7 @@ def _apply_owner_change_request(
     change_request.resolved_at = datetime.now(timezone.utc)
     db.add(meter)
     db.add(change_request)
+    _mark_owner_change_notifications_read(db, change_request)
     return change_request
 
 
@@ -510,6 +526,7 @@ def reject_ose_owner_change_request(
     change_request.resolved_by = current_admin.id
     change_request.resolved_at = datetime.now(timezone.utc)
     db.add(change_request)
+    _mark_owner_change_notifications_read(db, change_request)
     db.commit()
     db.refresh(change_request)
     return change_request

@@ -170,6 +170,8 @@ export function useAcceptOwnerChangeRequest(
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries("admin/ose-owner-change-requests");
+      queryClient.invalidateQueries("notifications");
+      queryClient.invalidateQueries("notifications/unread_count");
       queryClient.invalidateQueries("meter");
       queryClient.invalidateQueries("meters");
       enqueueSnackbar("Owner change applied.", { variant: "success" });
@@ -205,6 +207,8 @@ export function useRejectOwnerChangeRequest(
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries("admin/ose-owner-change-requests");
+      queryClient.invalidateQueries("notifications");
+      queryClient.invalidateQueries("notifications/unread_count");
       enqueueSnackbar("Owner change rejected.", { variant: "success" });
       onSuccess?.(result);
     },
@@ -236,6 +240,8 @@ export function useAcceptAllOwnerChangeRequests(
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries("admin/ose-owner-change-requests");
+      queryClient.invalidateQueries("notifications");
+      queryClient.invalidateQueries("notifications/unread_count");
       queryClient.invalidateQueries("meter");
       queryClient.invalidateQueries("meters");
       enqueueSnackbar(`Applied ${result.accepted_count} owner changes.`, {
