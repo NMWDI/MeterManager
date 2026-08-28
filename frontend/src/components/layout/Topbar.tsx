@@ -11,6 +11,8 @@ import {
   MenuItem,
   Toolbar,
   Typography,
+  SxProps,
+  Theme,
   useMediaQuery,
   useTheme,
 } from "@mui/material";
@@ -19,6 +21,7 @@ import MenuIcon from "@mui/icons-material/Menu";
 import CloseIcon from "@mui/icons-material/Close";
 import {
   ExpandMore,
+  AdminPanelSettingsOutlined,
   Home,
   Logout,
   MonitorHeart,
@@ -58,7 +61,7 @@ export const Topbar = ({
   open: boolean;
   sidebarWidth: number;
   onMenuClick: () => void;
-  sx?: any;
+  sx?: SxProps<Theme>;
 }) => {
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
@@ -71,6 +74,7 @@ export const Topbar = ({
   const isMonitoringWellsActive = useIsActiveRoute("/monitoringwells");
   const isNotificationsActive = useIsActiveRoute("/notifications");
   const isSettingsActive = useIsActiveRoute("/settings");
+  const isAdminActionsActive = useIsActiveRoute("/admin-actions");
 
   const [userMenuAnchorEl, setUserMenuAnchorEl] = useState<null | HTMLElement>(
     null,
@@ -86,6 +90,10 @@ export const Topbar = ({
   const email = user?.email ?? "No email available";
   const isLoggedIn = !!user;
   const isImpersonating = !!impersonation;
+  const isAdmin =
+    user?.user_role?.security_scopes?.some(
+      (scope: { scope_string: string }) => scope.scope_string === "admin",
+    ) ?? false;
   const impersonationLabel =
     impersonation?.impersonatedUser.full_name ?? user?.full_name ?? "Unknown User";
   const impersonatorLabel =
@@ -504,6 +512,23 @@ export const Topbar = ({
                   Notifications
                 </Typography>
               </MenuItem>
+              {isAdmin ? (
+                <MenuItem
+                  selected={isAdminActionsActive}
+                  onClick={() => {
+                    navigate({ to: "/admin-actions" });
+                    handleMenuClose();
+                  }}
+                  sx={{ minHeight: 36, gap: 1, px: 1.5 }}
+                >
+                  <ListItemIcon>
+                    <AdminPanelSettingsOutlined fontSize="small" />
+                  </ListItemIcon>
+                  <Typography variant="body2" fontWeight={500}>
+                    Admin Actions
+                  </Typography>
+                </MenuItem>
+              ) : null}
               <Divider
                 sx={{
                   mt: "0 !important",

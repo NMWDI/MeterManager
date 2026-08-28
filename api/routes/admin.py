@@ -1181,7 +1181,7 @@ async def download_db_backup(file_name: str):
 
 @admin_router.api_route(
     "/backup-db/",
-    methods=["BACKUP"],
+    methods=["BACKUP", "POST"],
     tags=["Admin"],
     dependencies=[Depends(ScopedUser.Admin)],
 )
