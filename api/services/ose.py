@@ -58,6 +58,11 @@ def _serialize_activity(
     activity: MeterActivities, observations: list[MeterObservations]
 ) -> ose.ActivityDTO:
     notes_strings = [note.note for note in activity.notes]
+    meter_owner_names = (
+        [activity.meter.meter_owner]
+        if activity.meter and activity.meter.meter_owner
+        else []
+    )
     parts_used_strings = [
         f"{part.part.part_number}{f' - {part.part.description}' if part.part.description else ''} x{part.count}"
         for part in activity.parts_used_links
@@ -74,6 +79,11 @@ def _serialize_activity(
     )
     well_ra_number = activity.well.ra_number if activity.well else None
     well_ose_tag = activity.well.osetag if activity.well else None
+    location = (
+        activity.meter.well.location
+        if activity.meter and activity.meter.well and activity.meter.well.location
+        else activity.location
+    )
     meter_activity_photos = [
         ose.MeterActivityPhotoDTO(
             name=photo.file_name,
@@ -90,6 +100,10 @@ def _serialize_activity(
         activity_type=activity.activity_type.name,
         activity_start=activity.timestamp_start,
         activity_end=activity.timestamp_end,
+        meter_owner_names=meter_owner_names,
+        trss=location.trss if location else None,
+        latitude=location.latitude if location else None,
+        longitude=location.longitude if location else None,
         well_ra_number=well_ra_number,
         well_ose_tag=well_ose_tag,
         description=activity.description,
@@ -141,9 +155,12 @@ def get_shared_history(
             .options(
                 joinedload(MeterActivities.activity_type),
                 joinedload(MeterActivities.parts_used_links).joinedload(PartsUsed.part),
-                joinedload(MeterActivities.meter),
+                joinedload(MeterActivities.meter)
+                .joinedload(Meters.well)
+                .joinedload(Wells.location),
                 joinedload(MeterActivities.work_order),
                 joinedload(MeterActivities.well),
+                joinedload(MeterActivities.location),
                 joinedload(MeterActivities.notes),
                 joinedload(MeterActivities.services_performed),
                 selectinload(MeterActivities.photos),
@@ -152,7 +169,7 @@ def get_shared_history(
                 and_(
                     MeterActivities.timestamp_end >= start_datetime,
                     MeterActivities.timestamp_end <= end_datetime,
-                    MeterActivities.ose_share == True,
+                    MeterActivities.ose_share.is_(True),
                 )
             )
         )
@@ -172,7 +189,7 @@ def get_shared_history(
                 and_(
                     MeterObservations.timestamp >= start_datetime,
                     MeterObservations.timestamp <= end_datetime,
-                    MeterObservations.ose_share == True,
+                    MeterObservations.ose_share.is_(True),
                 )
             )
         )
@@ -191,16 +208,22 @@ def get_maintenance_by_request_ids(
             select(MeterActivities)
             .options(
                 joinedload(MeterActivities.activity_type),
-                joinedload(MeterActivities.parts_used_links),
-                joinedload(MeterActivities.meter).joinedload(Meters.well),
+                joinedload(MeterActivities.parts_used_links).joinedload(PartsUsed.part),
+                joinedload(MeterActivities.meter)
+                .joinedload(Meters.well)
+                .joinedload(Wells.location),
                 joinedload(MeterActivities.work_order),
+                joinedload(MeterActivities.well),
+                joinedload(MeterActivities.location),
+                joinedload(MeterActivities.notes),
+                joinedload(MeterActivities.services_performed),
                 selectinload(MeterActivities.photos),
             )
             .join(workOrders)
             .where(
                 and_(
                     workOrders.ose_request_id.in_(ose_request_ids),
-                    MeterActivities.ose_share == True,
+                    MeterActivities.ose_share.is_(True),
                 )
             )
         )
@@ -228,7 +251,7 @@ def get_maintenance_by_request_ids(
                 and_(
                     MeterObservations.timestamp >= activities_start_date,
                     MeterObservations.timestamp <= activities_end_date,
-                    MeterObservations.ose_share == True,
+                    MeterObservations.ose_share.is_(True),
                 )
             )
         )
@@ -312,9 +335,15 @@ def get_disapproval_response(db: Session, ose_request_id: int) -> ose.Disapprova
             select(MeterActivities)
             .options(
                 joinedload(MeterActivities.activity_type),
-                joinedload(MeterActivities.parts_used),
-                joinedload(MeterActivities.meter).joinedload(Meters.well),
+                joinedload(MeterActivities.parts_used_links).joinedload(PartsUsed.part),
+                joinedload(MeterActivities.meter)
+                .joinedload(Meters.well)
+                .joinedload(Wells.location),
                 joinedload(MeterActivities.work_order),
+                joinedload(MeterActivities.well),
+                joinedload(MeterActivities.location),
+                joinedload(MeterActivities.notes),
+                joinedload(MeterActivities.services_performed),
                 selectinload(MeterActivities.photos),
             )
             .where(MeterActivities.work_order_id == work_order.id)
@@ -337,7 +366,7 @@ def get_disapproval_response(db: Session, ose_request_id: int) -> ose.Disapprova
                         MeterObservations.timestamp >= activity.timestamp_start,
                         MeterObservations.timestamp <= activity.timestamp_end,
                         MeterObservations.meter_id == activity.meter_id,
-                        MeterObservations.ose_share == True,
+                        MeterObservations.ose_share.is_(True),
                     )
                 )
             )

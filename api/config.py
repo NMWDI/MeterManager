@@ -38,6 +38,8 @@ class Settings:
         "production" if os.getenv("APPDB_ENV") == ".env_production" else "development",
     )
     ALLOW_IMPERSONATION: bool = APP_ENV in {"development", "pre-production"}
+    OSE_BULK_EXPORT_URL: Optional[str] = os.getenv("OSE_BULK_EXPORT_URL")
+    OSE_BULK_EXPORT_LIMIT: int = int(os.getenv("OSE_BULK_EXPORT_LIMIT", "100"))
     DATABASE_URL = f"postgresql+psycopg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
 
 

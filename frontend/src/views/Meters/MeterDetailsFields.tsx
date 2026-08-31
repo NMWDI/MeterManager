@@ -1,16 +1,24 @@
 import { useEffect, useState } from "react";
-import { useForm, SubmitHandler } from "react-hook-form";
+import {
+  useFieldArray,
+  useForm,
+  Resolver,
+  SubmitHandler,
+  SubmitErrorHandler,
+} from "react-hook-form";
 import { enqueueSnackbar } from "notistack";
 import { useAuthUser } from "react-auth-kit";
 import { useNavigate } from "@tanstack/react-router";
-import { Add, Grading, Save, SaveAs } from "@mui/icons-material";
+import { Add, Delete, Grading, Save, SaveAs } from "@mui/icons-material";
 import {
   Button,
   Grid,
   Card,
   CardContent,
+  IconButton,
   InputAdornment,
   Skeleton,
+  Typography,
 } from "@mui/material";
 import {
   Table,
@@ -35,7 +43,7 @@ import { SecurityScope, Meter } from "@/interfaces";
 import { useCreateMeter, useGetMeter, useUpdateMeter } from "@/service";
 import { formatLatLong } from "@/conversions";
 
-const MeterResolverSchema: Yup.ObjectSchema<any> = Yup.object().shape({
+const MeterResolverSchema = Yup.object().shape({
   serial_number: Yup.string().required("Please enter a serial number."),
   price: Yup.number().nullable().min(0, "Price cannot be negative"),
   meter_type: Yup.object().required("Please select a meter type."),
@@ -64,12 +72,18 @@ export const MeterDetailsFields = ({
   const {
     handleSubmit,
     control,
-    setValue,
     reset,
     watch,
     formState: { errors },
   } = useForm<Meter>({
-    resolver: yupResolver(MeterResolverSchema),
+    resolver: yupResolver(MeterResolverSchema) as unknown as Resolver<Meter>,
+    defaultValues: {
+      contacts: [],
+    },
+  });
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "contacts",
   });
 
   function onSuccessfulUpdate() {
@@ -82,14 +96,16 @@ export const MeterDetailsFields = ({
   const updateMeter = useUpdateMeter(onSuccessfulUpdate);
   const createMeter = useCreateMeter(onSuccessfulCreate);
 
-  const onSaveChanges: SubmitHandler<any> = (data) => {
+  const onSaveChanges: SubmitHandler<Meter> = (data) => {
     updateMeter.mutate(data);
   };
-  const onAddMeter: SubmitHandler<any> = (data) => {
-    data.well = data.well == "" ? null : data.well; // If no well selected, set to null for API
-    createMeter.mutate(data);
+  const onAddMeter: SubmitHandler<Meter> = (data) => {
+    createMeter.mutate({
+      ...data,
+      well: data.well || null,
+    });
   };
-  const onErr = (data: any) => {
+  const onErr: SubmitErrorHandler<Meter> = (data) => {
     console.log("ERR: ", data);
     enqueueSnackbar("Please correct any errors before submission.", {
       variant: "error",
@@ -107,10 +123,22 @@ export const MeterDetailsFields = ({
 
     reset();
     setIsInitialLoad(false);
-    Object.entries(meterDetails.data).forEach(([field, value]) => {
-      setValue(field as any, value);
+    const contacts =
+      meterDetails.data.contacts && meterDetails.data.contacts.length > 0
+        ? meterDetails.data.contacts
+        : meterDetails.data.contact_name || meterDetails.data.contact_phone
+          ? [
+              {
+                name: meterDetails.data.contact_name,
+                address: null,
+              },
+            ]
+          : [];
+    reset({
+      ...meterDetails.data,
+      contacts,
     });
-  }, [meterAddMode, selectedMeterID, meterDetails.data, reset, setValue]);
+  }, [meterAddMode, selectedMeterID, meterDetails.data, reset]);
 
   // Empty form if entering add mode
   useEffect(() => {
@@ -305,26 +333,65 @@ export const MeterDetailsFields = ({
               disabled={!hasAdminScope || isInitialLoad}
             />
           </Grid>
-          <Grid item xs={12} lg={6}>
-            <ControlledTextbox
-              name="contact_name"
-              control={control}
-              label="Contact Name"
-              error={errors?.contact_name?.message != undefined}
-              helperText={errors?.contact_name?.message}
-              disabled={!hasAdminScope || isInitialLoad}
-            />
+          <Grid item xs={12}>
+            <Grid container spacing={2} alignItems="center">
+              <Grid item xs>
+                <Typography variant="h6">Contacts</Typography>
+              </Grid>
+              {hasAdminScope && !isInitialLoad && (
+                <Grid item>
+                  <Button
+                    variant="outlined"
+                    startIcon={<Add />}
+                    onClick={() =>
+                      append({
+                        name: "",
+                        address: "",
+                      })
+                    }
+                  >
+                    Add Contact
+                  </Button>
+                </Grid>
+              )}
+            </Grid>
           </Grid>
-          <Grid item xs={12} lg={6}>
-            <ControlledTextbox
-              name="contact_phone"
-              control={control}
-              label="Contact Phone"
-              error={errors?.contact_phone?.message != undefined}
-              helperText={errors?.contact_phone?.message}
-              disabled={!hasAdminScope || isInitialLoad}
-            />
-          </Grid>
+          {fields.length === 0 ? (
+            <Grid item xs={12}>
+              <Typography color="text.secondary">No contacts</Typography>
+            </Grid>
+          ) : (
+            fields.map((field, index) => (
+              <Grid container item xs={12} spacing={2} key={field.id}>
+                <Grid item xs={12} lg={5}>
+                  <ControlledTextbox
+                    name={`contacts.${index}.name`}
+                    control={control}
+                    label="Contact Name"
+                    disabled={!hasAdminScope || isInitialLoad}
+                  />
+                </Grid>
+                <Grid item xs={12} lg={6}>
+                  <ControlledTextbox
+                    name={`contacts.${index}.address`}
+                    control={control}
+                    label="Address"
+                    disabled={!hasAdminScope || isInitialLoad}
+                  />
+                </Grid>
+                {hasAdminScope && !isInitialLoad && (
+                  <Grid item xs={12} lg={1}>
+                    <IconButton
+                      aria-label="Remove contact"
+                      onClick={() => remove(index)}
+                    >
+                      <Delete />
+                    </IconButton>
+                  </Grid>
+                )}
+              </Grid>
+            ))
+          )}
           <Grid item xs={12}>
             <ControlledTextbox
               name="notes"

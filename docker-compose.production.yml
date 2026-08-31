@@ -47,6 +47,8 @@ services:
     environment:
       - APP_ENV=production
       - API_BASE_URL=https://metermanager.pvacd.com/api/v1
+      - OSE_BULK_EXPORT_URL=https://watermanagement.oseisc.org/watermanagement/pvacd/meters/bulk-export
+      - OSE_BULK_EXPORT_LIMIT=100
       - GCP_BUCKET_NAME=meter-manager-bucket
       - GCP_WOODPECKER_BUCKET_NAME=meter-manager-woodpecker-bucket
       - GCP_BACKUP_PREFIX=prod-db-backups

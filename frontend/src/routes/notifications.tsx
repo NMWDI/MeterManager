@@ -19,6 +19,7 @@ const searchSchema = z.object({
   created_to: isoDateParam
     .catch(dayjs().endOf("month").format("YYYY-MM-DD"))
     .default(dayjs().endOf("month").format("YYYY-MM-DD")),
+  owner_change_request_id: z.coerce.number().int().positive().optional(),
   page: pageParam(0, 0),
   pageSize: pageParam(25, 10),
 });
