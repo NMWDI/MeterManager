@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { useAuthUser, useIsAuthenticated, useSignIn } from "react-auth-kit";
+import { useAuthUser, useIsAuthenticated, useSignIn } from "@/utils/AuthKitCompat";
 import {
   Box,
   TextField,

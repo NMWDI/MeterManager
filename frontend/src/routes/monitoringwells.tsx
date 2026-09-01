@@ -11,7 +11,7 @@ import {
   Box,
 } from "@mui/material";
 import { useQuery, useQueryClient } from "react-query";
-import { useAuthUser } from "react-auth-kit";
+import { useAuthUser } from "@/utils/AuthKitCompat";
 import { enqueueSnackbar } from "notistack";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import dayjs, { Dayjs } from "dayjs";

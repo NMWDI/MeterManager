@@ -1,4 +1,4 @@
-import { AuthProvider } from "react-auth-kit";
+import { AuthProvider } from "@/utils/AuthKitCompat";
 import { RouterProvider } from "@tanstack/react-router";
 import { QueryClient, QueryClientProvider } from "react-query";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";

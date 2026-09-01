@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { useAuthHeader, useSignOut } from "react-auth-kit";
+import { useAuthHeader, useSignOut } from "@/utils/AuthKitCompat";
 import { API_URL } from "@/config";
 import { handleExpiredSession } from "@/utils/AuthSession";
 

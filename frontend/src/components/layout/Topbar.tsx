@@ -32,7 +32,7 @@ import {
   SwapHoriz,
 } from "@mui/icons-material";
 import { useNavigate } from "@tanstack/react-router";
-import { useAuthUser, useSignIn, useSignOut } from "react-auth-kit";
+import { useAuthUser, useSignIn, useSignOut } from "@/utils/AuthKitCompat";
 import { TopbarUserButton, UserAvatar } from "@/components";
 import {
   DESKTOP_COLLAPSED_WIDTH,
@@ -84,7 +84,7 @@ export const Topbar = ({
 
   const user = authUser();
   const impersonation = getStoredImpersonation();
-  const role: string = user?.user_role?.name;
+  const role = user?.user_role?.name ?? "";
   const fullName = user?.full_name ?? user?.display_name ?? "Unknown";
   const displayName = user?.display_name ?? "Unknown";
   const email = user?.email ?? "No email available";

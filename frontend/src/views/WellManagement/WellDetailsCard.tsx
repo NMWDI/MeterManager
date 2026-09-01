@@ -13,7 +13,7 @@ import {
   Typography,
 } from "@mui/material";
 import { Add, Edit, Save, SaveAs } from "@mui/icons-material";
-import { useAuthUser } from "react-auth-kit";
+import { useAuthUser } from "@/utils/AuthKitCompat";
 import * as Yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { enqueueSnackbar } from "notistack";

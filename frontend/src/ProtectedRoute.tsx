@@ -1,5 +1,5 @@
 import { Navigate } from "@tanstack/react-router";
-import { useAuthUser, useIsAuthenticated } from "react-auth-kit";
+import { useAuthUser, useIsAuthenticated } from "@/utils/AuthKitCompat";
 import { SecurityScope } from "./interfaces";
 import { useErrorMessage } from "./contexts/ErrorMessageContext";
 

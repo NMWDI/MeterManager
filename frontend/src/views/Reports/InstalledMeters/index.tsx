@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from "react";
-import { useAuthHeader } from "react-auth-kit";
+import { useAuthHeader } from "@/utils/AuthKitCompat";
 import { EngineeringOutlined, PictureAsPdf } from "@mui/icons-material";
 import {
   Box,

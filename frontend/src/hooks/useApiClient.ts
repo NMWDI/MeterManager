@@ -1,4 +1,4 @@
-import { useAuthHeader, useSignOut } from "react-auth-kit";
+import { useAuthHeader, useSignOut } from "@/utils/AuthKitCompat";
 import { useNavigate } from "@tanstack/react-router";
 import { formatQueryParams } from "@/utils";
 import { API_URL } from "@/config";
