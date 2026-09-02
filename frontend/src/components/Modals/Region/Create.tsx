@@ -17,7 +17,7 @@ import {
 } from "@mui/material";
 import { RadioButtonUnchecked, TaskAlt, Save } from "@mui/icons-material";
 import { DatePicker, TimePicker } from "@mui/x-date-pickers";
-import { useAuthUser } from "react-auth-kit";
+import { useAuthUser } from "@/utils/AuthKitCompat";
 import { useQuery } from "react-query";
 import {
   MonitoredWell,

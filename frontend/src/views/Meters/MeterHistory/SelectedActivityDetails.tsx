@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
-import { useAuthUser } from "react-auth-kit";
+import { useAuthUser } from "@/utils/AuthKitCompat";
 import { Grid, Card, CardContent, Stack, Button } from "@mui/material";
 import { Save, Construction } from "@mui/icons-material";
 import {

@@ -7,7 +7,7 @@ import {
   GridRenderCellParams,
   GridRowId,
 } from "@mui/x-data-grid";
-import { useAuthUser } from "react-auth-kit";
+import { useAuthUser } from "@/utils/AuthKitCompat";
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
   useGetWorkOrders,

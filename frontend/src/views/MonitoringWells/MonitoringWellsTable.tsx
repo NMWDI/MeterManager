@@ -11,7 +11,7 @@ import { Add } from "@mui/icons-material";
 import dayjs, { Dayjs } from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
-import { useIsAuthenticated } from "react-auth-kit";
+import { useIsAuthenticated } from "@/utils/AuthKitCompat";
 import { MonitoredWell, WellMeasurementDTO } from "@/interfaces";
 import { useNavigate } from "@tanstack/react-router";
 import { Route } from "@/routes/monitoringwells";

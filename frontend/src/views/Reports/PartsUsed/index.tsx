@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
-import { useAuthHeader } from "react-auth-kit";
+import { useAuthHeader } from "@/utils/AuthKitCompat";
 import { BuildOutlined, PictureAsPdf } from "@mui/icons-material";
 import {
   Autocomplete,

@@ -1,5 +1,5 @@
 import { FormControl, InputLabel, Select, MenuItem } from "@mui/material";
-import { useAuthUser } from "react-auth-kit";
+import { useAuthUser } from "@/utils/AuthKitCompat";
 import { useGetUserList } from "@/service";
 import { User } from "@/interfaces";
 

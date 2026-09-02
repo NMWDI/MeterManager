@@ -2,7 +2,7 @@ import { useEffect, useState, ReactNode, useMemo } from "react";
 import { Link } from "@tanstack/react-router";
 import { DataGrid, GridColDef, GridSortModel } from "@mui/x-data-grid";
 import { useDebounce } from "use-debounce";
-import { useAuthUser } from "react-auth-kit";
+import { useAuthUser } from "@/utils/AuthKitCompat";
 import { Box, Button, Stack } from "@mui/material";
 import { Add } from "@mui/icons-material";
 import { useNavigate } from "@tanstack/react-router";

@@ -11,7 +11,7 @@ import {
 } from "@mui/material";
 import { Science } from "@mui/icons-material";
 import { useMutation, useQuery } from "react-query";
-import { useAuthUser } from "react-auth-kit";
+import { useAuthUser } from "@/utils/AuthKitCompat";
 import { useSnackbar } from "notistack";
 import dayjs, { Dayjs } from "dayjs";
 import { z } from "zod";

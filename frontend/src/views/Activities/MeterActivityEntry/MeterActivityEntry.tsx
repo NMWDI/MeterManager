@@ -4,7 +4,7 @@ import { Alert, Box, Button, Stack, Typography } from "@mui/material";
 import { useSnackbar } from "notistack";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { useMutation } from "react-query";
-import { useAuthHeader } from "react-auth-kit";
+import { useAuthHeader } from "@/utils/AuthKitCompat";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { ActivityFormControl, MeterListDTO } from "@/interfaces";
 import { ActivityType } from "@/enums";

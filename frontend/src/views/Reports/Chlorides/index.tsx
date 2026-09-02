@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { PictureAsPdf, ScienceOutlined } from "@mui/icons-material";
 import { useMutation, useQuery } from "react-query";
 import dayjs, { Dayjs } from "dayjs";
-import { useAuthHeader } from "react-auth-kit";
+import { useAuthHeader } from "@/utils/AuthKitCompat";
 import {
   Button,
   Card,

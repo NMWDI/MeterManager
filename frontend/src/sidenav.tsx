@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useAuthUser } from "react-auth-kit";
+import { useAuthUser } from "@/utils/AuthKitCompat";
 import {
   Badge,
   Box,

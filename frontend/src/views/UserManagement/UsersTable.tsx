@@ -13,7 +13,7 @@ import {
 import { Search, Add, People, Fingerprint } from "@mui/icons-material";
 import { useNavigate } from "@tanstack/react-router";
 import { enqueueSnackbar } from "notistack";
-import { useAuthUser, useSignIn } from "react-auth-kit";
+import { useAuthUser, useSignIn } from "@/utils/AuthKitCompat";
 import { Route } from "@/routes/manage/users";
 import { ALLOW_IMPERSONATION } from "@/config";
 import { useGetUserAdminList, useImpersonateUser } from "@/service";

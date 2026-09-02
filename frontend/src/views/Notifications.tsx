@@ -25,7 +25,7 @@ import {
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import { DatePicker } from "@mui/x-date-pickers";
 import { useNavigate } from "@tanstack/react-router";
-import { useAuthUser } from "react-auth-kit";
+import { useAuthUser } from "@/utils/AuthKitCompat";
 import {
   BackgroundBox,
   CreateNotificationModal,

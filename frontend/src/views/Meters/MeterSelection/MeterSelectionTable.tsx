@@ -3,7 +3,7 @@ import { useDebounce } from "use-debounce";
 import { Box, Button, Stack } from "@mui/material";
 import { DataGrid, GridSortModel, GridColDef } from "@mui/x-data-grid";
 import { Add } from "@mui/icons-material";
-import { useAuthUser } from "react-auth-kit";
+import { useAuthUser } from "@/utils/AuthKitCompat";
 import { useNavigate } from "@tanstack/react-router";
 import { Route } from "@/routes/manage/meters";
 import { MeterListQueryParams, SecurityScope } from "@/interfaces";

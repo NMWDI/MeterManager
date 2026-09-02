@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useAuthUser } from "react-auth-kit";
+import { useAuthUser } from "@/utils/AuthKitCompat";
 import DashboardCustomizeOutlinedIcon from "@mui/icons-material/DashboardCustomizeOutlined";
 import { Box, Card, CardContent } from "@mui/material";
 import { BackgroundBox, CustomCardHeader, NavLink } from "@/components";

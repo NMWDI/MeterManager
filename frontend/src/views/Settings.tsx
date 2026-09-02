@@ -10,7 +10,7 @@ import {
   SettingsApplications,
   ShieldOutlined,
 } from "@mui/icons-material";
-import { useSignIn, useAuthUser } from "react-auth-kit";
+import { useAuthUser, useSignIn } from "@/utils/AuthKitCompat";
 import { useMutation, useQuery, useQueryClient } from "react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { BackgroundBox, SectionCard } from "@/components";

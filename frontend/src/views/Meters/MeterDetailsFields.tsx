@@ -7,7 +7,7 @@ import {
   SubmitErrorHandler,
 } from "react-hook-form";
 import { enqueueSnackbar } from "notistack";
-import { useAuthUser } from "react-auth-kit";
+import { useAuthUser } from "@/utils/AuthKitCompat";
 import { useNavigate } from "@tanstack/react-router";
 import { Add, Delete, Grading, Save, SaveAs } from "@mui/icons-material";
 import {
