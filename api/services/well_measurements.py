@@ -16,11 +16,12 @@ from google.cloud import storage
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from matplotlib.pyplot import close, figure
 from sqlalchemy import and_, func, select
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, load_only
 from weasyprint import HTML
 
 from api.models.meter import ObservedPropertyTypeLU
 from api.models.well import WellMeasurements, Wells
+from api.models.user import Users
 from api.schemas import well
 
 
@@ -167,12 +168,24 @@ def _get_measurements_by_ids(
     stmt = (
         select(WellMeasurements)
         .options(
-            joinedload(WellMeasurements.submitting_user),
-            joinedload(WellMeasurements.well),
+            load_only(
+                WellMeasurements.id,
+                WellMeasurements.timestamp,
+                WellMeasurements.value,
+            ),
+            joinedload(WellMeasurements.submitting_user).load_only(
+                Users.full_name,
+            ),
+            joinedload(WellMeasurements.well).load_only(
+                Wells.ra_number,
+            ),
         )
         .join(ObservedPropertyTypeLU)
         .where(and_(*filters))
-        .order_by(WellMeasurements.well_id, WellMeasurements.timestamp)
+        .order_by(
+            WellMeasurements.well_id,
+            WellMeasurements.timestamp,
+        )
     )
     return db.scalars(stmt).all()
 
