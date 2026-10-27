@@ -51,7 +51,7 @@ const eventTypesSchema = z
   .default(defaultEventTypes);
 
 const searchSchema = z.object({
-  from: dayjsDateParam.catch(undefined).default(undefined),
+  from: dayjsDateParam.catch(undefined),
   to: dayjsDateParam
     .catch(dayjs().endOf("month").format("YYYY-MM-DD"))
     .default(dayjs().endOf("month").format("YYYY-MM-DD")),

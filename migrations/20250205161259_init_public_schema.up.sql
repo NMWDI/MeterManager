@@ -247,6 +247,7 @@ CREATE TABLE IF NOT EXISTS public."Users" (
     email character varying,
     hashed_password character varying NOT NULL,
     disabled boolean,
+    is_test_account boolean NOT NULL DEFAULT false,
     user_role_id integer NOT NULL
 );
 

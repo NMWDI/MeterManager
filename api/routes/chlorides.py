@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import and_, select
 from sqlalchemy.orm import Session, joinedload
 
+from api.chlorides_geometry import GEOMETRY, ANCHORS, REPORT_BOUNDS, classify_location
 from api.schemas import chlorides
 from api.schemas import well
 from api.models.location import Locations
@@ -95,6 +96,17 @@ def get_chloride_groups(
         {"id": group_id, "names": sorted(names)}
         for group_id, names in groups.items()
     ]
+
+
+@authenticated_chlorides_router.get(
+    "/chlorides/report/geometry",
+    dependencies=[Depends(ScopedUser.Read)],
+    tags=["Chlorides"],
+)
+def get_chlorides_report_geometry():
+    return GEOMETRY
+
+
 @authenticated_chlorides_router.get(
     "/chlorides/report",
     dependencies=[Depends(ScopedUser.Read)],
@@ -106,11 +118,8 @@ def get_chlorides_report(
     to_date: date = Query(..., description="End date in ISO format, 'YYYY-MM-DD'"),
     db: Session = Depends(get_db),
 ):
-    """
-    Returns min/max/avg for north-west/north-east/south-west/south-east quadrants
-    within the SE quadrant of New Mexico,
-    over the specified [from_month, to_month] inclusive range, for chloride wells in the given group.
-    """
+    """Summarize chloride measurements in the four highway-defined report regions."""
+    min_lon, min_lat, max_lon, max_lat = REPORT_BOUNDS
 
     CHLORIDE_OBSERVED_PROPERTY_ID = 5
 
@@ -131,60 +140,30 @@ def get_chlorides_report(
                 WellMeasurements.observed_property_id == CHLORIDE_OBSERVED_PROPERTY_ID,
                 Locations.latitude.is_not(None),
                 Locations.longitude.is_not(None),
-                # Restrict to NM bbox first
-                Locations.latitude >= NM_LAT_MIN,
-                Locations.latitude <= NM_LAT_MAX,
-                Locations.longitude >= NM_LON_MIN,
-                Locations.longitude <= NM_LON_MAX,
-                # Time range (optional)
-                *( [WellMeasurements.timestamp >= start_dt] if start_dt else [] ),
-                *( [WellMeasurements.timestamp <= end_dt] if end_dt else [] ),
+                # Restrict to the report rectangle before polygon classification
+                Locations.latitude >= min_lat,
+                Locations.latitude <= max_lat,
+                Locations.longitude >= min_lon,
+                Locations.longitude <= max_lon,
+                WellMeasurements.timestamp >= start_dt,
+                WellMeasurements.timestamp <= end_dt,
             )
         )
     )
 
     rows = db.execute(stmt).all()
 
-    se_rows = [
-        (val, lat, lon)
-        for (val, lat, lon) in rows
-        if (
-            val is not None
-            and lat is not None
-            and lon is not None
-            and SE_MIN_LAT <= float(lat) <= SE_MAX_LAT
-            and SE_MIN_LON <= float(lon) <= SE_MAX_LON
-        )
-    ]
+    values = {key: [] for key in ("north_west", "north_east", "south_west", "south_east")}
+    for value, latitude, longitude in rows:
+        if value is None or latitude is None or longitude is None:
+            continue
+        region = classify_location(float(latitude), float(longitude))
+        if region is not None:
+            values[region].append(float(value))
 
-    north_west_vals: List[float] = []
-    north_east_vals: List[float] = []
-    south_west_vals: List[float] = []
-    south_east_vals: List[float] = []
-
-    for val, lat, lon in se_rows:
-        if val is None:
-            continue  # skip null chloride values
-
-        lat_value = float(lat)
-        lon_value = float(lon)
-        chloride_value = float(val)
-
-        if lat_value >= SE_MID_LAT and lon_value < SE_MID_LON:
-            north_west_vals.append(chloride_value)
-        elif lat_value >= SE_MID_LAT and lon_value >= SE_MID_LON:
-            north_east_vals.append(chloride_value)
-        elif lat_value < SE_MID_LAT and lon_value < SE_MID_LON:
-            south_west_vals.append(chloride_value)
-        else:
-            south_east_vals.append(chloride_value)
-
-    return chlorides.ChlorideReportNums(
-        north_west=_stats(north_west_vals),
-        north_east=_stats(north_east_vals),
-        south_west=_stats(south_west_vals),
-        south_east=_stats(south_east_vals),
-    )
+    return chlorides.ChlorideReportNums(**{
+        key: _stats(region_values) for key, region_values in values.items()
+    })
 
 
 @authenticated_chlorides_router.get(
@@ -199,7 +178,7 @@ def download_chlorides_report_pdf(
 ):
     """
     Generate a PDF chloride report (north-west/north-east/south-west/south-east stats)
-    for the SE quadrant of New Mexico.
+    for the highway-defined Roswell report area.
     """
     # Re-use existing logic
     report = get_chlorides_report(from_date=from_date, to_date=to_date, db=db)
@@ -208,6 +187,8 @@ def download_chlorides_report_pdf(
     template = templates.get_template("chlorides_report.html")
     html_content = template.render(
         report=report,
+        geometry=GEOMETRY,
+        anchors=ANCHORS,
         from_date=from_date,
         to_date=to_date,
     )
@@ -306,22 +287,3 @@ def _stats(values: List[Optional[float]]) -> chlorides.MinMaxAvgMedCount:
         median=statistics.median(clean),
         count=len(clean),
     )
-
-# Approx NM bounding box (degrees)
-NM_LAT_MIN = 33.12500
-NM_LAT_MAX = 34.12500
-NM_LON_MIN = -105.25000
-NM_LON_MAX = -104.25000
-
-# Precompute midlines for quadrants
-NM_MID_LAT = (NM_LAT_MIN + NM_LAT_MAX) / 2.0
-NM_MID_LON = (NM_LON_MIN + NM_LON_MAX) / 2.0
-
-# Southeast quadrant bounds
-SE_MIN_LAT = NM_LAT_MIN
-SE_MAX_LAT = NM_MID_LAT
-SE_MIN_LON = NM_MID_LON
-SE_MAX_LON = NM_LON_MAX
-
-SE_MID_LAT = (SE_MIN_LAT + SE_MAX_LAT) / 2.0
-SE_MID_LON = (SE_MIN_LON + SE_MAX_LON) / 2.0

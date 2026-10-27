@@ -8,6 +8,7 @@ import {
 import { useApiClient } from "@/hooks";
 import {
   AuthTokenResponse,
+  AdminActiveUserSessionsResponse,
   ServiceAccount,
   ServiceAccountForm,
   UpdatedUserPassword,
@@ -52,6 +53,45 @@ export function useGetUserList() {
   const route = "users";
 
   return useQuery<User[], Error>([route], () => apiClient.get(route));
+}
+
+export function useGetAdminActiveUserSessions(
+  options?: UseQueryOptions<AdminActiveUserSessionsResponse, Error>,
+) {
+  const apiClient = useApiClient();
+  const route = "user-sessions/admin/active";
+
+  return useQuery<AdminActiveUserSessionsResponse, Error>(
+    [route],
+    () => apiClient.get(route),
+    options,
+  );
+}
+
+export function useRevokeAdminUserSession() {
+  const { enqueueSnackbar } = useSnackbar();
+  const apiClient = useApiClient();
+  const queryClient = useQueryClient();
+  const route = "user-sessions/admin";
+
+  return useMutation({
+    mutationFn: async (sessionIdentifier: string) => {
+      const response = await apiClient.delete(`${route}/${sessionIdentifier}`);
+
+      if (!response.ok) {
+        const message = await getErrorMessage(response);
+        enqueueSnackbar(message, { variant: "error" });
+        throw Error(message);
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      enqueueSnackbar("User session closed.", { variant: "success" });
+      queryClient.invalidateQueries(["user-sessions/admin/active"]);
+    },
+    retry: 0,
+  });
 }
 
 export function useGetServiceAccounts(
@@ -289,6 +329,9 @@ export function useUpdateUser(onSuccess: Function) {
       } else {
         onSuccess();
         const responseJson = await response.json();
+        queryClient.invalidateQueries({
+          queryKey: [route],
+        });
 
         queryClient.setQueryData(["usersadmin"], (old: User[] | undefined) => {
           if (old != undefined) {

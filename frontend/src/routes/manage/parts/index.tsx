@@ -9,7 +9,7 @@ import {
 } from "@/utils";
 
 const searchSchema = z.object({
-  part_id: optionalPositiveInt.catch(undefined).default(undefined),
+  part_id: optionalPositiveInt.catch(undefined),
   part_add: booleanParam(true),
   part_q: z.string().catch("").default(""),
   part_in_use: triStateParam("true"),
@@ -17,7 +17,7 @@ const searchSchema = z.object({
   p_page: pageParam(0, 0),
   p_pageSize: pageParam(25, 10),
 
-  meter_type_id: optionalPositiveInt.catch(undefined).default(undefined),
+  meter_type_id: optionalPositiveInt.catch(undefined),
   meter_type_add: booleanParam(true),
   meter_type_q: z.string().catch("").default(""),
   meter_type_in_use: triStateParam("true"),

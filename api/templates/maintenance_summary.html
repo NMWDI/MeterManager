@@ -1,6 +1,11 @@
 <html>
   <head>
     <style>
+      @page {
+        size: A4 landscape;
+        margin: 15mm;
+      }
+
       body {
         font-family: sans-serif;
         padding: 1em;
@@ -68,6 +73,17 @@
         </div>
         <div style="font-size: 28px; font-weight: 700">{{ total_pms }}</div>
       </div>
+      <div
+        style="
+          flex: 1;
+          border: 1px solid #ddd;
+          padding: 12px;
+          border-radius: 6px;
+        "
+      >
+        <div style="font-size: 12px; color: #666">Total Location Only</div>
+        <div style="font-size: 28px; font-weight: 700">{{ total_location_only }}</div>
+      </div>
     </div>
 
     <h2>Detailed Activity Table</h2>
@@ -79,6 +95,7 @@
           <th>Meter</th>
           <th>Number of Repairs</th>
           <th>Number of Preventative Maintenances</th>
+          <th>Number of Location Only</th>
         </tr>
       </thead>
       <tbody>
@@ -89,6 +106,7 @@
           <td>{{ row.meter }}</td>
           <td>{{ row.number_of_repairs }}</td>
           <td>{{ row.number_of_pms }}</td>
+          <td>{{ row.number_of_location_only }}</td>
         </tr>
         {% endfor %}
       </tbody>

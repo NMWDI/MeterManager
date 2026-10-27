@@ -9,9 +9,9 @@ import {
 } from "@/utils";
 
 const searchSchema = z.object({
-  meter_id: optionalPositiveInt.catch(undefined).default(undefined),
+  meter_id: optionalPositiveInt.catch(undefined),
   serial_number: optionalTrimmedString.catch("").default(""),
-  work_order_id: optionalPositiveInt.catch(undefined).default(undefined),
+  work_order_id: optionalPositiveInt.catch(undefined),
 });
 
 export const Route = createFileRoute("/activities")({

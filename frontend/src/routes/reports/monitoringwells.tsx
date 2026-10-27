@@ -25,7 +25,7 @@ const searchSchema = z.object({
 
   avgAll: booleanParam(false),
   cmp1970: booleanParam(false),
-  cmpYear: optionalPositiveInt.catch(undefined).default(undefined),
+  cmpYear: optionalPositiveInt.catch(undefined),
 
   // manual measurements DataGrid pagination
   m_page: pageParam(0, 0, 500),

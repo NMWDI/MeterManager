@@ -47,6 +47,20 @@ class UserSessionsResponse(ORMBase):
     known_devices: list[KnownDeviceSummary]
 
 
+class AdminUserSessionSummary(UserSessionSummary):
+    user_id: int
+    username: str
+    full_name: str | None = None
+    display_name: str | None = None
+    role_name: str | None = None
+
+
+class AdminActiveUserSessionsResponse(ORMBase):
+    active_user_count: int
+    active_session_count: int
+    sessions: list[AdminUserSessionSummary]
+
+
 class CurrentSessionStatusResponse(ORMBase):
     session_identifier: str
     is_active: bool

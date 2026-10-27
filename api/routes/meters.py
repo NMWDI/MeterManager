@@ -192,12 +192,16 @@ def download_sold_meters_pdf(
     tags=["Meters"],
 )
 def get_stored_meters_report(
+    from_date: date = Query(..., description="Start date YYYY-MM-DD"),
+    to_date: date = Query(..., description="End date YYYY-MM-DD"),
     min_size: int | None = Query(None, ge=0),
     max_size: int | None = Query(None, ge=0),
     db: Session = Depends(get_db),
 ):
     return meter_service.get_stored_meters_report(
         db,
+        from_date,
+        to_date,
         min_size,
         max_size,
     )
@@ -209,12 +213,16 @@ def get_stored_meters_report(
     tags=["Meters"],
 )
 def download_stored_meters_pdf(
+    from_date: date = Query(..., description="Start date YYYY-MM-DD"),
+    to_date: date = Query(..., description="End date YYYY-MM-DD"),
     min_size: int | None = Query(None, ge=0),
     max_size: int | None = Query(None, ge=0),
     db: Session = Depends(get_db),
 ):
     pdf_io = meter_service.build_stored_meters_pdf(
         db,
+        from_date,
+        to_date,
         min_size,
         max_size,
     )

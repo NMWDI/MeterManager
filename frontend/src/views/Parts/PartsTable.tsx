@@ -13,13 +13,21 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { PlusOne, Search, Add, History, Build } from "@mui/icons-material";
+import {
+  PlusOne,
+  Search,
+  Add,
+  History,
+  Build,
+  Remove,
+} from "@mui/icons-material";
 import { useSnackbar } from "notistack";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useGetParts, useAddParts } from "@/service";
+import { useGetParts, useAddParts, useDecreaseParts } from "@/service";
 import { Route } from "@/routes/manage/parts/index";
 import {
   CustomCardHeader,
+  DecreaseQuantityModal,
   GridFooterWithButton,
   IncreaseQuantityModal,
   IsTrueChip,
@@ -36,9 +44,11 @@ export const PartsTable = ({
 }) => {
   const partsList = useGetParts();
   const addParts = useAddParts();
+  const decreaseParts = useDecreaseParts();
   const navigate = useNavigate();
   const search = Route.useSearch();
   const [increaseOpen, setIncreaseOpen] = useState(false);
+  const [decreaseOpen, setDecreaseOpen] = useState(false);
   const { enqueueSnackbar } = useSnackbar();
 
   const setSearch = (updater: (prev: typeof search) => any) => {
@@ -273,6 +283,29 @@ export const PartsTable = ({
                       </Button>
                       <Button
                         variant="outlined"
+                        color="warning"
+                        size="small"
+                        onClick={() => setDecreaseOpen(true)}
+                        sx={{
+                          flexShrink: 0,
+                          width: { xs: "100%", sm: "auto" },
+                          "& .MuiButton-startIcon": {
+                            mr: { xs: 0, md: 1 },
+                          },
+                        }}
+                        disabled={
+                          partsList.isLoading ||
+                          !partsList.data ||
+                          partsList.data.length === 0
+                        }
+                        startIcon={<Remove fontSize="small" />}
+                      >
+                        <Box sx={{ display: { xs: "none", md: "inline" } }}>
+                          Decrease Quantity
+                        </Box>
+                      </Button>
+                      <Button
+                        variant="outlined"
                         color="secondary"
                         size="small"
                         onClick={() => setIncreaseOpen(true)}
@@ -334,6 +367,31 @@ export const PartsTable = ({
               },
             },
           );
+        }}
+      />
+      <DecreaseQuantityModal
+        open={decreaseOpen}
+        onClose={() => setDecreaseOpen(false)}
+        parts={partsList.data ?? []}
+        loading={decreaseParts.isLoading}
+        onSubmit={(payload) => {
+          decreaseParts.mutate(payload, {
+            onSuccess: () => {
+              enqueueSnackbar("Quantity decrease submitted successfully.", {
+                variant: "success",
+              });
+              setDecreaseOpen(false);
+              partsList.refetch();
+            },
+            onError: () => {
+              enqueueSnackbar(
+                "Failed to submit quantity decrease. Please try again.",
+                {
+                  variant: "error",
+                },
+              );
+            },
+          });
         }}
       />
     </Card>

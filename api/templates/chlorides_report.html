@@ -33,6 +33,16 @@
     <strong>To:</strong> {{ to_date or "All Data" }}
   </p>
 
+  <p>{{ geometry.description }}</p>
+  <p><strong>Boundary version:</strong> {{ geometry.version }}<br>
+    Dividers follow Hwy. 285 via Main Street and Hwy. 380, including the US 70 overlap.
+    Outer limits use the endpoint latitudes and longitudes. Counts represent measurements.
+  </p>
+  <ul>
+    {% for anchor in anchors %}
+    <li><strong>{{ anchor.properties.label }}:</strong> {{ anchor.properties.coordinate_label }}</li>
+    {% endfor %}
+  </ul>
   <table>
     <thead>
       <tr>

@@ -123,14 +123,22 @@ def create_notifications(
     if payload.role_ids:
         role_user_ids = db.scalars(
             select(Users.id).where(
-                Users.user_role_id.in_(payload.role_ids), Users.disabled.is_(False)
+                Users.user_role_id.in_(payload.role_ids),
+                Users.disabled.is_(False),
+                Users.is_test_account.is_(False),
+                Users.is_service_account.is_(False),
             )
         ).all()
         user_ids.update(role_user_ids)
 
     if user_ids:
         valid_user_ids = db.scalars(
-            select(Users.id).where(Users.id.in_(user_ids), Users.disabled.is_(False))
+            select(Users.id).where(
+                Users.id.in_(user_ids),
+                Users.disabled.is_(False),
+                Users.is_test_account.is_(False),
+                Users.is_service_account.is_(False),
+            )
         ).all()
         user_ids = set(valid_user_ids)
 

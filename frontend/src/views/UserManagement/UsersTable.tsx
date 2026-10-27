@@ -125,6 +125,12 @@ export const UsersTable = ({
       width: 80,
       renderCell: (params: any) => <IsTrueChip assert={params.value != true} />,
     },
+    {
+      field: "is_test_account",
+      headerName: "Test Account",
+      width: 80,
+      renderCell: (params: any) => <IsTrueChip assert={params.value === true} />,
+    },
     { field: "display_name", headerName: "Display Name", width: 150 },
     { field: "redirect_page", headerName: "Redirect Page", width: 200 },
   ];

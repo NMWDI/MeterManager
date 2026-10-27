@@ -113,7 +113,9 @@ export default function WellSelectionTable({
                 tab: prev.tab ?? undefined,
                 q: prev.q ?? undefined,
                 filters: prev.filters ?? undefined,
-                m_sizeSort: prev.m_sizeSort ?? "all",
+                m_sizeSort:
+                  (prev.m_sizeSort as "all" | "false" | "true" | undefined) ??
+                  "all",
               })}
             >
               {meter.serial_number}

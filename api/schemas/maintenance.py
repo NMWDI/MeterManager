@@ -16,12 +16,16 @@ class MaintenanceRow(BaseModel):
     trss: str
     number_of_repairs: int
     number_of_pms: int
+    number_of_location_only: int
 
 
 class MaintenanceSummaryResponse(BaseModel):
     repairs_by_meter: List[MeterSummary]
     pms_by_meter: List[MeterSummary]
     table_rows: List[MaintenanceRow]
+    total_repairs: int
+    total_pms: int
+    total_location_only: int
 
 
 class HomeSummaryResponse(BaseModel):

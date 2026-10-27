@@ -57,7 +57,7 @@ export const CreateNotificationModal = ({
   loading?: boolean;
 }) => {
   const activeUsers = useMemo(
-    () => users.filter((user) => !user.disabled),
+    () => users.filter((user) => !user.disabled && !user.is_test_account),
     [users],
   );
   const { control, reset, watch } = useForm<FormValues>({

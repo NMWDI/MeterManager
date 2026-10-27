@@ -8,6 +8,7 @@ export interface User {
   display_name?: string;
   email?: scope_string;
   disabled: boolean;
+  is_test_account?: boolean;
   user_role_id?: number;
   user_role?: UserRole;
   redirect_page?: string;

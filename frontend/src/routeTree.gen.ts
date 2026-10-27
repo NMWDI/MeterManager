@@ -15,7 +15,7 @@ import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as MonitoringwellsRouteImport } from './routes/monitoringwells'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ChloridesRouteImport } from './routes/chlorides'
-import { Route as AdminActionsRouteImport } from './routes/admin-actions'
+import { Route as AdminDashboardRouteImport } from './routes/admin-dashboard'
 import { Route as ActivitiesRouteImport } from './routes/activities'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ReportsIndexRouteImport } from './routes/reports/index'
@@ -68,9 +68,9 @@ const ChloridesRoute = ChloridesRouteImport.update({
   path: '/chlorides',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminActionsRoute = AdminActionsRouteImport.update({
-  id: '/admin-actions',
-  path: '/admin-actions',
+const AdminDashboardRoute = AdminDashboardRouteImport.update({
+  id: '/admin-dashboard',
+  path: '/admin-dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ActivitiesRoute = ActivitiesRouteImport.update({
@@ -183,7 +183,7 @@ const ActivitiesActivity_idPhotosPhoto_file_nameRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/activities': typeof ActivitiesRouteWithChildren
-  '/admin-actions': typeof AdminActionsRoute
+  '/admin-dashboard': typeof AdminDashboardRoute
   '/chlorides': typeof ChloridesRoute
   '/login': typeof LoginRoute
   '/monitoringwells': typeof MonitoringwellsRoute
@@ -213,7 +213,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/activities': typeof ActivitiesRouteWithChildren
-  '/admin-actions': typeof AdminActionsRoute
+  '/admin-dashboard': typeof AdminDashboardRoute
   '/chlorides': typeof ChloridesRoute
   '/login': typeof LoginRoute
   '/monitoringwells': typeof MonitoringwellsRoute
@@ -243,7 +243,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/activities': typeof ActivitiesRouteWithChildren
-  '/admin-actions': typeof AdminActionsRoute
+  '/admin-dashboard': typeof AdminDashboardRoute
   '/chlorides': typeof ChloridesRoute
   '/login': typeof LoginRoute
   '/monitoringwells': typeof MonitoringwellsRoute
@@ -275,7 +275,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/activities'
-    | '/admin-actions'
+    | '/admin-dashboard'
     | '/chlorides'
     | '/login'
     | '/monitoringwells'
@@ -305,7 +305,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/activities'
-    | '/admin-actions'
+    | '/admin-dashboard'
     | '/chlorides'
     | '/login'
     | '/monitoringwells'
@@ -334,7 +334,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/activities'
-    | '/admin-actions'
+    | '/admin-dashboard'
     | '/chlorides'
     | '/login'
     | '/monitoringwells'
@@ -365,7 +365,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ActivitiesRoute: typeof ActivitiesRouteWithChildren
-  AdminActionsRoute: typeof AdminActionsRoute
+  AdminDashboardRoute: typeof AdminDashboardRoute
   ChloridesRoute: typeof ChloridesRoute
   LoginRoute: typeof LoginRoute
   MonitoringwellsRoute: typeof MonitoringwellsRoute
@@ -434,11 +434,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChloridesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin-actions': {
-      id: '/admin-actions'
-      path: '/admin-actions'
-      fullPath: '/admin-actions'
-      preLoaderRoute: typeof AdminActionsRouteImport
+    '/admin-dashboard': {
+      id: '/admin-dashboard'
+      path: '/admin-dashboard'
+      fullPath: '/admin-dashboard'
+      preLoaderRoute: typeof AdminDashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/activities': {
@@ -621,7 +621,7 @@ const ManagePartsRouteWithChildren = ManagePartsRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ActivitiesRoute: ActivitiesRouteWithChildren,
-  AdminActionsRoute: AdminActionsRoute,
+  AdminDashboardRoute: AdminDashboardRoute,
   ChloridesRoute: ChloridesRoute,
   LoginRoute: LoginRoute,
   MonitoringwellsRoute: MonitoringwellsRoute,

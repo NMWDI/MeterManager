@@ -33,7 +33,7 @@ const searchSchema = z
     tab: tabSchema,
     add: booleanParam(true),
     q: optionalTrimmedString.catch("").default(""),
-    well_id: optionalPositiveInt.catch(undefined).default(undefined),
+    well_id: optionalPositiveInt.catch(undefined),
     page: pageParam(0, 0),
     pageSize: pageParam(25, 10),
     mapBase: mapBaseLayerSchema.catch("OpenStreetMap").default("OpenStreetMap"),

@@ -58,9 +58,9 @@ const tabSchema = z
   .catch("list");
 
 const searchSchema = z.object({
-  meter_id: optionalPositiveInt.catch(undefined).default(undefined),
-  activity_id: optionalPositiveInt.catch(undefined).default(undefined),
-  observation_id: optionalPositiveInt.catch(undefined).default(undefined),
+  meter_id: optionalPositiveInt.catch(undefined),
+  activity_id: optionalPositiveInt.catch(undefined),
+  observation_id: optionalPositiveInt.catch(undefined),
   add: booleanParam(true),
   tab: tabSchema.default("list"),
   q: optionalTrimmedString.catch("").default(""),

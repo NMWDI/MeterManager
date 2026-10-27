@@ -29,6 +29,7 @@ class UpdatedUser(ORMBase):
     email: str
     full_name: str
     disabled: bool
+    is_test_account: bool = False
     user_role_id: int
 
 
@@ -45,6 +46,7 @@ class NewUser(ORMBase):
     full_name: str
     display_name: str
     disabled: bool
+    is_test_account: bool = False
     user_role_id: int
     password: str
 
@@ -70,6 +72,7 @@ class User(ORMBase):
     email: str | None = None
     full_name: str | None = None
     disabled: bool
+    is_test_account: bool = False
 
     user_role_id: int
 

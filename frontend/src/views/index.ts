@@ -1,5 +1,5 @@
 export * from "./Activities";
-export * from "./AdminActions";
+export * from "./AdminDashboard";
 export * from "./Backups";
 export * from "./Home";
 export * from "./InsufficientPermView";
