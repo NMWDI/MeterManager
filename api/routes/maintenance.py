@@ -89,7 +89,7 @@ def get_maintenance_summary(
     db: Session = Depends(get_db),
 ):
     """
-    Returns min/max/avg for north/south/east/west halves **within the SE quadrant of New Mexico**,
+    Returns separate maintenance activity counts and combined PM/location-only chart data
     over the specified [from_date, to_date] inclusive range.
     """
     # Convert to datetimes for inclusive range
@@ -143,6 +143,9 @@ def get_maintenance_summary(
                 "repairs_by_meter": [],
                 "pms_by_meter": [],
                 "table_rows": [],
+                "total_repairs": 0,
+                "total_pms": 0,
+                "total_location_only": 0,
             }
         query = query.filter(MeterActivities.meter_id.in_(matching_meter_ids))
 
@@ -150,10 +153,17 @@ def get_maintenance_summary(
 
     repairs_by_meter = defaultdict(int)
     pms_by_meter = defaultdict(int)
-    grouped_rows = defaultdict(lambda: {"number_of_repairs": 0, "number_of_pms": 0})
+    grouped_rows = defaultdict(
+        lambda: {
+            "number_of_repairs": 0,
+            "number_of_pms": 0,
+            "number_of_location_only": 0,
+        }
+    )
 
     total_repairs = 0
     total_pms = 0
+    total_location_only = 0
 
     for row in base_query:
         key = (row.date_time, row.technician, row.meter, row.trss)
@@ -163,8 +173,12 @@ def get_maintenance_summary(
             total_repairs += 1
         elif row.activity_type in PREVENTATIVE_MAINTENANCE_ACTIVITY_TYPES:
             pms_by_meter[row.meter] += 1
-            grouped_rows[key]["number_of_pms"] += 1
-            total_pms += 1
+            if row.activity_type == "Location Only":
+                grouped_rows[key]["number_of_location_only"] += 1
+                total_location_only += 1
+            else:
+                grouped_rows[key]["number_of_pms"] += 1
+                total_pms += 1
 
     repairs_result = [{"meter": m, "count": c} for m, c in repairs_by_meter.items()]
     pms_result = [{"meter": m, "count": c} for m, c in pms_by_meter.items()]
@@ -179,6 +193,7 @@ def get_maintenance_summary(
                 "trss": trss_val or "",
                 "number_of_repairs": counts["number_of_repairs"],
                 "number_of_pms": counts["number_of_pms"],
+                "number_of_location_only": counts["number_of_location_only"],
             }
         )
 
@@ -188,6 +203,7 @@ def get_maintenance_summary(
         "table_rows": table_rows,
         "total_repairs": total_repairs,
         "total_pms": total_pms,
+        "total_location_only": total_location_only,
     }
 
 
@@ -225,6 +241,7 @@ def download_maintenance_summary_pdf(
         to_date=to_date,
         total_repairs=total_repairs,
         total_pms=total_pms,
+        total_location_only=summary["total_location_only"],
         table_rows=summary["table_rows"],
     )
 
