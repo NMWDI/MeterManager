@@ -40,7 +40,7 @@ const searchSchema = z.object({
   status: statusListSchema
     .catch([WorkOrderStatus.Open, WorkOrderStatus.Review])
     .default([WorkOrderStatus.Open, WorkOrderStatus.Review]),
-  assigned_user_id: optionalPositiveInt.catch(undefined).default(undefined),
+  assigned_user_id: optionalPositiveInt.catch(undefined),
   q: optionalTrimmedString.catch("").default(""),
   work_order_id: positiveIntListParam,
   page: pageParam(0, 0),

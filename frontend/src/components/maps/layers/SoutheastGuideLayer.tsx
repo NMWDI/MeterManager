@@ -1,125 +1,130 @@
-// SoutheastGuideLayer.tsx
 import * as L from "leaflet";
-import { LayersControl, Pane, FeatureGroup, Rectangle, Polyline, Marker } from "react-leaflet";
+import { useEffect, useRef } from "react";
+import {
+  useChloridesReportGeometry,
+  type ChloridesReportGeometry,
+} from "@/service/chloridesReport";
+import {
+  LayersControl,
+  Pane,
+  FeatureGroup,
+  GeoJSON,
+  Rectangle,
+  Marker,
+  CircleMarker,
+  Tooltip,
+  useMap,
+} from "react-leaflet";
 
-const NM_LAT_MIN = 33.12500;
-const NM_LAT_MAX = 34.12500;
-const NM_LON_MIN = -105.25000;
-const NM_LON_MAX = -104.25000;
-
-const MID_LAT = (NM_LAT_MIN + NM_LAT_MAX) / 2;
-const MID_LON = (NM_LON_MIN + NM_LON_MAX) / 2;
-
-// Southeast quadrant bounds
-const SE_LAT_MIN = NM_LAT_MIN;
-const SE_LAT_MAX = MID_LAT;
-const SE_LON_MIN = MID_LON;
-const SE_LON_MAX = NM_LON_MAX;
-
-const SE_MID_LAT = (SE_LAT_MIN + SE_LAT_MAX) / 2;
-const SE_MID_LON = (SE_LON_MIN + SE_LON_MAX) / 2;
-
-// Helpers
-const rectBounds: [[number, number], [number, number]] = [
-  [SE_LAT_MIN, SE_LON_MIN],
-  [SE_LAT_MAX, SE_LON_MAX],
-];
-
-const horizLine = [
-  [SE_MID_LAT, SE_LON_MIN],
-  [SE_MID_LAT, SE_LON_MAX],
-] as [number, number][];
-
-const vertLine = [
-  [SE_LAT_MIN, SE_MID_LON],
-  [SE_LAT_MAX, SE_MID_LON],
-] as [number, number][];
+export const ChloridesGuideFit = ({
+  geometry,
+  preserveView,
+}: {
+  geometry: ChloridesReportGeometry;
+  preserveView: boolean;
+}) => {
+  const map = useMap();
+  const fitted = useRef(false);
+  useEffect(() => {
+    if (!preserveView && !fitted.current) {
+      const west = geometry.bbox[0],
+        south = geometry.bbox[1];
+      const east = geometry.bbox[2],
+        north = geometry.bbox[3];
+      map.fitBounds(
+        [
+          [south, west],
+          [north, east],
+        ],
+        { padding: [24, 24] },
+      );
+      fitted.current = true;
+    }
+  }, [geometry, map, preserveView]);
+  return null;
+};
 
 const labelIcon = (text: string) =>
   L.divIcon({
     className: "chlorides-report-label",
     iconSize: [0, 0],
-    iconAnchor: [0, 0],
-    html: `<div style="
-      display: inline-block;
-      font-size: 12px;
-      font-weight: 700;
-      color: #0b3b86;
-      background: rgba(255,255,255,0.7);
-      border: 1px solid rgba(11,59,134,0.25);
-      border-radius: 8px;
-      padding: 2px 6px;
-      pointer-events: none;
-      white-space: nowrap;
-      backdrop-filter: blur(2px);
-      transform: translate(-50%, -50%);
-    ">${text}</div>`,
+    html: `<div style="display:inline-block;font-size:12px;font-weight:700;color:#0b3b86;background:rgba(255,255,255,.85);border:1px solid #1976d2;border-radius:8px;padding:2px 6px;white-space:nowrap;transform:translate(-50%,-50%)">${text}</div>`,
   });
 
 export const SoutheastGuideLayer = ({
   checked = false,
+  geometry: suppliedGeometry,
 }: {
   checked?: boolean;
-}) =>
-(
-  <LayersControl.Overlay checked={checked} name="Clorides Report Region Guide">
-    {/* Lower than your GeoJSON panes (you used 600/625); markers still clickable above */}
-    <Pane name="se_quadrant_guide" style={{ zIndex: 550 }}>
-      <FeatureGroup>
-        {/* SE quadrant rectangle */}
-        <Rectangle
-          bounds={rectBounds}
-          pathOptions={{
-            color: "#1976d2",
-            weight: 2,
-            fillColor: "#1976d2",
-            fillOpacity: 0.06,
-          }}
-        />
-
-        {/* Midlines */}
-        <Polyline
-          positions={horizLine}
-          pathOptions={{ color: "#1976d2", weight: 2, dashArray: "6 6" }}
-        />
-        <Polyline
-          positions={vertLine}
-          pathOptions={{ color: "#1976d2", weight: 2, dashArray: "6 6" }}
-        />
-
-        {/* Labels placed near the center of each quadrant */}
-        <Marker
-          position={[
-            SE_MID_LAT + (SE_LAT_MAX - SE_MID_LAT) / 2,
-            SE_LON_MIN + (SE_MID_LON - SE_LON_MIN) / 2,
-          ]}
-          icon={labelIcon("North West")}
-        />
-        <Marker
-          position={[
-            SE_MID_LAT + (SE_LAT_MAX - SE_MID_LAT) / 2,
-            SE_MID_LON + (SE_LON_MAX - SE_MID_LON) / 2,
-          ]}
-          icon={labelIcon("North East")}
-        />
-        <Marker
-          position={[
-            SE_LAT_MIN + (SE_MID_LAT - SE_LAT_MIN) / 2,
-            SE_LON_MIN + (SE_MID_LON - SE_LON_MIN) / 2,
-          ]}
-          icon={labelIcon("South West")}
-        />
-        <Marker
-          position={[
-            SE_LAT_MIN + (SE_MID_LAT - SE_LAT_MIN) / 2,
-            SE_MID_LON + (SE_LON_MAX - SE_MID_LON) / 2,
-          ]}
-          icon={labelIcon("South East")}
-        />
-
-        {/* Optional: center dot where lines cross */}
-        {/* <Marker position={[SE_MID_LAT, SE_MID_LON]} icon={L.divIcon({ html: '<div style="width:8px;height:8px;border-radius:50%;background:#1976d2;border:2px solid white"></div>' })} /> */}
-      </FeatureGroup>
-    </Pane>
-  </LayersControl.Overlay>
-);
+  geometry?: ChloridesReportGeometry;
+}) => {
+  const geometryQuery = useChloridesReportGeometry(!suppliedGeometry);
+  const geometry = suppliedGeometry ?? geometryQuery.data;
+  if (!geometry) return null;
+  return (
+    <LayersControl.Overlay
+      checked={checked}
+      name="Clorides Report Region Guide"
+    >
+      <Pane name="se_quadrant_guide" style={{ zIndex: 550 }}>
+        <FeatureGroup>
+          <Rectangle
+            bounds={[
+              [geometry.bbox[1], geometry.bbox[0]],
+              [geometry.bbox[3], geometry.bbox[2]],
+            ]}
+            pathOptions={{ color: "#1976d2", weight: 2, fill: false }}
+          />
+          {geometry.features.map((feature) => {
+            const properties = feature.properties;
+            if (
+              properties.kind === "anchor" &&
+              feature.geometry.type === "Point"
+            ) {
+              const [longitude, latitude] = feature.geometry.coordinates;
+              return (
+                <CircleMarker
+                  key={properties.id}
+                  center={[latitude, longitude]}
+                  radius={4}
+                  pathOptions={{ color: "#0b3b86", fillOpacity: 1 }}
+                >
+                  <Tooltip>
+                    {properties.label}: {properties.coordinate_label}
+                  </Tooltip>
+                </CircleMarker>
+              );
+            }
+            return (
+              <FeatureGroup key={properties.id}>
+                <GeoJSON
+                  data={feature}
+                  style={{
+                    color: "#1976d2",
+                    weight: 2,
+                    fillOpacity: properties.kind === "region" ? 0.06 : 0,
+                    stroke: properties.kind !== "region",
+                    dashArray:
+                      properties.kind === "divider" ? "6 6" : undefined,
+                  }}
+                >
+                  <Tooltip>{properties.label}</Tooltip>
+                </GeoJSON>
+                {properties.label_position && (
+                  <Marker
+                    position={[
+                      properties.label_position[1],
+                      properties.label_position[0],
+                    ]}
+                    icon={labelIcon(properties.label)}
+                    interactive={false}
+                  />
+                )}
+              </FeatureGroup>
+            );
+          })}
+        </FeatureGroup>
+      </Pane>
+    </LayersControl.Overlay>
+  );
+};

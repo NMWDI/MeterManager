@@ -7,7 +7,7 @@ After=docker.service
 
 [Service]
 User=deploy
-WorkingDirectory=/home/deploy/WaterManagerDB
+WorkingDirectory=/home/deploy/MeterManager
 
 # Pick compose file based on ENV (METER_MANAGER_ENV)
 # Default is production

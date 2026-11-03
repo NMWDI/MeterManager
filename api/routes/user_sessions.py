@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from starlette import status
 
+from api.auth.dependencies import ScopedUser
 from api.models.user import UserSessions, Users
 from api.schemas import user_sessions
 from api.security import get_current_user, get_session_identifier_from_token, oauth2_scheme
@@ -138,6 +139,95 @@ def list_user_sessions(
         sessions=serialized_sessions,
         known_devices=known_devices,
     )
+
+
+@user_sessions_router.get(
+    "/user-sessions/admin/active",
+    response_model=user_sessions.AdminActiveUserSessionsResponse,
+    dependencies=[Depends(ScopedUser.Admin)],
+)
+def list_admin_active_user_sessions(
+    db: Session = Depends(get_db),
+    token: str = Depends(oauth2_scheme),
+):
+    current_session_identifier = get_session_identifier_from_token(token)
+    sessions = (
+        db.query(UserSessions)
+        .join(UserSessions.user)
+        .filter(
+            UserSessions.is_active.is_(True),
+            UserSessions.signed_out_at.is_(None),
+            Users.disabled.is_(False),
+            Users.is_test_account.is_(False),
+            Users.is_service_account.is_(False),
+        )
+        .order_by(UserSessions.last_seen_at.desc(), UserSessions.signed_in_at.desc())
+        .all()
+    )
+
+    return user_sessions.AdminActiveUserSessionsResponse(
+        active_user_count=len({session.user_id for session in sessions}),
+        active_session_count=len(sessions),
+        sessions=[
+            user_sessions.AdminUserSessionSummary(
+                **serialize_session(
+                    session,
+                    current_session_identifier=current_session_identifier,
+                ).model_dump(),
+                user_id=session.user_id,
+                username=session.user.username,
+                full_name=session.user.full_name,
+                display_name=session.user.display_name,
+                role_name=session.user.user_role.name if session.user.user_role else None,
+            )
+            for session in sessions
+        ],
+    )
+
+
+@user_sessions_router.delete(
+    "/user-sessions/admin/{session_identifier}",
+    dependencies=[Depends(ScopedUser.Admin)],
+)
+def revoke_admin_user_session(
+    session_identifier: str,
+    db: Session = Depends(get_db),
+    token: str = Depends(oauth2_scheme),
+):
+    current_session_identifier = get_session_identifier_from_token(token)
+    if session_identifier == current_session_identifier:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="The current admin session cannot be closed from this endpoint",
+        )
+
+    session = (
+        db.query(UserSessions)
+        .filter(
+            UserSessions.session_identifier == session_identifier,
+            UserSessions.is_active.is_(True),
+            UserSessions.signed_out_at.is_(None),
+        )
+        .first()
+    )
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Active session not found",
+        )
+
+    mark_session_signed_out(
+        db,
+        session_identifier=session_identifier,
+        reason_name="forced_logout",
+    )
+    db.commit()
+
+    return {
+        "message": "Session closed",
+        "session_identifier": session_identifier,
+        "user_id": session.user_id,
+    }
 
 
 @user_sessions_router.delete("/user-sessions/{session_identifier}")

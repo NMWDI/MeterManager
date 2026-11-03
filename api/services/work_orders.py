@@ -401,13 +401,24 @@ def _create_work_order_notifications(
         .where(
             Users.user_role.has(name="Admin"),
             Users.disabled.is_(False),
+            Users.is_test_account.is_(False),
+            Users.is_service_account.is_(False),
         )
     ).all()
 
     recipient_user_ids = set(admin_user_ids)
 
     if work_order.assigned_user_id:
-        recipient_user_ids.add(work_order.assigned_user_id)
+        assigned_user_is_active = db.scalar(
+            select(Users.id).where(
+                Users.id == work_order.assigned_user_id,
+                Users.disabled.is_(False),
+                Users.is_test_account.is_(False),
+                Users.is_service_account.is_(False),
+            )
+        )
+        if assigned_user_is_active:
+            recipient_user_ids.add(work_order.assigned_user_id)
 
     if not recipient_user_ids:
         return

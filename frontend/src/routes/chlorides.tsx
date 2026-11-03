@@ -40,7 +40,7 @@ import {
 import { ChloridesPlotSection, ChloridesTableSection } from "@/views/Chlorides";
 
 const searchSchema = z.object({
-  regionId: optionalPositiveInt.catch(undefined).default(undefined),
+  regionId: optionalPositiveInt.catch(undefined),
   page: pageParam(0, 0),
   pageSize: pageParam(25, 10),
   split: z
@@ -50,7 +50,6 @@ const searchSchema = z.object({
       return Number.isInteger(n) && n >= 35 && n <= 72 ? n : undefined;
     }, z.number().int().min(35).max(72).optional())
     .catch(undefined)
-    .default(undefined),
 });
 
 const CHLORIDES_SPLIT_STORAGE_KEY = "chlorides-split-width";

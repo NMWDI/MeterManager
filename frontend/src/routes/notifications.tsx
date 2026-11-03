@@ -15,7 +15,7 @@ const searchSchema = z.object({
   q: z.string().catch("").default(""),
   is_read: triStateParam("false"),
   notification_type_id: positiveIntListParam,
-  created_from: isoDateParam.catch(undefined).default(undefined),
+  created_from: isoDateParam.catch(undefined),
   created_to: isoDateParam
     .catch(dayjs().endOf("month").format("YYYY-MM-DD"))
     .default(dayjs().endOf("month").format("YYYY-MM-DD")),

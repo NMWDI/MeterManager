@@ -1,9 +1,17 @@
-import { useEffect, useMemo, useRef } from "react";
-import { PictureAsPdf, ScienceOutlined } from "@mui/icons-material";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  InfoOutlined,
+  PictureAsPdf,
+  ScienceOutlined,
+} from "@mui/icons-material";
 import { useMutation, useQuery } from "react-query";
 import dayjs, { Dayjs } from "dayjs";
 import { useAuthHeader } from "@/utils/AuthKitCompat";
 import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
   Button,
   Card,
   CardContent,
@@ -44,8 +52,10 @@ import {
   TransporationLayer,
   BoundariesLayer,
 } from "@/components";
+import { ChloridesGuideFit } from "@/components/maps/layers/SoutheastGuideLayer";
 import { RedMapIcon, BlackMapIcon } from "@/components/maps/icons";
 import { useFetchWithAuth } from "@/hooks";
+import { useChloridesReportGeometry } from "@/service/chloridesReport";
 import { useGetWellLocations } from "@/service";
 import { Well } from "@/interfaces";
 import { WellStatus } from "@/enums";
@@ -115,8 +125,14 @@ const REPORT_SECTIONS = [
 ] as const;
 
 export const ChloridesReportView = () => {
+  const [boundaryInfoOpen, setBoundaryInfoOpen] = useState(false);
   const navigate = useNavigate();
   const search = Route.useSearch();
+  const preserveInitialMapView = useRef(
+    search.mapLat !== undefined ||
+      search.mapLng !== undefined ||
+      search.mapZoom !== undefined,
+  ).current;
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapBaseLayer = normalizeMapBaseLayer(
     search.mapBase,
@@ -178,6 +194,8 @@ export const ChloridesReportView = () => {
 
   const authHeader = useAuthHeader();
   const fetchWithAuth = useFetchWithAuth();
+
+  const geometryQuery = useChloridesReportGeometry();
 
   const chloridesQuery = useQuery<iChlorideReportNums, Error>({
     queryKey: ["Chlorides", "Reports", from, to],
@@ -312,6 +330,12 @@ export const ChloridesReportView = () => {
               </Tooltip>
             </Grid>
           </Grid>
+          {geometryQuery.isError && (
+            <Alert severity="error" sx={{ mx: 2 }}>
+              Unable to load the report boundary guide.{" "}
+              {geometryQuery.error.message}
+            </Alert>
+          )}
           <Grid
             container
             columnSpacing={3}
@@ -401,6 +425,12 @@ export const ChloridesReportView = () => {
                     search={search}
                     setSearch={setSearch}
                   />
+                  {geometryQuery.data && (
+                    <ChloridesGuideFit
+                      geometry={geometryQuery.data}
+                      preserveView={preserveInitialMapView}
+                    />
+                  )}
                   <LayersControl
                     key={getMapLayersControlKey(mapBaseLayer, mapOverlayNames)}
                     position="topleft"
@@ -410,11 +440,14 @@ export const ChloridesReportView = () => {
                     <OpenStreetMapLayer
                       checked={mapBaseLayer === "OpenStreetMap"}
                     />
-                    <SoutheastGuideLayer
-                      checked={mapOverlayNames.includes(
-                        "Clorides Report Region Guide",
-                      )}
-                    />
+                    {geometryQuery.data && (
+                      <SoutheastGuideLayer
+                        geometry={geometryQuery.data}
+                        checked={mapOverlayNames.includes(
+                          "Clorides Report Region Guide",
+                        )}
+                      />
+                    )}
 
                     {/* Wells Cluster Overlay */}
                     <LayersControl.Overlay
@@ -538,7 +571,12 @@ export const ChloridesReportView = () => {
               )}
             </Grid>
           </Grid>
-          <Grid container>
+          <Grid
+            container
+            alignItems="center"
+            justifyContent="space-between"
+            wrap="nowrap"
+          >
             <Grid item px={2}>
               <Button
                 onClick={() => {
@@ -562,7 +600,61 @@ export const ChloridesReportView = () => {
                 Reset
               </Button>
             </Grid>
+            <Grid item px={2}>
+              <Button
+                variant="outlined"
+                startIcon={<InfoOutlined />}
+                disabled={!geometryQuery.data}
+                onClick={() => setBoundaryInfoOpen(true)}
+                aria-haspopup="dialog"
+              >
+                {geometryQuery.data
+                  ? `Boundary version: ${geometryQuery.data.version} info`
+                  : "Boundary info"}
+              </Button>
+            </Grid>
           </Grid>
+          <Dialog
+            open={boundaryInfoOpen}
+            onClose={() => setBoundaryInfoOpen(false)}
+            aria-labelledby="chlorides-boundary-info-title"
+            fullWidth
+            maxWidth="sm"
+          >
+            <DialogTitle id="chlorides-boundary-info-title">
+              Boundary version: {geometryQuery.data?.version} info
+            </DialogTitle>
+            <DialogContent dividers>
+              {geometryQuery.data && (
+                <Box>
+                  <Typography variant="body2">
+                    {geometryQuery.data.description}
+                  </Typography>
+                  <Typography variant="body2">
+                    Boundary version: {geometryQuery.data.version}. Dividers
+                    follow Hwy. 285 via Main Street and Hwy. 380, including the
+                    US 70 overlap. Counts represent measurements.
+                  </Typography>
+                  <Box component="ul" sx={{ my: 1, pl: 3 }}>
+                    {geometryQuery.data.features
+                      .filter((f) => f.properties.kind === "anchor")
+                      .map((f) => (
+                        <Typography
+                          component="li"
+                          variant="body2"
+                          key={f.properties.id}
+                        >
+                          {f.properties.label}: {f.properties.coordinate_label}
+                        </Typography>
+                      ))}
+                  </Box>
+                </Box>
+              )}
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setBoundaryInfoOpen(false)}>Close</Button>
+            </DialogActions>
+          </Dialog>
         </CardContent>
       </Card>
     </BackgroundBox>

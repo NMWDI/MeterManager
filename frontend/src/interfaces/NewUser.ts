@@ -6,6 +6,7 @@ export interface NewUser {
   full_name: string;
   email: scope_string;
   disabled: boolean;
+  is_test_account: boolean;
   user_role_id: number;
   password: string;
 }

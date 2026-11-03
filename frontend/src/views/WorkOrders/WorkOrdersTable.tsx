@@ -287,7 +287,7 @@ export const WorkOrdersTable = () => {
               tab: "list",
               q: undefined,
               filters: getMeterFilterForStatus(params.row.meter_status),
-              m_sizeSort: "all",
+              m_sizeSort: "all" as const,
               m_page: 0,
               h_page: 0,
             })}
@@ -347,7 +347,7 @@ export const WorkOrdersTable = () => {
                 tab: "list",
                 q: undefined,
                 filters: getMeterFilterForStatus(activity.meter_status),
-                m_sizeSort: "all",
+                m_sizeSort: "all" as const,
                 m_page: 0,
                 h_page: 0,
               })}

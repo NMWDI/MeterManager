@@ -18,7 +18,6 @@ from api.models.meter import (
     MeterActivities,
     MeterObservations,
     Meters,
-    MeterStatusLU,
     MeterTypeLU,
 )
 from api.models.location import Locations
@@ -254,17 +253,29 @@ def get_sold_meters_report(
 
 def get_stored_meters_report(
     db: Session,
+    from_date: date,
+    to_date: date,
     min_size: int | None = None,
     max_size: int | None = None,
 ):
+    start_dt = datetime.combine(from_date, datetime.min.time())
+    end_dt = datetime.combine(to_date, datetime.max.time())
+    tracked_activity_types = {"Store Meter", "Install", "Sell"}
+    storage_end_activity_types = {"Install", "Sell"}
+
     stmt = (
-        select(Meters, MeterTypeLU, MeterStatusLU)
+        select(MeterActivities, Meters, MeterTypeLU, ActivityTypeLU)
+        .join(ActivityTypeLU, ActivityTypeLU.id == MeterActivities.activity_type_id)
+        .join(Meters, Meters.id == MeterActivities.meter_id)
         .join(MeterTypeLU, MeterTypeLU.id == Meters.meter_type_id)
-        .join(MeterStatusLU, MeterStatusLU.id == Meters.status_id)
-        .where(MeterStatusLU.status_name.in_(["Warehouse", "On Hold"]))
+        .where(
+            ActivityTypeLU.name.in_(tracked_activity_types),
+            MeterActivities.timestamp_start <= end_dt,
+        )
         .order_by(
-            MeterTypeLU.size.asc(),
-            MeterTypeLU.brand.asc(),
+            Meters.id.asc(),
+            MeterActivities.timestamp_start.asc(),
+            MeterActivities.id.asc(),
             Meters.serial_number.asc(),
         )
     )
@@ -274,11 +285,81 @@ def get_stored_meters_report(
     if max_size is not None:
         stmt = stmt.where(MeterTypeLU.size <= max_size)
 
+    activities_by_meter = {}
+    for activity, meter, meter_type, activity_type in db.execute(stmt).all():
+        activities_by_meter.setdefault(meter.id, []).append(
+            {
+                "activity": activity,
+                "activity_type": activity_type.name,
+                "meter": meter,
+                "meter_type": meter_type,
+            }
+        )
+
+    timeline = []
+    current_stored_by_meter = {}
+
+    for meter_events in activities_by_meter.values():
+        for index, event in enumerate(meter_events):
+            if event["activity_type"] != "Store Meter":
+                continue
+
+            store_activity = event["activity"]
+            out_event = next(
+                (
+                    candidate
+                    for candidate in meter_events[index + 1 :]
+                    if candidate["activity_type"] in storage_end_activity_types
+                ),
+                None,
+            )
+            out_activity = out_event["activity"] if out_event else None
+            out_activity_type = out_event["activity_type"] if out_event else None
+            stored_at = store_activity.timestamp_start
+            out_at = out_activity.timestamp_start if out_activity else None
+
+            if stored_at > end_dt or (out_at is not None and out_at < start_dt):
+                continue
+
+            meter = event["meter"]
+            meter_type = event["meter_type"]
+            interval = {
+                "id": store_activity.id,
+                "activity_id": store_activity.id,
+                "meter_id": meter.id,
+                "serial_number": meter.serial_number,
+                "meter_type_id": meter_type.id,
+                "meter_type": _meter_type_label(meter_type),
+                "stored_date": stored_at,
+                "out_of_storage_date": out_at,
+                "out_of_storage_activity_type": out_activity_type,
+                "is_currently_stored": out_at is None or out_at > end_dt,
+            }
+            timeline.append(interval)
+
+            if interval["is_currently_stored"]:
+                current_stored_by_meter[meter.id] = {
+                    "event": event,
+                    "interval": interval,
+                }
+
     rows = []
     type_totals_by_id = {}
     total_value = 0.0
 
-    for meter, meter_type, status in db.execute(stmt).all():
+    current_stored = sorted(
+        current_stored_by_meter.values(),
+        key=lambda row: (
+            row["event"]["meter_type"].size is None,
+            row["event"]["meter_type"].size or 0,
+            row["event"]["meter"].serial_number,
+        ),
+    )
+
+    for stored_meter in current_stored:
+        meter = stored_meter["event"]["meter"]
+        meter_type = stored_meter["event"]["meter_type"]
+        interval = stored_meter["interval"]
         price = float(meter.price or 0)
         total_value += price
         meter_type_label = _meter_type_label(meter_type)
@@ -286,10 +367,12 @@ def get_stored_meters_report(
         rows.append(
             {
                 "id": meter.id,
+                "store_activity_id": interval["activity_id"],
+                "stored_date": interval["stored_date"],
                 "serial_number": meter.serial_number,
                 "meter_owner": meter.meter_owner,
                 "contact_name": meter.contact_name,
-                "status": status.status_name,
+                "status": "Warehouse",
                 "price": price,
                 "meter_type_id": meter_type.id,
                 "meter_type": meter_type_label,
@@ -316,6 +399,7 @@ def get_stored_meters_report(
         type_totals_by_id[meter_type.id]["quantity"] += 1
         type_totals_by_id[meter_type.id]["total_value"] += price
 
+    timeline.sort(key=lambda row: (row["stored_date"], row["serial_number"]))
     type_totals = sorted(
         type_totals_by_id.values(),
         key=lambda row: (row["size"] is None, row["size"] or 0, row["meter_type"]),
@@ -328,6 +412,7 @@ def get_stored_meters_report(
             "total_value": total_value,
         },
         "type_totals": type_totals,
+        "timeline": timeline,
     }
 
 
@@ -453,10 +538,12 @@ def build_sold_meters_pdf(
 
 def build_stored_meters_pdf(
     db: Session,
+    from_date: date,
+    to_date: date,
     min_size: int | None = None,
     max_size: int | None = None,
 ):
-    report = get_stored_meters_report(db, min_size, max_size)
+    report = get_stored_meters_report(db, from_date, to_date, min_size, max_size)
     meter_type_chart = _make_meter_type_bar_chart(
         report["type_totals"],
         "Meters Stored",
@@ -467,6 +554,8 @@ def build_stored_meters_pdf(
         summary=report["summary"],
         type_totals=report["type_totals"],
         meter_type_chart=meter_type_chart,
+        from_date=from_date,
+        to_date=to_date,
         min_size=min_size,
         max_size=max_size,
     )

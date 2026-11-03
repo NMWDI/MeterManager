@@ -48,7 +48,7 @@ import {
 import { optionalPositiveInt, pageParam, routeSearchHydrator } from "@/utils";
 
 const searchSchema = z.object({
-  wellId: optionalPositiveInt.catch(undefined).default(undefined),
+  wellId: optionalPositiveInt.catch(undefined),
   page: pageParam(0, 0),
   pageSize: pageParam(25, 10),
   split: z
@@ -58,7 +58,6 @@ const searchSchema = z.object({
       return Number.isInteger(n) && n >= 35 && n <= 72 ? n : undefined;
     }, z.number().int().min(35).max(72).optional())
     .catch(undefined)
-    .default(undefined),
 });
 
 const MONITORING_WELLS_SPLIT_STORAGE_KEY = "monitoringwells-split-width";

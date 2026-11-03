@@ -11,6 +11,9 @@ class Users(Base):
 
     full_name: Mapped[str] = mapped_column(String)
     disabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_test_account: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
     is_service_account: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False
     )

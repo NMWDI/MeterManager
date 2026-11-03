@@ -180,6 +180,11 @@ async def create_activity(
             activity_meter.status_id = meter_statuses["Sold"]
             activity_meter.water_users = None
             activity_meter.meter_owner = activity_form.current_installation.meter_owner
+        if activity_type.name == "Store Meter":
+            activity_meter.well_id = None
+            activity_meter.location_id = hq_location.id
+            activity_meter.status_id = meter_statuses["Warehouse"]
+            activity_meter.water_users = None
         if activity_type.name == "Change Water Users":
             activity_meter.water_users = activity_form.current_installation.water_users
 
@@ -335,7 +340,13 @@ def get_activity_types(db: Session, user: Users):
 
 def get_users(db: Session):
     return db.scalars(
-        select(Users).options(undefer(Users.user_role_id)).where(Users.disabled == False)
+        select(Users)
+        .options(undefer(Users.user_role_id))
+        .where(
+            Users.disabled.is_(False),
+            Users.is_test_account.is_(False),
+            Users.is_service_account.is_(False),
+        )
     ).all()
 
 

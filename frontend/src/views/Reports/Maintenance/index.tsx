@@ -358,6 +358,14 @@ export const MaintenanceReportView = () => {
       headerAlign: "left",
     },
     {
+      field: "number_of_location_only",
+      headerName: "Number of Location Only",
+      type: "number",
+      flex: 1,
+      align: "left",
+      headerAlign: "left",
+    },
+    {
       field: "meter",
       headerName: "Meter",
       flex: 1,
@@ -627,7 +635,7 @@ export const MaintenanceReportView = () => {
                 <Typography variant="h5" align="center"></Typography>
 
                 <Typography variant="h5" align="center">
-                  Number of Preventative Maintenances
+                  Preventative Maintenance &amp; Location Only
                   {dataQuery.data ? `: ${totalPMs}` : ""}
                 </Typography>
                 <PieChart

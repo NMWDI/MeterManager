@@ -22,7 +22,8 @@
 <body>
   <h1>Stored Meters Report</h1>
   <div class="meta">
-    Current stored meter inventory
+    Stored meter inventory as of {{ to_date }}
+    | Activity range: {{ from_date }} to {{ to_date }}
     {% if min_size is not none or max_size is not none %}
       | Meter size:
       {{ min_size if min_size is not none else "Any" }}
@@ -68,6 +69,7 @@
   <table>
     <thead>
       <tr>
+        <th>Stored Date</th>
         <th>Serial Number</th>
         <th>Meter Type</th>
         <th class="number">Size</th>
@@ -80,6 +82,7 @@
     <tbody>
       {% for row in rows %}
       <tr>
+        <td>{{ row.stored_date.strftime("%Y-%m-%d") }}</td>
         <td>{{ row.serial_number }}</td>
         <td>{{ row.meter_type }}</td>
         <td class="number">{{ "%g"|format(row.size) if row.size is not none else "" }}</td>

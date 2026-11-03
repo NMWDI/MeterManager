@@ -8,6 +8,7 @@ import {
   CardContent,
   Grid,
   Skeleton,
+  Stack,
   TextField,
   Tooltip,
   Typography,
@@ -23,13 +24,17 @@ import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import { API_URL } from "@/config";
 import {
   BackgroundBox,
+  ControlledDatepicker,
   CustomCardHeader,
   ReportBreadcrumbTitle,
 } from "@/components";
 import { Route } from "@/routes/reports/storedmeters";
+import dayjs, { Dayjs } from "dayjs";
 
 type StoredMeterRow = {
   id: number;
+  store_activity_id: number;
+  stored_date: string;
   serial_number: string;
   meter_owner: string | null;
   contact_name: string | null;
@@ -42,6 +47,19 @@ type StoredMeterRow = {
   model: string;
   size: number | null;
   description: string;
+};
+
+type StoredMeterTimelineItem = {
+  id: number;
+  activity_id: number;
+  meter_id: number;
+  serial_number: string;
+  meter_type_id: number;
+  meter_type: string;
+  stored_date: string;
+  out_of_storage_date: string | null;
+  out_of_storage_activity_type: string | null;
+  is_currently_stored: boolean;
 };
 
 type MeterTypeTotal = {
@@ -59,14 +77,26 @@ type StoredMetersReport = {
     total_value: number;
   };
   type_totals: MeterTypeTotal[];
+  timeline: StoredMeterTimelineItem[];
 };
 
 type FormValues = {
+  from: Dayjs;
+  to: Dayjs;
   min_size?: number | null;
   max_size?: number | null;
 };
 
 const schema = yup.object().shape({
+  from: yup.mixed<Dayjs>().nullable().required("From date is required"),
+  to: yup
+    .mixed<Dayjs>()
+    .nullable()
+    .required("To date is required")
+    .test("is-after", "'To' date must be on or after 'From'", function (value) {
+      const { from } = this.parent;
+      return !from || !value || !dayjs(value).isBefore(dayjs(from), "day");
+    }),
   min_size: yup.number().nullable().min(0).integer(),
   max_size: yup
     .number()
@@ -89,6 +119,119 @@ const formatCurrency = (value: number | null | undefined) =>
 const formatSize = (value: number | null | undefined) =>
   value == null ? "" : value.toString();
 
+const defaultDateSearch = {
+  from: dayjs().startOf("month").format("YYYY-MM-DD"),
+  to: dayjs().endOf("month").format("YYYY-MM-DD"),
+};
+
+const StorageTimelineChart = ({
+  items,
+  from,
+  to,
+}: {
+  items: StoredMeterTimelineItem[];
+  from: string;
+  to: string;
+}) => {
+  const rangeStart = dayjs(from).startOf("day");
+  const rangeEnd = dayjs(to).endOf("day");
+  const rangeMs = Math.max(rangeEnd.diff(rangeStart), 1);
+
+  if (!items.length) {
+    return (
+      <Typography color="text.secondary">
+        No storage activity found for this range.
+      </Typography>
+    );
+  }
+
+  return (
+    <Box sx={{ minWidth: 720 }}>
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: "160px 1fr",
+          gap: 1,
+          mb: 1,
+          color: "text.secondary",
+        }}
+      >
+        <Typography variant="caption">{rangeStart.format("YYYY-MM-DD")}</Typography>
+        <Typography variant="caption" sx={{ textAlign: "right" }}>
+          {rangeEnd.format("YYYY-MM-DD")}
+        </Typography>
+      </Box>
+      <Stack spacing={1}>
+        {items.map((item) => {
+          const storedDate = dayjs(item.stored_date);
+          const outDate = item.out_of_storage_date
+            ? dayjs(item.out_of_storage_date)
+            : rangeEnd;
+          const clippedStart = storedDate.isBefore(rangeStart)
+            ? rangeStart
+            : storedDate;
+          const clippedEnd = outDate.isAfter(rangeEnd) ? rangeEnd : outDate;
+          const left = Math.max(0, (clippedStart.diff(rangeStart) / rangeMs) * 100);
+          const width = Math.max(
+            1,
+            (clippedEnd.diff(clippedStart) / rangeMs) * 100,
+          );
+
+          return (
+            <Box
+              key={item.id}
+              sx={{
+                display: "grid",
+                gridTemplateColumns: "160px 1fr",
+                gap: 1,
+                alignItems: "center",
+              }}
+            >
+              <Typography variant="body2" noWrap title={item.serial_number}>
+                {item.serial_number}
+              </Typography>
+              <Box
+                sx={{
+                  position: "relative",
+                  height: 28,
+                  borderRadius: 1,
+                  backgroundColor: "action.hover",
+                  overflow: "hidden",
+                }}
+              >
+                <Tooltip
+                  title={`${item.serial_number} stored ${storedDate.format(
+                    "YYYY-MM-DD",
+                  )} to ${
+                    item.out_of_storage_date
+                      ? `${outDate.format("YYYY-MM-DD")} (${item.out_of_storage_activity_type})`
+                      : "still stored"
+                  }`}
+                >
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      left: `${left}%`,
+                      width: `${width}%`,
+                      minWidth: 8,
+                      top: 4,
+                      bottom: 4,
+                      borderRadius: 1,
+                      backgroundColor: item.is_currently_stored
+                        ? "primary.main"
+                        : "grey.600",
+                    }}
+                  />
+                </Tooltip>
+              </Box>
+            </Box>
+          );
+        })}
+      </Stack>
+    </Box>
+  );
+};
+
 export const StoredMetersReportView = () => {
   const navigate = useNavigate();
   const search = Route.useSearch();
@@ -96,10 +239,12 @@ export const StoredMetersReportView = () => {
 
   const defaultValues = useMemo<FormValues>(
     () => ({
+      from: dayjs(search.from, "YYYY-MM-DD"),
+      to: dayjs(search.to, "YYYY-MM-DD"),
       min_size: search.min_size ?? null,
       max_size: search.max_size ?? null,
     }),
-    [search.min_size, search.max_size],
+    [search.from, search.to, search.min_size, search.max_size],
   );
 
   const { control, reset, watch } = useForm<FormValues>({
@@ -111,6 +256,8 @@ export const StoredMetersReportView = () => {
     reset(defaultValues);
   }, [defaultValues, reset]);
 
+  const from = watch("from");
+  const to = watch("to");
   const minSize = watch("min_size");
   const maxSize = watch("max_size");
 
@@ -123,25 +270,37 @@ export const StoredMetersReportView = () => {
   };
 
   useEffect(() => {
+    const nextFrom = from?.format("YYYY-MM-DD");
+    const nextTo = to?.format("YYYY-MM-DD");
     const nextMinSize = minSize ?? undefined;
     const nextMaxSize = maxSize ?? undefined;
 
     setSearch((prev) => {
-      if (prev.min_size === nextMinSize && prev.max_size === nextMaxSize) {
+      if (
+        prev.from === nextFrom &&
+        prev.to === nextTo &&
+        prev.min_size === nextMinSize &&
+        prev.max_size === nextMaxSize
+      ) {
         return prev;
       }
 
       return {
         ...prev,
+        from: nextFrom,
+        to: nextTo,
         min_size: nextMinSize,
         max_size: nextMaxSize,
         page: 0,
       };
     });
-  }, [minSize, maxSize]);
+  }, [from, to, minSize, maxSize]);
 
   const buildParams = () => {
-    const params = new URLSearchParams();
+    const params = new URLSearchParams({
+      from_date: search.from,
+      to_date: search.to,
+    });
 
     if (search.min_size != null) {
       params.set("min_size", search.min_size.toString());
@@ -169,6 +328,7 @@ export const StoredMetersReportView = () => {
 
       return response.json();
     },
+    enabled: Boolean(search.from && search.to),
   });
 
   const downloadPDFMutation = useMutation({
@@ -196,9 +356,17 @@ export const StoredMetersReportView = () => {
 
   const rows = reportQuery.data?.rows ?? [];
   const typeTotals = reportQuery.data?.type_totals ?? [];
+  const timeline = reportQuery.data?.timeline ?? [];
   const summary = reportQuery.data?.summary ?? { quantity: 0, total_value: 0 };
 
   const columns: GridColDef[] = [
+    {
+      field: "stored_date",
+      headerName: "Stored Date",
+      flex: 1,
+      minWidth: 130,
+      valueFormatter: (value: string) => dayjs(value).format("YYYY-MM-DD"),
+    },
     {
       field: "serial_number",
       headerName: "Serial Number",
@@ -268,6 +436,30 @@ export const StoredMetersReportView = () => {
         <CardContent>
           <Grid container spacing={2} padding={2} alignItems="center">
             <Grid item xs={12} sm={6} md={3}>
+              <ControlledDatepicker
+                sx={{ width: "100%" }}
+                size="small"
+                label="From"
+                control={control}
+                name="from"
+                views={["year", "month", "day"]}
+                openTo="year"
+                format="YYYY MMMM DD"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <ControlledDatepicker
+                sx={{ width: "100%" }}
+                size="small"
+                label="To"
+                control={control}
+                name="to"
+                views={["year", "month", "day"]}
+                openTo="year"
+                format="YYYY MMMM DD"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={2}>
               <Controller
                 name="min_size"
                 control={control}
@@ -293,7 +485,7 @@ export const StoredMetersReportView = () => {
                 )}
               />
             </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item xs={12} sm={6} md={2}>
               <Controller
                 name="max_size"
                 control={control}
@@ -322,7 +514,7 @@ export const StoredMetersReportView = () => {
             <Grid
               item
               xs={12}
-              md={6}
+              md={2}
               sx={{
                 display: "flex",
                 justifyContent: { xs: "center", md: "flex-end" },
@@ -344,6 +536,23 @@ export const StoredMetersReportView = () => {
               </Tooltip>
             </Grid>
           </Grid>
+
+          <Box px={2} pb={2}>
+            <Typography variant="h6" sx={{ mb: 1 }}>
+              Storage Timeline
+            </Typography>
+            {reportQuery.isLoading ? (
+              <Skeleton variant="rounded" width="100%" height={320} />
+            ) : (
+              <Box sx={{ overflowX: "auto", pb: 1 }}>
+                <StorageTimelineChart
+                  items={timeline}
+                  from={search.from}
+                  to={search.to}
+                />
+              </Box>
+            )}
+          </Box>
 
           <Grid container spacing={2} px={2} pb={2}>
             <Grid item xs={12} md={4}>
@@ -470,11 +679,15 @@ export const StoredMetersReportView = () => {
             <Button
               onClick={() => {
                 reset({
+                  from: dayjs(defaultDateSearch.from, "YYYY-MM-DD"),
+                  to: dayjs(defaultDateSearch.to, "YYYY-MM-DD"),
                   min_size: null,
                   max_size: null,
                 });
                 setSearch((prev) => ({
                   ...prev,
+                  from: defaultDateSearch.from,
+                  to: defaultDateSearch.to,
                   min_size: undefined,
                   max_size: undefined,
                   page: 0,

@@ -165,7 +165,12 @@ def _admin_user_ids(db: Session) -> list[int]:
         select(Users.id)
         .join(UserRoles, Users.user_role_id == UserRoles.id)
         .join(UserRoles.security_scopes)
-        .where(SecurityScopes.scope_string == "admin", Users.disabled.is_(False))
+        .where(
+            SecurityScopes.scope_string == "admin",
+            Users.disabled.is_(False),
+            Users.is_test_account.is_(False),
+            Users.is_service_account.is_(False),
+        )
     ).all()
 
 
@@ -558,6 +563,7 @@ def _serialize_service_account(
         "email": service_account.email,
         "full_name": service_account.full_name,
         "disabled": service_account.disabled,
+        "is_test_account": service_account.is_test_account,
         "user_role_id": service_account.user_role_id,
         "user_role": service_account.user_role,
         "display_name": service_account.display_name,
@@ -695,6 +701,7 @@ def create_user(user: security.NewUser, db: Session = Depends(get_db)):
         display_name=user.display_name,
         user_role_id=user.user_role_id,
         disabled=user.disabled,
+        is_test_account=user.is_test_account,
         hashed_password="",
     )
     _validate_new_password(user.password, new_user)

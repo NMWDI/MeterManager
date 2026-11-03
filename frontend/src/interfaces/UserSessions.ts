@@ -31,3 +31,17 @@ export interface UserSessionsResponse {
   sessions: UserSessionSummary[];
   known_devices: KnownDeviceSummary[];
 }
+
+export interface AdminUserSessionSummary extends UserSessionSummary {
+  user_id: number;
+  username: string;
+  full_name?: string | null;
+  display_name?: string | null;
+  role_name?: string | null;
+}
+
+export interface AdminActiveUserSessionsResponse {
+  active_user_count: number;
+  active_session_count: number;
+  sessions: AdminUserSessionSummary[];
+}

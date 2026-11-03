@@ -7,5 +7,6 @@ export enum ActivityType {
   RateMeter = "Rate Meter",
   Sell = "Sell",
   Scrap = "Scrap",
+  StoreMeter = "Store Meter",
   ChangeWaterUsers = "Change Water Users",
 }

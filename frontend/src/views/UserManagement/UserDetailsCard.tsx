@@ -42,6 +42,7 @@ import {
 } from "@/service";
 import {
   ControlledTextbox,
+  ControlledCheckbox,
   ControlledSelect,
   ControlledSelectNonObject,
   CustomCardHeader,
@@ -57,6 +58,9 @@ const UserResolverSchema = Yup.object().shape({
   username: Yup.string().required("Please enter a username."),
   email: Yup.string().required("Please enter an email."),
   disabled: Yup.boolean().required("Please indicate if user is active."),
+  is_test_account: Yup.boolean().required(
+    "Please indicate if this is a test account.",
+  ),
   user_role: Yup.object().required("Please indicate the users role."),
   password: Yup.string().test(
     "password-policy",
@@ -414,6 +418,13 @@ export const UserDetailsCard = ({
               getOptionLabel={(role: UserRole) => role.name}
               control={control}
               error={errors?.user_role?.message}
+            />
+          </Grid>
+          <Grid item xs={12} xl={6}>
+            <ControlledCheckbox
+              name="is_test_account"
+              control={control}
+              label="Test Account"
             />
           </Grid>
           <Grid item xs={12}>

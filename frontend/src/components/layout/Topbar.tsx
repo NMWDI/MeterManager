@@ -74,7 +74,7 @@ export const Topbar = ({
   const isMonitoringWellsActive = useIsActiveRoute("/monitoringwells");
   const isNotificationsActive = useIsActiveRoute("/notifications");
   const isSettingsActive = useIsActiveRoute("/settings");
-  const isAdminActionsActive = useIsActiveRoute("/admin-actions");
+  const isAdminDashboardActive = useIsActiveRoute("/admin-dashboard");
 
   const [userMenuAnchorEl, setUserMenuAnchorEl] = useState<null | HTMLElement>(
     null,
@@ -514,9 +514,9 @@ export const Topbar = ({
               </MenuItem>
               {isAdmin ? (
                 <MenuItem
-                  selected={isAdminActionsActive}
+                  selected={isAdminDashboardActive}
                   onClick={() => {
-                    navigate({ to: "/admin-actions" });
+                    navigate({ to: "/admin-dashboard" });
                     handleMenuClose();
                   }}
                   sx={{ minHeight: 36, gap: 1, px: 1.5 }}
@@ -525,7 +525,7 @@ export const Topbar = ({
                     <AdminPanelSettingsOutlined fontSize="small" />
                   </ListItemIcon>
                   <Typography variant="body2" fontWeight={500}>
-                    Admin Actions
+                    Admin Dashboard
                   </Typography>
                 </MenuItem>
               ) : null}

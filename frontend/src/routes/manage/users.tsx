@@ -11,7 +11,7 @@ import {
 } from "@/utils";
 
 const searchSchema = z.object({
-  user_id: optionalPositiveInt.catch(undefined).default(undefined),
+  user_id: optionalPositiveInt.catch(undefined),
   user_add: booleanParam(true),
   user_q: z.string().catch("").default(""),
   active: triStateParam("true"),
@@ -19,7 +19,7 @@ const searchSchema = z.object({
   u_page: pageParam(0, 0),
   u_pageSize: pageParam(25, 10),
 
-  role_id: optionalPositiveInt.catch(undefined).default(undefined),
+  role_id: optionalPositiveInt.catch(undefined),
   role_add: booleanParam(true),
   role_q: z.string().catch("").default(""),
   r_page: pageParam(0, 0),

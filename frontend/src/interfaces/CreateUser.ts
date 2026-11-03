@@ -5,6 +5,7 @@ export interface CreateUser {
   full_name: string;
   email: scope_string;
   disabled: boolean;
+  is_test_account: boolean;
   user_role: { id: number };
   password: string;
 }
