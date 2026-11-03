@@ -1,17 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
 import { Resolver, useForm } from "react-hook-form";
 import {
-  Alert,
   Box,
   Button,
   Card,
   CardContent,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Grid,
   IconButton,
   Stack,
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
   TextField,
@@ -105,54 +109,56 @@ const ApiKeyRows = ({
   }
 
   return (
-    <Table size="small">
-      <TableHead>
-        <TableRow>
-          <TableCell>Prefix</TableCell>
-          <TableCell>Created</TableCell>
-          <TableCell>Last Used</TableCell>
-          <TableCell>Status</TableCell>
-          <TableCell align="right">Actions</TableCell>
-        </TableRow>
-      </TableHead>
-      <TableBody>
-        {apiKeys.map((apiKey) => {
-          const isRevoked = !!apiKey.revoked_at;
-          return (
-            <TableRow key={apiKey.key_identifier}>
-              <TableCell>{apiKey.key_prefix}...</TableCell>
-              <TableCell>{formatDateTime(apiKey.created_at)}</TableCell>
-              <TableCell>{formatDateTime(apiKey.last_used_at)}</TableCell>
-              <TableCell>
-                <IsTrueChip assert={!isRevoked} />
-              </TableCell>
-              <TableCell align="right">
-                <Tooltip title="Revoke key">
-                  <span>
-                    <IconButton
-                      color="error"
-                      size="small"
-                      disabled={isRevoked || revokeKey.isLoading}
-                      onClick={() => {
-                        if (!window.confirm("Revoke this service account key?")) {
-                          return;
-                        }
-                        revokeKey.mutate({
-                          serviceAccountId,
-                          keyIdentifier: apiKey.key_identifier,
-                        });
-                      }}
-                    >
-                      <DeleteOutline fontSize="small" />
-                    </IconButton>
-                  </span>
-                </Tooltip>
-              </TableCell>
-            </TableRow>
-          );
-        })}
-      </TableBody>
-    </Table>
+    <TableContainer sx={{ overflowX: "auto" }}>
+      <Table size="small" sx={{ minWidth: 620 }}>
+        <TableHead>
+          <TableRow>
+            <TableCell>Prefix</TableCell>
+            <TableCell>Created</TableCell>
+            <TableCell>Last Used</TableCell>
+            <TableCell>Status</TableCell>
+            <TableCell align="right">Actions</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {apiKeys.map((apiKey) => {
+            const isRevoked = !!apiKey.revoked_at;
+            return (
+              <TableRow key={apiKey.key_identifier}>
+                <TableCell>{apiKey.key_prefix}...</TableCell>
+                <TableCell>{formatDateTime(apiKey.created_at)}</TableCell>
+                <TableCell>{formatDateTime(apiKey.last_used_at)}</TableCell>
+                <TableCell>
+                  <IsTrueChip assert={!isRevoked} />
+                </TableCell>
+                <TableCell align="right">
+                  <Tooltip title="Revoke key">
+                    <span>
+                      <IconButton
+                        color="error"
+                        size="small"
+                        disabled={isRevoked || revokeKey.isLoading}
+                        onClick={() => {
+                          if (!window.confirm("Revoke this service account key?")) {
+                            return;
+                          }
+                          revokeKey.mutate({
+                            serviceAccountId,
+                            keyIdentifier: apiKey.key_identifier,
+                          });
+                        }}
+                      >
+                        <DeleteOutline fontSize="small" />
+                      </IconButton>
+                    </span>
+                  </Tooltip>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </TableContainer>
   );
 };
 
@@ -164,6 +170,7 @@ export const ServiceAccountDetailsCard = ({
   serviceAccountAddMode: boolean;
 }) => {
   const [latestApiKey, setLatestApiKey] = useState("");
+  const [isApiKeyDialogOpen, setIsApiKeyDialogOpen] = useState(false);
   const serviceAccounts = useGetServiceAccounts();
   const selectedServiceAccount = useMemo(
     () =>
@@ -182,7 +189,6 @@ export const ServiceAccountDetailsCard = ({
   } = useForm<ServiceAccountForm>({ resolver: serviceAccountResolver });
 
   useEffect(() => {
-    setLatestApiKey("");
     if (!serviceAccountAddMode && selectedServiceAccount) {
       reset();
       Object.entries(selectedServiceAccount).forEach(([k, v]) =>
@@ -194,11 +200,19 @@ export const ServiceAccountDetailsCard = ({
     }
   }, [serviceAccountAddMode, selectedServiceAccount, reset, setValue]);
 
+  useEffect(() => {
+    setLatestApiKey("");
+    setIsApiKeyDialogOpen(false);
+  }, [serviceAccountId, serviceAccountAddMode]);
+
   const onSuccessfulCreate = (serviceAccount: ServiceAccount) => {
     enqueueSnackbar("Successfully created service account.", {
       variant: "success",
     });
-    setLatestApiKey(serviceAccount.api_key ?? "");
+    if (serviceAccount.api_key) {
+      setLatestApiKey(serviceAccount.api_key);
+      setIsApiKeyDialogOpen(true);
+    }
   };
 
   const onSuccessfulUpdate = () =>
@@ -210,7 +224,10 @@ export const ServiceAccountDetailsCard = ({
     enqueueSnackbar("Created a new service account key.", {
       variant: "success",
     });
-    setLatestApiKey(serviceAccount.api_key ?? "");
+    if (serviceAccount.api_key) {
+      setLatestApiKey(serviceAccount.api_key);
+      setIsApiKeyDialogOpen(true);
+    }
   };
 
   const createServiceAccount = useCreateServiceAccount(onSuccessfulCreate);
@@ -242,6 +259,11 @@ export const ServiceAccountDetailsCard = ({
     } catch {
       enqueueSnackbar("Unable to copy API key.", { variant: "error" });
     }
+  };
+
+  const onCloseApiKeyDialog = () => {
+    setIsApiKeyDialogOpen(false);
+    setLatestApiKey("");
   };
 
   const sortedApiKeys = [...(selectedServiceAccount?.api_keys ?? [])].sort(
@@ -351,35 +373,6 @@ export const ServiceAccountDetailsCard = ({
           )}
         </Stack>
 
-        {latestApiKey ? (
-          <Alert
-            severity="success"
-            sx={{ mt: 2 }}
-            action={
-              <Button
-                color="inherit"
-                size="small"
-                startIcon={<ContentCopy />}
-                onClick={onCopyLatestKey}
-              >
-                Copy
-              </Button>
-            }
-          >
-            <Stack spacing={1}>
-              <Typography variant="body2">
-                API key created. Store it now.
-              </Typography>
-              <TextField
-                value={latestApiKey}
-                size="small"
-                fullWidth
-                InputProps={{ readOnly: true }}
-              />
-            </Stack>
-          </Alert>
-        ) : null}
-
         {!serviceAccountAddMode ? (
           <Box sx={{ mt: 3 }}>
             <Typography variant="subtitle2" sx={{ mb: 1 }}>
@@ -392,6 +385,36 @@ export const ServiceAccountDetailsCard = ({
             />
           </Box>
         ) : null}
+
+        <Dialog
+          open={isApiKeyDialogOpen}
+          onClose={onCloseApiKeyDialog}
+          fullWidth
+          maxWidth="sm"
+        >
+          <DialogTitle>API key created</DialogTitle>
+          <DialogContent>
+            <Typography sx={{ mb: 2 }}>
+              Copy and securely store this key now. It will not be shown again.
+            </Typography>
+            <TextField
+              value={latestApiKey}
+              size="small"
+              fullWidth
+              InputProps={{ readOnly: true }}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={onCloseApiKeyDialog}>Done</Button>
+            <Button
+              variant="contained"
+              startIcon={<ContentCopy />}
+              onClick={onCopyLatestKey}
+            >
+              Copy
+            </Button>
+          </DialogActions>
+        </Dialog>
       </CardContent>
     </Card>
   );
