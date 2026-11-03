@@ -8,6 +8,7 @@ from api.schemas import security as security_schema
 from api.models.user import Users
 from api.routes.activities import activity_router, public_activity_router
 from api.routes.admin import admin_router
+from api.routes.aqueduct import aqueduct_router
 from api.routes.chlorides import authenticated_chlorides_router, public_chlorides_router
 from api.routes.maintenance import (
     authenticated_maintenance_router,
@@ -51,6 +52,7 @@ tags_metadata = [
     },
     {"name": "Notifications", "description": "Notification related endpoints"},
     {"name": "OSE", "description": "Endpoints Used by the OSE to Generate Reports"},
+    {"name": "Aqueduct", "description": "Endpoints Used by the Aqueduct integration"},
     {"name": "Admin", "description": "Admin Functionality Related Endpoints"},
     {"name": "Login", "description": "User Auth and Token Related Endpoints"},
 ]
@@ -183,6 +185,7 @@ authenticated_router.include_router(settings_router)
 add_pagination(app)
 
 app.include_router(ose_router)
+app.include_router(aqueduct_router)
 app.include_router(public_activity_router)
 app.include_router(public_meter_router)
 app.include_router(public_well_router)
